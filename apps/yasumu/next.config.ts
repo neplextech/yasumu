@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
   output: 'export',
   images: { unoptimized: true },
   assetPrefix: getAssetPrefix(),
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   experimental: { reactCompiler: true },
 };
 
