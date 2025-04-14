@@ -1,5 +1,5 @@
 'use client';
-import { useMounted } from '@/hooks/useMounted';
+import { useMounted } from '@/hooks/use-mounted';
 import { useTheme } from 'next-themes';
 import {
   DropdownMenuCheckboxItem,
@@ -20,7 +20,7 @@ export default function SidebarThemeSelector() {
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
-        <Palette />
+        <Palette className="size-4" />
         Themes
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>

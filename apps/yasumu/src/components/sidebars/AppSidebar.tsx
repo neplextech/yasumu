@@ -101,7 +101,7 @@ export function AppSidebar() {
   const path = usePathname();
 
   return (
-    <Sidebar collapsible="none" className="!w-[calc(var(--sidebar-width-icon)_+_1px)] border-r">
+    <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -195,7 +195,7 @@ function SettingsDropdown({
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+          className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
           side={isMobile ? 'bottom' : 'right'}
           align="end"
           sideOffset={4}

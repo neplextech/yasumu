@@ -5,7 +5,7 @@ import { initYasumu } from '@/lib/yasumu';
 import { LoaderCircle } from 'lucide-react';
 import React, { createContext, useEffect, useState } from 'react';
 import { NoWorkspaceScreen } from '@/components/NoWorkspace';
-import { useWebWarning } from '@/hooks/useWebWarning';
+import { useWebWarning } from '@/hooks/use-web-warning';
 
 export interface YasumuContextData {
   yasumu: Yasumu;

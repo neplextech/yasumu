@@ -1,7 +1,7 @@
 'use client';
 import WebSocketLogo from '@/components/assets/WebSocketLogo';
 import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
-import { useYasumuFileTree } from '@/hooks/useYasumuFileTree';
+import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
 import { isWebsocketEntityTree, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
@@ -20,9 +20,7 @@ export function WebSocketFileTree() {
   const handleFileCreate = handleErrorToast(async (name: string) => {
     if (!yasumu.workspace) return;
 
-    await yasumu.workspace.websocket.create({
-      name,
-    });
+    await yasumu.workspace.websocket.create({ name });
   });
 
   return (

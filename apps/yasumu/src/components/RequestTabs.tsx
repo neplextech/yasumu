@@ -1,6 +1,6 @@
 'use client';
 
-import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
+import { useHorizontalScroll } from '@/hooks/use-horizontal-scroll';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import EnvironmentSelector from './EnvironmentSelector';

@@ -24,21 +24,11 @@ function getAssetPrefix() {
   return `http://${getInternalHost()}:3000`;
 }
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   output: 'export',
-  images: {
-    unoptimized: true,
-  },
+  images: { unoptimized: true },
   assetPrefix: getAssetPrefix(),
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  experimental: {
-    reactCompiler: true,
-  },
-} satisfies NextConfig;
+  experimental: { reactCompiler: true },
+};
 
 export default nextConfig;

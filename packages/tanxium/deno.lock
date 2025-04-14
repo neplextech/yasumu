@@ -3,7 +3,7 @@
   "specifiers": {
     "jsr:@hono/hono@4.6.9": "4.6.9",
     "npm:hono@4.6.9": "4.6.9",
-    "npm:nanoid@5.0.8": "5.0.8"
+    "npm:nanoid@5.0.9": "5.0.9"
   },
   "jsr": {
     "@hono/hono@4.6.9": {
@@ -14,13 +14,13 @@
     "hono@4.6.9": {
       "integrity": "sha512-p/pN5yZLuZaHzyAOT2nw2/Ud6HhJHYmDNGH6Ck1OWBhPMVeM1r74jbCRwNi0gyFRjjbsGgoHbOyj7mT1PDNbTw=="
     },
-    "nanoid@5.0.8": {
-      "integrity": "sha512-TcJPw+9RV9dibz1hHUzlLVy8N4X9TnwirAjrU08Juo6BNKggzVfP2ZJ/3ZUSq15Xl5i85i+Z89XBO90pB2PghQ=="
+    "nanoid@5.0.9": {
+      "integrity": "sha512-Aooyr6MXU6HpvvWXKoVoXwKMs/KyVakWwg7xQfv5/S/RIgJMy0Ifa45H9qqYy7pTCszrHzP21Uk4PZq2HpEM8Q=="
     }
   },
   "workspace": {
     "dependencies": [
-      "npm:nanoid@5.0.8"
+      "npm:nanoid@5.0.9"
     ]
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
-import { useYasumuFileTree } from '@/hooks/useYasumuFileTree';
+import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
 import { isSseEntityTree, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
@@ -20,9 +20,7 @@ export function SSEFileTree() {
   const handleFileCreate = handleErrorToast(async (name: string) => {
     if (!yasumu.workspace) return;
 
-    await yasumu.workspace.sse.create({
-      name,
-    });
+    await yasumu.workspace.sse.create({ name });
   });
 
   return (

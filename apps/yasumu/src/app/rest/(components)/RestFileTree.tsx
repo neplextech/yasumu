@@ -9,7 +9,7 @@ import {
   OptionsMethodIcon,
 } from '@/components/assets/HttpMethods';
 import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
-import { useYasumuFileTree } from '@/hooks/useYasumuFileTree';
+import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
 import { HttpMethod, isRestEntityTree, RestIndex, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
@@ -44,9 +44,7 @@ export function RestFileTree() {
   const handleFileCreate = handleErrorToast(async (name: string) => {
     if (!yasumu.workspace) return;
 
-    await yasumu.workspace.rest.create({
-      name,
-    });
+    await yasumu.workspace.rest.create({ name });
   });
 
   return (

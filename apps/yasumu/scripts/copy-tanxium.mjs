@@ -1,5 +1,6 @@
-import { execSync } from 'child_process';
-import { copyFile } from 'node:fs/promises';
+import { execSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { copyFile, mkdir } from 'node:fs/promises';
 
 const ext = process.platform === 'win32' ? '.exe' : '';
 const rustInfo = execSync('rustc -vV');
@@ -9,10 +10,15 @@ if (!targetTriple) {
   console.error('Failed to get target triple');
 }
 
-const targetDir = `./src-tauri/binaries/tanxium-${targetTriple}${ext}`;
+const targetDir = `./src-tauri/binaries`;
+const targetBin = `${targetDir}/tanxium-${targetTriple}${ext}`;
 
 try {
-  await copyFile(`../../packages/tanxium/dist/tanxium${ext}`, targetDir);
+  if (!existsSync(targetDir)) {
+    await mkdir(targetDir, { recursive: true });
+  }
+
+  await copyFile(`../../packages/tanxium/dist/tanxium${ext}`, targetBin);
   console.log('Copied tanxium binary successfully!');
 } catch (e) {
   console.error('Failed to copy tanxium binary');

@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { YasumuSocials } from '@/lib/constants/socials';
-import { isNative } from '@/lib/utils';
+import { isNative } from '@/lib/common/utils';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { toast } from 'sonner';

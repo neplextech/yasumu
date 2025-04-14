@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useLayout } from '@/stores/AppLayout';
 import { useEffect, useRef } from 'react';
 import { graphql, updateSchema } from 'cm6-graphql';
-import { useTextEditor } from '@/hooks/useTextEditor';
+import { useTextEditor } from '@/hooks/use-text-editor';
 import { setGraphqlDocument, useGraphqlDocument, useGraphqlSchema } from '@/stores/GraphqlSchemaStore';
 import { buildClientSchema } from 'graphql';
 
@@ -14,11 +14,7 @@ export function GraphqlEditor() {
   const editor = useRef<HTMLDivElement>(null);
   const schema = useGraphqlSchema();
   const doc = useGraphqlDocument();
-  const { view } = useTextEditor(editor, {
-    extensions: [graphql()],
-    code: doc,
-    setCode: setGraphqlDocument,
-  });
+  const { view } = useTextEditor(editor, { extensions: [graphql()], code: doc, setCode: setGraphqlDocument });
 
   useEffect(() => {
     if (!view) return;
