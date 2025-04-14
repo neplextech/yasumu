@@ -33,7 +33,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERFMkU4QzFCMkE2OTA4MgpSV1NDa0theXdlamlEWjJDYUpVc1Y5ZUREeUdxeENYKzlWejVMQTZ1S3VINGhTREhwQWNJK2N4bwo=",
-      "endpoints": ["https://github.com/yasumu-org/yasumu/releases/latest/download/latest.json"]
+      "endpoints": ["https://github.com/neplextech/yasumu/releases/latest/download/latest.json"]
     }
   }
 }
