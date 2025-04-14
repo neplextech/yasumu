@@ -21,13 +21,13 @@ export default function Home() {
           </div>
         </div>
         <div className="space-x-4">
-          <Link href="https://github.com/yasumu-org/yasumu">
+          <Link href="https://github.com/neplextech/yasumu">
             <Button className="bg-[#8563ff] hover:bg-[#6647d8] text-white gap-2 items-center" size="lg">
               <GitHubLogoIcon />
               GitHub
             </Button>
           </Link>
-          <Link href="https://github.com/yasumu-org/yasumu/releases/latest">
+          <Link href="https://github.com/neplextech/yasumu/releases/latest">
             <Button className="bg-[#aecbfa] hover:bg-[#799eda] text-[#272a37] gap-2 items-center" size="lg">
               <DownloadIcon />
               Download

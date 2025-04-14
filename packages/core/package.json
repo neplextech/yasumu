@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yasumu-org/yasumu.git"
+    "url": "git+https://github.com/neplextech/yasumu.git"
   },
   "keywords": [
     "yasumu",
@@ -28,9 +28,9 @@
   "author": "twlite <hello@twlite.dev>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yasumu-org/yasumu/issues"
+    "url": "https://github.com/neplextech/yasumu/issues"
   },
-  "homepage": "https://github.com/yasumu-org/yasumu#readme",
+  "homepage": "https://github.com/neplextech/yasumu#readme",
   "packageManager": "yarn@4.4.0",
   "devDependencies": {
     "@yasumu/tsconfig": "workspace:^",

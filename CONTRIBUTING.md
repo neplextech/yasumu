@@ -9,7 +9,7 @@ We appreciate your interest in contributing to Yasumu! Whether you're fixing bug
 Begin by cloning the Yasumu repository to your local machine. This will create a local copy of the project where you can work on your contributions.
 
 ```sh
-git clone https://github.com/yasumu-org/yasumu.git
+git clone https://github.com/neplextech/yasumu.git
 ```
 
 ### 2. Navigate to the Project Directory
@@ -106,7 +106,7 @@ Once you've made your changes, you're ready to submit a pull request (PR). Follo
 ## Additional Resources
 
 - **Documentation**: Ensure you're familiar with the [Yasumu documentation](https://docs.yasumu.dev) to understand how the system works and where your contributions will fit.
-- **Issue Tracker**: If you're unsure what to work on, check the open issues on the [GitHub Issue Tracker](https://github.com/yasumu-org/yasumu/issues). Feel free to claim any issue or start a discussion if you need more clarification.
+- **Issue Tracker**: If you're unsure what to work on, check the open issues on the [GitHub Issue Tracker](https://github.com/neplextech/yasumu/issues). Feel free to claim any issue or start a discussion if you need more clarification.
 - **Coding Guidelines**: Make sure to review the project's coding standards and best practices to ensure consistency across the codebase.
 
 ## Need Help?

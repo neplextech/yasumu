@@ -17,7 +17,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/yasumu-org/yasumu.git"
+        "url": "git+https://github.com/neplextech/yasumu.git"
     },
     "keywords": [
         "yasumu"
@@ -25,9 +25,9 @@
     "author": "Zyrouge <hello@zyrouge.me>",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/yasumu-org/yasumu/issues"
+        "url": "https://github.com/neplextech/yasumu/issues"
     },
-    "homepage": "https://github.com/yasumu-org/yasumu#readme",
+    "homepage": "https://github.com/neplextech/yasumu#readme",
     "devDependencies": {
         "@types/node": "^22.4.1",
         "@yasumu/tsconfig": "workspace:^",

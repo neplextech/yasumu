@@ -9,16 +9,16 @@ Yasumu is a customizable, free and open-source application to test various types
 
 The following table shows the status of the features in the project.
 
-| Feature              | Status  |
-| -------------------- | ------- |
-| REST API             | ⌚      |
-| Catch-all SMTP Server| ⌚      |
-| GraphQL              | ⌚      |
-| WebSocket            | ⌚      |
-| Socket.IO            | ⌚      |
-| gRPC Testing         | Planned |
-| Custom Plugins       | Planned |
-| Custom Themes        | Planned |
+| Feature               | Status  |
+| --------------------- | ------- |
+| REST API              | ⌚      |
+| Catch-all SMTP Server | ⌚      |
+| GraphQL               | ⌚      |
+| WebSocket             | ⌚      |
+| Socket.IO             | ⌚      |
+| gRPC Testing          | Planned |
+| Custom Plugins        | Planned |
+| Custom Themes         | Planned |
 
 ⌚ We are currently in our 3rd prototype stage.
 
@@ -47,7 +47,7 @@ Release branch contains stable features and updates after testing on the `canary
 | 1.  | [`@yasumu/app`](./apps/yasumu)        | The desktop application of Yasumu                                        |
 | 2.  | [`@yasumu/core`](./packages/core)     | The core api used by Yasumu's applications across different environments |
 | 3.  | [`@yasumu/schema`](./packages/schema) | Yasumu's custom schema definition language                               |
-| 4.  | [`tanxium`](tanxium)                  | Yasumu's custom JavaScript runtime                                       |
+| 4.  | [`tanxium`](./packages/tanxium)       | Yasumu's custom JavaScript runtime                                       |
 
 ## Contributing
 
@@ -76,12 +76,8 @@ For any queries, you can contact the maintainers at [contact@yasumu.dev](mailto:
 
 ## Core Team
 
-| Name              | Role               | Links                                     |
-| ----------------- | ------------------ | ----------------------------------------- |
-| Twilight          | Project Lead       | [GitHub](https://github.com/twlite)       |
-| Zyrouge           | Co-Lead            | [GitHub](https://github.com/zyrouge)      |
-| Santosh Bhandari  | Developer          | [GitHub](https://github.com/bsantosh909)  |
-| Bibek Raj Ghimire | Developer          | [GitHub](https://github.com/ghimirebibek) |
-| Samir Paudyal     | Developer          | [GitHub](https://github.com/samir-byte)   |
-| Sulav Niroula     | Frontend Developer | [GitHub](https://github.com/sulav7)       |
-| Anish             | Frontend Developer | [GitHub](https://github.com/novanish)     |
+| Name     | Role               | Links                                 |
+| -------- | ------------------ | ------------------------------------- |
+| Twilight | Project Lead       | [GitHub](https://github.com/twlite)   |
+| Zyrouge  | Co-Lead            | [GitHub](https://github.com/zyrouge)  |
+| Anish    | Frontend Developer | [GitHub](https://github.com/novanish) |
