@@ -1,6 +1,14 @@
 'use client';
 
-import { ChevronsUpDown, Keyboard, Lock, Logs, Mail, Settings, Zap } from 'lucide-react';
+import {
+  ChevronsUpDown,
+  Keyboard,
+  Lock,
+  Logs,
+  Mail,
+  Settings,
+  Zap,
+} from 'lucide-react';
 import { IoSync } from 'react-icons/io5';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -101,7 +109,10 @@ export function AppSidebar() {
   const path = usePathname();
 
   return (
-    <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
+    <Sidebar
+      collapsible="none"
+      className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -263,7 +274,10 @@ function AppInfo() {
 
   useEffect(() => {
     (async () => {
-      const [name, version] = await Promise.all([yasumu.app.getName(), yasumu.app.getVersion()]);
+      const [name, version] = await Promise.all([
+        yasumu.app.getName(),
+        yasumu.app.getVersion(),
+      ]);
 
       setInfo({
         name,

@@ -24,7 +24,9 @@ export interface CreateGraphqlEntityParams {
   url: string;
 }
 
-export class YasumuGraphql extends YasumuBaseModule<(typeof WorkspaceModuleType)['GraphQL']> {
+export class YasumuGraphql extends YasumuBaseModule<
+  (typeof WorkspaceModuleType)['GraphQL']
+> {
   public type = WorkspaceModuleType.GraphQL;
   public schema = new YasumuSchemaActions(GraphqlEntitySchema);
 
@@ -48,7 +50,9 @@ export class YasumuGraphql extends YasumuBaseModule<(typeof WorkspaceModuleType)
    * @param params The entity creation parameters.
    * @returns The created entity.
    */
-  public async create(params: Partial<CreateGraphqlEntityParams> = {}): Promise<YasumuGraphqlEntity> {
+  public async create(
+    params: Partial<CreateGraphqlEntityParams> = {},
+  ): Promise<YasumuGraphqlEntity> {
     const entity = new YasumuGraphqlEntity(this, {
       blocks: {
         Metadata: {

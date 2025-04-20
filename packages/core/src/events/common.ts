@@ -19,7 +19,8 @@ export const YasumuWorkspaceEvents = {
   RebuildTree: 'file-tree:rebuild',
 } as const;
 
-export type YasumuWorkspaceEvents = (typeof YasumuWorkspaceEvents)[keyof typeof YasumuWorkspaceEvents];
+export type YasumuWorkspaceEvents =
+  (typeof YasumuWorkspaceEvents)[keyof typeof YasumuWorkspaceEvents];
 
 export interface YasumuWorkspaceEventsMap {
   // environment events

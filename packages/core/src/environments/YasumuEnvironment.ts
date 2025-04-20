@@ -62,7 +62,10 @@ export interface YasumuEnvironmentSecret {
   enabled: boolean;
 }
 
-export type YasumuEnvironmentEntityData = Record<string, YasumuEnvironmentEntity>;
+export type YasumuEnvironmentEntityData = Record<
+  string,
+  YasumuEnvironmentEntity
+>;
 
 export class YasumuEnvironment {
   private data!: YasumuEnvironmentEntity;
@@ -127,12 +130,17 @@ export class YasumuEnvironment {
   /**
    * Get secrets with their values.
    */
-  public async getSecretsWithValues(): Promise<(YasumuEnvironmentSecret & { value: string })[]> {
+  public async getSecretsWithValues(): Promise<
+    (YasumuEnvironmentSecret & { value: string })[]
+  > {
     return Promise.all(
       this.data.secrets.map(async (secret) => {
         return {
           ...secret,
-          value: (await this.manager.workspace.yasumu.store.get(this.#getKey(secret.key))) ?? '',
+          value:
+            (await this.manager.workspace.yasumu.store.get(
+              this.#getKey(secret.key),
+            )) ?? '',
         };
       }),
     );
@@ -171,7 +179,9 @@ export class YasumuEnvironment {
       id: generateId(),
     });
 
-    cloned.data.variables = this.data.variables.map((variable) => ({ ...variable }));
+    cloned.data.variables = this.data.variables.map((variable) => ({
+      ...variable,
+    }));
     cloned.data.secrets = this.data.secrets.map((secret) => ({ ...secret }));
 
     await cloned.save();
@@ -184,7 +194,9 @@ export class YasumuEnvironment {
    * @param key The variable key.
    * @returns The variable.
    */
-  public async getVariable(key: string): Promise<YasumuEnvironmentVariable | null> {
+  public async getVariable(
+    key: string,
+  ): Promise<YasumuEnvironmentVariable | null> {
     return this.data.variables.find((variable) => variable.key === key) ?? null;
   }
 
@@ -193,13 +205,18 @@ export class YasumuEnvironment {
    * @param key The secret key.
    * @returns The secret.
    */
-  public async getSecret(key: string): Promise<(YasumuEnvironmentSecret & { value: string }) | null> {
-    const secret = this.data.secrets.find((variable) => variable.key === key) ?? null;
+  public async getSecret(
+    key: string,
+  ): Promise<(YasumuEnvironmentSecret & { value: string }) | null> {
+    const secret =
+      this.data.secrets.find((variable) => variable.key === key) ?? null;
     if (!secret) return null;
 
     return {
       ...secret,
-      value: (await this.manager.workspace.yasumu.store.get(this.#getKey(key))) ?? '',
+      value:
+        (await this.manager.workspace.yasumu.store.get(this.#getKey(key))) ??
+        '',
     };
   }
 
@@ -207,7 +224,10 @@ export class YasumuEnvironment {
    * Update the variable by its key if it exists.
    * @param data The new variable data.
    */
-  public async updateVariable(key: string, data: Partial<YasumuEnvironmentVariable>) {
+  public async updateVariable(
+    key: string,
+    data: Partial<YasumuEnvironmentVariable>,
+  ) {
     const variable = this.getVariable(key);
 
     if (variable) {
@@ -357,7 +377,10 @@ export class YasumuEnvironment {
   }
 
   #emitUpdate() {
-    this.manager.workspace.events.emit(YasumuWorkspaceEvents.EnvironmentUpdated, this);
+    this.manager.workspace.events.emit(
+      YasumuWorkspaceEvents.EnvironmentUpdated,
+      this,
+    );
   }
 
   #getKey(key: string) {

@@ -8,8 +8,13 @@ export interface StoreCommon {
   keys(): Promise<string[]>;
   length(): Promise<number>;
   load(): Promise<void>;
-  onChange<T extends unknown>(cb: Callback<[key: string, value: T]>): Promise<Callback>;
-  onKeyChange<T extends unknown>(key: string, cb: Callback<[value: T]>): Promise<Callback>;
+  onChange<T extends unknown>(
+    cb: Callback<[key: string, value: T]>,
+  ): Promise<Callback>;
+  onKeyChange<T extends unknown>(
+    key: string,
+    cb: Callback<[value: T]>,
+  ): Promise<Callback>;
   reset(): Promise<void>;
   save(): Promise<void>;
   set(key: string, value: unknown): Promise<void>;

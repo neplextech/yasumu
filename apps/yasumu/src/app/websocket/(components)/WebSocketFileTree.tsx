@@ -4,7 +4,11 @@ import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
 import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
-import { isWebsocketEntityTree, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
+import {
+  isWebsocketEntityTree,
+  WorkspaceModuleType,
+  YasumuEntityTree,
+} from '@yasumu/core';
 
 export function WebSocketFileTree() {
   const { yasumu } = useYasumu();

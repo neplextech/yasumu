@@ -16,7 +16,9 @@ export function WebAdapter(): YasumuBootstrapOptions {
   console.log('Loading WebAdapter');
 
   const fs =
-    typeof localStorage !== 'undefined' ? memfs.createFsFromVolume(new (createVolume('yasumu-fs'))()) : memfs.fs;
+    typeof localStorage !== 'undefined'
+      ? memfs.createFsFromVolume(new (createVolume('yasumu-fs'))())
+      : memfs.fs;
 
   return {
     adapters: {
@@ -33,7 +35,11 @@ export function WebAdapter(): YasumuBootstrapOptions {
       },
       command: {
         // eslint-disable-next-line
-        async addPluginListener(plugin: unknown, event: unknown, cb: unknown) {},
+        async addPluginListener(
+          plugin: unknown,
+          event: unknown,
+          cb: unknown,
+        ) {},
         // eslint-disable-next-line
         async invoke(command: unknown, args: unknown, options: unknown) {},
       } as unknown as CommandCommon,
@@ -288,7 +294,10 @@ export function WebAdapter(): YasumuBootstrapOptions {
         type WsListener = Set<Callback<[WsMessage], unknown>>;
 
         class WebSocketMock implements WebSocketCommon {
-          async connect(url: string, config?: WsConnectionConfig): Promise<WebSocketImpl> {
+          async connect(
+            url: string,
+            config?: WsConnectionConfig,
+          ): Promise<WebSocketImpl> {
             const nextId = id++;
             void config;
 

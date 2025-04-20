@@ -22,8 +22,8 @@ export function useWebWarning() {
         description: (
           <div className="space-y-2">
             <p>
-              The web version may not have all the features of the native version. Please use the native version for the
-              best experience.
+              The web version may not have all the features of the native
+              version. Please use the native version for the best experience.
             </p>
             <div className="flex gap-4">
               <Link href={YasumuSocials.Download} target="_blank">

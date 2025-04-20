@@ -13,4 +13,6 @@ export const WebsocketEntitySchema = t.script({
   },
 });
 
-export type WebsocketEntitySchemaType = YasumuSchemaParsableToType<typeof WebsocketEntitySchema>;
+export type WebsocketEntitySchemaType = YasumuSchemaParsableToType<
+  typeof WebsocketEntitySchema
+>;

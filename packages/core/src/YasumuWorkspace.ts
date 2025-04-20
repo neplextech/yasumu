@@ -1,7 +1,10 @@
 import { YasumuFileNamesMap } from '@/common/constants.js';
 import { WorkspaceNotFoundError } from '@/common/errors/WorkspaceNotFoundError.js';
 import type { Yasumu } from '@/Yasumu.js';
-import { createWorkspaceMetadata, YasumuWorkspaceMetadata } from './YasumuWorkspaceMetadata.js';
+import {
+  createWorkspaceMetadata,
+  YasumuWorkspaceMetadata,
+} from './YasumuWorkspaceMetadata.js';
 import { WorkspaceNotLoadedError } from '@/common/index.js';
 import {
   YasumuGraphql,
@@ -193,7 +196,10 @@ export class YasumuWorkspace {
       await this.yasumu.fs.mkdir(path, { recursive: true });
     }
 
-    this.#metadataPath = await this.yasumu.path.join(path, YasumuFileNamesMap.WorkspaceMetadata);
+    this.#metadataPath = await this.yasumu.path.join(
+      path,
+      YasumuFileNamesMap.WorkspaceMetadata,
+    );
 
     const exists = await this.yasumu.fs.exists(this.#metadataPath);
 
@@ -205,7 +211,11 @@ export class YasumuWorkspace {
 
     if (exists) {
       const metadata = await this.yasumu.fs.readTextFile(this.#metadataPath);
-      this.#metadata = await createWorkspaceMetadata(this, YasumuWorkspaceMetadata.deserialize(metadata), false);
+      this.#metadata = await createWorkspaceMetadata(
+        this,
+        YasumuWorkspaceMetadata.deserialize(metadata),
+        false,
+      );
     } else {
       this.#metadata = await createWorkspaceMetadata(this, {}, true);
     }
@@ -250,7 +260,9 @@ export class YasumuWorkspace {
    * Resolves a workspace module by its type
    * @param type The type of module to resolve.
    */
-  public resolveModule<T extends WorkspaceModuleType>(type: T): YasumuModuleTypeMap[T] {
+  public resolveModule<T extends WorkspaceModuleType>(
+    type: T,
+  ): YasumuModuleTypeMap[T] {
     // TODO: remove 'as any' in typescript 5.8
     switch (type) {
       case WorkspaceModuleType.Rest:

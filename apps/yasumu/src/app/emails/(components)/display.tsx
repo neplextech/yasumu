@@ -20,7 +20,9 @@ export function MailDisplay() {
         <div className="flex items-start p-4">
           <div className="flex items-start gap-4 text-sm">
             <div className="grid gap-1">
-              <div className="line-clamp-1 text-base font-medium">{mail.subject}</div>
+              <div className="line-clamp-1 text-base font-medium">
+                {mail.subject}
+              </div>
               <div className="line-clamp-1 text-sm">
                 <span className="font-medium">ID:</span> {mail.id}
               </div>
@@ -33,11 +35,15 @@ export function MailDisplay() {
             </div>
           </div>
           {mail.date && (
-            <div className="ml-auto text-xs text-muted-foreground">{format(new Date(mail.date), 'PPpp')}</div>
+            <div className="ml-auto text-xs text-muted-foreground">
+              {format(new Date(mail.date), 'PPpp')}
+            </div>
           )}
         </div>
         <Separator />
-        <div className="flex-1 whitespace-pre-wrap p-4 text-base">{mail.body}</div>
+        <div className="flex-1 whitespace-pre-wrap p-4 text-base">
+          {mail.body}
+        </div>
         <Separator className="mt-auto" />
       </div>
     </div>

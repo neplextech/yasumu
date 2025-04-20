@@ -52,18 +52,25 @@ export interface AdapterCommonMap {
   [AdapterType.WebSocket]: WebSocketCommon;
 }
 
-export type StoreType = (name: string, options?: StoreOptions) => Promise<StoreCommon>;
+export type StoreType = (
+  name: string,
+  options?: StoreOptions,
+) => Promise<StoreCommon>;
 
 export type WithCreateStore<T> = T & { createStore: StoreType };
 
-export type Config<YasumuAdapterType extends AdapterType> = WithCreateStore<AdapterCommonMap[YasumuAdapterType]>;
+export type Config<YasumuAdapterType extends AdapterType> = WithCreateStore<
+  AdapterCommonMap[YasumuAdapterType]
+>;
 
 export function createAdapter<YasumuAdapterType extends AdapterType>(
   type: YasumuAdapterType,
   config: Config<YasumuAdapterType>,
 ): Config<YasumuAdapterType> {
   if (!(type in AdapterType)) {
-    throw new Error(`Invalid adapter type "${type}". Must be one of: ${Object.keys(AdapterType).join(', ')}`);
+    throw new Error(
+      `Invalid adapter type "${type}". Must be one of: ${Object.keys(AdapterType).join(', ')}`,
+    );
   }
 
   for (const key in config) {

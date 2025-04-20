@@ -20,7 +20,10 @@ export class PathMock implements PathCommon {
   public async audioDir(): Promise<string> {
     return '';
   }
-  public async basename(path: string, ext?: string | undefined): Promise<string> {
+  public async basename(
+    path: string,
+    ext?: string | undefined,
+  ): Promise<string> {
     return NodePath.basename(path, ext);
   }
   public async cacheDir(): Promise<string> {

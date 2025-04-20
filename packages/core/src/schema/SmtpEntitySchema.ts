@@ -13,4 +13,6 @@ export const SmtpEntitySchema = t.script({
   },
 });
 
-export type SmtpEntitySchemaType = YasumuSchemaParsableToType<typeof SmtpEntitySchema>;
+export type SmtpEntitySchemaType = YasumuSchemaParsableToType<
+  typeof SmtpEntitySchema
+>;

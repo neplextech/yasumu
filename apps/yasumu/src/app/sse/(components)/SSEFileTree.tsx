@@ -3,7 +3,11 @@ import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
 import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
-import { isSseEntityTree, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
+import {
+  isSseEntityTree,
+  WorkspaceModuleType,
+  YasumuEntityTree,
+} from '@yasumu/core';
 import { Zap } from 'lucide-react';
 
 export function SSEFileTree() {

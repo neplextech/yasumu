@@ -16,7 +16,12 @@ export function PrettyResponseViewer({ content }: { content: string }) {
     editable: false,
     readOnly: true,
     extensions: [json()],
-    basicSetup: { foldGutter: true, highlightSpecialChars: true, tabSize: 2, lineNumbers: true },
+    basicSetup: {
+      foldGutter: true,
+      highlightSpecialChars: true,
+      tabSize: 2,
+      lineNumbers: true,
+    },
     className: 'overflow-auto h-full w-full',
   });
   return <div ref={editorRef} />;

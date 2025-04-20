@@ -41,4 +41,6 @@ export const RestEntitySchema = t.script({
   },
 });
 
-export type RestEntitySchemaType = YasumuSchemaParsableToType<typeof RestEntitySchema>;
+export type RestEntitySchemaType = YasumuSchemaParsableToType<
+  typeof RestEntitySchema
+>;

@@ -1,6 +1,9 @@
 import type { SseEntitySchemaType } from '@/schema/SseEntitySchema.js';
 import { BaseEntity } from '../common/BaseEntity.js';
-import { type ExecutionOptions, type ExecutionResult } from '../common/types.js';
+import {
+  type ExecutionOptions,
+  type ExecutionResult,
+} from '../common/types.js';
 import type { YasumuSSE } from './YasumuSSE.js';
 import type { DeepPartial } from '../rest/YasumuRestEntity.js';
 import { generateId } from '@/common/utils.js';

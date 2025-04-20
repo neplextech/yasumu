@@ -1,5 +1,8 @@
 import { BaseEntity } from '../common/BaseEntity.js';
-import { type ExecutionOptions, type ExecutionResult } from '../common/types.js';
+import {
+  type ExecutionOptions,
+  type ExecutionResult,
+} from '../common/types.js';
 import type { YasumuSmtp } from './YasumuSmtp.js';
 
 export class YasumuSmtpEntity extends BaseEntity {

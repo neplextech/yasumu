@@ -13,4 +13,6 @@ export const SocketioEntitySchema = t.script({
   },
 });
 
-export type SocketioEntitySchemaType = YasumuSchemaParsableToType<typeof SocketioEntitySchema>;
+export type SocketioEntitySchemaType = YasumuSchemaParsableToType<
+  typeof SocketioEntitySchema
+>;

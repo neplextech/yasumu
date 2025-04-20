@@ -7,7 +7,9 @@ export class PostmanExporter extends ExternalCollectionsProvider<PostmanCollecti
     return {} as PostmanCollection;
   }
 
-  public async import(data: PostmanCollection): Promise<YasumuStandaloneFormat> {
+  public async import(
+    data: PostmanCollection,
+  ): Promise<YasumuStandaloneFormat> {
     return {} as YasumuStandaloneFormat;
   }
 }

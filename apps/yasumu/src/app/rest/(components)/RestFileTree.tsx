@@ -12,7 +12,13 @@ import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
 import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
-import { HttpMethod, isRestEntityTree, RestIndex, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
+import {
+  HttpMethod,
+  isRestEntityTree,
+  RestIndex,
+  WorkspaceModuleType,
+  YasumuEntityTree,
+} from '@yasumu/core';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();

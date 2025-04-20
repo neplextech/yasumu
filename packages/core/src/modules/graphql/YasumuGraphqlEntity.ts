@@ -1,6 +1,9 @@
 import { generateId } from '@/common/utils.js';
 import { BaseEntity } from '../common/BaseEntity.js';
-import { type ExecutionOptions, type ExecutionResult } from '../common/types.js';
+import {
+  type ExecutionOptions,
+  type ExecutionResult,
+} from '../common/types.js';
 import type { GraphqlIndex } from './types.js';
 import { GraphqlHttpMethod } from '@yasumu/common';
 import type { DeepPartial } from '../rest/YasumuRestEntity.js';
@@ -66,7 +69,9 @@ export class YasumuGraphqlEntity extends BaseEntity<GraphqlEntitySchemaType> {
           value: 'application/json',
         },
       ],
-      variables: this.#reformatQueryVariables(data.blocks!.Request?.variables ?? {}),
+      variables: this.#reformatQueryVariables(
+        data.blocks!.Request?.variables ?? {},
+      ),
       url: data.blocks!.Request?.url ?? '',
       body: data.blocks!.Request?.body ?? '',
     };
@@ -122,11 +127,17 @@ export class YasumuGraphqlEntity extends BaseEntity<GraphqlEntitySchemaType> {
   public setVariables(variables: GraphqlVariable) {
     // @ts-ignore type issue
     this.data.blocks.Request.variables = Object.fromEntries(
-      Object.entries(variables).map(([key, value]) => [key, { key, value, enabled: !!value.enabled }]),
+      Object.entries(variables).map(([key, value]) => [
+        key,
+        { key, value, enabled: !!value.enabled },
+      ]),
     );
   }
 
-  public setVariable(key: string, value: GraphqlQueryVariableType | GraphqlVariable) {
+  public setVariable(
+    key: string,
+    value: GraphqlQueryVariableType | GraphqlVariable,
+  ) {
     if (value !== null && typeof value === 'object') {
       this.data.blocks.Request.variables[key] = {
         key,
@@ -196,12 +207,16 @@ export class YasumuGraphqlEntity extends BaseEntity<GraphqlEntitySchemaType> {
     return schema;
   }
 
-  public async send(options: GraphqlQueryOptions = {}): Promise<Response | null> {
+  public async send(
+    options: GraphqlQueryOptions = {},
+  ): Promise<Response | null> {
     if (!this.url) return null;
 
     const reqOpts = {
       query: options.query ?? (this.query as string),
-      variables: this.reformatVariableTypes(('variables' in options ? options.variables : this.variables) ?? {}),
+      variables: this.reformatVariableTypes(
+        ('variables' in options ? options.variables : this.variables) ?? {},
+      ),
       operationName: options.operationName || undefined,
     };
 
@@ -240,7 +255,9 @@ export class YasumuGraphqlEntity extends BaseEntity<GraphqlEntitySchemaType> {
    * Reformats the given variables to the correct types based on the current graphql query
    * @param variables The variables to reformat
    */
-  public reformatVariableTypes(variables: GraphqlVariable): GraphqlQueryVariable {
+  public reformatVariableTypes(
+    variables: GraphqlVariable,
+  ): GraphqlQueryVariable {
     const variablesCopy: GraphqlQueryVariable = {};
     const rawQuery = this.data.blocks.Request.body;
     if (!rawQuery) return variablesCopy;
@@ -267,7 +284,10 @@ export class YasumuGraphqlEntity extends BaseEntity<GraphqlEntitySchemaType> {
               variablesCopy[name] = Number.parseFloat(variable.value as string);
               break;
             case 'Boolean':
-              variablesCopy[name] = typeof variable.value === 'boolean' ? variable.value : variable.value === 'true';
+              variablesCopy[name] =
+                typeof variable.value === 'boolean'
+                  ? variable.value
+                  : variable.value === 'true';
               break;
             default:
               if (typeof variable !== 'string') {

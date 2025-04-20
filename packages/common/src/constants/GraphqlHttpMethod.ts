@@ -3,4 +3,5 @@ export const GraphqlHttpMethod = {
   Post: 'POST',
 } as const;
 
-export type GraphqlHttpMethod = (typeof GraphqlHttpMethod)[keyof typeof GraphqlHttpMethod];
+export type GraphqlHttpMethod =
+  (typeof GraphqlHttpMethod)[keyof typeof GraphqlHttpMethod];

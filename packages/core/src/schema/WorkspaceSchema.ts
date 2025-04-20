@@ -94,4 +94,6 @@ export const WorkspaceSchema = t.script({
   },
 });
 
-export type WorkspaceSchemaType = YasumuSchemaParsableToType<typeof WorkspaceSchema>;
+export type WorkspaceSchemaType = YasumuSchemaParsableToType<
+  typeof WorkspaceSchema
+>;

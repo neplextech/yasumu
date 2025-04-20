@@ -16,10 +16,16 @@ export function useTextEditor(
     language?: string;
     code?: string;
     setCode?: (code: string) => void;
-  } & Partial<Omit<UseCodeMirror, 'container' | 'value' | 'onChange' | 'theme' | 'extensions' | 'lang'>>,
+  } & Partial<
+    Omit<
+      UseCodeMirror,
+      'container' | 'value' | 'onChange' | 'theme' | 'extensions' | 'lang'
+    >
+  >,
 ) {
   const { theme, systemTheme } = useTheme();
-  const editorTheme = theme === 'system' && systemTheme ? systemTheme : theme || 'light';
+  const editorTheme =
+    theme === 'system' && systemTheme ? systemTheme : theme || 'light';
   const { setContainer, view } = useCodeMirror({
     ...rest,
     container: editor.current,

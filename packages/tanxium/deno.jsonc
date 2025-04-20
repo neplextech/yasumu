@@ -1,8 +1,8 @@
 {
   "exclude": ["dist"],
   "imports": {
-    "nanoid": "npm:nanoid@5.0.9",
-    "yasumu": "./lib/yasumu/index.ts",
+    // "nanoid": "npm:nanoid@5.0.9",
+    // "@yasumu/server": "../server/src/index.ts",
   },
   "nodeModulesDir": "auto",
   "tasks": {

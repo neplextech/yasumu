@@ -13,4 +13,6 @@ export const SseEntitySchema = t.script({
   },
 });
 
-export type SseEntitySchemaType = YasumuSchemaParsableToType<typeof SseEntitySchema>;
+export type SseEntitySchemaType = YasumuSchemaParsableToType<
+  typeof SseEntitySchema
+>;

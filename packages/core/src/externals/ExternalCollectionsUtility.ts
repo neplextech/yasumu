@@ -1,5 +1,8 @@
 import { WorkspaceModuleType } from '../modules/common/constants.js';
-import { createStandalone, type YasumuStandaloneFormat } from '../standalone/types.js';
+import {
+  createStandalone,
+  type YasumuStandaloneFormat,
+} from '../standalone/types.js';
 import type { YasumuWorkspace } from '../YasumuWorkspace.js';
 import { Insomnia } from './insomnia/Insomnia.js';
 import { PostmanExporter as Postman } from './postman/Postman.js';
@@ -31,13 +34,17 @@ export class ExternalCollectionsUtility {
     return createStandalone({
       workspace: this.workspace.getMetadata().getRawData(),
       entities: {
-        [WorkspaceModuleType.GraphQL]: await this.workspace.graphql.toStandalone(),
+        [WorkspaceModuleType.GraphQL]:
+          await this.workspace.graphql.toStandalone(),
         [WorkspaceModuleType.Rest]: await this.workspace.rest.toStandalone(),
       },
     });
   }
 
-  public async fromStandalone(data: YasumuStandaloneFormat, options: FromStandaloneOptions = {}): Promise<void> {
+  public async fromStandalone(
+    data: YasumuStandaloneFormat,
+    options: FromStandaloneOptions = {},
+  ): Promise<void> {
     const workspace = options.workspace ?? this.workspace;
     const overwrite = options.overwrite ?? true;
 
@@ -47,11 +54,28 @@ export class ExternalCollectionsUtility {
       await workspace.getMetadata().mergeRawData(data.workspace);
     }
 
-    await workspace.graphql.fromStandalone(data.entities[WorkspaceModuleType.GraphQL], { overwrite });
-    await workspace.rest.fromStandalone(data.entities[WorkspaceModuleType.Rest], { overwrite });
-    await workspace.smtp.fromStandalone(data.entities[WorkspaceModuleType.SMTP], { overwrite });
-    await workspace.sse.fromStandalone(data.entities[WorkspaceModuleType.SSE], { overwrite });
-    await workspace.socketio.fromStandalone(data.entities[WorkspaceModuleType.SocketIO], { overwrite });
-    await workspace.websocket.fromStandalone(data.entities[WorkspaceModuleType.Websocket], { overwrite });
+    await workspace.graphql.fromStandalone(
+      data.entities[WorkspaceModuleType.GraphQL],
+      { overwrite },
+    );
+    await workspace.rest.fromStandalone(
+      data.entities[WorkspaceModuleType.Rest],
+      { overwrite },
+    );
+    await workspace.smtp.fromStandalone(
+      data.entities[WorkspaceModuleType.SMTP],
+      { overwrite },
+    );
+    await workspace.sse.fromStandalone(data.entities[WorkspaceModuleType.SSE], {
+      overwrite,
+    });
+    await workspace.socketio.fromStandalone(
+      data.entities[WorkspaceModuleType.SocketIO],
+      { overwrite },
+    );
+    await workspace.websocket.fromStandalone(
+      data.entities[WorkspaceModuleType.Websocket],
+      { overwrite },
+    );
   }
 }

@@ -38,7 +38,9 @@ export class FileSystemMock implements FileSystemCommon {
   }
 
   public async readDir(path: FilePath): Promise<DirEntry[]> {
-    const data = (await fs.promises.readdir(path, { withFileTypes: true })) as IDirent[];
+    const data = (await fs.promises.readdir(path, {
+      withFileTypes: true,
+    })) as IDirent[];
 
     const entries: DirEntry[] = data.map((entry) => {
       return {
@@ -71,7 +73,11 @@ export class FileSystemMock implements FileSystemCommon {
     return fs.promises.rename(oldPath, newPath);
   }
 
-  public async watch(paths: FilePath | FilePath[], callback: Callback<any>, options?: WatchOptions): Promise<Callback> {
+  public async watch(
+    paths: FilePath | FilePath[],
+    callback: Callback<any>,
+    options?: WatchOptions,
+  ): Promise<Callback> {
     const watcher = fs.watch(paths as string, options, (event, file) => {
       callback(event, file);
     });
@@ -95,11 +101,19 @@ export class FileSystemMock implements FileSystemCommon {
     };
   }
 
-  public async writeFile(path: FilePath, data: Uint8Array, options?: WriteFileOptions): Promise<void> {
+  public async writeFile(
+    path: FilePath,
+    data: Uint8Array,
+    options?: WriteFileOptions,
+  ): Promise<void> {
     return fs.promises.writeFile(path, data);
   }
 
-  public async writeTextFile(path: FilePath, data: string, options?: WriteFileOptions): Promise<void> {
+  public async writeTextFile(
+    path: FilePath,
+    data: string,
+    options?: WriteFileOptions,
+  ): Promise<void> {
     return fs.promises.writeFile(path, data, { encoding: 'utf8' });
   }
 }

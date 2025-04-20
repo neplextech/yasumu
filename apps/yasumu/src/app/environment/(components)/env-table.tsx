@@ -1,7 +1,14 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CirclePlus, File, Trash } from 'lucide-react';
@@ -95,7 +102,10 @@ export function EnvVarsTable({ envVars, setEnvVars }: Props) {
 
   return (
     <>
-      <Table onDragOver={(event) => event.preventDefault()} onDrop={handleFileDrop}>
+      <Table
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={handleFileDrop}
+      >
         <TableHeader className="border">
           <TableRow>
             <TableHead>Key</TableHead>
@@ -130,14 +140,27 @@ export function EnvVarsTable({ envVars, setEnvVars }: Props) {
       </Table>
 
       <div className="flex gap-4 mt-7">
-        <Button onClick={addAnother} variant="secondary" className="flex items-center">
+        <Button
+          onClick={addAnother}
+          variant="secondary"
+          className="flex items-center"
+        >
           <CirclePlus />
           <span>Add Another</span>
         </Button>
-        <Button onClick={() => fileInputRef.current?.click()} variant="ghost" className="flex items-center">
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          variant="ghost"
+          className="flex items-center"
+        >
           <File /> <span>Import .env</span>
         </Button>
-        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
       </div>
     </>
   );

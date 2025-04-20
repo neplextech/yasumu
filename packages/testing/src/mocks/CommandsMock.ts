@@ -1,5 +1,11 @@
 import { COMMAND_BINDINGS } from '../common/binding.js';
-import type { Callback, CommandCommon, InvokeArgs, InvokeOptions, PluginListenerCommon } from '@yasumu/common';
+import type {
+  Callback,
+  CommandCommon,
+  InvokeArgs,
+  InvokeOptions,
+  PluginListenerCommon,
+} from '@yasumu/common';
 
 export class CommandsListener implements PluginListenerCommon {
   public constructor(
@@ -20,7 +26,11 @@ export class CommandsMock implements CommandCommon {
     return new CommandsListener(0, event, plugin);
   }
 
-  public async invoke<T = unknown>(command: string, args?: InvokeArgs, options?: InvokeOptions): Promise<T> {
+  public async invoke<T = unknown>(
+    command: string,
+    args?: InvokeArgs,
+    options?: InvokeOptions,
+  ): Promise<T> {
     const handler = COMMAND_BINDINGS.get(command);
 
     if (!handler) {

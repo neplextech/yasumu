@@ -3,7 +3,10 @@ import type { YasumuWorkspace } from './YasumuWorkspace.js';
 import type { DeepPartial } from './modules/index.js';
 import { WorkspaceModuleType } from './modules/common/constants.js';
 import { YasumuSchemaActions } from '@yasumu/schema';
-import { WorkspaceSchema, type WorkspaceSchemaType } from './schema/WorkspaceSchema.js';
+import {
+  WorkspaceSchema,
+  type WorkspaceSchemaType,
+} from './schema/WorkspaceSchema.js';
 import { YASUMU_WORKSPACE_ANNOTATION } from '@/common/constants.js';
 import { YasumuWorkspaceEvents } from './events/common.js';
 
@@ -46,7 +49,10 @@ export class YasumuWorkspaceMetadata {
     this.data.blocks.Metadata.name ??= 'Untitled Workspace';
     this.data.blocks.Metadata.id ??= generateId();
 
-    this.data.blocks.Environment ??= { selectedEnvironment: '', environments: {} };
+    this.data.blocks.Environment ??= {
+      selectedEnvironment: '',
+      environments: {},
+    };
     this.data.blocks.Environment.selectedEnvironment ??= '';
     this.data.blocks.Environment.environments ??= {};
     this.data.blocks[WorkspaceModuleType.Rest] ??= { entities: {} };
@@ -134,7 +140,9 @@ export class YasumuWorkspaceMetadata {
    * Refreshes this workspace's metadata.
    */
   public async refresh(): Promise<void> {
-    const metadata = await this.workspace.yasumu.fs.readTextFile(this.workspace.metadataPath);
+    const metadata = await this.workspace.yasumu.fs.readTextFile(
+      this.workspace.metadataPath,
+    );
     this.data = this.deserialize(metadata);
     this.#reformat();
   }
@@ -143,9 +151,14 @@ export class YasumuWorkspaceMetadata {
    * Saves this workspace's metadata.
    */
   public async save(): Promise<void> {
-    return this.workspace.yasumu.fs.writeTextFile(this.workspace.metadataPath, this.serialize()).then(() => {
-      this.workspace.events.emit(YasumuWorkspaceEvents.WorkspaceMetadataUpdated, this);
-    });
+    return this.workspace.yasumu.fs
+      .writeTextFile(this.workspace.metadataPath, this.serialize())
+      .then(() => {
+        this.workspace.events.emit(
+          YasumuWorkspaceEvents.WorkspaceMetadataUpdated,
+          this,
+        );
+      });
   }
 
   /**
@@ -196,7 +209,10 @@ export async function createWorkspaceMetadata(
   options: Partial<WorkspaceSchemaType> = {},
   save = false,
 ): Promise<YasumuWorkspaceMetadata> {
-  const metadata = new YasumuWorkspaceMetadata(workspace, options as WorkspaceSchemaType);
+  const metadata = new YasumuWorkspaceMetadata(
+    workspace,
+    options as WorkspaceSchemaType,
+  );
 
   if (save) await metadata.save();
 

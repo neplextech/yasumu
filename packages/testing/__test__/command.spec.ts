@@ -8,7 +8,11 @@ describe('Commands Mock', () => {
   });
 
   test('should add plugin listener', async () => {
-    const listener = await command.addPluginListener('plugin', 'event', () => {});
+    const listener = await command.addPluginListener(
+      'plugin',
+      'event',
+      () => {},
+    );
     expect(listener.channelId).toBe(0);
     expect(listener.event).toBe('event');
     expect(listener.plugin).toBe('plugin');
@@ -20,6 +24,8 @@ describe('Commands Mock', () => {
   });
 
   test('should throw error to  handle non-existent command ', async () => {
-    expect(yasumu.command.invoke('unknown')).rejects.toThrowError('Command unknown not found');
+    expect(yasumu.command.invoke('unknown')).rejects.toThrowError(
+      'Command unknown not found',
+    );
   });
 });

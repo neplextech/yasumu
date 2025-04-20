@@ -24,7 +24,9 @@ export interface CreateRestEntityParams {
   url: string;
 }
 
-export class YasumuRest extends YasumuBaseModule<(typeof WorkspaceModuleType)['Rest']> {
+export class YasumuRest extends YasumuBaseModule<
+  (typeof WorkspaceModuleType)['Rest']
+> {
   public override type = WorkspaceModuleType.Rest;
   public readonly schema = new YasumuSchemaActions(RestEntitySchema);
 
@@ -48,7 +50,9 @@ export class YasumuRest extends YasumuBaseModule<(typeof WorkspaceModuleType)['R
    * @param params The entity creation parameters.
    * @returns The created entity.
    */
-  public async create(params: Partial<CreateRestEntityParams> = {}): Promise<YasumuRestEntity> {
+  public async create(
+    params: Partial<CreateRestEntityParams> = {},
+  ): Promise<YasumuRestEntity> {
     const entity = new YasumuRestEntity(this, {
       blocks: {
         Metadata: {

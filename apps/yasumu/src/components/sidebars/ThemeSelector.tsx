@@ -26,7 +26,8 @@ export default function SidebarThemeSelector() {
       <DropdownMenuPortal>
         <DropdownMenuSubContent>
           {themes.map((value) => {
-            const targetTheme = YasumuThemes[value as keyof typeof YasumuThemes];
+            const targetTheme =
+              YasumuThemes[value as keyof typeof YasumuThemes];
             if (!targetTheme) return null;
 
             return (

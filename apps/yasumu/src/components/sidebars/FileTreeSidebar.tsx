@@ -1,7 +1,11 @@
 import * as React from 'react';
 import { ChevronRight, File, Folder } from 'lucide-react';
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +22,8 @@ import { MdFolder } from 'react-icons/md';
 import { CreateInputDialog } from '../dialogs/CreateInputDialog';
 import { WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
 
-const truncate = (str: string, length: number) => (str.length > length ? `${str.slice(0, length)}...` : str);
+const truncate = (str: string, length: number) =>
+  str.length > length ? `${str.slice(0, length)}...` : str;
 
 export function FileTreeSidebar({
   fileTree,
@@ -28,7 +33,9 @@ export function FileTreeSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   fileTree: YasumuEntityTree<WorkspaceModuleType>[];
-  resolveIcon?: (entity: YasumuEntityTree<WorkspaceModuleType>) => () => React.ReactNode;
+  resolveIcon?: (
+    entity: YasumuEntityTree<WorkspaceModuleType>,
+  ) => () => React.ReactNode;
   onFileCreate?: (name: string) => void;
   onFolderCreate?: (name: string) => void;
 }) {
@@ -49,7 +56,11 @@ export function FileTreeSidebar({
                 >
                   <Folder className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                 </CreateInputDialog>
-                <CreateInputDialog title="Add new item" description="This will add a new item" onSubmit={onFileCreate}>
+                <CreateInputDialog
+                  title="Add new item"
+                  description="This will add a new item"
+                  onSubmit={onFileCreate}
+                >
                   <File className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                 </CreateInputDialog>
               </div>
@@ -75,7 +86,9 @@ function Tree({
   resolveIcon,
 }: {
   item: YasumuEntityTree<WorkspaceModuleType>;
-  resolveIcon?: (entity: YasumuEntityTree<WorkspaceModuleType>) => () => React.ReactNode;
+  resolveIcon?: (
+    entity: YasumuEntityTree<WorkspaceModuleType>,
+  ) => () => React.ReactNode;
 }) {
   const { name, children } = item;
 
@@ -92,7 +105,10 @@ function Tree({
 
   return (
     <SidebarMenuItem>
-      <Collapsible className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90" defaultOpen>
+      <Collapsible
+        className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+        defaultOpen
+      >
         <CollapsibleTrigger asChild>
           <SidebarMenuButton className="text-xs">
             <ChevronRight className="transition-transform" />

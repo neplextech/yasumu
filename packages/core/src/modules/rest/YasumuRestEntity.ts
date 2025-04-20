@@ -1,6 +1,10 @@
 import { generateId } from '@/common/utils.js';
 import { BaseEntity } from '../common/BaseEntity.js';
-import { ScriptType, type ExecutionOptions, type ExecutionResult } from '../common/types.js';
+import {
+  ScriptType,
+  type ExecutionOptions,
+  type ExecutionResult,
+} from '../common/types.js';
 import type { RestIndex } from './types.js';
 import type { YasumuRest } from './YasumuRest.js';
 import { HttpMethod } from '@/common/index.js';
@@ -143,7 +147,9 @@ export class YasumuRestEntity extends BaseEntity<RestEntitySchemaType> {
    * @param options The execution options
    * @returns The execution result
    */
-  public async execute(options: ExecutionOptions = {}): Promise<ExecutionResult> {
+  public async execute(
+    options: ExecutionOptions = {},
+  ): Promise<ExecutionResult> {
     const request = options.request ?? this.createInteractiveWebRequest();
     const response = await request.send().catch(() => null);
 

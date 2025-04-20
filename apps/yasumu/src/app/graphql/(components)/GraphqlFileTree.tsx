@@ -3,7 +3,11 @@ import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
 import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
-import { isGraphqlEntityTree, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
+import {
+  isGraphqlEntityTree,
+  WorkspaceModuleType,
+  YasumuEntityTree,
+} from '@yasumu/core';
 import { SiGraphql } from 'react-icons/si';
 
 export function GraphqlFileTree() {

@@ -24,7 +24,8 @@ export class YasumuEnvironmentManager {
   public constructor(public readonly workspace: YasumuWorkspace) {}
 
   public async loadEnvironments() {
-    const { environments } = this.workspace.getMetadata().getRawData().blocks.Environment;
+    const { environments } = this.workspace.getMetadata().getRawData()
+      .blocks.Environment;
 
     for (const id in environments) {
       const env = new YasumuEnvironment(this, environments[id]);
@@ -44,7 +45,8 @@ export class YasumuEnvironmentManager {
    * Get currently selected environment.
    */
   public getSelectedEnvironment(): YasumuEnvironment | null {
-    const selectedId = this.workspace.getMetadata().getRawData().blocks.Environment.selectedEnvironment;
+    const selectedId = this.workspace.getMetadata().getRawData().blocks
+      .Environment.selectedEnvironment;
     return this.getEnvironment(selectedId);
   }
 
@@ -65,11 +67,16 @@ export class YasumuEnvironmentManager {
 
       metadata.blocks.Environment.selectedEnvironment = id;
 
-      this.workspace.events.emit(YasumuWorkspaceEvents.EnvironmentSelected, env);
+      this.workspace.events.emit(
+        YasumuWorkspaceEvents.EnvironmentSelected,
+        env,
+      );
     } else {
       metadata.blocks.Environment.selectedEnvironment = '';
 
-      this.workspace.events.emit(YasumuWorkspaceEvents.EnvironmentSelectionRemoved);
+      this.workspace.events.emit(
+        YasumuWorkspaceEvents.EnvironmentSelectionRemoved,
+      );
     }
 
     await workspaceMetadata.save();
@@ -87,9 +94,13 @@ export class YasumuEnvironmentManager {
    * Creates a new environment.
    * @param options The options to create the environment with.
    */
-  public async createEnvironment(options: CreateEnvironmentOptions): Promise<YasumuEnvironment> {
+  public async createEnvironment(
+    options: CreateEnvironmentOptions,
+  ): Promise<YasumuEnvironment> {
     if (options.id && this.#environments.has(options.id)) {
-      throw new Error(`An environment with the id "${options.id}" already exists.`);
+      throw new Error(
+        `An environment with the id "${options.id}" already exists.`,
+      );
     }
 
     const env = new YasumuEnvironment(this, {

@@ -40,11 +40,17 @@ export function useCurrentEnvironment() {
   return yasumu.workspace?.environments.getSelectedEnvironment();
 }
 
-export default function WorkspaceProvider({ children }: React.PropsWithChildren) {
+export default function WorkspaceProvider({
+  children,
+}: React.PropsWithChildren) {
   const [yasumu, setYasumu] = useState<Yasumu | null>(null);
   const [loading, setLoading] = useState(true);
-  const [environments, setEnvironments] = React.useState<YasumuEnvironment[]>([]);
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = React.useState<string | null>(null);
+  const [environments, setEnvironments] = React.useState<YasumuEnvironment[]>(
+    [],
+  );
+  const [selectedEnvironmentId, setSelectedEnvironmentId] = React.useState<
+    string | null
+  >(null);
 
   useWebWarning();
 
@@ -53,7 +59,10 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
     setEnvironments(yasumu.workspace?.environments.getEnvironments() ?? []);
 
     const listener = () => {
-      console.log('environment event listener', yasumu.workspace?.environments.getEnvironments());
+      console.log(
+        'environment event listener',
+        yasumu.workspace?.environments.getEnvironments(),
+      );
       setEnvironments(yasumu.workspace?.environments.getEnvironments() ?? []);
     };
 
@@ -65,18 +74,48 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
       setSelectedEnvironmentId(null);
     };
 
-    yasumu.workspace?.events.on(YasumuWorkspaceEvents.EnvironmentCreated, listener);
-    yasumu.workspace?.events.on(YasumuWorkspaceEvents.EnvironmentDeleted, listener);
-    yasumu.workspace?.events.on(YasumuWorkspaceEvents.EnvironmentUpdated, listener);
-    yasumu.workspace?.events.on(YasumuWorkspaceEvents.EnvironmentSelected, selectionListener);
-    yasumu.workspace?.events.on(YasumuWorkspaceEvents.EnvironmentSelectionRemoved, unselectListener);
+    yasumu.workspace?.events.on(
+      YasumuWorkspaceEvents.EnvironmentCreated,
+      listener,
+    );
+    yasumu.workspace?.events.on(
+      YasumuWorkspaceEvents.EnvironmentDeleted,
+      listener,
+    );
+    yasumu.workspace?.events.on(
+      YasumuWorkspaceEvents.EnvironmentUpdated,
+      listener,
+    );
+    yasumu.workspace?.events.on(
+      YasumuWorkspaceEvents.EnvironmentSelected,
+      selectionListener,
+    );
+    yasumu.workspace?.events.on(
+      YasumuWorkspaceEvents.EnvironmentSelectionRemoved,
+      unselectListener,
+    );
 
     return () => {
-      yasumu.workspace?.events.off(YasumuWorkspaceEvents.EnvironmentCreated, listener);
-      yasumu.workspace?.events.off(YasumuWorkspaceEvents.EnvironmentDeleted, listener);
-      yasumu.workspace?.events.off(YasumuWorkspaceEvents.EnvironmentUpdated, listener);
-      yasumu.workspace?.events.off(YasumuWorkspaceEvents.EnvironmentSelected, selectionListener);
-      yasumu.workspace?.events.off(YasumuWorkspaceEvents.EnvironmentSelectionRemoved, unselectListener);
+      yasumu.workspace?.events.off(
+        YasumuWorkspaceEvents.EnvironmentCreated,
+        listener,
+      );
+      yasumu.workspace?.events.off(
+        YasumuWorkspaceEvents.EnvironmentDeleted,
+        listener,
+      );
+      yasumu.workspace?.events.off(
+        YasumuWorkspaceEvents.EnvironmentUpdated,
+        listener,
+      );
+      yasumu.workspace?.events.off(
+        YasumuWorkspaceEvents.EnvironmentSelected,
+        selectionListener,
+      );
+      yasumu.workspace?.events.off(
+        YasumuWorkspaceEvents.EnvironmentSelectionRemoved,
+        unselectListener,
+      );
     };
   }, [yasumu]);
 
@@ -104,7 +143,9 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
   }
 
   return (
-    <YasumuContext.Provider value={{ yasumu: yasumu, environments, selectedEnvironmentId }}>
+    <YasumuContext.Provider
+      value={{ yasumu: yasumu, environments, selectedEnvironmentId }}
+    >
       {!yasumu.workspace ? <NoWorkspaceScreen /> : children}
     </YasumuContext.Provider>
   );

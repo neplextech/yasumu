@@ -1,5 +1,8 @@
 import { RuntimeNotInitializedError } from '@/common/errors/RuntimeNotInitializedError.js';
-import { BaseScriptRuntime, type YasumuRuntimeData } from './BaseScriptRuntime.js';
+import {
+  BaseScriptRuntime,
+  type YasumuRuntimeData,
+} from './BaseScriptRuntime.js';
 
 // Types
 
@@ -82,7 +85,9 @@ export class WebWorkerRuntime extends BaseScriptRuntime {
 
       this.worker.onmessage = (event: MessageEvent<string>) => {
         try {
-          const responseData: WorkerResponse | WorkerError = JSON.parse(event.data);
+          const responseData: WorkerResponse | WorkerError = JSON.parse(
+            event.data,
+          );
           if ('error' in responseData) {
             reject(new Error(responseData.error.message));
           } else {
@@ -113,7 +118,10 @@ export class WebWorkerRuntime extends BaseScriptRuntime {
     return Promise.resolve();
   }
 
-  public async executeModule(module: string, code: string): Promise<WorkerResponse> {
+  public async executeModule(
+    module: string,
+    code: string,
+  ): Promise<WorkerResponse> {
     if (!this.worker) {
       throw new RuntimeNotInitializedError();
     }

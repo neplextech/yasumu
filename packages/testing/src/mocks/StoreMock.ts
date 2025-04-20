@@ -24,10 +24,15 @@ export class StoreMock implements StoreCommon {
     return this.#store.size;
   }
   public async load(): Promise<void> {}
-  public async onChange<T extends unknown>(cb: Callback<[key: string, value: T]>): Promise<Callback> {
+  public async onChange<T extends unknown>(
+    cb: Callback<[key: string, value: T]>,
+  ): Promise<Callback> {
     return () => {};
   }
-  public async onKeyChange<T extends unknown>(key: string, cb: Callback<[value: T]>): Promise<Callback> {
+  public async onKeyChange<T extends unknown>(
+    key: string,
+    cb: Callback<[value: T]>,
+  ): Promise<Callback> {
     return () => {};
   }
   public async reset(): Promise<void> {

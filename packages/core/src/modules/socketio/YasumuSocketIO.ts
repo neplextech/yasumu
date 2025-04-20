@@ -13,7 +13,9 @@ export class YasumuSocketIO extends YasumuBaseModule {
    * @param params The entity creation parameters.
    * @returns The created entity.
    */
-  public async create(params: Partial<{ name: string }> = {}): Promise<YasumuSocketIOEntity> {
+  public async create(
+    params: Partial<{ name: string }> = {},
+  ): Promise<YasumuSocketIOEntity> {
     const entity = new YasumuSocketIOEntity(this, {
       blocks: {
         Metadata: {

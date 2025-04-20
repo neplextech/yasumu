@@ -23,7 +23,9 @@ describe('FileSystem', () => {
   test('should have a copyFile method', async () => {
     const copyPath = path.join(__dirname, 'copyFile.txt');
     await yasumu.fs.copyFile(testFilePath, copyPath);
-    expect(fs.readFile(copyPath, { encoding: 'utf-8' })).resolves.toBe('Initial content for testing');
+    expect(fs.readFile(copyPath, { encoding: 'utf-8' })).resolves.toBe(
+      'Initial content for testing',
+    );
     yasumu.fs.remove(copyPath);
   });
 

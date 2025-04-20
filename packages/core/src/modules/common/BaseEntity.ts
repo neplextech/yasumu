@@ -65,14 +65,21 @@ export abstract class BaseEntity<T extends Record<string, any> = any> {
    * The full path to this entity
    */
   public get fullPath() {
-    return this.module.workspace.yasumu.utils.joinPathSync(this.module.getLocation(), this.path, this.filename);
+    return this.module.workspace.yasumu.utils.joinPathSync(
+      this.module.getLocation(),
+      this.path,
+      this.filename,
+    );
   }
 
   /**
    * The base path of this entity
    */
   public get basePath() {
-    return this.module.workspace.yasumu.utils.joinPathSync(this.module.getLocation(), this.path);
+    return this.module.workspace.yasumu.utils.joinPathSync(
+      this.module.getLocation(),
+      this.path,
+    );
   }
 
   /**
@@ -80,8 +87,11 @@ export abstract class BaseEntity<T extends Record<string, any> = any> {
    * @param path The new path
    */
   public async setPath(path: string) {
-    const normalizedPath = await this.module.workspace.yasumu.path.normalize(path);
-    const normalizedOldPath = await this.module.workspace.yasumu.path.normalize(this.data.blocks.Metadata.path);
+    const normalizedPath =
+      await this.module.workspace.yasumu.path.normalize(path);
+    const normalizedOldPath = await this.module.workspace.yasumu.path.normalize(
+      this.data.blocks.Metadata.path,
+    );
     const oldPath = this.fullPath;
     const oldIndexPath = this.basePath;
 
@@ -127,7 +137,10 @@ export abstract class BaseEntity<T extends Record<string, any> = any> {
   public async save() {
     const serialized = await this.serialize();
     await this.#ensurePath();
-    await this.module.workspace.yasumu.fs.writeTextFile(this.fullPath, serialized);
+    await this.module.workspace.yasumu.fs.writeTextFile(
+      this.fullPath,
+      serialized,
+    );
     return this.updateDependencies();
   }
 
@@ -141,7 +154,10 @@ export abstract class BaseEntity<T extends Record<string, any> = any> {
 
   async #ensurePath() {
     const exists = await this.module.workspace.yasumu.fs.exists(this.basePath);
-    if (!exists) await this.module.workspace.yasumu.fs.mkdir(this.basePath, { recursive: true });
+    if (!exists)
+      await this.module.workspace.yasumu.fs.mkdir(this.basePath, {
+        recursive: true,
+      });
   }
 
   /**
@@ -198,7 +214,9 @@ export abstract class BaseEntity<T extends Record<string, any> = any> {
    */
   public async serialize() {
     return this.module.schema.serialize(
-      this.data as unknown as YasumuSchemaParsableToType<YasumuSchemaParsableScript<_YasumuSchemaParsableScriptExpect>>,
+      this.data as unknown as YasumuSchemaParsableToType<
+        YasumuSchemaParsableScript<_YasumuSchemaParsableScriptExpect>
+      >,
     );
   }
 

@@ -26,7 +26,9 @@ export class InteractiveWebResponse {
     this.time = response.time;
     this.text = response.body ?? '';
 
-    const size = Number.parseInt(this.response.headers.get('content-length') || '');
+    const size = Number.parseInt(
+      this.response.headers.get('content-length') || '',
+    );
 
     if (Number.isNaN(size)) {
       const byteLength = new TextEncoder().encode(this.text).length;

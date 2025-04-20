@@ -7,7 +7,11 @@ import {
   DropdownMenuSubTrigger,
 } from '../ui/dropdown-menu';
 import { setAppLayout, useLayout } from '@/stores/AppLayout';
-import { YasumuLayout, YasumuLayoutIcons, YasumuLayoutList } from '@/lib/constants/layout';
+import {
+  YasumuLayout,
+  YasumuLayoutIcons,
+  YasumuLayoutList,
+} from '@/lib/constants/layout';
 import { VscLayout } from 'react-icons/vsc';
 
 export default function SidebarLayoutStyleSelector() {

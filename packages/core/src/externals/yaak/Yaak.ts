@@ -1,8 +1,15 @@
-import { createStandalone, type YasumuStandaloneFormat } from '@/standalone/types.js';
+import {
+  createStandalone,
+  type YasumuStandaloneFormat,
+} from '@/standalone/types.js';
 import { ExternalCollectionsProvider } from '../base/ExternalCollectionsProvider.js';
 import type { YaakCollection } from './types.js';
 import { YASUMU_WORKSPACE_ANNOTATION } from '@/common/constants.js';
-import { WorkspaceModuleType, type GraphqlIndex, type RestIndex } from '@/modules/index.js';
+import {
+  WorkspaceModuleType,
+  type GraphqlIndex,
+  type RestIndex,
+} from '@/modules/index.js';
 import type { GraphqlHttpMethod, HttpMethod } from '@yasumu/common';
 import type { RestEntitySchemaType } from '@/schema/RestEntitySchema.js';
 import type { GraphqlEntitySchemaType } from '@/schema/GraphqlEntitySchema.js';
@@ -97,7 +104,10 @@ export class Yaak extends ExternalCollectionsProvider<YaakCollection> {
   }
 
   public async import(data: YaakCollection): Promise<YasumuStandaloneFormat> {
-    if (data.yaakSchema !== schema) throw new Error('Unsupported Yaak schema. Currently only schema 2 is supported.');
+    if (data.yaakSchema !== schema)
+      throw new Error(
+        'Unsupported Yaak schema. Currently only schema 2 is supported.',
+      );
 
     const workspace = data.resources.workspaces[0];
 

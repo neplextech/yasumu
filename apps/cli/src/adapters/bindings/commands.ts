@@ -1,5 +1,11 @@
 import { COMMANDS_REGISTRY } from '../common/store.js';
-import type { Callback, CommandCommon, InvokeArgs, InvokeOptions, PluginListenerCommon } from '@yasumu/common';
+import type {
+  Callback,
+  CommandCommon,
+  InvokeArgs,
+  InvokeOptions,
+  PluginListenerCommon,
+} from '@yasumu/common';
 
 export class CommandsListener implements PluginListenerCommon {
   public constructor(
@@ -22,7 +28,11 @@ export class Commands implements CommandCommon {
     return new CommandsListener(0, event, plugin);
   }
 
-  public async invoke<T = unknown>(command: string, args?: InvokeArgs, options?: InvokeOptions): Promise<T> {
+  public async invoke<T = unknown>(
+    command: string,
+    args?: InvokeArgs,
+    options?: InvokeOptions,
+  ): Promise<T> {
     const handler = COMMANDS_REGISTRY.get(command);
 
     if (!handler) {

@@ -1,5 +1,12 @@
 'use client';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarInput } from '../ui/sidebar';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarInput,
+} from '../ui/sidebar';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { format } from 'date-fns';
@@ -196,7 +203,11 @@ export function MailSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <Switch className="shadow-none" />
           </Label>
         </div>
-        <SidebarInput placeholder="Type to search..." value={search} onChange={(v) => setSearch(v.target.value)} />
+        <SidebarInput
+          placeholder="Type to search..."
+          value={search}
+          onChange={(v) => setSearch(v.target.value)}
+        />
       </SidebarHeader>
       <SidebarContent className="zw-scrollbar">
         <SidebarGroup className="px-0">
@@ -210,10 +221,15 @@ export function MailSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 className="flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <div className="flex w-full items-center gap-2">
-                  <span>{mail.name}</span> <span className="ml-auto text-xs">{format(mail.date, 'PPpp')}</span>
+                  <span>{mail.name}</span>{' '}
+                  <span className="ml-auto text-xs">
+                    {format(mail.date, 'PPpp')}
+                  </span>
                 </div>
                 <span className="font-medium">{mail.subject}</span>
-                <span className="line-clamp-2 w-[260px] whitespace-break-spaces text-xs">{mail.teaser}</span>
+                <span className="line-clamp-2 w-[260px] whitespace-break-spaces text-xs">
+                  {mail.teaser}
+                </span>
               </Link>
             ))}
           </SidebarGroupContent>

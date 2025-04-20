@@ -82,7 +82,10 @@ export class YasumuIndexerService {
    */
   public async getIndexFile(location: string): Promise<Index> {
     const targetLocation = await this.resolveIndexPath(location);
-    const indexPath = this.workspace.yasumu.utils.joinPathSync(targetLocation, YasumuFileNamesMap.IndexFileName);
+    const indexPath = this.workspace.yasumu.utils.joinPathSync(
+      targetLocation,
+      YasumuFileNamesMap.IndexFileName,
+    );
     const exists = await this.workspace.yasumu.fs.exists(indexPath);
 
     if (!exists) {
@@ -101,8 +104,14 @@ export class YasumuIndexerService {
    */
   public async saveIndex(location: string, index: Index): Promise<void> {
     const targetLocation = await this.resolveIndexPath(location);
-    const indexPath = this.workspace.yasumu.utils.joinPathSync(targetLocation, YasumuFileNamesMap.IndexFileName);
+    const indexPath = this.workspace.yasumu.utils.joinPathSync(
+      targetLocation,
+      YasumuFileNamesMap.IndexFileName,
+    );
 
-    return this.workspace.yasumu.fs.writeTextFile(indexPath, JSON.stringify(index, null, 2));
+    return this.workspace.yasumu.fs.writeTextFile(
+      indexPath,
+      JSON.stringify(index, null, 2),
+    );
   }
 }

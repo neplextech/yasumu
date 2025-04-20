@@ -15,7 +15,15 @@ import {
 import { FaJava } from 'react-icons/fa';
 import { SidebarMenuButton } from '../ui/sidebar';
 import YasumuLogo from '../assets/YasumuLogo';
-import { SiGo, SiInsomnia, SiJavascript, SiOpenapiinitiative, SiPostman, SiPython, SiTypescript } from 'react-icons/si';
+import {
+  SiGo,
+  SiInsomnia,
+  SiJavascript,
+  SiOpenapiinitiative,
+  SiPostman,
+  SiPython,
+  SiTypescript,
+} from 'react-icons/si';
 
 export function AppMenu() {
   return (

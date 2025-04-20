@@ -4,7 +4,14 @@
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Trash, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GraphqlVariable } from '@/stores/GraphqlSchemaStore';
@@ -25,7 +32,9 @@ export default function KeyValueTable({
   const [pairs, setPairs] = useState<KeyValuePair[]>(() => {
     const initialPairs = Object.values(value) as KeyValuePair[];
 
-    return initialPairs.length ? initialPairs : [{ key: '', value: '', enabled: true }];
+    return initialPairs.length
+      ? initialPairs
+      : [{ key: '', value: '', enabled: true }];
   });
 
   const updatePairs = (newPairs: KeyValuePair[]) => {
@@ -48,11 +57,19 @@ export default function KeyValueTable({
 
   const deletePair = (index: number) => {
     const newPairs = pairs.filter((_, i) => i !== index);
-    updatePairs(newPairs.length ? newPairs : [{ key: '', value: '', enabled: true }]);
+    updatePairs(
+      newPairs.length ? newPairs : [{ key: '', value: '', enabled: true }],
+    );
   };
 
-  const updatePair = (index: number, field: keyof KeyValuePair, value: string | boolean) => {
-    const newPairs = pairs.map((pair, i) => (i === index ? { ...pair, [field]: value } : pair));
+  const updatePair = (
+    index: number,
+    field: keyof KeyValuePair,
+    value: string | boolean,
+  ) => {
+    const newPairs = pairs.map((pair, i) =>
+      i === index ? { ...pair, [field]: value } : pair,
+    );
     updatePairs(newPairs);
   };
 
@@ -89,9 +106,16 @@ export default function KeyValueTable({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     checked={pair.enabled}
-                    onCheckedChange={(checked) => updatePair(i, 'enabled', checked === true)}
+                    onCheckedChange={(checked) =>
+                      updatePair(i, 'enabled', checked === true)
+                    }
                   />
-                  <Button variant="ghost" size="icon" onClick={() => deletePair(i)} disabled={pairs.length === 1}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deletePair(i)}
+                    disabled={pairs.length === 1}
+                  >
                     <Trash className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
@@ -100,7 +124,11 @@ export default function KeyValueTable({
           ))}
         </TableBody>
       </Table>
-      <Button variant="link" onClick={addNewPair} className="text-sm p-0 h-auto font-normal">
+      <Button
+        variant="link"
+        onClick={addNewPair}
+        className="text-sm p-0 h-auto font-normal"
+      >
         <Plus className="mr-1 h-3 w-3" /> Add new row
       </Button>
     </div>

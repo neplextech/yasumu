@@ -47,4 +47,6 @@ export const GraphqlEntitySchema = t.script({
   },
 });
 
-export type GraphqlEntitySchemaType = YasumuSchemaParsableToType<typeof GraphqlEntitySchema>;
+export type GraphqlEntitySchemaType = YasumuSchemaParsableToType<
+  typeof GraphqlEntitySchema
+>;

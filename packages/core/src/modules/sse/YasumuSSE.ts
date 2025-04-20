@@ -13,7 +13,9 @@ export class YasumuSSE extends YasumuBaseModule {
    * @param params The entity creation parameters.
    * @returns The created entity.
    */
-  public async create(params: Partial<{ name: string }> = {}): Promise<YasumuSseEntity> {
+  public async create(
+    params: Partial<{ name: string }> = {},
+  ): Promise<YasumuSseEntity> {
     const entity = new YasumuSseEntity(this, {
       blocks: {
         Metadata: {

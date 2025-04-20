@@ -1,5 +1,11 @@
 'use client';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import React, { useState } from 'react';
 
@@ -24,12 +30,18 @@ export default function HttpMethodSelector() {
         setMethod(value);
       }}
     >
-      <SelectTrigger className={cn('w-[180px] font-mono font-bold', currentMethod?.color)}>
+      <SelectTrigger
+        className={cn('w-[180px] font-mono font-bold', currentMethod?.color)}
+      >
         <SelectValue placeholder="Method" />
       </SelectTrigger>
       <SelectContent>
         {HttpMethods.map((method, index) => (
-          <SelectItem key={index} value={method.name} className={cn('font-bold font-mono', method.color)}>
+          <SelectItem
+            key={index}
+            value={method.name}
+            className={cn('font-bold font-mono', method.color)}
+          >
             {method.name}
           </SelectItem>
         ))}

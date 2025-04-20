@@ -3,7 +3,11 @@ import { FileTreeSidebar } from '@/components/sidebars/FileTreeSidebar';
 import { useYasumuFileTree } from '@/hooks/use-yasumu-file-tree';
 import { handleErrorToast } from '@/lib/handlers/handleErrorToast';
 import { useYasumu } from '@/providers/WorkspaceProvider';
-import { isSocketioEntityTree, WorkspaceModuleType, YasumuEntityTree } from '@yasumu/core';
+import {
+  isSocketioEntityTree,
+  WorkspaceModuleType,
+  YasumuEntityTree,
+} from '@yasumu/core';
 import { SiSocketdotio } from 'react-icons/si';
 
 export function SocketIOFileTree() {

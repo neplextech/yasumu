@@ -1,6 +1,9 @@
 import type { WebsocketEntitySchemaType } from '@/schema/WebsocketEntitySchema.js';
 import { BaseEntity } from '../common/BaseEntity.js';
-import { type ExecutionOptions, type ExecutionResult } from '../common/types.js';
+import {
+  type ExecutionOptions,
+  type ExecutionResult,
+} from '../common/types.js';
 import type { YasumuWebSocket } from './YasumuWebSocket.js';
 import type { DeepPartial } from '../rest/YasumuRestEntity.js';
 import { generateId } from '@/common/utils.js';

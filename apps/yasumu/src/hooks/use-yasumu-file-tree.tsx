@@ -1,9 +1,15 @@
 'use client';
 import { useYasumu } from '@/providers/WorkspaceProvider';
-import { WorkspaceModuleType, YasumuEntityTree, YasumuWorkspaceEvents } from '@yasumu/core';
+import {
+  WorkspaceModuleType,
+  YasumuEntityTree,
+  YasumuWorkspaceEvents,
+} from '@yasumu/core';
 import { useEffect, useState } from 'react';
 
-export function useYasumuFileTree<T extends WorkspaceModuleType>(type: T): YasumuEntityTree<T>[] {
+export function useYasumuFileTree<T extends WorkspaceModuleType>(
+  type: T,
+): YasumuEntityTree<T>[] {
   const { yasumu } = useYasumu();
   const [tree, setTree] = useState<YasumuEntityTree<T>[]>([]);
 
@@ -24,7 +30,10 @@ export function useYasumuFileTree<T extends WorkspaceModuleType>(type: T): Yasum
     yasumu.workspace.events.on(YasumuWorkspaceEvents.RebuildTree, fetchTree);
 
     return () => {
-      yasumu.workspace?.events.off(YasumuWorkspaceEvents.RebuildTree, fetchTree);
+      yasumu.workspace?.events.off(
+        YasumuWorkspaceEvents.RebuildTree,
+        fetchTree,
+      );
     };
   }, [type, yasumu.workspace]);
 

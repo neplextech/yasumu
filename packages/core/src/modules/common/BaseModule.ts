@@ -14,7 +14,9 @@ import type { RootIndex } from '@/YasumuWorkspaceMetadata.js';
 import { YasumuWorkspaceEvents } from '@/events/common.js';
 import type { YasumuEntityMap } from './entities.js';
 
-export abstract class YasumuBaseModule<T extends WorkspaceModuleType = WorkspaceModuleType> {
+export abstract class YasumuBaseModule<
+  T extends WorkspaceModuleType = WorkspaceModuleType,
+> {
   /**
    * The type of this module.
    */
@@ -22,7 +24,9 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
   /**
    * The schema for the entities in this module.
    */
-  public abstract readonly schema: YasumuSchemaActions<YasumuSchemaParsableScript<_YasumuSchemaParsableScriptExpect>>;
+  public abstract readonly schema: YasumuSchemaActions<
+    YasumuSchemaParsableScript<_YasumuSchemaParsableScriptExpect>
+  >;
 
   /**
    * The base module for Yasumu.
@@ -98,7 +102,10 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
     if (!rootIndex) return null;
 
     const location = this.getLocation();
-    const targetPath = this.workspace.yasumu.utils.joinPathSync(location, rootIndex.path);
+    const targetPath = this.workspace.yasumu.utils.joinPathSync(
+      location,
+      rootIndex.path,
+    );
     const target = await this.workspace.indexer.findIndex(targetPath, id);
 
     return target;
@@ -117,7 +124,9 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
     return this.getRootIndex().entities[id] ?? null;
   }
 
-  public async getRawEntities(index?: RootIndex<unknown>): Promise<YasumuEntityDataMap[T][]> {
+  public async getRawEntities(
+    index?: RootIndex<unknown>,
+  ): Promise<YasumuEntityDataMap[T][]> {
     const rootIndex = index ?? this.getRootIndex();
     const entities = await Promise.all(
       Object.keys(rootIndex.entities).map((id) => {
@@ -144,17 +153,32 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
 
     const indexes = await Promise.all(
       Object.values(index.entities)
-        .filter((e) => e && typeof e === 'object' && 'path' in e && e.path && typeof e.path === 'string')
+        .filter(
+          (e) =>
+            e &&
+            typeof e === 'object' &&
+            'path' in e &&
+            e.path &&
+            typeof e.path === 'string',
+        )
         .map(async (e) => {
           const path = e.path;
-          const targetLocation = this.workspace.yasumu.utils.joinPathSync(this.getLocation(), path);
-          return { [path]: await this.workspace.indexer.getIndexFile(targetLocation) };
+          const targetLocation = this.workspace.yasumu.utils.joinPathSync(
+            this.getLocation(),
+            path,
+          );
+          return {
+            [path]: await this.workspace.indexer.getIndexFile(targetLocation),
+          };
         }),
     );
 
     return {
       indexes: indexes.reduce((acc, curr) => ({ ...acc, ...curr }), {}),
-      entities: entities.reduce((acc, curr) => ({ ...acc, [curr.blocks.Metadata.id]: curr }), {}),
+      entities: entities.reduce(
+        (acc, curr) => ({ ...acc, [curr.blocks.Metadata.id]: curr }),
+        {},
+      ),
     };
   }
 
@@ -163,7 +187,10 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
    * @param data The data to import.
    * @param options The options for importing.
    */
-  public async fromStandalone(data: YasumuStandaloneFormat['entities'][T], options: { overwrite?: boolean }) {
+  public async fromStandalone(
+    data: YasumuStandaloneFormat['entities'][T],
+    options: { overwrite?: boolean },
+  ) {
     const { entities, indexes } = data ?? {};
 
     if (!entities || !indexes) return;
@@ -173,7 +200,10 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
     await this.ensureLocation();
 
     for (const entity of Object.values(entities)) {
-      const location = this.workspace.yasumu.utils.joinPathSync(this.getLocation(), entity.blocks.Metadata.path);
+      const location = this.workspace.yasumu.utils.joinPathSync(
+        this.getLocation(),
+        entity.blocks.Metadata.path,
+      );
       const pathExists = await fs.exists(location);
 
       const entityPath = this.workspace.yasumu.utils.joinPathSync(
@@ -197,7 +227,10 @@ export abstract class YasumuBaseModule<T extends WorkspaceModuleType = Workspace
     }
 
     for (const [path, index] of Object.entries(indexes)) {
-      const location = this.workspace.yasumu.utils.joinPathSync(this.getLocation(), path);
+      const location = this.workspace.yasumu.utils.joinPathSync(
+        this.getLocation(),
+        path,
+      );
       await this.workspace.indexer.saveIndex(location, index);
     }
   }

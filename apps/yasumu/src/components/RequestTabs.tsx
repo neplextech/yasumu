@@ -17,9 +17,19 @@ export function RequestTabs({ tabs }: { tabs: RequestTab[] }) {
 
   return (
     <div className="flex items-center gap-2 select-none max-w-[80vw]">
-      <div ref={ref} className="flex flex-row items-center w-full overflow-x-auto zw-scrollbar border-x">
+      <div
+        ref={ref}
+        className="flex flex-row items-center w-full overflow-x-auto zw-scrollbar border-x"
+      >
         {tabs.map((tab, id, arr) => {
-          return <RequestTab tab={tab} key={id} isFirst={id === 0} isLast={id === arr.length - 1} />;
+          return (
+            <RequestTab
+              tab={tab}
+              key={id}
+              isFirst={id === 0}
+              isLast={id === arr.length - 1}
+            />
+          );
         })}
       </div>
       <EnvironmentSelector />
@@ -27,7 +37,15 @@ export function RequestTabs({ tabs }: { tabs: RequestTab[] }) {
   );
 }
 
-function RequestTab({ tab, isFirst, isLast }: { tab: RequestTab; isFirst: boolean; isLast: boolean }) {
+function RequestTab({
+  tab,
+  isFirst,
+  isLast,
+}: {
+  tab: RequestTab;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const isActive = false;
 
   return (

@@ -4,7 +4,8 @@ import { atom } from 'nanostores';
 
 export const $graphqlSchema = atom<IntrospectionQuery | null>(null);
 export const $graphqlResult = atom<string>('');
-export const $graphqlDocument = atom<string>(`query GetProductList($term: String, $take: Int) {
+export const $graphqlDocument =
+  atom<string>(`query GetProductList($term: String, $take: Int) {
   products(
     options: {
       take: $take
@@ -50,7 +51,9 @@ export function useGraphqlSchema() {
 }
 
 export function setGraphqlResult(result: string) {
-  $graphqlResult.set(typeof result !== 'string' ? JSON.stringify(result, null, 2) : result);
+  $graphqlResult.set(
+    typeof result !== 'string' ? JSON.stringify(result, null, 2) : result,
+  );
 }
 
 export function useGraphqlResult() {

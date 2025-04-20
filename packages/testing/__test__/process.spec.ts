@@ -3,9 +3,11 @@ import { yasumu } from '../src';
 
 describe('Process', () => {
   test('should define an exit method', async () => {
-    const processExitSpy = vi.spyOn(yasumu.process, 'exit').mockImplementation(() => {
-      return Promise.resolve();
-    });
+    const processExitSpy = vi
+      .spyOn(yasumu.process, 'exit')
+      .mockImplementation(() => {
+        return Promise.resolve();
+      });
 
     await yasumu.process.exit(0);
 

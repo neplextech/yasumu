@@ -149,11 +149,21 @@ export interface YasumuModuleTypeMap {
   [WorkspaceModuleType.Websocket]: YasumuWebSocket;
 }
 
-export const isEntityTree = (entity: unknown): entity is YasumuEntityTree<WorkspaceModuleType> => {
-  return typeof entity === 'object' && entity !== null && 'id' in entity && 'name' in entity && '__type' in entity;
+export const isEntityTree = (
+  entity: unknown,
+): entity is YasumuEntityTree<WorkspaceModuleType> => {
+  return (
+    typeof entity === 'object' &&
+    entity !== null &&
+    'id' in entity &&
+    'name' in entity &&
+    '__type' in entity
+  );
 };
 
-export const isRestEntityTree = (entity: unknown): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['Rest']> => {
+export const isRestEntityTree = (
+  entity: unknown,
+): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['Rest']> => {
   return isEntityTree(entity) && entity.__type === WorkspaceModuleType.Rest;
 };
 
@@ -163,11 +173,15 @@ export const isGraphqlEntityTree = (
   return isEntityTree(entity) && entity.__type === WorkspaceModuleType.GraphQL;
 };
 
-export const isSmtpEntityTree = (entity: unknown): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['SMTP']> => {
+export const isSmtpEntityTree = (
+  entity: unknown,
+): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['SMTP']> => {
   return isEntityTree(entity) && entity.__type === WorkspaceModuleType.SMTP;
 };
 
-export const isSseEntityTree = (entity: unknown): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['SSE']> => {
+export const isSseEntityTree = (
+  entity: unknown,
+): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['SSE']> => {
   return isEntityTree(entity) && entity.__type === WorkspaceModuleType.SSE;
 };
 
@@ -180,5 +194,7 @@ export const isSocketioEntityTree = (
 export const isWebsocketEntityTree = (
   entity: unknown,
 ): entity is YasumuEntityTree<(typeof WorkspaceModuleType)['Websocket']> => {
-  return isEntityTree(entity) && entity.__type === WorkspaceModuleType.Websocket;
+  return (
+    isEntityTree(entity) && entity.__type === WorkspaceModuleType.Websocket
+  );
 };

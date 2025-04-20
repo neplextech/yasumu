@@ -1,7 +1,10 @@
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-export default function WebSocketLogo({ className, ...props }: React.SVGAttributes<SVGElement>) {
+export default function WebSocketLogo({
+  className,
+  ...props
+}: React.SVGAttributes<SVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

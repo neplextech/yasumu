@@ -7,7 +7,9 @@ const workspace = await yasumu.openWorkspace({
   path: dir,
 });
 
-const target = Object.keys(workspace.getMetadata().getRawData().blocks.GraphQL.entities)[0];
+const target = Object.keys(
+  workspace.getMetadata().getRawData().blocks.GraphQL.entities,
+)[0];
 
 let graphql: YasumuGraphqlEntity;
 if (!target)

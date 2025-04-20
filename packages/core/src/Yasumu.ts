@@ -1,4 +1,7 @@
-import { YasumuWorkspace, type YasumuWorkspaceOptions } from '@/YasumuWorkspace.js';
+import {
+  YasumuWorkspace,
+  type YasumuWorkspaceOptions,
+} from '@/YasumuWorkspace.js';
 import type {
   ApplicationCommon,
   CommandCommon,

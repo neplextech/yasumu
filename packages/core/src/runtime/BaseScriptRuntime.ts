@@ -19,5 +19,8 @@ export abstract class BaseScriptRuntime {
    * @param module The module specifier.
    * @param code The code to execute.
    */
-  public abstract executeModule(module: string, code: string): Promise<YasumuRuntimeData>;
+  public abstract executeModule(
+    module: string,
+    code: string,
+  ): Promise<YasumuRuntimeData>;
 }

@@ -12,7 +12,10 @@ let id = 0;
 type WsListener = Set<Callback<[WsMessage], unknown>>;
 
 export class WebSocketMock implements WebSocketCommon {
-  async connect(url: string, config?: WsConnectionConfig): Promise<WebSocketImpl> {
+  async connect(
+    url: string,
+    config?: WsConnectionConfig,
+  ): Promise<WebSocketImpl> {
     const nextId = id++;
 
     return new Promise<WebSocketInner>((resolve, reject) => {

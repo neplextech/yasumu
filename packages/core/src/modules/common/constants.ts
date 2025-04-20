@@ -7,4 +7,5 @@ export const WorkspaceModuleType = {
   SMTP: 'SMTP',
 } as const;
 
-export type WorkspaceModuleType = (typeof WorkspaceModuleType)[keyof typeof WorkspaceModuleType];
+export type WorkspaceModuleType =
+  (typeof WorkspaceModuleType)[keyof typeof WorkspaceModuleType];

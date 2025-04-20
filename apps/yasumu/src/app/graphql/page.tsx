@@ -34,7 +34,9 @@ export default function Home() {
 
     (async () => {
       console.log(yasumu.workspace?.getMetadata().getRawData());
-      const target = Object.keys(yasumu.workspace!.getMetadata().getRawData().blocks.GraphQL.entities)[0];
+      const target = Object.keys(
+        yasumu.workspace!.getMetadata().getRawData().blocks.GraphQL.entities,
+      )[0];
       console.log({ target });
       if (!target) {
         const entity = await yasumu.workspace!.graphql.create({

@@ -1,6 +1,10 @@
 'use client';
 import React from 'react';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from './ui/resizable';
 import { useLayout } from '@/stores/AppLayout';
 import { YasumuLayout } from '@/lib/constants/layout';
 
@@ -16,7 +20,8 @@ export function ResizableApplicationLayout({
   bottom?: React.ReactNode;
 }) {
   const appLayout = useLayout();
-  const direction = appLayout === YasumuLayout.Classic ? 'vertical' : 'horizontal';
+  const direction =
+    appLayout === YasumuLayout.Classic ? 'vertical' : 'horizontal';
 
   return (
     <ResizablePanelGroup direction="horizontal" autoSaveId={`${id}:1`}>

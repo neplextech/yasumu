@@ -45,8 +45,24 @@ export interface FileSystemCommon {
   readTextFile(path: FilePath): Promise<string>;
   remove(path: FilePath, options?: RemoveOptions): Promise<void>;
   rename(oldPath: FilePath, newPath: FilePath): Promise<void>;
-  watch(paths: FilePath | FilePath[], callback: Callback, options?: WatchOptions): Promise<Callback>;
-  watchImmediate(paths: FilePath | FilePath[], callback: Callback, options?: WatchOptions): Promise<Callback>;
-  writeFile(path: FilePath, data: Uint8Array, options?: WriteFileOptions): Promise<void>;
-  writeTextFile(path: FilePath, data: string, options?: WriteFileOptions): Promise<void>;
+  watch(
+    paths: FilePath | FilePath[],
+    callback: Callback,
+    options?: WatchOptions,
+  ): Promise<Callback>;
+  watchImmediate(
+    paths: FilePath | FilePath[],
+    callback: Callback,
+    options?: WatchOptions,
+  ): Promise<Callback>;
+  writeFile(
+    path: FilePath,
+    data: Uint8Array,
+    options?: WriteFileOptions,
+  ): Promise<void>;
+  writeTextFile(
+    path: FilePath,
+    data: string,
+    options?: WriteFileOptions,
+  ): Promise<void>;
 }

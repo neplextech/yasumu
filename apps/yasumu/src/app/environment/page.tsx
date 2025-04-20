@@ -50,7 +50,10 @@ export default function Environment() {
       <div className="pb-4 border-b mb-4">
         <h2 className="text-foreground/95 font-medium">{env.name}</h2>
         <h3 className="text-foreground/70 text-sm">
-          Environment ID: <code className="font-semibold bg-secondary px-1 select-text cursor-default">{env.id}</code>
+          Environment ID:{' '}
+          <code className="font-semibold bg-secondary px-1 select-text cursor-default">
+            {env.id}
+          </code>
         </h3>
         <Label className="flex gap-3 items-center mt-4">
           <Checkbox
@@ -73,7 +76,9 @@ export default function Environment() {
       <div className="space-y-12">
         <div>
           <h3 className="text-foreground/90 text-sm font-medium">Variables</h3>
-          <p className="text-foreground/70 text-sm mt-1">Variable will be publicly exported in the workspace.</p>
+          <p className="text-foreground/70 text-sm mt-1">
+            Variable will be publicly exported in the workspace.
+          </p>
           <div className="my-4">
             <EnvVarsTable envVars={envVars} setEnvVars={setEnvVars} />
           </div>
@@ -81,20 +86,28 @@ export default function Environment() {
 
         <div>
           <h3 className="text-foreground/90 text-sm font-medium">Secrets</h3>
-          <p className="text-foreground/70 text-sm mt-1">Secret will not be exported in the workspace.</p>
+          <p className="text-foreground/70 text-sm mt-1">
+            Secret will not be exported in the workspace.
+          </p>
           <div className="my-4">
             <EnvVarsTable envVars={envSecrets} setEnvVars={setEnvSecrets} />
           </div>
         </div>
 
         <div>
-          <h3 className="text-foreground/90 text-sm font-medium">Danger Zone</h3>
-          <p className="text-foreground/70 text-sm mt-1 mb-2">Delete this environment.</p>
+          <h3 className="text-foreground/90 text-sm font-medium">
+            Danger Zone
+          </h3>
+          <p className="text-foreground/70 text-sm mt-1 mb-2">
+            Delete this environment.
+          </p>
           <AlertConfirm
             onConfirm={handleErrorToast(async () => {
               await env.delete();
               toast.success('Environment deleted!');
-              router.replace(`/environment${environments.length > 1 ? `?env=${environments[0].id}` : ''}`);
+              router.replace(
+                `/environment${environments.length > 1 ? `?env=${environments[0].id}` : ''}`,
+              );
             })}
           >
             <Button variant="destructive">

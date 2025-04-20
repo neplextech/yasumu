@@ -1,4 +1,9 @@
-import type { Callback, StoreCommon, StoreOptions, StoreType } from '@yasumu/common';
+import type {
+  Callback,
+  StoreCommon,
+  StoreOptions,
+  StoreType,
+} from '@yasumu/common';
 
 export class Store implements StoreCommon {
   #store = new Map<string, unknown>();
@@ -50,7 +55,9 @@ export class Store implements StoreCommon {
 
   public async load(): Promise<void> {}
 
-  public async onChange<T extends unknown>(cb: Callback<[key: string, value: T]>): Promise<Callback> {
+  public async onChange<T extends unknown>(
+    cb: Callback<[key: string, value: T]>,
+  ): Promise<Callback> {
     this.#anyChange.add(cb);
 
     return () => {
@@ -58,7 +65,10 @@ export class Store implements StoreCommon {
     };
   }
 
-  public async onKeyChange<T extends unknown>(key: string, cb: Callback<[value: T]>): Promise<Callback> {
+  public async onKeyChange<T extends unknown>(
+    key: string,
+    cb: Callback<[value: T]>,
+  ): Promise<Callback> {
     this.#keys.set(key, cb);
 
     return () => {
@@ -83,7 +93,9 @@ export class Store implements StoreCommon {
     return Array.from(this.#store.values()) as T[];
   }
 
-  async #transaction<R, F extends (store: Map<string, unknown>) => Awaited<R>>(cb: F): Promise<ReturnType<F>> {
+  async #transaction<R, F extends (store: Map<string, unknown>) => Awaited<R>>(
+    cb: F,
+  ): Promise<ReturnType<F>> {
     const clone = new Map(this.#store);
 
     let result: any;

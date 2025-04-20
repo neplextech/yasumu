@@ -1,7 +1,14 @@
-import { createStandalone, type YasumuStandaloneFormat } from '@/standalone/types.js';
+import {
+  createStandalone,
+  type YasumuStandaloneFormat,
+} from '@/standalone/types.js';
 import { ExternalCollectionsProvider } from '../base/ExternalCollectionsProvider.js';
 import type { InsomniaCollection } from './types.js';
-import { WorkspaceModuleType, type GraphqlIndex, type RestIndex } from '@/modules/index.js';
+import {
+  WorkspaceModuleType,
+  type GraphqlIndex,
+  type RestIndex,
+} from '@/modules/index.js';
 import { YASUMU_WORKSPACE_ANNOTATION } from '@/common/constants.js';
 import { GraphqlHttpMethod, HttpMethod } from '@yasumu/common';
 import { generateId } from '@/common/utils.js';
@@ -104,8 +111,13 @@ export class Insomnia extends ExternalCollectionsProvider<InsomniaCollection> {
     };
   }
 
-  public async import(data: InsomniaCollection): Promise<YasumuStandaloneFormat> {
-    if (!('__export_source' in data) || !data.__export_source.startsWith('insomnia')) {
+  public async import(
+    data: InsomniaCollection,
+  ): Promise<YasumuStandaloneFormat> {
+    if (
+      !('__export_source' in data) ||
+      !data.__export_source.startsWith('insomnia')
+    ) {
       throw new Error('Invalid insomnia collection');
     }
 
@@ -119,7 +131,10 @@ export class Insomnia extends ExternalCollectionsProvider<InsomniaCollection> {
       .filter(
         (r) =>
           r._type === 'request' &&
-          r.headers?.some((h) => h.name === 'Content-Type' && h.value === 'application/graphql'),
+          r.headers?.some(
+            (h) =>
+              h.name === 'Content-Type' && h.value === 'application/graphql',
+          ),
       )
       .map((r) => {
         return {
@@ -159,7 +174,10 @@ export class Insomnia extends ExternalCollectionsProvider<InsomniaCollection> {
       .filter(
         (r) =>
           r._type === 'request' &&
-          r.headers?.some((h) => h.name === 'Content-Type' && h.value !== 'application/graphql'),
+          r.headers?.some(
+            (h) =>
+              h.name === 'Content-Type' && h.value !== 'application/graphql',
+          ),
       )
       .map((r) => {
         return {
@@ -175,7 +193,8 @@ export class Insomnia extends ExternalCollectionsProvider<InsomniaCollection> {
               path: '/',
             },
             Request: {
-              headers: r.headers?.map((h) => ({ key: h.name, value: h.value })) ?? [],
+              headers:
+                r.headers?.map((h) => ({ key: h.name, value: h.value })) ?? [],
               url: r.url ?? '',
               body: r.body?.text ?? null,
             },

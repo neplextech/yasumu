@@ -17,13 +17,17 @@ import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-export function EnvironmentSidebar(props: React.ComponentProps<typeof Sidebar>) {
+export function EnvironmentSidebar(
+  props: React.ComponentProps<typeof Sidebar>,
+) {
   const { yasumu, environments, selectedEnvironmentId } = useYasumu();
   const router = useRouter();
   const params = useSearchParams();
 
   const createEnvironment = handleErrorToast(async (name: string) => {
-    const env = await yasumu.workspace?.environments.createEnvironment({ name });
+    const env = await yasumu.workspace?.environments.createEnvironment({
+      name,
+    });
     if (!env) return;
 
     toast.success('Environment added!', {
@@ -76,7 +80,8 @@ export function EnvironmentSidebar(props: React.ComponentProps<typeof Sidebar>) 
                     <Check
                       className={cn('size-4', {
                         'text-green-500': selectedEnvironmentId === env.id,
-                        'text-muted-foreground': selectedEnvironmentId !== env.id,
+                        'text-muted-foreground':
+                          selectedEnvironmentId !== env.id,
                       })}
                     />
                     <span className="text-foreground">{env.name}</span>
