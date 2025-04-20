@@ -76,8 +76,9 @@ For any queries, you can contact the maintainers at [contact@yasumu.dev](mailto:
 
 ## Core Team
 
-| Name     | Role               | Links                                 |
-| -------- | ------------------ | ------------------------------------- |
-| Twilight | Project Lead       | [GitHub](https://github.com/twlite)   |
-| Zyrouge  | Co-Lead            | [GitHub](https://github.com/zyrouge)  |
-| Anish    | Frontend Developer | [GitHub](https://github.com/novanish) |
+| Name     | Role                | Links                                   |
+| -------- | ------------------- | --------------------------------------- |
+| Twilight | Project Lead        | [GitHub](https://github.com/twlite)     |
+| Zyrouge  | Co-Lead             | [GitHub](https://github.com/zyrouge)    |
+| Samir    | Fullstack Developer | [GitHub](https://github.com/samir-byte) |
+| Anish    | Frontend Developer  | [GitHub](https://github.com/novanish)   |
