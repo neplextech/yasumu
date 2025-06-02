@@ -19,8 +19,8 @@ export default function SidebarLayoutStyleSelector() {
 
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger>
-        <VscLayout />
+      <DropdownMenuSubTrigger className="gap-2">
+        <VscLayout className="size-4" />
         Layout
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>

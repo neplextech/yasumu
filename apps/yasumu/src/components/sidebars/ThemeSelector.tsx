@@ -19,7 +19,7 @@ export default function SidebarThemeSelector() {
 
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger>
+      <DropdownMenuSubTrigger className="gap-2">
         <Palette className="size-4" />
         Themes
       </DropdownMenuSubTrigger>

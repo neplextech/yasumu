@@ -2,6 +2,7 @@
 import { CommandCommon, YasumuBootstrapOptions } from '@yasumu/core';
 import memfs from 'memfs';
 import { createVolume } from 'memfs/lib/volume-localstorage';
+// @ts-ignore
 import bpath from 'path-browserify';
 import type {
   Callback,
