@@ -5,12 +5,18 @@ import {
   providePrismaClientExceptionFilter,
 } from 'nestjs-prisma';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AuthModule } from './modules/auth/auth.module';
+import { WorkspaceModule } from './modules/workspace/workspace.module';
+import { TeamModule } from './modules/team/team.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot(),
     PrismaModule.forRoot({ isGlobal: true }),
     HealthModule,
+    AuthModule,
+    WorkspaceModule,
+    TeamModule,
   ],
   controllers: [],
   providers: [providePrismaClientExceptionFilter()],

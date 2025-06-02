@@ -43,7 +43,6 @@
     "@yasumu/common": "workspace:^",
     "@yasumu/schema": "workspace:^",
     "graphql": "^16.9.0",
-    "mitt": "^3.0.1",
-    "nanoid": "^5.0.9"
+    "nanoid": "^5.1.5"
   }
 }

@@ -15,16 +15,41 @@ model Configuration {
 }
 
 model User {
-    id        String   @id @default(cuid())
-    email     String   @unique
-    password  String
-    version   String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
-    teamId    String?  @map("team_id")
+    id           String        @id @default(cuid())
+    email        String        @unique
+    version      String?
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+    teamId       String?       @map("team_id")
+    authAccounts AuthAccount[]
 
     @@index([teamId])
+}
+
+model AuthAccount {
+    id           String    @id @default(cuid())
+    provider     String
+    providerId   String
+    accessToken  String?   @map("access_token")
+    refreshToken String?   @map("refresh_token")
+    tokenExpires DateTime? @map("token_expires")
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+    user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId       String    @map("user_id")
+
+    @@unique([provider, providerId])
+    @@index([userId])
+}
+
+model AuthProvider {
+    id        String   @id @default(cuid())
+    name      String   @unique
+    enabled   Boolean  @default(true)
+    config    Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model Team {
@@ -37,18 +62,14 @@ model Team {
 }
 
 model Workspace {
-    id           String        @id @default(cuid())
+    id           String            @id @default(cuid())
     name         String
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
+    createdAt    DateTime          @default(now())
+    updatedAt    DateTime          @updatedAt
     environments Environment[]
-    rest         Rest[]
-    graphql      GraphQL[]
-    webSocket    WebSocket[]
-    socketIO     SocketIO[]
-    smtp         Smtp[]
-    team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
-    teamId       String?       @map("team_id")
+    entities     WorkspaceEntity[]
+    team         Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+    teamId       String?           @map("team_id")
 
     @@index([teamId])
 }
@@ -66,52 +87,40 @@ model Environment {
     @@index([workspaceId])
 }
 
-model Rest {
-    id          String    @id @default(cuid())
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-    workspaceId String    @map("workspace_id")
+model WorkspaceEntity {
+    id          String              @id @default(cuid())
+    name        String
+    type        WorkspaceEntityType
+    createdAt   DateTime            @default(now())
+    updatedAt   DateTime            @updatedAt
+    workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+    workspaceId String              @map("workspace_id")
+    parent      WorkspaceEntity?    @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+    parentId    String?             @map("parent_id")
+    children    WorkspaceEntity[]   @relation("EntityHierarchy")
+    contents    WorkspaceContent[]
 
     @@index([workspaceId])
+    @@index([parentId])
 }
 
-model GraphQL {
-    id          String    @id @default(cuid())
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-    workspaceId String    @map("workspace_id")
+model WorkspaceContent {
+    id        String              @id @default(cuid())
+    createdAt DateTime            @default(now())
+    updatedAt DateTime            @updatedAt
+    entity    WorkspaceEntity     @relation(fields: [entityId], references: [id], onDelete: Cascade)
+    entityId  String              @map("entity_id")
+    type      WorkspaceEntityType
+    content   Json
+    version   Int                 @default(1)
 
-    @@index([workspaceId])
+    @@index([entityId])
 }
 
-model WebSocket {
-    id          String    @id @default(cuid())
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-    workspaceId String    @map("workspace_id")
-
-    @@index([workspaceId])
-}
-
-model SocketIO {
-    id          String    @id @default(cuid())
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-    workspaceId String    @map("workspace_id")
-
-    @@index([workspaceId])
-}
-
-model Smtp {
-    id          String    @id @default(cuid())
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-    workspaceId String    @map("workspace_id")
-
-    @@index([workspaceId])
+enum WorkspaceEntityType {
+    REST
+    GRAPHQL
+    WEBSOCKET
+    SOCKETIO
+    SMTP
 }
