@@ -1,7 +1,8 @@
 import { StatementSync } from 'node:sqlite';
 import type { Database } from '../db.ts';
+import { DatabaseTable } from './common.ts';
 
-export class ErrorsTable {
+export class ErrorsTable implements DatabaseTable {
   private insertStatement: StatementSync;
 
   public constructor(private readonly db: Database) {

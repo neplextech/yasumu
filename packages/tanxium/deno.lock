@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@hono/hono@4.6.9": "4.6.9",
+    "jsr:@hono/hono@4.7.11": "4.7.11",
     "npm:@types/node@*": "22.14.1",
     "npm:hono@4.6.9": "4.6.9",
     "npm:nanoid@5.1.5": "5.1.5"
