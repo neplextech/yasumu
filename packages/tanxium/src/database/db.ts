@@ -1,29 +1,24 @@
 import { DatabaseSync } from 'node:sqlite';
-import { ErrorsTable } from './tables/errors.ts';
-import { WorkspaceTable } from './tables/workspace.ts';
-import { RestTable } from './tables/rest.ts';
-import { RestEntityTable } from './tables/rest-entity.ts';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
+import { errors } from './schema/errors.ts';
 
-export class Database {
-  public readonly engine: DatabaseSync;
+const sqlite = new DatabaseSync('tanxium.db', {
+  open: true,
+});
 
-  public errors: ErrorsTable;
-  public workspaces: WorkspaceTable;
-  public rest: RestTable;
-  public restEntity: RestEntityTable;
+export const db = drizzle(
+  async (sql, params, method) => {
+    const stmt = sqlite.prepare(sql);
 
-  public constructor() {
-    this.engine = new DatabaseSync('tanxium.db', {
-      open: true,
-    });
+    if (method === 'all' || method === 'values') {
+      return { rows: stmt.all(...params) };
+    }
 
-    this.errors = new ErrorsTable(this);
-    this.workspaces = new WorkspaceTable(this);
-    this.rest = new RestTable(this);
-    this.restEntity = new RestEntityTable(this);
-  }
-
-  public close() {
-    this.engine.close();
-  }
-}
+    return { rows: [stmt[method](...params)] };
+  },
+  {
+    schema: {
+      errors,
+    },
+  },
+);

@@ -1,6 +1,8 @@
 {
   "exclude": ["dist"],
   "imports": {
+    "drizzle-kit": "npm:drizzle-kit@^0.31.1",
+    "drizzle-orm": "npm:drizzle-orm@^0.44.2",
     "nanoid": "npm:nanoid@5.1.5",
     "hono": "jsr:@hono/hono@4.7.11",
   },
@@ -8,5 +10,8 @@
   "tasks": {
     "compile": "deno compile --unstable-bare-node-builtins --unstable-detect-cjs -A --output ./dist/tanxium --no-check --config deno.jsonc ./src/index.ts",
     "dev": "deno run -A ./src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
   },
 }
