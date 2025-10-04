@@ -1,7 +1,12 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
 
-export default {
+const nextConfig: NextConfig = {
   reactCompiler: true,
   experimental: { useCache: true, typedEnv: true, viewTransition: true },
   eslint: { ignoreDuringBuilds: true },
-} satisfies NextConfig;
+};
+
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(nextConfig);

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { NextIntlClientProvider } from 'next-intl';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      {children}
+      <NextIntlClientProvider locale="en">{children}</NextIntlClientProvider>
     </NextThemesProvider>
   );
 }
