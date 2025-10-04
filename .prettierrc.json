@@ -1,0 +1,23 @@
+{
+    "printWidth": 80,
+    "tabWidth": 2,
+    "singleQuote": true,
+    "arrowParens": "always",
+    "trailingComma": "all",
+    "semi": true,
+    "endOfLine": "lf",
+    "useTabs": false,
+    "jsxSingleQuote": false,
+    "overrides": [
+        {
+            "files": [
+                "*.md",
+                "*.mdx"
+            ],
+            "options": {
+                "proseWrap": "always",
+                "printWidth": 70
+            }
+        }
+    ]
+}

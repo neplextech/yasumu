@@ -1,0 +1,32 @@
+{
+  "name": "@yasumu/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "next": "catalog:react",
+    "next-themes": "^0.4.6",
+    "react": "catalog:react",
+    "react-dom": "catalog:react"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "catalog:react",
+    "@types/react-dom": "catalog:react",
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/ui": "workspace:*",
+    "babel-plugin-react-compiler": "catalog:react",
+    "eslint": "^9",
+    "eslint-config-next": "catalog:react",
+    "tailwindcss": "^4",
+    "typescript": "catalog:build"
+  }
+}

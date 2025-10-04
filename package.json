@@ -1,0 +1,23 @@
+{
+  "name": "@yasumu/workspace",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "bootstrap": "turbo gen bootstrap --args",
+    "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx}\""
+  },
+  "license": "GPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@turbo/gen": "^2.5.8",
+    "@yasumu/shared": "workspace:*",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.8",
+    "typescript": "catalog:build"
+  }
+}
