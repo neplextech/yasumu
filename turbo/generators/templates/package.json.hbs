@@ -1,9 +1,11 @@
 {
     "name": "@yasumu/{{name}}",
+    "type": "module",
+    "description": "{{description}}",
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "build": "turbo run build"
+        "build": "tsc"
     },
     "license": "GPL-3.0",
     "author": "Neplex",
@@ -11,5 +13,8 @@
         "type": "git",
         "url": "https://github.com/neplextech/yasumu.git"
     },
-    "dependencies": {}
+    "devDependencies": {
+        "@yasumu/shared": "workspace:*",
+        "typescript": "catalog:build"
+    }
 }

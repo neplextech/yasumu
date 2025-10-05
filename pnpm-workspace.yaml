@@ -4,6 +4,7 @@ packages:
 
 catalogs:
   build:
+    '@types/node': ^24.6.2
     typescript: ^5.9.3
   react:
     react: ^19.1.0
