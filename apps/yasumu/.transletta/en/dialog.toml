@@ -1,0 +1,7 @@
+# Add item dialog
+add-item-title = "Add new item"
+add-item-description = "This will add a new item"
+
+# Add folder dialog
+add-folder-title = "Add new folder"
+add-folder-description = "This will add a new folder"

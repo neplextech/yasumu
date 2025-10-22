@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { NextIntlClientProvider } from 'next-intl';
+import WorkspaceProvider from './workspace-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <NextIntlClientProvider locale="en">{children}</NextIntlClientProvider>
+      <NextIntlClientProvider locale="en">
+        <WorkspaceProvider>{children}</WorkspaceProvider>
+      </NextIntlClientProvider>
     </NextThemesProvider>
   );
 }
