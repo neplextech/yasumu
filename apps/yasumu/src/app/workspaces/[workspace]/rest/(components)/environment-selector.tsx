@@ -32,7 +32,7 @@ export default function EnvironmentSelector() {
       value={selectedEnvironment ?? undefined}
       onValueChange={(id) => {
         if (id === nullId) {
-          router.push('/environment');
+          router.push('/');
           return;
         }
         setSelectedEnvironment(id);

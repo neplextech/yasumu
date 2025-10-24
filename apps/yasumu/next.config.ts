@@ -8,24 +8,27 @@ const nextConfig: NextConfig = {
     useCache: true,
     typedEnv: true,
     viewTransition: true,
+    turbopackFileSystemCacheForDev: true,
   },
   typedRoutes: true,
   transpilePackages: ['@yasumu/ui'],
+  poweredByHeader: false,
 };
 
-const withNextIntl = createNextIntlPlugin();
+const withNextIntl = createNextIntlPlugin({
+  requestConfig: './src/i18n/request.ts',
+});
 const withTransletta = createTransletta({
-  compileOnBuild: true,
-  watchInDevelopment: true,
   config: {
+    compactOutput: true,
+    dts: 'next-intl',
+    dtsOutput: './global.ts',
     input: '.transletta',
     output: '.transletta/generated',
-    plugins: [],
     primaryLocale: 'en',
+    plugins: [],
     projects: null,
-    warnOnEmptyTranslations: false,
-    dts: 'next-intl',
-    dtsOutput: './global.d.ts',
+    warnOnEmptyTranslations: true,
   },
 });
 

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "bootstrap": "turbo gen bootstrap --args",
-    "format": "prettier --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\""
+    "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\""
   },
   "license": "GPL-3.0",
   "author": "Neplex",

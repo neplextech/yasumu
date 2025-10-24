@@ -1,2 +1,3 @@
-# Rest file tree
-requests = "Requests"
+[url-input]
+enter-a-url = "Enter a URL..."
+send-button = "Send"

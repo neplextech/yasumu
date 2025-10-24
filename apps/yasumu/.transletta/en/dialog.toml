@@ -1,7 +1,7 @@
-# Add item dialog
-add-item-title = "Add new item"
-add-item-description = "This will add a new item"
+[add-item]
+title = "Add new item"
+description = "This will add a new item"
 
-# Add folder dialog
-add-folder-title = "Add new folder"
-add-folder-description = "This will add a new folder"
+[add-folder]
+title = "Add new folders"
+description = "This will add a new folder"

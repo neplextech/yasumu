@@ -14,7 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <NextIntlClientProvider locale="en">
+      <NextIntlClientProvider locale="en" timeZone="UTC">
         <WorkspaceProvider>{children}</WorkspaceProvider>
       </NextIntlClientProvider>
     </NextThemesProvider>
