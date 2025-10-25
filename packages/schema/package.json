@@ -1,0 +1,38 @@
+{
+    "name": "@yasumu/schema",
+    "version": "0.0.1",
+    "description": "Yasumu schema parser",
+    "main": "dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "rimraf dist && tsc && tsc-alias",
+        "example": "tsx example/example.ts",
+        "example2": "tsx example/workspace.ts"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/neplextech/yasumu.git"
+    },
+    "keywords": [
+        "yasumu"
+    ],
+    "author": "Zyrouge <hello@zyrouge.me>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/neplextech/yasumu/issues"
+    },
+    "homepage": "https://github.com/neplextech/yasumu#readme",
+    "devDependencies": {
+        "@yasumu/shared": "workspace:*",
+        "rimraf": "^6.0.1",
+        "tsc-alias": "^1.8.10",
+        "tsx": "^4.20.6",
+        "typescript": "catalog:build"
+    }
+}
