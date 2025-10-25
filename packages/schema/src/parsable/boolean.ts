@@ -1,41 +1,41 @@
-import { YasumuSchemaTokenTypes } from "../tokens.js";
-import { YasumuSchemaParserError, type YasumuSchemaParser } from "../parser.js";
-import type { YasumuSchemaSerializer } from "../serializer.js";
-import { YasumuSchemaParsable } from "./parsable.js";
+import { YasumuSchemaTokenTypes } from '../tokens.js';
+import { YasumuSchemaParserError, type YasumuSchemaParser } from '../parser.js';
+import type { YasumuSchemaSerializer } from '../serializer.js';
+import { YasumuSchemaParsable } from './parsable.js';
 
 export class YasumuSchemaParsableBoolean extends YasumuSchemaParsable<boolean> {
-    private constructor() {
-        super();
-    }
+  private constructor() {
+    super();
+  }
 
-    canParse(parser: YasumuSchemaParser) {
-        return (
-            parser.check(YasumuSchemaTokenTypes.TRUE) ||
-            parser.check(YasumuSchemaTokenTypes.FALSE)
-        );
-    }
+  canParse(parser: YasumuSchemaParser) {
+    return (
+      parser.check(YasumuSchemaTokenTypes.TRUE) ||
+      parser.check(YasumuSchemaTokenTypes.FALSE)
+    );
+  }
 
-    parse(parser: YasumuSchemaParser) {
-        if (parser.match(YasumuSchemaTokenTypes.TRUE)) {
-            return true;
-        }
-        if (parser.match(YasumuSchemaTokenTypes.FALSE)) {
-            return false;
-        }
-        const { type, span } = parser.currentToken!;
-        const { line, column } = span.start;
-        throw new YasumuSchemaParserError(
-            `Expected '${YasumuSchemaTokenTypes.TRUE}' or '${YasumuSchemaTokenTypes.FALSE}', received '${type}' (at line ${line}, column ${column})`,
-        );
+  parse(parser: YasumuSchemaParser) {
+    if (parser.match(YasumuSchemaTokenTypes.TRUE)) {
+      return true;
     }
-
-    canSerialize(_: YasumuSchemaSerializer, value: any) {
-        return typeof value === "boolean";
+    if (parser.match(YasumuSchemaTokenTypes.FALSE)) {
+      return false;
     }
+    const { type, span } = parser.currentToken!;
+    const { line, column } = span.start;
+    throw new YasumuSchemaParserError(
+      `Expected '${YasumuSchemaTokenTypes.TRUE}' or '${YasumuSchemaTokenTypes.FALSE}', received '${type}' (at line ${line}, column ${column})`,
+    );
+  }
 
-    serialize(_: YasumuSchemaSerializer, value: boolean) {
-        return value.toString();
-    }
+  canSerialize(_: YasumuSchemaSerializer, value: any) {
+    return typeof value === 'boolean';
+  }
 
-    static instance = new YasumuSchemaParsableBoolean();
+  serialize(_: YasumuSchemaSerializer, value: boolean) {
+    return value.toString();
+  }
+
+  static instance = new YasumuSchemaParsableBoolean();
 }
