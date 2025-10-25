@@ -1,3 +1,3 @@
 export interface YasumuEntity {
-  readonly name: string;
+  readonly type: string;
 }
