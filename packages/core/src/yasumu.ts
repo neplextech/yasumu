@@ -1,1 +1,3 @@
-export class Yasumu {}
+export class Yasumu {
+  public constructor() {}
+}
