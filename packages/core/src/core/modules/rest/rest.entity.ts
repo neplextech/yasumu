@@ -1,7 +1,8 @@
+import type { OnRequestLifecycle } from '../common/types.js';
 import type { RestModule } from './rest.js';
 import type { RestEntityData } from './types.js';
 
-export class RestEntity {
+export class RestEntity implements OnRequestLifecycle {
   public constructor(
     public readonly rest: RestModule,
     private readonly data: RestEntityData,
@@ -9,6 +10,10 @@ export class RestEntity {
 
   public get url() {
     return this.data.url;
+  }
+
+  public getSearchParameters() {
+    return new URLSearchParams(this.data.searchParameters);
   }
 
   public getFullURL() {
@@ -22,6 +27,18 @@ export class RestEntity {
     url.search = searchParameters.toString();
 
     return url.toString();
+  }
+
+  public async onPostResponse(): Promise<void> {}
+
+  public async onPreRequest(): Promise<void> {}
+
+  public async execute() {
+    await this.onPreRequest();
+
+    // TODO
+
+    await this.onPostResponse();
   }
 
   public toJSON(): RestEntityData {
