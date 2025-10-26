@@ -1,5 +1,4 @@
 import type { PlatformBridge } from './platform-bridge.js';
-import type { RpcCommand } from './rpc-commands.js';
 import type { RpcCommandData, YasumuRPC } from './yasumu-rpc.js';
 
 const actions = ['$mutate', '$query'] as const;
@@ -11,7 +10,7 @@ export function createYasumuRPC(platformBridge: PlatformBridge): YasumuRPC {
     get(target, prop, receiver) {
       if (actions.includes(prop as (typeof actions)[number])) {
         return (...args: unknown[]) => {
-          const command = commandSegments.join('.') as RpcCommand;
+          const command = commandSegments.join('.');
           return platformBridge.invoke({
             command,
             parameters: args,

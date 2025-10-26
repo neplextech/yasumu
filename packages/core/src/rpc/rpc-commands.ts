@@ -1,14 +1,17 @@
-export const RpcCommand = {
-  CreateWorkspace: 'workspaces.create',
-  UpdateWorkspace: 'workspaces.update',
-  DeleteWorkspace: 'workspaces.delete',
-  GetWorkspace: 'workspaces.get',
-  ListWorkspaces: 'workspaces.list',
-  CreateRest: 'rest.create',
-  UpdateRest: 'rest.update',
-  DeleteRest: 'rest.delete',
-  GetRest: 'rest.get',
-  ListRest: 'rest.list',
-} as const;
+import type { RpcMutation, RpcQuery } from './yasumu-rpc.js';
+import type { RestEntityData } from '@/core/modules/rest/types.js';
+import type { WorkspaceData } from '@/core/workspace/types.js';
+import type { WorkspaceCreateOptions } from '@/core/manager/types.js';
 
-export type RpcCommand = (typeof RpcCommand)[keyof typeof RpcCommand];
+export interface YasumuRPC {
+  workspaces: {
+    create: RpcMutation<[WorkspaceCreateOptions], WorkspaceData>;
+    get: RpcQuery<[string], WorkspaceData>;
+    list: RpcQuery<[], WorkspaceData[]>;
+  };
+  rest: {
+    create: RpcMutation<[], RestEntityData>;
+    get: RpcQuery<[string], RestEntityData>;
+    list: RpcQuery<[], RestEntityData[]>;
+  };
+}

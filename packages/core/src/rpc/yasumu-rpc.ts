@@ -1,5 +1,5 @@
+import type { RestEntityData } from '@/core/modules/rest/types.js';
 import type { WorkspaceData } from '@/core/workspace/types.js';
-import type { RpcCommand } from './rpc-commands.js';
 
 export type RpcMutation<Params extends unknown[], ReturnType> = {
   $mutate(options: { parameters: Params }): Promise<Awaited<ReturnType>>;
@@ -28,12 +28,40 @@ export type InferReturnType<
       : never;
 
 export interface YasumuRPC {
-  [RpcCommand.CreateWorkspace]: RpcMutation<[], WorkspaceData>;
-  [RpcCommand.GetWorkspace]: RpcQuery<[string], WorkspaceData>;
-  [RpcCommand.ListWorkspaces]: RpcQuery<[], WorkspaceData[]>;
+  workspaces: {
+    create: RpcMutation<[], WorkspaceData>;
+    get: RpcQuery<[string], WorkspaceData>;
+    list: RpcQuery<[], WorkspaceData[]>;
+  };
+  rest: {
+    create: RpcMutation<[], RestEntityData>;
+    get: RpcQuery<[string], RestEntityData>;
+    list: RpcQuery<[], RestEntityData[]>;
+  };
 }
+
+type TraverseDeep<T> =
+  T extends Record<string, unknown>
+    ? {
+        [K in keyof T]: T[K] extends RpcMutation<unknown[], unknown>
+          ? T[K]
+          : T[K] extends RpcQuery<unknown[], unknown>
+            ? T[K]
+            : T[K] extends Record<string, unknown>
+              ? TraverseDeep<T[K]>
+              : never;
+      }
+    : never;
+
+type ExtractRpcTypes<T> = T[keyof T] extends never
+  ? never
+  : T[keyof T] extends
+        | RpcMutation<unknown[], unknown>
+        | RpcQuery<unknown[], unknown>
+    ? T[keyof T]
+    : ExtractRpcTypes<T[keyof T]>;
 
 export interface RpcCommandData<T extends keyof YasumuRPC = keyof YasumuRPC> {
   command: T;
-  parameters: InferParameters<YasumuRPC[T]>;
+  parameters: InferParameters<ExtractRpcTypes<TraverseDeep<YasumuRPC[T]>>>;
 }

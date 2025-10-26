@@ -1,8 +1,4 @@
-import type {
-  InferReturnType,
-  RpcCommandData,
-  YasumuRPC,
-} from './yasumu-rpc.js';
+import type { RpcCommandData } from './yasumu-rpc.js';
 
 export interface PlatformBridge {
   /**
@@ -11,9 +7,7 @@ export interface PlatformBridge {
    * @param args - The arguments to pass to the method.
    * @returns The result of the method invocation.
    */
-  invoke<T extends keyof YasumuRPC = keyof YasumuRPC>(
-    command: RpcCommandData<T>,
-  ): InferReturnType<YasumuRPC[T]>;
+  invoke<T = unknown>(command: RpcCommandData): Promise<T>;
   /**
    * Subscribes to a platform event.
    * @param event - The event to subscribe to.
