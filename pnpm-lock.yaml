@@ -42,6 +42,9 @@ importers:
       '@yasumu/shared':
         specifier: workspace:*
         version: link:packages/shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:packages/tsconfig
       prettier:
         specifier: ^3.6.2
         version: 3.6.2

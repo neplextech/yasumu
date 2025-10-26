@@ -7,5 +7,14 @@ export function createYasumu(options: YasumuOptions) {
 async function stub() {
   const yasumu = createYasumu({} as YasumuOptions);
 
-  yasumu.rpc.workspaces.create.$mutate({ parameters: [] });
+  const result = await yasumu.rpc.workspaces.create.$mutate({
+    parameters: [
+      {
+        metadata: {},
+        name: 'test',
+      },
+    ],
+  });
+
+  result.name;
 }

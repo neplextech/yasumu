@@ -15,6 +15,7 @@
   "devDependencies": {
     "@turbo/gen": "^2.5.8",
     "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
     "typescript": "catalog:build"

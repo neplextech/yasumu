@@ -1,5 +1,6 @@
 import type { PlatformBridge } from './platform-bridge.js';
-import type { RpcCommandData, YasumuRPC } from './yasumu-rpc.js';
+import type { YasumuRPC } from './rpc-commands.js';
+import type { RpcCommandData } from './yasumu-rpc.js';
 
 const actions = ['$mutate', '$query'] as const;
 

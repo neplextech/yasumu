@@ -1,5 +1,4 @@
-import type { RestEntityData } from '@/core/modules/rest/types.js';
-import type { WorkspaceData } from '@/core/workspace/types.js';
+import type { YasumuRPC } from './rpc-commands.js';
 
 export type RpcMutation<Params extends unknown[], ReturnType> = {
   $mutate(options: { parameters: Params }): Promise<Awaited<ReturnType>>;
@@ -26,19 +25,6 @@ export type InferReturnType<
     : T extends RpcQuery<unknown[], infer ReturnType>
       ? Awaited<ReturnType>
       : never;
-
-export interface YasumuRPC {
-  workspaces: {
-    create: RpcMutation<[], WorkspaceData>;
-    get: RpcQuery<[string], WorkspaceData>;
-    list: RpcQuery<[], WorkspaceData[]>;
-  };
-  rest: {
-    create: RpcMutation<[], RestEntityData>;
-    get: RpcQuery<[string], RestEntityData>;
-    list: RpcQuery<[], RestEntityData[]>;
-  };
-}
 
 type TraverseDeep<T> =
   T extends Record<string, unknown>

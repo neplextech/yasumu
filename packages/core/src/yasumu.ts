@@ -1,7 +1,7 @@
 import { WorkspaceManager } from './core/manager/manager.js';
 import { createYasumuRPC } from './rpc/create-rpc.js';
 import type { PlatformBridge } from './rpc/platform-bridge.js';
-import type { YasumuRPC } from './rpc/yasumu-rpc.js';
+import type { YasumuRPC } from './rpc/rpc-commands.js';
 
 export interface YasumuOptions {
   platformBridge: PlatformBridge;
