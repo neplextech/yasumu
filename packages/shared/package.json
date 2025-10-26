@@ -13,10 +13,7 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts"
     },
-    "./eslint-config/*": "./eslint-config/*.js",
-    "./tsconfig/react.json": "./tsconfig/react.json",
-    "./tsconfig/next.json": "./tsconfig/next.json",
-    "./tsconfig/base.json": "./tsconfig/base.json"
+    "./eslint-config/*": "./eslint-config/*.js"
   },
   "typesVersions": {
     "*": {

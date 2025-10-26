@@ -61,6 +61,7 @@
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
     "tailwindcss": "^4.1.11",
     "typescript": "catalog:build"
   },

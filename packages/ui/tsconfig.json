@@ -1,5 +1,5 @@
 {
-  "extends": "@yasumu/shared/tsconfig/react.json",
+  "extends": "@yasumu/tsconfig/react.json",
   "compilerOptions": {
     "baseUrl": ".",
     "moduleResolution": "NodeNext",

@@ -1,4 +1,4 @@
-import { HttpMethod } from './constants';
+import { HttpMethod } from './constants.js';
 
 export interface RestEntityBody {
   type: 'json' | 'text' | 'form-data' | 'multipart/form-data';

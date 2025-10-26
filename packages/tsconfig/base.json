@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "alwaysStrict": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "module": "NodeNext",
+    "lib": ["ES2021", "DOM"],
+    "inlineSourceMap": true,
+    "pretty": true,
+    "skipDefaultLibCheck": true
+  }
+}

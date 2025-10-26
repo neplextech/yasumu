@@ -1,10 +1,11 @@
-import { YasumuEntity } from '../common/entity';
-import type { RestEntityData } from './types';
+import type { RestModule } from './rest.js';
+import type { RestEntityData } from './types.js';
 
-export class RestEntity implements YasumuEntity {
-  public readonly type = 'rest';
-
-  public constructor(private readonly data: RestEntityData) {}
+export class RestEntity {
+  public constructor(
+    public readonly rest: RestModule,
+    private readonly data: RestEntityData,
+  ) {}
 
   public get url() {
     return this.data.url;

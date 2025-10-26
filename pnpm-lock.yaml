@@ -118,9 +118,12 @@ importers:
 
   packages/core:
     devDependencies:
-      '@yasumu/shared':
+      '@yasumu/core':
         specifier: workspace:*
-        version: link:../shared
+        version: 'link:'
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
       typescript:
         specifier: catalog:build
         version: 5.9.3
@@ -181,6 +184,8 @@ importers:
       typescript-eslint:
         specifier: ^8.39.0
         version: 8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3)
+
+  packages/tsconfig: {}
 
   packages/ui:
     dependencies:
@@ -341,6 +346,9 @@ importers:
       '@yasumu/shared':
         specifier: workspace:*
         version: link:../shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
       tailwindcss:
         specifier: ^4.1.11
         version: 4.1.15
