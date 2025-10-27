@@ -1,0 +1,21 @@
+{
+    "name": "@yasumu/desktop",
+    "type": "module",
+    "description": "Desktop app for Yasumu",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "build": "tsc"
+    },
+    "license": "GPL-3.0",
+    "author": "Neplex",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/neplextech/yasumu.git"
+    },
+    "devDependencies": {
+        "@yasumu/shared": "workspace:*",
+        "@yasumu/tsconfig": "workspace:*",
+        "typescript": "catalog:build"
+    }
+}

@@ -55,6 +55,18 @@ importers:
         specifier: catalog:build
         version: 5.9.3
 
+  apps/desktop:
+    devDependencies:
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      typescript:
+        specifier: catalog:build
+        version: 5.9.3
+
   apps/yasumu:
     dependencies:
       lucide-react:
