@@ -14,6 +14,10 @@ export type RpcQuery<Params extends unknown[], ReturnType> = {
   $query(options: { parameters: Params }): Promise<Awaited<ReturnType>>;
 };
 
+export type RpcQueryOrMutation<Params extends unknown[], ReturnType> =
+  | RpcMutation<Params, ReturnType>
+  | RpcQuery<Params, ReturnType>;
+
 /**
  * The type of a RPC call.
  */
