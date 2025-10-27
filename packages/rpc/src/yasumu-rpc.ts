@@ -15,6 +15,11 @@ export type RpcQuery<Params extends unknown[], ReturnType> = {
 };
 
 /**
+ * The type of a RPC call.
+ */
+export type YasumuRpcCallType = 'mutation' | 'query';
+
+/**
  * Infer the parameters of a RPC command.
  */
 export type InferParameters<
@@ -57,18 +62,25 @@ export type TraverseDeep<T> =
 /**
  * Extract the RPC types from a deep object.
  */
-export type ExtractRpcTypes<T> = T[keyof T] extends never
-  ? never
-  : T[keyof T] extends
-        | RpcMutation<unknown[], unknown>
-        | RpcQuery<unknown[], unknown>
-    ? T[keyof T]
-    : ExtractRpcTypes<T[keyof T]>;
+export type ExtractRpcTypes<T> =
+  T extends RpcMutation<unknown[], unknown>
+    ? T
+    : T extends RpcQuery<unknown[], unknown>
+      ? T
+      : T[keyof T] extends never
+        ? never
+        : T[keyof T] extends
+              | RpcMutation<unknown[], unknown>
+              | RpcQuery<unknown[], unknown>
+          ? T[keyof T]
+          : ExtractRpcTypes<T[keyof T]>;
 
 /**
  * A data object for a RPC command.
  */
-export interface RpcCommandData<T extends keyof YasumuRPC = keyof YasumuRPC> {
+export interface RpcCommandData<
+  T extends YasumuRpcCommands = YasumuRpcCommands,
+> {
   /**
    * The command to invoke.
    */
@@ -76,5 +88,39 @@ export interface RpcCommandData<T extends keyof YasumuRPC = keyof YasumuRPC> {
   /**
    * The parameters to pass to the command.
    */
-  parameters: InferParameters<ExtractRpcTypes<TraverseDeep<YasumuRPC[T]>>>;
+  parameters: InferParameters<ExtractRpcTypes<ResolveRpcCommandValue<T>>>;
+  /**
+   * The type of the command.
+   */
+  type: YasumuRpcCallType;
+  /**
+   * Type assertion for this command
+   */
+  isType<C extends YasumuRpcCommands>(type: C): this is RpcCommandData<C>;
 }
+
+/**
+ * Converts path string such as `workspaces.create` into the corresponding value in the YasumuRPC interface.
+ */
+export type ResolveRpcCommandValue<K extends YasumuRpcCommands> =
+  K extends `${infer T}.${infer U}`
+    ? YasumuRPC[T & keyof YasumuRPC][U & keyof YasumuRPC[T & keyof YasumuRPC]]
+    : never;
+
+type ToCommandPathString<T extends keyof YasumuRPC> = T extends keyof YasumuRPC
+  ? {
+      [K in keyof YasumuRPC[T]]: `${T & string}.${K & string}`;
+    }[keyof YasumuRPC[T]]
+  : never;
+
+/**
+ * The string representation of all commands in the Yasumu RPC interface.
+ */
+export type YasumuRpcCommands = ToCommandPathString<keyof YasumuRPC>;
+
+/**
+ * A map of all commands in the Yasumu RPC interface to their corresponding data (RpcQuery or RpcMutation).
+ */
+export type YasumuRpcCommandMap = {
+  [K in YasumuRpcCommands]: ExtractRpcTypes<ResolveRpcCommandValue<K>>;
+};

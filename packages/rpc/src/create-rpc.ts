@@ -17,9 +17,15 @@ export function createYasumuRPC(platformBridge: PlatformBridge): YasumuRPC {
       if (actions.includes(prop as (typeof actions)[number])) {
         return (...args: unknown[]) => {
           const command = commandSegments.join('.');
+          const type = prop === '$mutate' ? 'mutation' : 'query';
+
           return platformBridge.invoke({
             command,
             parameters: args,
+            type,
+            isType(t) {
+              return t === command;
+            },
           } as RpcCommandData);
         };
       }
