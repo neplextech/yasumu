@@ -1,3 +1,5 @@
+import type { CustomMetadata } from '../common/common.types.js';
+
 /**
  * A partial workspace object.
  */
@@ -15,7 +17,7 @@ export interface PartialWorkspace {
 /**
  * The data for a Yasumu workspace.
  */
-export interface WorkspaceData {
+export interface WorkspaceData extends CustomMetadata {
   /**
    * The ID of the workspace.
    */
@@ -24,10 +26,6 @@ export interface WorkspaceData {
    * The name of the workspace.
    */
   name: string;
-  /**
-   * The metadata of the workspace.
-   */
-  metadata: Record<string, unknown>;
   /**
    * The date and time the workspace was created.
    */
@@ -51,12 +49,7 @@ export interface WorkspaceOpenOptions {
 /**
  * The options for creating a new workspace.
  */
-export interface WorkspaceCreateOptions {
-  /**
-   * The arbitrary metadata that will be sent to the underlying adapter when creating the workspace.
-   * This could include filesystem paths or other arbitrary data depending on the environment and the adapter.
-   */
-  metadata: Record<string, unknown>;
+export interface WorkspaceCreateOptions extends CustomMetadata {
   /**
    * The name of the workspace.
    */

@@ -129,7 +129,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {data.navMain.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <Link href={item.url}>
+                  <Link href={item.url as any}>
                     <SidebarMenuButton
                       tooltip={{
                         children: item.title,
@@ -155,7 +155,7 @@ export function AppSidebar() {
         <SidebarMenu>
           {data.navFooter.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.url}>
+              <Link href={item.url as any}>
                 <SidebarMenuButton
                   tooltip={{
                     children: item.title,
@@ -244,13 +244,13 @@ function SettingsDropdown({
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <Link href={YasumuSocials.GitHub} target="_blank">
+            <Link href={YasumuSocials.GitHub as any} target="_blank">
               <DropdownMenuItem>
                 <SiGithub />
                 GitHub
               </DropdownMenuItem>
             </Link>
-            <Link href={YasumuSocials.Discord} target="_blank">
+            <Link href={YasumuSocials.Discord as any} target="_blank">
               <DropdownMenuItem>
                 <SiDiscord />
                 Discord

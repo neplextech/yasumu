@@ -22,7 +22,7 @@ const withTransletta = createTransletta({
   config: {
     compactOutput: true,
     dts: 'next-intl',
-    dtsOutput: './global.ts',
+    dtsOutput: './i18n.d.ts',
     input: '.transletta',
     output: '.transletta/generated',
     primaryLocale: 'en',

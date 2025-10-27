@@ -1,5 +1,5 @@
 {
-  "extends": "@yasumu/shared/tsconfig/next.json",
+  "extends": "@yasumu/tsconfig/next.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

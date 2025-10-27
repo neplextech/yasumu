@@ -1,5 +1,5 @@
 {
-  "extends": "@yasumu/shared/tsconfig/node.json",
+  "extends": "@yasumu/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": ".",

@@ -13,7 +13,9 @@ export class RestEntity implements OnRequestLifecycle {
   }
 
   public getSearchParameters() {
-    return new URLSearchParams(this.data.searchParameters);
+    return new URLSearchParams(
+      this.data.parameters.map((parameter) => [parameter.key, parameter.value]),
+    );
   }
 
   public getFullURL() {
@@ -21,7 +23,7 @@ export class RestEntity implements OnRequestLifecycle {
       return null;
     }
 
-    const searchParameters = new URLSearchParams(this.data.searchParameters);
+    const searchParameters = this.getSearchParameters();
     const url = new URL(this.data.url);
 
     url.search = searchParameters.toString();

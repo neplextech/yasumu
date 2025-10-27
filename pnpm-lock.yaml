@@ -140,9 +140,9 @@ importers:
         specifier: workspace:*
         version: link:../rpc
     devDependencies:
-      '@yasumu/core':
+      '@yasumu/shared':
         specifier: workspace:*
-        version: 'link:'
+        version: link:../shared
       '@yasumu/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
