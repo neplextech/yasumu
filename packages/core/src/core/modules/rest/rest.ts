@@ -1,6 +1,6 @@
 import type { Workspace } from '@/core/workspace/workspace.js';
 import { RestEntity } from './rest.entity.js';
-import type { RestEntityData } from './types.js';
+import type { RestEntityData } from '@yasumu/common';
 
 export class RestModule {
   public constructor(private readonly workspace: Workspace) {}

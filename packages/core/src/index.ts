@@ -1,20 +1,17 @@
 import { Yasumu, type YasumuOptions } from './yasumu.js';
 
-export function createYasumu(options: YasumuOptions) {
+/**
+ * Creates a new Yasumu instance.
+ * @param options - The options for the Yasumu instance.
+ * @returns A new Yasumu instance.
+ */
+export function createYasumu(options: YasumuOptions): Yasumu {
   return new Yasumu(options);
 }
 
-async function stub() {
-  const yasumu = createYasumu({} as YasumuOptions);
+export * from './yasumu.js';
+export * from './core/modules/common/types.js';
 
-  const result = await yasumu.rpc.workspaces.create.$mutate({
-    parameters: [
-      {
-        metadata: {},
-        name: 'test',
-      },
-    ],
-  });
-
-  result.name;
-}
+// re-export
+export * from '@yasumu/common';
+export * from '@yasumu/rpc';

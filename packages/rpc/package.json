@@ -1,7 +1,7 @@
 {
-    "name": "@yasumu/{{name}}",
+    "name": "@yasumu/rpc",
     "type": "module",
-    "description": "{{description}}",
+    "description": "Yasumu rpc api and utilities",
     "version": "0.0.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -21,5 +21,8 @@
         "@yasumu/shared": "workspace:*",
         "@yasumu/tsconfig": "workspace:*",
         "typescript": "catalog:build"
+    },
+    "dependencies": {
+        "@yasumu/common": "workspace:*"
     }
 }

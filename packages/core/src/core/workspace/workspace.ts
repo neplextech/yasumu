@@ -1,6 +1,6 @@
 import { WorkspaceManager } from '../manager/manager.js';
 import { RestModule } from '../modules/rest/rest.js';
-import type { WorkspaceData } from './types.js';
+import type { WorkspaceData } from '@yasumu/common';
 
 /**
  * Represents a Yasumu workspace.

@@ -4,6 +4,11 @@ import type { RpcCommandData } from './yasumu-rpc.js';
 
 const actions = ['$mutate', '$query'] as const;
 
+/**
+ * Creates a new Yasumu RPC proxy.
+ * @param platformBridge - The platform bridge to use to make requests to the platform.
+ * @returns A new Yasumu RPC proxy.
+ */
 export function createYasumuRPC(platformBridge: PlatformBridge): YasumuRPC {
   const commandSegments: string[] = [];
 

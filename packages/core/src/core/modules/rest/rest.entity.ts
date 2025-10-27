@@ -1,6 +1,6 @@
 import type { OnRequestLifecycle } from '../common/types.js';
 import type { RestModule } from './rest.js';
-import type { RestEntityData } from './types.js';
+import type { RestEntityData } from '@yasumu/common';
 
 export class RestEntity implements OnRequestLifecycle {
   public constructor(

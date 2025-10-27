@@ -119,11 +119,49 @@ importers:
         specifier: catalog:build
         version: 5.9.3
 
+  packages/common:
+    devDependencies:
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      typescript:
+        specifier: catalog:build
+        version: 5.9.3
+
   packages/core:
+    dependencies:
+      '@yasumu/common':
+        specifier: workspace:*
+        version: link:../common
+      '@yasumu/rpc':
+        specifier: workspace:*
+        version: link:../rpc
     devDependencies:
       '@yasumu/core':
         specifier: workspace:*
         version: 'link:'
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      tsx:
+        specifier: ^4.20.6
+        version: 4.20.6
+      typescript:
+        specifier: catalog:build
+        version: 5.9.3
+
+  packages/rpc:
+    dependencies:
+      '@yasumu/common':
+        specifier: workspace:*
+        version: link:../common
+    devDependencies:
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@yasumu/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig

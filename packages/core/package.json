@@ -3,9 +3,9 @@
   "type": "module",
   "description": "Yasumu core api",
   "version": "0.0.0",
-  "private": true,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "tsx test/index.ts"
   },
   "license": "GPL-3.0",
   "author": "Neplex",
@@ -16,6 +16,11 @@
   "devDependencies": {
     "@yasumu/core": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
+    "tsx": "^4.20.6",
     "typescript": "catalog:build"
+  },
+  "dependencies": {
+    "@yasumu/common": "workspace:*",
+    "@yasumu/rpc": "workspace:*"
   }
 }

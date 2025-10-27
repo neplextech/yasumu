@@ -1,7 +1,10 @@
 import type { Yasumu } from '@/yasumu.js';
 import { Workspace } from '../workspace/workspace.js';
-import type { WorkspaceCreateOptions, WorkspaceOpenOptions } from './types.js';
-import type { PartialWorkspace, WorkspaceData } from '../workspace/types.js';
+import type {
+  WorkspaceCreateOptions,
+  WorkspaceOpenOptions,
+} from '@yasumu/common';
+import type { PartialWorkspace, WorkspaceData } from '@yasumu/common';
 
 /**
  * The manager for workspaces.

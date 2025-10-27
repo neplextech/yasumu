@@ -1,7 +1,7 @@
 {
-    "name": "@yasumu/{{name}}",
+    "name": "@yasumu/common",
     "type": "module",
-    "description": "{{description}}",
+    "description": "Yasumu common module",
     "version": "0.0.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
