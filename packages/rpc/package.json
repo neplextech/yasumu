@@ -1,28 +1,28 @@
 {
-    "name": "@yasumu/rpc",
-    "type": "module",
-    "description": "Yasumu rpc api and utilities",
-    "version": "0.0.0",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc"
-    },
-    "license": "GPL-3.0",
-    "author": "Neplex",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/neplextech/yasumu.git"
-    },
-    "devDependencies": {
-        "@yasumu/shared": "workspace:*",
-        "@yasumu/tsconfig": "workspace:*",
-        "typescript": "catalog:build"
-    },
-    "dependencies": {
-        "@yasumu/common": "workspace:*"
-    }
+  "name": "@yasumu/rpc",
+  "type": "module",
+  "description": "Yasumu rpc api and utilities",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "GPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "devDependencies": {
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
+    "typescript": "catalog:build"
+  },
+  "dependencies": {
+    "@yasumu/common": "workspace:*"
+  }
 }
