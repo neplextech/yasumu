@@ -13,8 +13,10 @@ use std::sync::Mutex;
 use std::thread;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
+use deno_core::op2;
+use deno_resolver::npm::DenoInNpmPackageChecker;
+use deno_resolver::npm::NpmResolver;
 use deno_runtime::deno_core::error::AnyError;
-use deno_runtime::deno_core::op2;
 use deno_runtime::deno_core::ModuleSpecifier;
 use deno_runtime::deno_fs::RealFs;
 use deno_runtime::deno_permissions::prompter::set_prompter;
@@ -22,12 +24,14 @@ use deno_runtime::deno_permissions::prompter::PermissionPrompter;
 use deno_runtime::deno_permissions::prompter::PromptResponse;
 use deno_runtime::deno_permissions::Permissions;
 use deno_runtime::deno_permissions::PermissionsContainer;
+use deno_runtime::ops::bootstrap::SnapshotOptions;
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use deno_runtime::worker::MainWorker;
 use deno_runtime::worker::WorkerOptions;
 use deno_runtime::worker::WorkerServiceOptions;
 use module_loader::TypescriptModuleLoader;
 use once_cell::sync::Lazy;
+use sys_traits::impls::RealSys;
 use tauri::{AppHandle, Emitter};
 
 // Task events channel for task state changes that will be received by Tauri
@@ -245,11 +249,21 @@ fn document_dir() -> Option<String> {
     dirs::document_dir().map(|path| path.to_string_lossy().to_string())
 }
 
+// deno_runtime::deno_core::extension!(
+//     runtime_extension,
+//     ops = [return_value, document_dir],
+//     esm_entry_point = "ext:runtime_extension/bootstrap.js",
+//     esm = [ dir "src/tanxium", "bootstrap.js" ]
+// );
+
 deno_core::extension!(
-  runtime_extension,
-  ops = [return_value, document_dir],
-  esm_entry_point = "ext:runtime_extension/bootstrap.js",
-  esm = [dir "src/tanxium", "bootstrap.js"]
+    tanxium_rt,
+    ops = [return_value, document_dir],
+    esm_entry_point = "ext:tanxium_rt/bootstrap.js",
+    esm = [ dir "src/tanxium", "bootstrap.js" ],
+    state = |state| {
+        state.put::<SnapshotOptions>(SnapshotOptions::default());
+    },
 );
 
 pub fn init_listener(app_handle: AppHandle) {
@@ -285,7 +299,7 @@ impl PermissionPrompter for CustomPrompter {
         name: &str,
         api_name: Option<&str>,
         is_unary: bool,
-        _: Option<Vec<deno_core::error::JsStackFrame>>, // stack frames
+        _: Option<Box<dyn Fn() -> Vec<String> + Send + Sync + 'static>>, // stack frames
     ) -> PromptResponse {
         let thread_id = thread::current().id();
         let prompt = PermissionPrompt {
@@ -372,7 +386,8 @@ pub async fn run(task_id: &str, code: &str) -> Result<(), AnyError> {
     let main_module = ModuleSpecifier::from_file_path(&temp_code_path).unwrap();
 
     let fs = Arc::new(RealFs);
-    let permission_desc_parser = Arc::new(RuntimePermissionDescriptorParser::new(fs.clone()));
+    let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
+        Arc::new(RuntimePermissionDescriptorParser::new(RealSys));
 
     let source_map_store = Rc::new(RefCell::new(HashMap::new()));
 
@@ -413,15 +428,21 @@ pub async fn run(task_id: &str, code: &str) -> Result<(), AnyError> {
         Task::new(task_id.to_string(), "running".to_string()),
     );
 
-    let mut worker = MainWorker::bootstrap_from_options(
-        main_module.clone(),
+    let mut worker = MainWorker::bootstrap_from_options::<
+        DenoInNpmPackageChecker,
+        NpmResolver<RealSys>,
+        RealSys,
+    >(
+        &main_module,
         WorkerServiceOptions {
             module_loader: Rc::new(TypescriptModuleLoader {
                 source_maps: source_map_store,
             }),
+            permissions: permission_container,
             // File only loader
             // module_loader: Rc::new(FsModuleLoader),
-            permissions: permission_container,
+            bundle_provider: Default::default(),
+            deno_rt_native_addon_loader: Default::default(),
             blob_store: Default::default(),
             broadcast_channel: Default::default(),
             feature_checker: Default::default(),
@@ -435,7 +456,7 @@ pub async fn run(task_id: &str, code: &str) -> Result<(), AnyError> {
             fs,
         },
         WorkerOptions {
-            extensions: vec![runtime_extension::init_ops_and_esm()],
+            extensions: vec![tanxium_rt::init()],
             ..Default::default()
         },
     );
