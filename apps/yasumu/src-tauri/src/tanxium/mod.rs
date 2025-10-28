@@ -249,13 +249,6 @@ fn document_dir() -> Option<String> {
     dirs::document_dir().map(|path| path.to_string_lossy().to_string())
 }
 
-// deno_runtime::deno_core::extension!(
-//     runtime_extension,
-//     ops = [return_value, document_dir],
-//     esm_entry_point = "ext:runtime_extension/bootstrap.js",
-//     esm = [ dir "src/tanxium", "bootstrap.js" ]
-// );
-
 deno_core::extension!(
     tanxium_rt,
     ops = [return_value, document_dir],
@@ -376,8 +369,6 @@ pub async fn run(task_id: &str, code: &str) -> Result<(), AnyError> {
     std::fs::create_dir_all(&code_dir).unwrap();
 
     let temp_code_path = code_dir.join(format!("temp_code_{}.ts", task_id));
-
-    println!("Writing code to {}", temp_code_path.display());
 
     let augmented_code = format!("globalThis.RuntimeExtension.taskId = \"{task_id}\";\n\n{code}");
 
@@ -542,44 +533,32 @@ pub fn clear_completed_tasks() {
 }
 
 pub fn update_task_state(task_id: &str, state: &str) {
-    println!("Updating task state --");
     let mut state_lock = TASK_STATE.lock().unwrap();
-    println!("Got state lock --");
 
     let task = state_lock.get_mut(task_id).unwrap();
-    println!("Got task --");
 
     task.state = state.to_string();
-    println!("Updated task state --");
     let task_clone = task.clone();
     drop(state_lock);
 
     emit_task_state_changed(task_clone);
-    println!("Emitted task state changed --");
 }
 
 fn emit_task_state_changed(task: Task) {
-    println!("Emitting task state changed --");
     let result = TAURI_TASK_EVENTS.0.send(task);
     if result.is_err() {
         println!("Failed to send task state changed");
     }
-    println!("Emitted task state changed --");
 }
 
 pub fn respond_to_permission_prompt(task_id: &str, response: PermissionsResponse) {
-    println!("Responding to permission prompt --");
-
     let thread_id = TASK_TO_THREAD_MAP.lock().unwrap().get(task_id).cloned();
 
     if let Some(thread_id) = thread_id {
         if let Some(tx) = PERMISSION_CHANNELS.lock().unwrap().get(&thread_id) {
-            println!("Got permission channel --");
             let mut state_lock = TASK_STATE.lock().unwrap();
-            println!("Got state lock --");
 
             if let Some(task) = state_lock.get_mut(task_id) {
-                println!("Got task --");
                 // Update the latest prompt with the response
                 if let Some(prompt) = &mut task.permission_prompt {
                     prompt.response = Some(response.clone());
@@ -589,19 +568,11 @@ pub fn respond_to_permission_prompt(task_id: &str, response: PermissionsResponse
                 if let Some(last) = task.permission_history.last_mut() {
                     last.response = Some(response.clone());
                 }
-
-                println!("Updated task --");
             }
 
             drop(state_lock);
-            println!("Dropped state lock --");
 
             let _ = tx.send(response);
-            println!("Sent response --");
-        } else {
-            println!("No permission channel found --");
         }
-    } else {
-        println!("No thread found for task_id: {} --", task_id);
     }
 }
