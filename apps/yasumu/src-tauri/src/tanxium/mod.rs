@@ -318,25 +318,17 @@ impl PermissionPrompter for CustomPrompter {
 
             if let Some(task_id) = task_id {
                 if let Some(task) = state_lock.get_mut(&task_id) {
-                    println!("Found task --");
-
                     // Store as latest prompt
                     task.permission_prompt = Some(prompt.clone());
-                    println!("Stored as latest prompt --");
 
-                    // Add to history
                     task.permission_history.push(prompt);
-                    println!("Added to history --");
 
                     drop(state_lock);
 
                     update_task_state(&task_id, "waiting_for_permission");
-                    println!("Updated task state --");
 
-                    println!("Waiting for response --");
                     match receiver.recv() {
                         Ok(response) => {
-                            println!("Received response --");
                             update_task_state(&task_id, "running");
                             response.to_prompt_response()
                         }
@@ -346,15 +338,12 @@ impl PermissionPrompter for CustomPrompter {
                         }
                     }
                 } else {
-                    println!("No task found --");
                     PromptResponse::Deny
                 }
             } else {
-                println!("No task found --");
                 PromptResponse::Deny
             }
         } else {
-            println!("No receiver found for thread {:?}", thread_id);
             PromptResponse::Deny
         }
     }
