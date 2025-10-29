@@ -1,5 +1,5 @@
 import { redirect, RedirectType } from 'next/navigation';
 
 export default async function Page() {
-  redirect('/workspaces/default/rest', RedirectType.replace);
+  redirect('/en/workspaces/default/rest', RedirectType.replace);
 }

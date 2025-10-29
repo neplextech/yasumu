@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Input } from '@yasumu/ui/components/input';
 import {
@@ -21,13 +21,7 @@ interface KeyValuePair {
   enabled: boolean;
 }
 
-export default function KeyValueTable({
-  value = {},
-  onChange,
-}: {
-  value?: any;
-  onChange: (value: any) => void;
-}) {
+export default function KeyValueTable({ value = {} }: { value?: any }) {
   const [pairs, setPairs] = useState<KeyValuePair[]>(() => {
     const initialPairs = Object.values(value) as KeyValuePair[];
 
@@ -35,6 +29,10 @@ export default function KeyValueTable({
       ? initialPairs
       : [{ key: '', value: '', enabled: true }];
   });
+
+  const onChange = useCallback((newValue: any) => {
+    updatePairs(newValue);
+  }, []);
 
   const updatePairs = (newPairs: KeyValuePair[]) => {
     setPairs(newPairs);

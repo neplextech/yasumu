@@ -63,37 +63,37 @@ const data = {
     // },
     {
       title: 'Rest API',
-      url: '/workspaces/default/rest',
+      url: '/en/workspaces/default/rest',
       icon: TbWorldWww,
       isActive: false,
     },
     {
       title: 'GraphQL',
-      url: '/workspaces/default/graphql',
+      url: '/en/workspaces/default/graphql',
       icon: SiGraphql,
       isActive: false,
     },
     {
       title: 'Socket.IO',
-      url: '/workspaces/default/socketio',
+      url: '/en/workspaces/default/socketio',
       icon: SiSocketdotio,
       isActive: false,
     },
     {
       title: 'WebSocket',
-      url: '/workspaces/default/websocket',
+      url: '/en/workspaces/default/websocket',
       icon: WebSocketIcon,
       isActive: false,
     },
     {
       title: 'Server Sent Events',
-      url: '/workspaces/default/sse',
+      url: '/en/workspaces/default/sse',
       icon: Zap,
       isActive: false,
     },
     {
       title: 'Emails',
-      url: '/workspaces/default/emails',
+      url: '/en/workspaces/default/emails',
       icon: Mail,
       isActive: false,
     },
@@ -101,7 +101,7 @@ const data = {
   navFooter: [
     {
       title: 'Environment',
-      url: '/workspaces/default/environment',
+      url: '/en/workspaces/default/environment',
       icon: Lock,
     },
   ],
