@@ -3,3 +3,4 @@ node_modules/
 dist/
 .next/
 .DS_Store
+target/
