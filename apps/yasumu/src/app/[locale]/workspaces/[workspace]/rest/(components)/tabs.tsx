@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 import { GetMethodIcon } from './http-methods';
 import { RequestTabs } from './request-tabs';
 

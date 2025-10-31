@@ -5,6 +5,7 @@ import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
 import { useTranslations } from 'next-intl';
 import RequestTabList from './(components)/tabs';
+import SendButton from './(components)/send-button';
 
 export async function generateStaticParams() {
   return [{ workspace: 'default' }];
@@ -18,7 +19,7 @@ export default function Home() {
       <div className="flex gap-4">
         <HttpMethodSelector />
         <Input placeholder={t('url-input.enter-a-url')} />
-        <Button>{t('url-input.send-button')}</Button>
+        <SendButton />
       </div>
       <Separator />
       <KeyValueTable />

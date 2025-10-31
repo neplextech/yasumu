@@ -34,3 +34,4 @@ sys_traits = "=0.1.17"
 rustls = { version = "0.23", features = ["ring"] }
 rustls-pemfile = "2.0"
 rustls-pki-types = "1.0"
+uuid = "1.18.1"

@@ -1,12 +1,10 @@
-// Partially based on https://github.com/carloslfu/tauri-deno-example/blob/5ee3c18d441357fbfca712cf998389ebb0025044/src-tauri/src/deno/module_loader.rs
-
 use std::borrow::Cow;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use deno_ast::MediaType;
 use deno_ast::ModuleSpecifier;
 use deno_ast::ParseParams;
 use deno_ast::SourceMapOption;
+use deno_ast::{JsxPrecompileOptions, JsxRuntime, MediaType};
 use deno_runtime::deno_core::error::ModuleLoaderError;
 use deno_runtime::deno_core::ModuleSourceCode;
 use deno_runtime::deno_core::ModuleType;
@@ -125,6 +123,14 @@ impl ModuleLoader for TypescriptModuleLoader {
                             decorators: deno_ast::DecoratorsTranspileOption::LegacyTypeScript {
                                 emit_metadata: true,
                             },
+                            jsx: Some(JsxRuntime::Precompile(JsxPrecompileOptions {
+                                automatic: deno_ast::JsxAutomaticOptions {
+                                    development: false,
+                                    import_source: Some("yasumu:ui".to_string()),
+                                },
+                                dynamic_props: None,
+                                skip_elements: None,
+                            })),
                             ..Default::default()
                         },
                         &deno_ast::TranspileModuleOptions::default(),

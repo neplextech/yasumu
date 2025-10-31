@@ -196,3 +196,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+.zw-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

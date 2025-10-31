@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Yasumu",
-        "width": 800,
-        "height": 600
+        "width": 1280,
+        "height": 720
       }
     ],
     "security": {
@@ -30,6 +30,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": {
+      "resources/yasumu-scripts/**/*.ts": "yasumu-internal/"
+    }
   }
 }

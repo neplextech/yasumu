@@ -11698,6 +11698,7 @@ dependencies = [
  "tauri-plugin-store",
  "tokio",
  "ureq",
+ "uuid",
 ]
 
 [[package]]
