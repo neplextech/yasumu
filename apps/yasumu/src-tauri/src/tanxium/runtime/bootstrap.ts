@@ -1,7 +1,6 @@
 /// <reference types="./internal.d.ts" />
+import './patches.ts';
 import { YasumuUI } from './ui.ts';
-import { op_send_renderer_event } from 'ext:core/ops';
-import { Console } from 'ext:deno_console/01_console.js';
 
 /**
  * Yasumu Runtime API
@@ -61,13 +60,6 @@ Object.defineProperty(globalThis, 'Yasumu', {
   writable: false,
   enumerable: false,
   configurable: false,
-});
-
-// patch console to send messages to the renderer instead of the standard output
-globalThis.console = new Console((msg: string, level: number) => {
-  op_send_renderer_event(
-    JSON.stringify({ type: 'console', payload: { msg, level } }),
-  );
 });
 
 declare global {

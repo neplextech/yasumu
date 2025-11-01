@@ -1,3 +1,9 @@
+import * as jsxrt from 'yasumu:ui/jsx-runtime';
+
+setTimeout(() => {
+  console.log(jsxrt);
+}, 1000);
+
 Yasumu.onEvent(async (event) => {
   console.log('[YasumuScript] Received event from renderer/frontend:', event);
 
@@ -26,6 +32,6 @@ Yasumu.onEvent(async (event) => {
   });
 
   worker.postMessage({
-    filename: new URL(FILE_PATH, import.meta.url).href,
+    filename: FILE_PATH,
   });
 });

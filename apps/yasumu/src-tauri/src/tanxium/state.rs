@@ -13,9 +13,6 @@ pub static PERMISSION_CHANNELS: Lazy<
 pub static RECEIVER_MAP: Lazy<Mutex<HashMap<thread::ThreadId, Receiver<PermissionsResponse>>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-pub static EVENT_LISTENER_RESOURCE_ID: Lazy<Mutex<Option<deno_core::ResourceId>>> =
-    Lazy::new(|| Mutex::new(None));
-
 pub static RENDERER_EVENT_SENDER: Lazy<Mutex<Option<tokio::sync::mpsc::UnboundedSender<String>>>> =
     Lazy::new(|| Mutex::new(None));
 

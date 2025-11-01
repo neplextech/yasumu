@@ -1,3 +1,4 @@
+// @ts-ignore type
 self.onmessage = async (e: MessageEvent<{ filename: string }>) => {
   try {
     console.log('Worker received message:', e.data.filename);

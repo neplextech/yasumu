@@ -45,6 +45,9 @@ impl WorkerSharedState {
     fn create_web_worker_callback(self: &Arc<Self>, stdio: Stdio) -> Arc<CreateWebWorkerCb> {
         let shared = self.clone();
         Arc::new(move |args| {
+            let worker_thread_id = thread::current().id();
+            setup_permission_channel(worker_thread_id);
+
             let worker_source_maps = Rc::new(RefCell::new(HashMap::new()));
             let worker_module_loader = Rc::new(TypescriptModuleLoader {
                 source_maps: worker_source_maps,

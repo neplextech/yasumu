@@ -28,6 +28,21 @@ pub fn cleanup_permission_channel(thread_id: &thread::ThreadId) {
     RECEIVER_MAP.lock().unwrap().remove(thread_id);
 }
 
+pub fn cleanup_dead_channels() {
+    let mut channels = PERMISSION_CHANNELS.lock().unwrap();
+    let receivers = RECEIVER_MAP.lock().unwrap();
+
+    let to_remove: Vec<_> = channels
+        .keys()
+        .filter(|thread_id| !receivers.contains_key(thread_id))
+        .copied()
+        .collect();
+
+    for thread_id in to_remove {
+        channels.remove(&thread_id);
+    }
+}
+
 #[derive(Clone, serde::Serialize)]
 struct PermissionPromptEvent {
     custom_id: String,
@@ -108,9 +123,13 @@ impl PermissionPrompter for CustomPrompter {
 
             match receiver.recv() {
                 Ok(response) => response.to_prompt_response(),
-                Err(_) => PromptResponse::Deny,
+                Err(_) => {
+                    cleanup_permission_channel(&thread_id);
+                    PromptResponse::Deny
+                }
             }
         } else {
+            cleanup_dead_channels();
             PromptResponse::Deny
         }
     }
@@ -120,9 +139,20 @@ pub fn respond_to_permission_prompt(thread_id_str: &str, response: PermissionsRe
     let thread_id = parse_thread_id(thread_id_str);
 
     if let Some(thread_id) = thread_id {
-        if let Some(tx) = PERMISSION_CHANNELS.lock().unwrap().get(&thread_id).cloned() {
-            let _ = tx.send(response);
+        let mut channels = PERMISSION_CHANNELS.lock().unwrap();
+        if let Some(tx) = channels.get(&thread_id).cloned() {
+            match tx.try_send(response.clone()) {
+                Ok(()) => {}
+                Err(crossbeam_channel::TrySendError::Disconnected(_)) => {
+                    channels.remove(&thread_id);
+                    RECEIVER_MAP.lock().unwrap().remove(&thread_id);
+                }
+                Err(crossbeam_channel::TrySendError::Full(_)) => {
+                    let _ = tx.send(response);
+                }
+            }
         } else {
+            cleanup_dead_channels();
             println!(
                 "No permission channel found for thread_id: {}",
                 thread_id_str
@@ -138,11 +168,6 @@ fn parse_thread_id(thread_id_str: &str) -> Option<thread::ThreadId> {
 
     if thread_id_str.starts_with("ThreadId(") && thread_id_str.ends_with(")") {
         let inner = &thread_id_str[9..thread_id_str.len() - 1];
-        if let Ok(val) = u64::from_str_radix(inner, 16) {
-            unsafe {
-                return Some(std::mem::transmute::<u64, thread::ThreadId>(val));
-            }
-        }
         if let Ok(val) = inner.parse::<u64>() {
             unsafe {
                 return Some(std::mem::transmute::<u64, thread::ThreadId>(val));
