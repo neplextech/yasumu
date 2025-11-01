@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use deno_ast::ModuleSpecifier;
 use deno_ast::ParseParams;
 use deno_ast::SourceMapOption;
-use deno_ast::{JsxPrecompileOptions, JsxRuntime, MediaType};
+use deno_ast::{JsxAutomaticOptions, ModuleSpecifier};
+use deno_ast::{JsxRuntime, MediaType};
 use deno_core::ModuleLoadReferrer;
 use deno_runtime::deno_core::error::ModuleLoaderError;
 use deno_runtime::deno_core::ModuleSourceCode;
@@ -155,13 +155,9 @@ impl ModuleLoader for TypescriptModuleLoader {
                             decorators: deno_ast::DecoratorsTranspileOption::LegacyTypeScript {
                                 emit_metadata: true,
                             },
-                            jsx: Some(JsxRuntime::Precompile(JsxPrecompileOptions {
-                                automatic: deno_ast::JsxAutomaticOptions {
-                                    development: false,
-                                    import_source: Some("yasumu:ui".to_string()),
-                                },
-                                dynamic_props: None,
-                                skip_elements: None,
+                            jsx: Some(JsxRuntime::Automatic(JsxAutomaticOptions {
+                                development: false,
+                                import_source: Some("yasumu:ui".to_string()),
                             })),
                             ..Default::default()
                         },

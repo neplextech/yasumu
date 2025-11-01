@@ -28,7 +28,6 @@ export function PermissionPromptProvider({
     const permissionPromptHandler = event.listen<PermissionPromptEvent>(
       'permission-prompt',
       async (event) => {
-        console.log({ permissionPrompt: event.payload });
         try {
           setPendingPrompts((p) => [...p, event.payload]);
         } catch (error) {

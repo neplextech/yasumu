@@ -28,7 +28,7 @@ export function PermissionPrompt({
 
   return (
     <AlertDialog defaultOpen>
-      <AlertDialogContent className="max-w-2xl">
+      <AlertDialogContent className="w-5xl" autoWidth>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <VscWarning className="size-4" />
@@ -40,7 +40,7 @@ export function PermissionPrompt({
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3">
-              <div className="font-medium text-foreground">
+              <div className="font-medium text-foreground wrap-break-words">
                 Script wants {prompt.message}
               </div>
 
@@ -62,8 +62,11 @@ export function PermissionPrompt({
                   <ScrollArea className="h-48 w-full rounded-md border bg-muted/50 p-3">
                     <div className="space-y-1 font-mono text-xs">
                       {prompt.stack.map((frame, idx) => (
-                        <div key={idx} className="text-muted-foreground">
-                          <span className="break-all">at {frame}</span>
+                        <div
+                          key={idx}
+                          className="text-muted-foreground wrap-break-words"
+                        >
+                          at {frame}
                         </div>
                       ))}
                     </div>

@@ -1,8 +1,4 @@
-import * as jsxrt from 'yasumu:ui/jsx-runtime';
-
-setTimeout(() => {
-  console.log(jsxrt);
-}, 1000);
+import './test.tsx';
 
 Yasumu.onEvent(async (event) => {
   console.log('[YasumuScript] Received event from renderer/frontend:', event);
