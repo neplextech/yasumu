@@ -12,7 +12,7 @@ export interface PermissionPromptEvent {
     name: string;
     api_name: string | null;
     is_unary: boolean;
-    response: 'Allow' | 'Deny' | 'AllowAll';
+    response: 'Allow' | 'Deny' | 'AllowAll' | null;
     stack: string[];
   };
 }

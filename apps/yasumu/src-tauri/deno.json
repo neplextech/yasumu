@@ -1,6 +1,6 @@
 {
-    "compilerOptions": {
-        "jsx": "react-jsx",
-        "jsxImportSource": "yasumu:ui"
-    }
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "yasumu:ui"
+  }
 }

@@ -24,15 +24,19 @@ import { CreateInputDialog } from '../dialogs/create-input-dialog';
 const truncate = (str: string, length: number) =>
   str.length > length ? `${str.slice(0, length)}...` : str;
 
+export interface FileTreeItem {
+  name: string;
+  icon?: React.ComponentType;
+  children?: FileTreeItem[];
+}
+
 export function FileTreeSidebar({
   fileTree,
-  resolveIcon,
   onFileCreate,
   onFolderCreate,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  fileTree: any[];
-  resolveIcon?: (entity: any) => () => React.ReactNode;
+  fileTree: FileTreeItem[];
   onFileCreate?: (name: string) => void;
   onFolderCreate?: (name: string) => void;
 }) {
@@ -66,7 +70,7 @@ export function FileTreeSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {tree.map((item, index) => (
-                <Tree key={index} item={item} resolveIcon={resolveIcon} />
+                <Tree key={index} item={item} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -78,21 +82,16 @@ export function FileTreeSidebar({
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function Tree({
-  item,
-  resolveIcon,
-}: {
-  item: any;
-  resolveIcon?: (entity: any) => () => React.ReactNode;
-}) {
+function Tree({ item }: { item: FileTreeItem }) {
   const { name, children } = item;
 
   if (!children?.length) {
-    const Icon = resolveIcon?.(item);
+    const Icon = item.icon;
 
     return (
       <SidebarMenuButton className="data-[active=true]:bg-transparent text-xs">
-        {Icon && <Icon />}
+        {/* @ts-ignore */}
+        {Icon && <Icon short />}
         {truncate(name || '', 20)}
       </SidebarMenuButton>
     );

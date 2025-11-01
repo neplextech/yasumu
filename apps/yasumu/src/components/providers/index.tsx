@@ -9,6 +9,7 @@ import { PermissionPromptProvider } from './permission-prompt-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
+
   return (
     <NextThemesProvider
       attribute="class"

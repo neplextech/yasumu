@@ -1,11 +1,8 @@
-import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
-import HttpMethodSelector from './(components)/http-methods-selector';
 import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
-import { useTranslations } from 'next-intl';
-import RequestTabList from './(components)/tabs';
 import SendButton from './(components)/send-button';
+import IntrospectButton from './(components)/introspect-button';
 import {
   Tabs,
   TabsContent,
@@ -14,22 +11,38 @@ import {
 } from '@yasumu/ui/components/tabs';
 import { Textarea } from '@yasumu/ui/components/textarea';
 
-export default function Home() {
-  const t = useTranslations('rest');
+const mockQuery = `query GetUsers {
+  users {
+    id
+    name
+    email
+    posts {
+      id
+      title
+      content
+    }
+  }
+}`;
+
+const mockVariables = `{
+  "userId": "1",
+  "limit": 10
+}`;
+
+export default function GraphqlPage() {
   return (
     <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
-      <RequestTabList />
       <div className="flex gap-4">
-        <HttpMethodSelector />
-        <Input placeholder={t('url-input.enter-a-url')} />
+        <Input placeholder="Enter GraphQL endpoint URL" />
+        <IntrospectButton />
         <SendButton />
       </div>
       <Separator />
-      <Tabs defaultValue="parameters">
+      <Tabs defaultValue="query">
         <TabsList>
-          <TabsTrigger value="parameters">Parameters</TabsTrigger>
+          <TabsTrigger value="query">Query</TabsTrigger>
+          <TabsTrigger value="variables">Variables</TabsTrigger>
           <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="body">Body</TabsTrigger>
           <TabsTrigger value="pre-request-script">
             Pre-request Script
           </TabsTrigger>
@@ -39,14 +52,22 @@ export default function Home() {
           <TabsTrigger value="tests">Tests</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
-        <TabsContent value="parameters">
-          <KeyValueTable />
+        <TabsContent value="query">
+          <Textarea
+            placeholder="Enter your GraphQL query..."
+            defaultValue={mockQuery}
+            className="font-mono"
+          />
+        </TabsContent>
+        <TabsContent value="variables">
+          <Textarea
+            placeholder="Enter your GraphQL variables (JSON)..."
+            defaultValue={mockVariables}
+            className="font-mono"
+          />
         </TabsContent>
         <TabsContent value="headers">
           <KeyValueTable />
-        </TabsContent>
-        <TabsContent value="body">
-          <Textarea placeholder="Your request body goes here..." />
         </TabsContent>
         <TabsContent value="pre-request-script">
           <Textarea placeholder="Your pre-request script goes here..." />

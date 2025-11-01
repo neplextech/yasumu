@@ -1,14 +1,14 @@
 import LayoutGroup from '@/components/layout/layout-group';
 import { ResizableApplicationLayout } from '@/components/layout/resizable-layout';
-import { RestFileTree } from './(components)/rest-file-tree';
+import { SseFileTree } from './(components)/sse-file-tree';
 import OutputConsole from './(components)/output-console';
 
-export default function RestLayout({ children }: React.PropsWithChildren) {
+export default function SseLayout({ children }: React.PropsWithChildren) {
   return (
     <LayoutGroup>
       <ResizableApplicationLayout
-        id="yasumu-rest-layout"
-        left={<RestFileTree />}
+        id="yasumu-sse-layout"
+        left={<SseFileTree />}
         right={children}
         bottom={<OutputConsole />}
       />
