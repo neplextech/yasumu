@@ -38,8 +38,8 @@ export default function GrpcIcon({
           y2="-611.894"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="currentColor"></stop>
-          <stop offset="1" stop-color="currentColor"></stop>
+          <stop stopColor="currentColor"></stop>
+          <stop offset="1" stopColor="currentColor"></stop>
         </linearGradient>
         <linearGradient
           id="b"
@@ -49,8 +49,8 @@ export default function GrpcIcon({
           y2="-344.331"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="currentColor"></stop>
-          <stop offset="1" stop-color="currentColor"></stop>
+          <stop stopColor="currentColor"></stop>
+          <stop offset="1" stopColor="currentColor"></stop>
         </linearGradient>
       </defs>
     </svg>
