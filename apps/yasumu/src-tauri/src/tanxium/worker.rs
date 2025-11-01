@@ -5,16 +5,25 @@ use crate::tanxium::state::init_renderer_event_channel;
 use crate::tanxium::types::AppHandleState;
 use deno_resolver::npm::DenoInNpmPackageChecker;
 use deno_resolver::npm::NpmResolver;
-use deno_runtime::BootstrapOptions;
+use deno_runtime::colors;
+use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 use deno_runtime::deno_core::error::AnyError;
+use deno_runtime::deno_core::CompiledWasmModuleStore;
 use deno_runtime::deno_core::ModuleSpecifier;
+use deno_runtime::deno_core::SharedArrayBufferStore;
 use deno_runtime::deno_fs::RealFs;
+use deno_runtime::deno_io::Stdio;
 use deno_runtime::deno_permissions::Permissions;
 use deno_runtime::deno_permissions::PermissionsContainer;
+use deno_runtime::deno_web::BlobStore;
+use deno_runtime::ops::worker_host::CreateWebWorkerCb;
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
+use deno_runtime::web_worker::{WebWorker, WebWorkerOptions, WebWorkerServiceOptions};
 use deno_runtime::worker::MainWorker;
 use deno_runtime::worker::WorkerOptions;
 use deno_runtime::worker::WorkerServiceOptions;
+use deno_runtime::UNSTABLE_FEATURES;
+use deno_runtime::{BootstrapOptions, FeatureChecker};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -23,15 +32,258 @@ use std::thread;
 use sys_traits::impls::RealSys;
 use tauri::AppHandle;
 
+struct WorkerSharedState {
+    blob_store: Arc<BlobStore>,
+    broadcast_channel: InMemoryBroadcastChannel,
+    compiled_wasm_module_store: CompiledWasmModuleStore,
+    fs: Arc<RealFs>,
+    shared_array_buffer_store: SharedArrayBufferStore,
+    app_handle: AppHandle,
+}
+
+impl WorkerSharedState {
+    fn create_web_worker_callback(self: &Arc<Self>, stdio: Stdio) -> Arc<CreateWebWorkerCb> {
+        let shared = self.clone();
+        Arc::new(move |args| {
+            let worker_source_maps = Rc::new(RefCell::new(HashMap::new()));
+            let worker_module_loader = Rc::new(TypescriptModuleLoader {
+                source_maps: worker_source_maps,
+            });
+
+            let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone());
+
+            let services =
+                WebWorkerServiceOptions::<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys> {
+                    deno_rt_native_addon_loader: Default::default(),
+                    root_cert_store_provider: Default::default(),
+                    module_loader: worker_module_loader,
+                    fs: shared.fs.clone(),
+                    node_services: Default::default(),
+                    blob_store: shared.blob_store.clone(),
+                    broadcast_channel: shared.broadcast_channel.clone(),
+                    shared_array_buffer_store: Some(shared.shared_array_buffer_store.clone()),
+                    compiled_wasm_module_store: Some(shared.compiled_wasm_module_store.clone()),
+                    maybe_inspector_server: None,
+                    feature_checker: Default::default(),
+                    npm_process_state_provider: Default::default(),
+                    permissions: args.permissions,
+                };
+
+            let options = WebWorkerOptions {
+                name: args.name,
+                main_module: args.main_module.clone(),
+                worker_id: args.worker_id,
+                bootstrap: BootstrapOptions {
+                    deno_version: env!("CARGO_PKG_VERSION").to_string(),
+                    args: vec![],
+                    cpu_count: std::thread::available_parallelism()
+                        .map(|p| p.get())
+                        .unwrap_or(1),
+                    log_level: deno_runtime::WorkerLogLevel::Info,
+                    enable_op_summary_metrics: false,
+                    enable_testing_features: false,
+                    locale: deno_core::v8::icu::get_language_tag(),
+                    location: Some(args.main_module.clone()),
+                    color_level: colors::get_color_level(),
+                    unstable_features: UNSTABLE_FEATURES
+                        .iter()
+                        .filter(|f| f.name == "worker-options")
+                        .map(|f| f.id)
+                        .collect(),
+                    user_agent: format!("Yasumu/{}", env!("CARGO_PKG_VERSION")),
+                    inspect: false,
+                    is_standalone: false,
+                    auto_serve: false,
+                    has_node_modules_dir: false,
+                    argv0: None,
+                    node_debug: None,
+                    node_ipc_fd: None,
+                    mode: deno_runtime::WorkerExecutionMode::Worker,
+                    serve_port: None,
+                    serve_host: None,
+                    otel_config: Default::default(),
+                    no_legacy_abort: false,
+                    close_on_idle: args.close_on_idle,
+                },
+                extensions: vec![tanxium_rt::init()],
+                startup_snapshot: None,
+                create_params: None,
+                unsafely_ignore_certificate_errors: None,
+                seed: None,
+                create_web_worker_cb,
+                format_js_error_fn: None,
+                worker_type: args.worker_type,
+                stdio: stdio.clone(),
+                cache_storage_dir: None,
+                trace_ops: None,
+                close_on_idle: args.close_on_idle,
+                maybe_worker_metadata: args.maybe_worker_metadata,
+                maybe_coverage_dir: None,
+                enable_raw_imports: true,
+                enable_stack_trace_arg_in_ops: true,
+            };
+
+            let (worker, handle) = WebWorker::bootstrap_from_options(services, options);
+
+            worker
+                .js_runtime
+                .op_state()
+                .borrow_mut()
+                .put(AppHandleState {
+                    app_handle: shared.app_handle.clone(),
+                });
+
+            (worker, handle)
+        })
+    }
+}
+
+async fn initialize_worker(
+    main_module: &ModuleSpecifier,
+    shared_state: &Arc<WorkerSharedState>,
+    app_handle: &AppHandle,
+    thread_id: thread::ThreadId,
+) -> Result<MainWorker, AnyError> {
+    let fs = Arc::new(RealFs);
+    let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
+        Arc::new(RuntimePermissionDescriptorParser::new(RealSys));
+
+    let source_map_store = Rc::new(RefCell::new(HashMap::new()));
+
+    let permission_container = PermissionsContainer::new(
+        permission_desc_parser.clone(),
+        Permissions::none_with_prompt(),
+    );
+
+    setup_permission_channel(thread_id);
+
+    let stdio = Stdio::default();
+
+    let create_web_worker_cb = shared_state.create_web_worker_callback(stdio.clone());
+
+    let mut feature_checker = FeatureChecker::default();
+
+    feature_checker.enable_feature(
+        UNSTABLE_FEATURES
+            .iter()
+            .find(|f| f.name == "worker-options")
+            .unwrap()
+            .name,
+    );
+
+    let mut worker = MainWorker::bootstrap_from_options::<
+        DenoInNpmPackageChecker,
+        NpmResolver<RealSys>,
+        RealSys,
+    >(
+        main_module,
+        WorkerServiceOptions {
+            module_loader: Rc::new(TypescriptModuleLoader {
+                source_maps: source_map_store,
+            }),
+            permissions: permission_container,
+            bundle_provider: Default::default(),
+            deno_rt_native_addon_loader: Default::default(),
+            blob_store: shared_state.blob_store.clone(),
+            broadcast_channel: shared_state.broadcast_channel.clone(),
+            feature_checker: Arc::new(feature_checker),
+            node_services: Default::default(),
+            npm_process_state_provider: Default::default(),
+            root_cert_store_provider: Default::default(),
+            shared_array_buffer_store: Some(shared_state.shared_array_buffer_store.clone()),
+            compiled_wasm_module_store: Some(shared_state.compiled_wasm_module_store.clone()),
+            v8_code_cache: Default::default(),
+            fetch_dns_resolver: Default::default(),
+            fs,
+        },
+        WorkerOptions {
+            extensions: vec![tanxium_rt::init()],
+            bootstrap: BootstrapOptions {
+                user_agent: format!("Yasumu/{}", env!("CARGO_PKG_VERSION")).to_string(),
+                close_on_idle: false,
+                unstable_features: UNSTABLE_FEATURES
+                    .iter()
+                    .filter(|f| f.name == "worker-options")
+                    .map(|f| f.id)
+                    .collect(),
+                ..Default::default()
+            },
+            stdio: stdio.clone(),
+            enable_stack_trace_arg_in_ops: true,
+            create_web_worker_cb,
+            ..Default::default()
+        },
+    );
+
+    worker
+        .js_runtime
+        .op_state()
+        .borrow_mut()
+        .put(AppHandleState {
+            app_handle: app_handle.clone(),
+        });
+
+    println!("Executing main module: {}", main_module);
+
+    worker.execute_main_module(main_module).await?;
+
+    Ok(worker)
+}
+
+async fn run_worker_event_loop(
+    worker: &mut MainWorker,
+    event_receiver: &mut tokio::sync::mpsc::UnboundedReceiver<String>,
+) -> Result<(), AnyError> {
+    loop {
+        tokio::select! {
+            event_result = event_receiver.recv() => {
+                match event_result {
+                    Some(event) => {
+                        let script: String = format!(
+                            r#"if (globalThis.Yasumu) {{ Yasumu['~yasumu__on__Event__Callback']?.({}); }}"#,
+                            event
+                        );
+                        if let Err(e) = worker.js_runtime.execute_script("internal:event_callback", script) {
+                            eprintln!("Error executing event callback script: {}", e);
+                        }
+                    }
+                    None => {
+                        println!("Event receiver channel closed");
+                        return Err(AnyError::msg("Event receiver channel closed"));
+                    }
+                }
+            }
+            event_loop_result = worker.run_event_loop(false) => {
+                match event_loop_result {
+                    Ok(_) => {
+                    }
+                    Err(e) => {
+                        let error_msg = format!("Worker event loop error: {}", e);
+                        eprintln!("{}", error_msg);
+
+                        let error_str = e.to_string();
+                        if error_str.contains("Unhandled error in child worker") {
+                            eprintln!("Child worker error detected - will recover");
+                            return Err(AnyError::from(e));
+                        }
+
+                        return Err(AnyError::from(e));
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub fn create_and_start_worker(
     main_module: &ModuleSpecifier,
     app_handle: AppHandle,
 ) -> Result<(), AnyError> {
     let main_module = main_module.clone();
-    
-    std::thread::spawn(move || {        
+
+    std::thread::spawn(move || {
         println!("Starting Deno runtime thread");
-        
+
         let runtime = match tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -44,108 +296,77 @@ pub fn create_and_start_worker(
         };
 
         println!("Tokio runtime created, blocking on async block");
-        
+
         runtime.block_on(async move {
             let thread_id = thread::current().id();
-            
-            let fs = Arc::new(RealFs);
-            let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
-                Arc::new(RuntimePermissionDescriptorParser::new(RealSys));
 
-            let source_map_store = Rc::new(RefCell::new(HashMap::new()));
+            let shared_state = Arc::new(WorkerSharedState {
+                blob_store: Arc::new(BlobStore::default()),
+                broadcast_channel: InMemoryBroadcastChannel::default(),
+                compiled_wasm_module_store: CompiledWasmModuleStore::default(),
+                fs: Arc::new(RealFs),
+                shared_array_buffer_store: SharedArrayBufferStore::default(),
+                app_handle: app_handle.clone(),
+            });
 
-            let permission_container =
-                PermissionsContainer::new(permission_desc_parser, Permissions::none_with_prompt());
+            let mut retry_count = 0;
+            const MAX_RETRIES: u32 = 5;
+            const RETRY_DELAY_MS: u64 = 1000;
 
-            setup_permission_channel(thread_id);
-
-            let mut worker = MainWorker::bootstrap_from_options::<
-                DenoInNpmPackageChecker,
-                NpmResolver<RealSys>,
-                RealSys,
-            >(
-                &main_module,
-                WorkerServiceOptions {
-                    module_loader: Rc::new(TypescriptModuleLoader {
-                        source_maps: source_map_store,
-                    }),
-                    permissions: permission_container,
-                    bundle_provider: Default::default(),
-                    deno_rt_native_addon_loader: Default::default(),
-                    blob_store: Default::default(),
-                    broadcast_channel: Default::default(),
-                    feature_checker: Default::default(),
-                    node_services: Default::default(),
-                    npm_process_state_provider: Default::default(),
-                    root_cert_store_provider: Default::default(),
-                    shared_array_buffer_store: Default::default(),
-                    compiled_wasm_module_store: Default::default(),
-                    v8_code_cache: Default::default(),
-                    fetch_dns_resolver: Default::default(),
-                    fs,
-                },
-                WorkerOptions {
-                    extensions: vec![tanxium_rt::init()],
-                    bootstrap: BootstrapOptions {
-                        user_agent: format!("Yasumu/{}", env!("CARGO_PKG_VERSION")).to_string(),
-                        close_on_idle: false,
-                        ..Default::default()
-                    },
-                    enable_stack_trace_arg_in_ops: true,
-                    ..Default::default()
-                },
-            );
-
-            worker
-                .js_runtime
-                .op_state()
-                .borrow_mut()
-                .put(AppHandleState {
-                    app_handle: app_handle.clone(),
-                });
-
-            println!("Executing main module: {}", main_module);
-
-            if let Err(e) = worker.execute_main_module(&main_module).await {
-                cleanup_permission_channel(&thread_id);
-                eprintln!("Failed to execute main module: {}", e);
-                return;
-            }
-
-            let mut event_receiver = init_renderer_event_channel();
-            
             loop {
-                tokio::select! {
-                    event_result = event_receiver.recv() => {
-                        match event_result {
-                            Some(event) => {
-                                let script: String = format!(
-                                    r#"if (globalThis.Yasumu) {{ Yasumu['~yasumu__on__Event__Callback']?.({}); }}"#,
-                                    event
-                                );
-                                let _ = worker.js_runtime.execute_script("internal:event_callback", script);
-                            }
-                            None => {
-                                println!("Event receiver channel closed");
+                if retry_count > 0 {
+                    println!("Reinitializing worker (attempt {})...", retry_count + 1);
+                    tokio::time::sleep(tokio::time::Duration::from_millis(RETRY_DELAY_MS)).await;
+                }
+
+                match initialize_worker(&main_module, &shared_state, &app_handle, thread_id).await {
+                    Ok(mut worker) => {
+                        let mut event_receiver = init_renderer_event_channel();
+
+                        match run_worker_event_loop(&mut worker, &mut event_receiver).await {
+                            Ok(_) => {
+                                println!("Worker event loop completed normally");
                                 break;
+                            }
+                            Err(e) => {
+                                let error_str = e.to_string();
+
+                                if error_str.contains("Event receiver channel closed") {
+                                    println!("Event receiver closed - shutting down gracefully");
+                                    cleanup_permission_channel(&thread_id);
+                                    break;
+                                }
+
+                                eprintln!("Worker event loop error: {}", e);
+                                retry_count += 1;
+
+                                if retry_count > MAX_RETRIES {
+                                    eprintln!(
+                                        "Max retries ({}) exceeded - shutting down",
+                                        MAX_RETRIES
+                                    );
+                                    cleanup_permission_channel(&thread_id);
+                                    break;
+                                }
+
+                                cleanup_permission_channel(&thread_id);
+                                println!("Attempting to recover worker...");
                             }
                         }
                     }
-                    event_loop_result = worker.run_event_loop(false) => {
-                        match event_loop_result {
-                            Ok(_) => {
-                            }
-                            Err(e) => {
-                                eprintln!("Worker event loop error: {}", e);
-                                break;
-                            }
+                    Err(e) => {
+                        eprintln!("Failed to initialize worker: {}", e);
+                        retry_count += 1;
+
+                        if retry_count > MAX_RETRIES {
+                            eprintln!("Max retries ({}) exceeded - shutting down", MAX_RETRIES);
+                            cleanup_permission_channel(&thread_id);
+                            break;
                         }
                     }
                 }
             }
-            
-            cleanup_permission_channel(&thread_id);
-            
+
             println!("Deno runtime shutting down");
         });
     });

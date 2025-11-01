@@ -3,9 +3,27 @@ import { YasumuUI } from './ui.ts';
 import { op_send_renderer_event } from 'ext:core/ops';
 import { Console } from 'ext:deno_console/01_console.js';
 
+/**
+ * Yasumu Runtime API
+ */
 interface YasumuRuntime {
+  /**
+   * Yasumu UI API
+   */
   ui: typeof YasumuUI;
+  /**
+   * Register a listener for events from the renderer
+   * @param listener The listener to register
+   * @returns A function to remove the listener
+   */
   onEvent: (listener: (event: string) => unknown) => () => void;
+  /**
+   * Internal event callback
+   * @param event The event to callback
+   * @returns The result of the callback
+   * @private
+   * @internal
+   */
   '~yasumu__on__Event__Callback': (event: string) => unknown;
 }
 

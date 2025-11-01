@@ -1,9 +1,3 @@
-import { setTimeout as sleep } from 'node:timers/promises';
-
-// // This script is used to keep the worker alive
-// const ONE_HOUR = 1000 * 60 * 60;
-// setInterval(() => {}, ONE_HOUR);
-
 Yasumu.onEvent(async (event) => {
   console.log('[YasumuScript] Received event from renderer/frontend:', event);
 
@@ -18,17 +12,20 @@ Yasumu.onEvent(async (event) => {
     message: `${todo.title}`,
     variant: 'info',
   });
+
+  const FILE_PATH =
+    '/Users/andromeda/Developer/work/neplex/yasumu/apps/yasumu/src-tauri/resources/yasumu-scripts/file_1.txt';
+
+  const worker = new Worker(new URL('./worker.ts', import.meta.url).href, {
+    type: 'module',
+    deno: {
+      permissions: {
+        read: [new URL(FILE_PATH, import.meta.url)],
+      },
+    },
+  });
+
+  worker.postMessage({
+    filename: new URL(FILE_PATH, import.meta.url).href,
+  });
 });
-
-setTimeout(async () => {
-  const variants = ['success', 'warning', 'error', 'info', 'default'] as const;
-
-  for (const variant of variants) {
-    Yasumu.ui.showNotification({
-      title: `Notification ${variant}`,
-      message: `This is a ${variant} notification from Tanxium runtime`,
-      variant,
-    });
-    await sleep(3_000);
-  }
-}, 5000);
