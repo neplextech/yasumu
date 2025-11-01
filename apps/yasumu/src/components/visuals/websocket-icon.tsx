@@ -3,8 +3,10 @@ import React from 'react';
 
 export default function WebSocketIcon({
   className,
+  short,
   ...props
-}: React.SVGAttributes<SVGElement>) {
+}: React.SVGAttributes<SVGElement> & { short?: boolean }) {
+  void short;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

@@ -9,7 +9,6 @@ import {
 } from '@yasumu/ui/components/tabs';
 import { Separator } from '@yasumu/ui/components/separator';
 import { Input } from '@yasumu/ui/components/input';
-import { Label } from '@yasumu/ui/components/label';
 import { Button } from '@yasumu/ui/components/button';
 import { Switch } from '@yasumu/ui/components/switch';
 import {
@@ -19,10 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@yasumu/ui/components/select';
-import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
-import SettingsSection from './(components)/settings-section.js';
-import SettingItem from './(components)/setting-item.js';
+import SettingsSection from './(components)/settings-section';
+import SettingItem from './(components)/setting-item';
 
 export default function SettingsPage() {
   const [theme, setTheme] = useState('system');

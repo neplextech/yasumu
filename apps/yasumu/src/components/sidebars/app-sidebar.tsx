@@ -234,6 +234,7 @@ function SettingsDropdown({
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
+            {/* @ts-ignore */}
             <Link href="/en/settings">
               <DropdownMenuItem>
                 <Settings />
