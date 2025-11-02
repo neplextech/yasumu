@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import * as crypto from 'node:crypto';
 import * as async_hooks from 'node:async_hooks';
 import * as events from 'node:events';
+// import * as module from 'node:module';
 
 const builtins = {
   'node:path': path,
@@ -24,3 +25,9 @@ globalThis.require = (moduleName: string) => {
 
   return mod;
 };
+
+// // @ts-ignore patch
+// // deno-lint-ignore no-import-assign
+// module.createRequire = () => {
+//   return globalThis.require;
+// };
