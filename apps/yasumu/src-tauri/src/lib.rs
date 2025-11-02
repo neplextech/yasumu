@@ -7,6 +7,7 @@ use tauri::Manager;
 
 struct YasumuInternalState {
     ready: bool,
+    rpc_port: Option<u16>,
 }
 
 #[tauri::command]
@@ -38,6 +39,13 @@ fn tanxium_send_event(data: &str) {
     tanxium::invoke_renderer_event_callback(data);
 }
 
+#[tauri::command]
+fn get_rpc_port(app: tauri::AppHandle) -> Option<u16> {
+    let state = app.state::<Mutex<YasumuInternalState>>();
+    let yasumu_state = state.lock().unwrap();
+    yasumu_state.rpc_port
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     rustls::crypto::ring::default_provider()
@@ -45,7 +53,10 @@ pub fn run() {
         .expect("Failed to install rustls crypto provider");
 
     tauri::Builder::default()
-        .manage(Mutex::new(YasumuInternalState { ready: false }))
+        .manage(Mutex::new(YasumuInternalState {
+            ready: false,
+            rpc_port: None,
+        }))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
@@ -92,6 +103,7 @@ pub fn run() {
             respond_to_permission_prompt,
             tanxium_send_event,
             on_frontend_ready,
+            get_rpc_port,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

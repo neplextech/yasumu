@@ -1,6 +1,9 @@
 /// <reference types="./internal.d.ts" />
 import './patches.ts';
 import { YasumuUI } from './ui.ts';
+import { op_get_resources_dir, op_set_rpc_port } from 'ext:core/ops';
+
+let _resourceDir: string;
 
 /**
  * Yasumu Runtime API
@@ -10,6 +13,16 @@ interface YasumuRuntime {
    * Yasumu UI API
    */
   ui: typeof YasumuUI;
+  /**
+   * Get the resources directory
+   * @returns The resources directory
+   */
+  getResourcesDir: () => string;
+  /**
+   * Set the RPC port
+   * @param port The port to set
+   */
+  setRpcPort: (port: number) => void;
   /**
    * Register a listener for events from the renderer
    * @param listener The listener to register
@@ -36,6 +49,16 @@ const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
 const Yasumu: YasumuRuntime = {
   ui: YasumuUI,
+  getResourcesDir: () => {
+    if (!_resourceDir) {
+      _resourceDir = op_get_resources_dir();
+    }
+
+    return _resourceDir;
+  },
+  setRpcPort: (port: number) => {
+    op_set_rpc_port(port);
+  },
   onReady: (listener: () => unknown) => {
     readyListeners.add(listener);
 

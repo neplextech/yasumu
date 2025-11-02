@@ -10,7 +10,9 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsc"
+        "bundle": "deno --allow-write --allow-read --unstable-bundle scripts/bundle.ts",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate": "prisma migrate dev"
     },
     "license": "GPL-3.0",
     "author": "Neplex",
@@ -18,9 +20,13 @@
         "type": "git",
         "url": "https://github.com/neplextech/yasumu.git"
     },
-    "devDependencies": {
-        "@yasumu/shared": "workspace:*",
-        "@yasumu/tsconfig": "workspace:*",
-        "typescript": "catalog:build"
+    "dependencies": {
+        "@hono/zod-validator": "^0.7.4",
+        "@prisma/client": "^6.18.0",
+        "hono": "^4.10.4",
+        "prisma": "^6.18.0",
+        "prisma-adapter-node-sqlite": "^0.0.1",
+        "prisma-migrations": "^0.1.4",
+        "zod": "^4.1.12"
     }
 }

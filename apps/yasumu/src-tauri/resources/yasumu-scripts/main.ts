@@ -1,5 +1,5 @@
-import './init.ts';
+import './patch.ts';
+// @ts-ignore types are not bundled
+import { startServer } from './yasumu-server/index.js';
 
-Deno.serve({ port: 8080 }, () => {
-  return new Response('Hello, world!');
-});
+await startServer();

@@ -3,6 +3,8 @@ declare module 'ext:core/ops' {
   export function op_register_renderer_event_listener(
     callback: (event: string) => void,
   ): number;
+  export function op_get_resources_dir(): string;
+  export function op_set_rpc_port(port: number): void;
 }
 
 declare module 'yasumu:ui/jsx-runtime' {

@@ -32,7 +32,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "resources/yasumu-scripts/**/*": "yasumu-internal/"
+      "resources/yasumu-scripts/": "yasumu-internal/"
     }
   }
 }
