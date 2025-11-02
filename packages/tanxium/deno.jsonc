@@ -1,0 +1,7 @@
+{
+  "nodeModulesDir": false,
+  "importMap": {
+    "drizzle-orm": "npm:drizzle-orm@^0.44.7",
+    "drizzle-kit": "npm:drizzle-kit@^0.31.6",
+  },
+}

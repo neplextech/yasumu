@@ -16,7 +16,7 @@ Yasumu.onEvent(async (event) => {
     variant: 'info',
   });
 
-  const FILE_PATH = join(import.meta.dirname, 'file_1.txt');
+  const FILE_PATH = join(import.meta.dirname!, 'file_1.txt');
 
   const worker = new Worker(new URL('./worker.ts', import.meta.url).href, {
     type: 'module',
