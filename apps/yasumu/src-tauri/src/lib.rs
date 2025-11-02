@@ -1,7 +1,29 @@
 mod tanxium;
 
 use deno_runtime::deno_core::ModuleSpecifier;
+use serde_json::json;
+use std::sync::Mutex;
 use tauri::Manager;
+
+struct YasumuInternalState {
+    ready: bool,
+}
+
+#[tauri::command]
+fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), ()> {
+    let state = app.state::<Mutex<YasumuInternalState>>();
+    let mut yasumu_state = state.lock().unwrap();
+
+    if !yasumu_state.ready {
+        yasumu_state.ready = true;
+        tanxium::invoke_renderer_event_callback(
+            &json!(r#"{"type": "yasumu_internal_ready_event"}"#).to_string(),
+        );
+        Ok(())
+    } else {
+        Ok(())
+    }
+}
 
 #[tauri::command]
 fn respond_to_permission_prompt(thread_id: String, response: String) {
@@ -13,7 +35,6 @@ fn respond_to_permission_prompt(thread_id: String, response: String) {
 
 #[tauri::command]
 fn tanxium_send_event(data: &str) {
-    println!("tanxium_send_event: {}", data);
     tanxium::invoke_renderer_event_callback(data);
 }
 
@@ -24,6 +45,7 @@ pub fn run() {
         .expect("Failed to install rustls crypto provider");
 
     tauri::Builder::default()
+        .manage(Mutex::new(YasumuInternalState { ready: false }))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
@@ -69,6 +91,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             respond_to_permission_prompt,
             tanxium_send_event,
+            on_frontend_ready,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

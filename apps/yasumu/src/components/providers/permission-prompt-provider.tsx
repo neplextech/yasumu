@@ -41,6 +41,12 @@ export function PermissionPromptProvider({
     };
   }, []);
 
+  useEffect(() => {
+    invoke('on_frontend_ready').catch((e) => {
+      console.error('Failed to on frontend ready', e);
+    });
+  }, []);
+
   const handlePermissionResponse = async (
     prompt: PermissionPromptEvent,
     response: PermissionPromptEvent['prompt']['response'],

@@ -17,6 +17,12 @@ interface YasumuRuntime {
    */
   onEvent: (listener: (event: string) => unknown) => () => void;
   /**
+   * Register a listener for when the Yasumu runtime is ready
+   * @param listener The listener to register
+   * @returns A function to remove the listener
+   */
+  onReady: (listener: () => unknown) => () => void;
+  /**
    * Internal event callback
    * @param event The event to callback
    * @returns The result of the callback
@@ -27,8 +33,16 @@ interface YasumuRuntime {
 }
 
 const listeners: Set<(event: string) => unknown> = new Set();
+const readyListeners: Set<() => unknown> = new Set();
 const Yasumu: YasumuRuntime = {
   ui: YasumuUI,
+  onReady: (listener: () => unknown) => {
+    readyListeners.add(listener);
+
+    return () => {
+      readyListeners.delete(listener);
+    };
+  },
   onEvent: (listener: (event: string) => unknown) => {
     listeners.add(listener);
 
@@ -39,11 +53,16 @@ const Yasumu: YasumuRuntime = {
   '~yasumu__on__Event__Callback': async (event: string) => {
     try {
       const parsed = JSON.parse(event);
+      const isReadyEvent = parsed.type === 'yasumu_internal_ready_event';
+      const targetHandlers = isReadyEvent ? readyListeners : listeners;
 
       await Promise.allSettled(
-        Array.from(listeners, async (listener) => {
+        Array.from(targetHandlers, async (listener) => {
           try {
             await listener(parsed);
+            if (isReadyEvent) {
+              readyListeners.delete(listener as () => unknown);
+            }
           } catch (e) {
             console.error('Failed to call listener:', e);
           }
