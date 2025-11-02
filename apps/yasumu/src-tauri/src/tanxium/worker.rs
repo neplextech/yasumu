@@ -1,6 +1,6 @@
 use crate::tanxium::module_loader::TypescriptModuleLoader;
 use crate::tanxium::ops::tanxium_rt;
-use crate::tanxium::permissions::{cleanup_permission_channel, setup_permission_channel};
+use crate::tanxium::permissions::setup_permission_channel;
 use crate::tanxium::state::init_renderer_event_channel;
 use crate::tanxium::types::AppHandleState;
 use deno_resolver::npm::DenoInNpmPackageChecker;
@@ -46,12 +46,21 @@ impl WorkerSharedState {
         let shared = self.clone();
         Arc::new(move |args| {
             let worker_thread_id = thread::current().id();
+
             setup_permission_channel(worker_thread_id);
 
             let worker_source_maps = Rc::new(RefCell::new(HashMap::new()));
             let worker_module_loader = Rc::new(TypescriptModuleLoader {
                 source_maps: worker_source_maps,
             });
+
+            let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
+                Arc::new(RuntimePermissionDescriptorParser::new(RealSys));
+
+            let permissions_container = PermissionsContainer::new(
+                permission_desc_parser.clone(),
+                Permissions::none_with_prompt(),
+            );
 
             let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone());
 
@@ -69,7 +78,7 @@ impl WorkerSharedState {
                     maybe_inspector_server: None,
                     feature_checker: Default::default(),
                     npm_process_state_provider: Default::default(),
-                    permissions: args.permissions,
+                    permissions: permissions_container,
                 };
 
             let options = WebWorkerOptions {
@@ -145,7 +154,6 @@ async fn initialize_worker(
     main_module: &ModuleSpecifier,
     shared_state: &Arc<WorkerSharedState>,
     app_handle: &AppHandle,
-    thread_id: thread::ThreadId,
 ) -> Result<MainWorker, AnyError> {
     let fs = Arc::new(RealFs);
     let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
@@ -153,12 +161,10 @@ async fn initialize_worker(
 
     let source_map_store = Rc::new(RefCell::new(HashMap::new()));
 
-    let permission_container = PermissionsContainer::new(
-        permission_desc_parser.clone(),
-        Permissions::none_with_prompt(),
-    );
-
-    setup_permission_channel(thread_id);
+    // main worker is allowed to do anything
+    // as it is supposed to run our own/trusted code
+    let permission_container =
+        PermissionsContainer::new(permission_desc_parser.clone(), Permissions::allow_all());
 
     let stdio = Stdio::default();
 
@@ -301,8 +307,6 @@ pub fn create_and_start_worker(
         println!("Tokio runtime created, blocking on async block");
 
         runtime.block_on(async move {
-            let thread_id = thread::current().id();
-
             let shared_state = Arc::new(WorkerSharedState {
                 blob_store: Arc::new(BlobStore::default()),
                 broadcast_channel: InMemoryBroadcastChannel::default(),
@@ -322,7 +326,7 @@ pub fn create_and_start_worker(
                     tokio::time::sleep(tokio::time::Duration::from_millis(RETRY_DELAY_MS)).await;
                 }
 
-                match initialize_worker(&main_module, &shared_state, &app_handle, thread_id).await {
+                match initialize_worker(&main_module, &shared_state, &app_handle).await {
                     Ok(mut worker) => {
                         let mut event_receiver = init_renderer_event_channel();
 
@@ -336,7 +340,6 @@ pub fn create_and_start_worker(
 
                                 if error_str.contains("Event receiver channel closed") {
                                     println!("Event receiver closed - shutting down gracefully");
-                                    cleanup_permission_channel(&thread_id);
                                     break;
                                 }
 
@@ -348,11 +351,9 @@ pub fn create_and_start_worker(
                                         "Max retries ({}) exceeded - shutting down",
                                         MAX_RETRIES
                                     );
-                                    cleanup_permission_channel(&thread_id);
                                     break;
                                 }
 
-                                cleanup_permission_channel(&thread_id);
                                 println!("Attempting to recover worker...");
                             }
                         }
@@ -363,7 +364,6 @@ pub fn create_and_start_worker(
 
                         if retry_count > MAX_RETRIES {
                             eprintln!("Max retries ({}) exceeded - shutting down", MAX_RETRIES);
-                            cleanup_permission_channel(&thread_id);
                             break;
                         }
                     }

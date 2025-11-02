@@ -1,4 +1,5 @@
 import './test.tsx';
+import { join } from 'node:path';
 
 Yasumu.onEvent(async (event) => {
   console.log('[YasumuScript] Received event from renderer/frontend:', event);
@@ -15,16 +16,10 @@ Yasumu.onEvent(async (event) => {
     variant: 'info',
   });
 
-  const FILE_PATH =
-    '/Users/andromeda/Developer/work/neplex/yasumu/apps/yasumu/src-tauri/resources/yasumu-scripts/file_1.txt';
+  const FILE_PATH = join(import.meta.dirname, 'file_1.txt');
 
   const worker = new Worker(new URL('./worker.ts', import.meta.url).href, {
     type: 'module',
-    deno: {
-      permissions: {
-        read: [new URL(FILE_PATH, import.meta.url)],
-      },
-    },
   });
 
   worker.postMessage({
