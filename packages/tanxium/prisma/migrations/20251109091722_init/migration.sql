@@ -1,3 +1,4 @@
+-- Migration: Up
 -- CreateTable
 CREATE TABLE "Workspace" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -39,3 +40,5 @@ CREATE INDEX "WorkspaceConfiguration_workspaceId_idx" ON "WorkspaceConfiguration
 
 -- CreateIndex
 CREATE INDEX "RestEntity_workspaceId_idx" ON "RestEntity"("workspaceId");
+
+-- Migration: Down

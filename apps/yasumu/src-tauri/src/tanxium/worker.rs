@@ -1,4 +1,5 @@
 use crate::tanxium::module_loader::TypescriptModuleLoader;
+use crate::tanxium::node_services;
 use crate::tanxium::ops::tanxium_rt;
 use crate::tanxium::permissions::setup_permission_channel;
 use crate::tanxium::state::init_renderer_event_channel;
@@ -13,6 +14,7 @@ use deno_runtime::deno_core::ModuleSpecifier;
 use deno_runtime::deno_core::SharedArrayBufferStore;
 use deno_runtime::deno_fs::RealFs;
 use deno_runtime::deno_io::Stdio;
+use deno_runtime::deno_node::NodeResolver;
 use deno_runtime::deno_permissions::Permissions;
 use deno_runtime::deno_permissions::PermissionsContainer;
 use deno_runtime::deno_web::BlobStore;
@@ -31,6 +33,8 @@ use std::sync::Arc;
 use std::thread;
 use sys_traits::impls::RealSys;
 use tauri::AppHandle;
+use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::MessageDialogKind;
 
 struct WorkerSharedState {
     blob_store: Arc<BlobStore>,
@@ -39,6 +43,8 @@ struct WorkerSharedState {
     fs: Arc<RealFs>,
     shared_array_buffer_store: SharedArrayBufferStore,
     app_handle: AppHandle,
+    node_resolver: Arc<NodeResolver<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys>>,
+    pkg_json_resolver: Arc<node_resolver::PackageJsonResolver<RealSys>>,
 }
 
 impl WorkerSharedState {
@@ -64,13 +70,20 @@ impl WorkerSharedState {
 
             let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone());
 
+            let node_require_loader = Rc::new(node_services::TanxiumNodeRequireLoader::new());
+            let node_services = Some(node_services::create_node_init_services(
+                node_require_loader,
+                shared.node_resolver.clone(),
+                shared.pkg_json_resolver.clone(),
+            ));
+
             let services =
                 WebWorkerServiceOptions::<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys> {
                     deno_rt_native_addon_loader: Default::default(),
                     root_cert_store_provider: Default::default(),
                     module_loader: worker_module_loader,
                     fs: shared.fs.clone(),
-                    node_services: Default::default(),
+                    node_services,
                     blob_store: shared.blob_store.clone(),
                     broadcast_channel: shared.broadcast_channel.clone(),
                     shared_array_buffer_store: Some(shared.shared_array_buffer_store.clone()),
@@ -180,6 +193,13 @@ async fn initialize_worker(
             .name,
     );
 
+    let node_require_loader = Rc::new(node_services::TanxiumNodeRequireLoader::new());
+    let node_services = Some(node_services::create_node_init_services(
+        node_require_loader,
+        shared_state.node_resolver.clone(),
+        shared_state.pkg_json_resolver.clone(),
+    ));
+
     let mut worker = MainWorker::bootstrap_from_options::<
         DenoInNpmPackageChecker,
         NpmResolver<RealSys>,
@@ -196,7 +216,7 @@ async fn initialize_worker(
             blob_store: shared_state.blob_store.clone(),
             broadcast_channel: shared_state.broadcast_channel.clone(),
             feature_checker: Arc::new(feature_checker),
-            node_services: Default::default(),
+            node_services,
             npm_process_state_provider: Default::default(),
             root_cert_store_provider: Default::default(),
             shared_array_buffer_store: Some(shared_state.shared_array_buffer_store.clone()),
@@ -307,6 +327,11 @@ pub fn create_and_start_worker(
         println!("Tokio runtime created, blocking on async block");
 
         runtime.block_on(async move {
+            let pkg_json_resolver = node_services::create_pkg_json_resolver();
+            let npm_resolver = node_services::create_npm_resolver(pkg_json_resolver.clone());
+            let node_resolver =
+                node_services::create_node_resolver(npm_resolver, pkg_json_resolver.clone());
+
             let shared_state = Arc::new(WorkerSharedState {
                 blob_store: Arc::new(BlobStore::default()),
                 broadcast_channel: InMemoryBroadcastChannel::default(),
@@ -314,6 +339,8 @@ pub fn create_and_start_worker(
                 fs: Arc::new(RealFs),
                 shared_array_buffer_store: SharedArrayBufferStore::default(),
                 app_handle: app_handle.clone(),
+                node_resolver,
+                pkg_json_resolver,
             });
 
             let mut retry_count = 0;
@@ -351,6 +378,17 @@ pub fn create_and_start_worker(
                                         "Max retries ({}) exceeded - shutting down",
                                         MAX_RETRIES
                                     );
+                                    let message = format!(
+                                        "Error that crashed the JavaScript runtime:\n\n{}",
+                                        error_str
+                                    );
+                                    app_handle
+                                        .dialog()
+                                        .message(message)
+                                        .kind(MessageDialogKind::Error)
+                                        .title("JavaScript runtime crashed unexpectedly")
+                                        .blocking_show();
+                                    app_handle.exit(1);
                                     break;
                                 }
 

@@ -53,5 +53,5 @@ if (result.outputFiles) {
 // copy prisma directory
 await cp(join(Deno.cwd(), 'prisma'), join(outputDir, 'prisma'), {
   recursive: true,
-  filter: (source) => !source.endsWith('.db'),
+  // filter: (source) => !source.endsWith('.db'),
 });

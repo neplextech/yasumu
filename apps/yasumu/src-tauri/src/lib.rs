@@ -53,13 +53,14 @@ pub fn run() {
         .expect("Failed to install rustls crypto provider");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(YasumuInternalState {
             ready: false,
             rpc_port: None,
         }))
-        .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
             tanxium::set_app_handle(app.handle().clone());
             tanxium::initialize_prompter();

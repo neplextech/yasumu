@@ -2,6 +2,7 @@
 #![allow(clippy::print_stderr)]
 
 mod module_loader;
+mod node_services;
 mod ops;
 mod permissions;
 mod state;

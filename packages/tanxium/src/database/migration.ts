@@ -10,6 +10,7 @@ export async function migrateDatabase(prisma: typeof PrismaClientSource) {
     'prisma',
     'migrations',
   );
+  // const migrationsDir = join(Deno.cwd(), 'prisma', 'migrations');
 
   const migrations = new Migrations(prisma as unknown as PrismaClient, {
     migrationsDir,

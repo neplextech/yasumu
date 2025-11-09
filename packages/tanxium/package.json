@@ -10,9 +10,10 @@
         "dist"
     ],
     "scripts": {
+        "deno": "deno",
         "bundle": "deno --allow-write --allow-read --unstable-bundle scripts/bundle.ts",
         "prisma:generate": "prisma generate",
-        "prisma:migrate": "prisma migrate dev"
+        "prisma:migrate": "prisma-migrations"
     },
     "license": "GPL-3.0",
     "author": "Neplex",

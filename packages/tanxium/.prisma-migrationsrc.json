@@ -1,0 +1,4 @@
+{
+    "migrationsDir": "./prisma/migrations",
+    "logLevel": "info"
+}

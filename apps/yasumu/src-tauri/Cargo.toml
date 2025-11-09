@@ -24,6 +24,8 @@ deno_fs = "0.131.0"
 deno_runtime = { version = "0.229.0", features = ["transpile", "snapshot"] }
 deno_resolver = "0.52.0"
 deno_ast = { version = "0.51.0", features = ["transpiling"] }
+deno_error = "0.7.0"
+node_resolver = "0.59.0"
 anyhow = "1"
 tokio = { version = "1.41.0", features = ["full"] }
 ureq = "2.10.1"
@@ -35,3 +37,4 @@ rustls = { version = "0.23", features = ["ring"] }
 rustls-pemfile = "2.0"
 rustls-pki-types = "1.0"
 uuid = "1.18.1"
+tauri-plugin-dialog = "2"
