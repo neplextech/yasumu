@@ -57,6 +57,17 @@ fn op_generate_cuid() -> String {
     cuid()
 }
 
+#[op2(fast)]
+fn op_is_yasumu_ready(state: &mut OpState) -> bool {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let yasumu_state = state.lock().unwrap();
+    yasumu_state.ready
+}
+
 pub fn invoke_renderer_event_callback(event: &str) {
     if let Some(sender) = get_renderer_event_sender() {
         let _ = sender.send(event.to_string());
@@ -67,7 +78,7 @@ pub fn invoke_renderer_event_callback(event: &str) {
 
 deno_core::extension!(
     tanxium_rt,
-    ops = [op_send_renderer_event, op_get_resources_dir, op_set_rpc_port, op_generate_cuid],
+    ops = [op_send_renderer_event, op_get_resources_dir, op_set_rpc_port, op_generate_cuid, op_is_yasumu_ready],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [
         dir "src/tanxium/runtime",

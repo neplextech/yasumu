@@ -5,7 +5,9 @@ import {
   op_get_resources_dir,
   op_set_rpc_port,
   op_generate_cuid,
+  op_is_yasumu_ready,
 } from 'ext:core/ops';
+import { join } from 'node:path';
 
 let _resourceDir: string;
 
@@ -26,6 +28,16 @@ interface YasumuRuntime {
    * @returns The resources directory
    */
   getResourcesDir: () => string;
+  /**
+   * Get the server entrypoint
+   * @returns The server entrypoint
+   */
+  getServerEntrypoint: () => string;
+  /**
+   * Check if the Yasumu runtime is ready
+   * @returns True if the Yasumu runtime is ready, false otherwise
+   */
+  isReady: () => boolean;
   /**
    * Set the RPC port
    * @param port The port to set
@@ -67,10 +79,21 @@ const Yasumu: YasumuRuntime = {
 
     return _resourceDir;
   },
+  getServerEntrypoint: () => {
+    return join(Yasumu.getResourcesDir(), 'yasumu-internal', 'yasumu-server');
+  },
+  isReady: () => {
+    return op_is_yasumu_ready();
+  },
   setRpcPort: (port: number) => {
     op_set_rpc_port(port);
   },
   onReady: (listener: () => unknown) => {
+    if (Yasumu.isReady()) {
+      listener();
+      return () => {};
+    }
+
     readyListeners.add(listener);
 
     return () => {

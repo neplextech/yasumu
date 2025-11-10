@@ -50,8 +50,7 @@ if (result.outputFiles) {
   );
 }
 
-// copy prisma directory
-await cp(join(Deno.cwd(), 'prisma'), join(outputDir, 'prisma'), {
+// copy drizzle directory
+await cp(join(Deno.cwd(), 'drizzle'), join(outputDir, 'drizzle'), {
   recursive: true,
-  // filter: (source) => !source.endsWith('.db'),
 });

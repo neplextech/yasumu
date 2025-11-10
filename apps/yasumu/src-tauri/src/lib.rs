@@ -12,6 +12,7 @@ struct YasumuInternalState {
 
 #[tauri::command]
 fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), ()> {
+    println!("Yasumu frontend is ready");
     let state = app.state::<Mutex<YasumuInternalState>>();
     let mut yasumu_state = state.lock().unwrap();
 
