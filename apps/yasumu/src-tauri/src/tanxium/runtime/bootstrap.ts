@@ -1,7 +1,11 @@
 /// <reference types="./internal.d.ts" />
 import './patches.ts';
 import { YasumuUI } from './ui.ts';
-import { op_get_resources_dir, op_set_rpc_port } from 'ext:core/ops';
+import {
+  op_get_resources_dir,
+  op_set_rpc_port,
+  op_generate_cuid,
+} from 'ext:core/ops';
 
 let _resourceDir: string;
 
@@ -13,6 +17,10 @@ interface YasumuRuntime {
    * Yasumu UI API
    */
   ui: typeof YasumuUI;
+  /**
+   * Generate random CUID
+   */
+  cuid: () => string;
   /**
    * Get the resources directory
    * @returns The resources directory
@@ -49,6 +57,9 @@ const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
 const Yasumu: YasumuRuntime = {
   ui: YasumuUI,
+  cuid: () => {
+    return op_generate_cuid();
+  },
   getResourcesDir: () => {
     if (!_resourceDir) {
       _resourceDir = op_get_resources_dir();

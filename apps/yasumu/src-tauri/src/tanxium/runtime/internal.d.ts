@@ -5,6 +5,7 @@ declare module 'ext:core/ops' {
   ): number;
   export function op_get_resources_dir(): string;
   export function op_set_rpc_port(port: number): void;
+  export function op_generate_cuid(): string;
 }
 
 declare module 'yasumu:ui/jsx-runtime' {

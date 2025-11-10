@@ -1,3 +1,4 @@
+/// <reference types="../../../apps/yasumu/src-tauri/src/tanxium/runtime/bootstrap.ts" />
 // import { prisma } from './database/index.ts';
 // import { migrateDatabase } from './database/migration.ts';
 import { app } from './backend/server.ts';

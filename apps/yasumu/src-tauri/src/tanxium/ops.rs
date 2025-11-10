@@ -1,6 +1,7 @@
 use crate::tanxium::state::get_renderer_event_sender;
 use crate::tanxium::types::AppHandleState;
 use crate::YasumuInternalState;
+use cuid2::cuid;
 use deno_core::op2;
 use deno_core::OpState;
 use std::sync::Mutex;
@@ -50,6 +51,12 @@ fn op_set_rpc_port(state: &mut OpState, port: u16) {
     }
 }
 
+#[op2]
+#[string]
+fn op_generate_cuid() -> String {
+    cuid()
+}
+
 pub fn invoke_renderer_event_callback(event: &str) {
     if let Some(sender) = get_renderer_event_sender() {
         let _ = sender.send(event.to_string());
@@ -60,7 +67,7 @@ pub fn invoke_renderer_event_callback(event: &str) {
 
 deno_core::extension!(
     tanxium_rt,
-    ops = [op_send_renderer_event, op_get_resources_dir, op_set_rpc_port],
+    ops = [op_send_renderer_event, op_get_resources_dir, op_set_rpc_port, op_generate_cuid],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [
         dir "src/tanxium/runtime",
