@@ -10,6 +10,7 @@
     "dist"
   ],
   "scripts": {
+    "build": "deno task bundle",
     "deno": "deno",
     "bundle": "deno --allow-write --allow-read --unstable-bundle scripts/bundle.ts",
     "drizzle:generate": "drizzle-kit generate"
