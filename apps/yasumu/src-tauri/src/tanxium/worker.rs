@@ -77,6 +77,15 @@ impl WorkerSharedState {
                 shared.pkg_json_resolver.clone(),
             ));
 
+            let mut feature_checker = FeatureChecker::default();
+            feature_checker.enable_feature(
+                UNSTABLE_FEATURES
+                    .iter()
+                    .find(|f| f.name == "worker-options" || f.name == "kv")
+                    .unwrap()
+                    .name,
+            );
+
             let services =
                 WebWorkerServiceOptions::<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys> {
                     deno_rt_native_addon_loader: Default::default(),
@@ -89,10 +98,12 @@ impl WorkerSharedState {
                     shared_array_buffer_store: Some(shared.shared_array_buffer_store.clone()),
                     compiled_wasm_module_store: Some(shared.compiled_wasm_module_store.clone()),
                     maybe_inspector_server: None,
-                    feature_checker: Default::default(),
+                    feature_checker: Arc::new(feature_checker),
                     npm_process_state_provider: Default::default(),
                     permissions: permissions_container,
                 };
+
+            let user_agent = format!("Yasumu/{}", env!("CARGO_PKG_VERSION"));
 
             let options = WebWorkerOptions {
                 name: args.name,
@@ -112,10 +123,10 @@ impl WorkerSharedState {
                     color_level: colors::get_color_level(),
                     unstable_features: UNSTABLE_FEATURES
                         .iter()
-                        .filter(|f| f.name == "worker-options")
+                        .filter(|f| f.name == "worker-options" || f.name == "kv")
                         .map(|f| f.id)
                         .collect(),
-                    user_agent: format!("Yasumu/{}", env!("CARGO_PKG_VERSION")),
+                    user_agent: user_agent.clone(),
                     inspect: false,
                     is_standalone: false,
                     auto_serve: false,
@@ -174,6 +185,8 @@ async fn initialize_worker(
 
     let source_map_store = Rc::new(RefCell::new(HashMap::new()));
 
+    let user_agent = format!("Yasumu/{}", env!("CARGO_PKG_VERSION"));
+
     // main worker is allowed to do anything
     // as it is supposed to run our own/trusted code
     let permission_container =
@@ -188,7 +201,7 @@ async fn initialize_worker(
     feature_checker.enable_feature(
         UNSTABLE_FEATURES
             .iter()
-            .find(|f| f.name == "worker-options")
+            .find(|f| f.name == "worker-options" || f.name == "kv")
             .unwrap()
             .name,
     );
@@ -228,11 +241,11 @@ async fn initialize_worker(
         WorkerOptions {
             extensions: vec![tanxium_rt::init()],
             bootstrap: BootstrapOptions {
-                user_agent: format!("Yasumu/{}", env!("CARGO_PKG_VERSION")).to_string(),
+                user_agent: user_agent.clone(),
                 close_on_idle: false,
                 unstable_features: UNSTABLE_FEATURES
                     .iter()
-                    .filter(|f| f.name == "worker-options")
+                    .filter(|f| f.name == "worker-options" || f.name == "kv")
                     .map(|f| f.id)
                     .collect(),
                 ..Default::default()

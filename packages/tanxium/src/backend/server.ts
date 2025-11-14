@@ -5,7 +5,18 @@ import { eq } from 'drizzle-orm';
 
 export const app = new Hono();
 
-app.get('/', (c) => c.json({ message: 'Hello from Tanxium!' }));
+const kv = await Deno.openKv('yasumu.kv');
+
+app.get('/', async (c) => {
+  const count = await kv.get<number>(['count']);
+  const value = count.value ?? 0;
+  await kv.set(count.key, value + 1);
+
+  return c.json({
+    message: 'Hello from Tanxium!',
+    count: `The count is ${value}`,
+  });
+});
 
 app.get('/workspaces', async (c) => {
   const workspaces = await db.select().from(workspacesTable).all();

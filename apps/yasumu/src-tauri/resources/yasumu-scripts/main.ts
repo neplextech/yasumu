@@ -3,3 +3,5 @@ import './preload.ts';
 import { startServer } from './yasumu-server/index.js';
 
 await startServer();
+
+import './init.ts';
