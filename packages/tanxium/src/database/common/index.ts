@@ -1,18 +1,13 @@
-import {
-  text,
-  sqliteTable,
-  SQLiteColumnBuilderBase,
-} from 'drizzle-orm/sqlite-core';
-import { ColumnBuilderBaseConfig, ColumnDataType, sql } from 'drizzle-orm';
+import { text, sqliteTable } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { JSONValue } from '@/common/types.ts';
 
-export type Metadata = Record<string, unknown>;
-
-export function json<T extends Metadata = Metadata>(name = 'metadata') {
+export function json<T = JSONValue>(name = 'metadata') {
   return text(name, { mode: 'json' }).$type<T>();
 }
 
-export function cuid() {
-  return text().$defaultFn(() => Yasumu.cuid());
+export function cuid(name?: string) {
+  return text(name).$defaultFn(() => Yasumu.cuid());
 }
 
 export function createdAt() {
@@ -28,28 +23,14 @@ export function updatedAt() {
     .$onUpdateFn(() => sql`(current_timestamp)`);
 }
 
-export function createTable<
-  M extends Metadata = Metadata,
-  N extends string = string,
-  C extends Record<
-    string,
-    SQLiteColumnBuilderBase<
-      ColumnBuilderBaseConfig<ColumnDataType, string>,
-      object
-    >
-  > = Record<
-    string,
-    SQLiteColumnBuilderBase<
-      ColumnBuilderBaseConfig<ColumnDataType, string>,
-      object
-    >
-  >,
->(name: N, columns: C) {
-  return sqliteTable(name, {
-    ...columns,
+export function commonColumns<M = JSONValue>() {
+  return {
     id: cuid().primaryKey(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     metadata: json<M>().default({} as M),
-  });
+  };
 }
+
+export type Table<M = JSONValue> = ReturnType<typeof sqliteTable> &
+  ReturnType<typeof commonColumns<M>>;

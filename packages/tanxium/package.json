@@ -12,8 +12,10 @@
   "scripts": {
     "build": "deno task bundle",
     "deno": "deno",
-    "bundle": "deno --allow-write --allow-read --unstable-bundle scripts/bundle.ts",
-    "drizzle:generate": "drizzle-kit generate"
+    "bundle": "deno task generate-schema && deno --allow-write --allow-read --unstable-bundle scripts/bundle.ts",
+    "drizzle:generate": "deno task generate-schema && drizzle-kit generate",
+    "generate-schema": "deno --allow-read --allow-write ./scripts/generate-schema.ts",
+    "lint": "deno lint"
   },
   "license": "GPL-3.0",
   "author": "Neplex",

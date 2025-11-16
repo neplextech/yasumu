@@ -1,3 +1,7 @@
 {
   "nodeModulesDir": "auto",
+  "imports": {
+    "@/": "./src/",
+    "yasumu:types": "../../apps/yasumu/src-tauri/src/tanxium/runtime/bootstrap.ts",
+  },
 }

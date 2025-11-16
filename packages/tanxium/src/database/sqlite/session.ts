@@ -1,22 +1,26 @@
 // taken from https://github.com/mizchi/drizzle-orm/blob/256aae13b624eeb260e6530f4dd38c1308898a1f/drizzle-orm/src/node-sqlite/session.ts
 import type { DatabaseSync, StatementSync } from 'node:sqlite';
-import { entityKind } from 'drizzle-orm';
-import type { Logger } from 'drizzle-orm';
-import { NoopLogger } from 'drizzle-orm';
-import type {
-  RelationalSchemaConfig,
-  TablesRelationalConfig,
-} from 'drizzle-orm';
-import { fillPlaceholders, type Query, sql } from 'drizzle-orm';
-import type { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
-import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
-import type { SelectedFieldsOrdered } from 'drizzle-orm/sqlite-core';
 import {
-  type PreparedQueryConfig as PreparedQueryConfigBase,
-  type SQLiteExecuteMethod,
+  entityKind,
+  type Logger,
+  NoopLogger,
+  fillPlaceholders,
+  type Query,
+  sql,
+  type RelationalSchemaConfig,
+  type TablesRelationalConfig,
+} from 'drizzle-orm';
+import type {
+  SQLiteSyncDialect,
+  SelectedFieldsOrdered,
+  PreparedQueryConfig as PreparedQueryConfigBase,
+  SQLiteExecuteMethod,
+  SQLiteTransactionConfig,
+} from 'drizzle-orm/sqlite-core';
+import {
+  SQLiteTransaction,
   SQLitePreparedQuery as PreparedQueryBase,
   SQLiteSession,
-  type SQLiteTransactionConfig,
 } from 'drizzle-orm/sqlite-core';
 // @ts-ignore private api
 import { mapResultRow } from 'drizzle-orm/utils';
@@ -150,6 +154,7 @@ export class NodeSQLitePreparedQuery<
   }
 
   run(placeholderValues?: Record<string, unknown>): NodeRunResult {
+    // deno-lint-ignore no-explicit-any
     const params: any[] = fillPlaceholders(
       this.query.params,
       placeholderValues ?? {},
@@ -168,6 +173,7 @@ export class NodeSQLitePreparedQuery<
       stmt,
       customResultMapper,
     } = this;
+    // deno-lint-ignore no-explicit-any
     const params: any[] = fillPlaceholders(
       query.params,
       placeholderValues ?? {},
@@ -205,13 +211,14 @@ export class NodeSQLitePreparedQuery<
   }
 
   get(placeholderValues?: Record<string, unknown>): T['get'] {
+    // deno-lint-ignore no-explicit-any
     const params: any[] = fillPlaceholders(
       this.query.params,
       placeholderValues ?? {},
     );
     this.logger.logQuery(this.query.sql, params);
     // @ts-expect-error types
-    const { fields, stmt, joinsNotNullableMap, customResultMapper } = this;
+    const { stmt, joinsNotNullableMap, customResultMapper } = this;
     const rowObj = stmt.get(...params);
     if (!rowObj) {
       return undefined;
@@ -247,6 +254,7 @@ export class NodeSQLitePreparedQuery<
   }
 
   values(placeholderValues?: Record<string, unknown>): T['values'] {
+    // deno-lint-ignore no-explicit-any
     const params: any[] = fillPlaceholders(
       this.query.params,
       placeholderValues ?? {},
@@ -257,6 +265,7 @@ export class NodeSQLitePreparedQuery<
       unknown
     >[];
     if (!this.fields) {
+      // deno-lint-ignore no-explicit-any
       return rows as any;
     }
     return rows.map((obj: Record<string, unknown>) => {

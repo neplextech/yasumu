@@ -1,4 +1,4 @@
-/// <reference types="../../../apps/yasumu/src-tauri/src/tanxium/runtime/bootstrap.ts" />
+/// <reference types="yasumu:types" />
 import { join } from 'node:path';
 import { app } from './backend/server.ts';
 import { db } from './database/index.ts';

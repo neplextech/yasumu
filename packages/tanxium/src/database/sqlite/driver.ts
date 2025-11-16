@@ -1,17 +1,17 @@
 // taken from https://github.com/mizchi/drizzle-orm/blob/256aae13b624eeb260e6530f4dd38c1308898a1f/drizzle-orm/src/node-sqlite/driver.ts
-import { DatabaseSync, type DatabaseSyncOptions } from 'node:sqlite'; // Import DatabaseSyncOptions
-import { entityKind } from 'drizzle-orm';
-import { DefaultLogger } from 'drizzle-orm';
+import { DatabaseSync, type DatabaseSyncOptions } from 'node:sqlite';
 import {
+  entityKind,
+  DefaultLogger,
   createTableRelationsHelpers,
   extractTablesRelationalConfig,
   type RelationalSchemaConfig,
   type TablesRelationalConfig,
   type ExtractTablesWithRelations,
+  type DrizzleConfig,
+  isConfig,
 } from 'drizzle-orm';
-import { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
-import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
-import { type DrizzleConfig, isConfig } from 'drizzle-orm';
+import { BaseSQLiteDatabase, SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { NodeSQLiteSession } from './session.ts';
 import { Buffer } from 'node:buffer';
 
@@ -77,9 +77,12 @@ function construct<
     session,
     relationalSchema,
   );
+  // deno-lint-ignore no-explicit-any
   (<any>db).$client = client;
 
-  return db as any;
+  return db as unknown as NodeSQLiteDatabase<TFullSchema, TSchema> & {
+    $client: DatabaseSync;
+  };
 }
 
 export function drizzle<
@@ -111,6 +114,7 @@ export function drizzle<
     params[0] instanceof Buffer ||
     params[0] instanceof URL
   ) {
+    // deno-lint-ignore no-explicit-any
     const dbPath = (params[0] as any) ?? ':memory:';
     const instance = new DatabaseSync(dbPath);
     return construct(instance, params[1]);
@@ -143,6 +147,7 @@ export function drizzle<
   );
 }
 
+// deno-lint-ignore no-namespace
 export namespace drizzle {
   export function mock<
     TFullSchema extends Record<string, unknown> = Record<string, never>,
@@ -153,6 +158,7 @@ export namespace drizzle {
   ): NodeSQLiteDatabase<TFullSchema, TSchema> & {
     $client: '$client is not available on drizzle.mock()';
   } {
+    // deno-lint-ignore no-explicit-any
     return construct({} as any, config) as any;
   }
 }

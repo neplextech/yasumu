@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { db } from '../database/index.ts';
-import { workspacesTable } from '../database/schema.ts';
+import { db } from '@/database/index.ts';
+import { workspaces } from '@/database/schema.ts';
 import { eq } from 'drizzle-orm';
 
 export const app = new Hono();
@@ -19,26 +19,26 @@ app.get('/', async (c) => {
 });
 
 app.get('/workspaces', async (c) => {
-  const workspaces = await db.select().from(workspacesTable).all();
-  return c.json(workspaces);
+  const workspaceList = await db.select().from(workspaces).all();
+  return c.json(workspaceList);
 });
 
 app.get('/workspace/:id', async (c) => {
   const workspace = await db
     .select()
-    .from(workspacesTable)
-    .where(eq(workspacesTable.id, c.req.param('id')))
+    .from(workspaces)
+    .where(eq(workspaces.id, c.req.param('id')))
     .get();
   return c.json(workspace);
 });
 
 app.get('/create-workspace', async (c) => {
   const workspace = await db
-    .insert(workspacesTable)
+    .insert(workspaces)
     .values({
       name: `New Workspace ${Date.now()}`,
       metadata: {
-        test: true,
+        path: Deno.cwd(),
       },
     })
     .returning();
@@ -46,8 +46,6 @@ app.get('/create-workspace', async (c) => {
 });
 
 app.get('/delete-workspace/:id', async (c) => {
-  await db
-    .delete(workspacesTable)
-    .where(eq(workspacesTable.id, c.req.param('id')));
+  await db.delete(workspaces).where(eq(workspaces.id, c.req.param('id')));
   return c.json({ message: 'Workspace deleted' });
 });
