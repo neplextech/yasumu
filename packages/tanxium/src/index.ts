@@ -27,3 +27,5 @@ export async function startServer() {
     );
   }, 5000);
 }
+
+export type { AppType } from './backend/server.ts';

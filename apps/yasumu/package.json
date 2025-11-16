@@ -15,6 +15,7 @@
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "~2.4.2",
+    "hono": "^4.10.4",
     "lucide-react": "^0.475.0",
     "next": "catalog:react",
     "next-intl": "^4.4.0",
@@ -32,6 +33,7 @@
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
     "@yasumu/shared": "workspace:*",
+    "@yasumu/tanxium": "workspace:*",
     "@yasumu/ui": "workspace:*",
     "babel-plugin-react-compiler": "catalog:react",
     "eslint": "^9",
