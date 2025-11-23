@@ -1,8 +1,8 @@
-import { Locale } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
+import { AvailableLocales, Locales } from 'transletta/client';
 
 export async function generateStaticParams() {
-  return [{ locale: 'en' }];
+  return AvailableLocales.map((locale) => ({ locale }));
 }
 
 export default async function LocaleLayout({
@@ -10,7 +10,7 @@ export default async function LocaleLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ locale: Locale }>;
+  params: Promise<{ locale: Locales }>;
 }) {
   setRequestLocale((await params).locale);
 

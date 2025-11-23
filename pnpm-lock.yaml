@@ -131,8 +131,8 @@ importers:
         specifier: ^4
         version: 4.1.16
       transletta:
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.0.3
+        version: 0.0.3
       typescript:
         specifier: catalog:build
         version: 5.9.3
@@ -2693,6 +2693,10 @@ packages:
     resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
     engines: {node: '>=20'}
 
+  commander@14.0.2:
+    resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
+    engines: {node: '>=20'}
+
   commander@9.5.0:
     resolution: {integrity: sha512-KRs7WVDKg86PWiuAqhDrAQnTXZKraVcCc6vFdL14qrZ/DcWwuRo7VoiYXalXO7S5GKpqYiVEwCbgFDfxNHKJBQ==}
     engines: {node: ^12.20.0 || >=14}
@@ -4822,8 +4826,8 @@ packages:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
 
-  smol-toml@1.4.2:
-    resolution: {integrity: sha512-rInDH6lCNiEyn3+hH8KVGFdbjc099j47+OSgbMrfDYX1CmXLfdKd7qi6IfcWj2wFxvSVkuI46M+wPGYfEOEj6g==}
+  smol-toml@1.5.2:
+    resolution: {integrity: sha512-QlaZEqcAH3/RtNyet1IPIYPsEWAaYyXXv1Krsi+1L/QHppjX4Ifm8MQsBISz9vE8cHicIq3clogsheili5vhaQ==}
     engines: {node: '>= 18'}
 
   snake-case@2.1.0:
@@ -5032,8 +5036,8 @@ packages:
     resolution: {integrity: sha512-kXuRi1mtaKMrsLUxz3sQYvVl37B0Ns6MzfrtV5DvJceE9bPyspOqk9xxv7XbZWcfLWbFmm997vl83qUWVJA64w==}
     engines: {node: '>=16'}
 
-  transletta@0.0.1:
-    resolution: {integrity: sha512-3hBLKGevWlvqJVauDsJ14Fz8UpCnPh+l2Lt0Uh/BsjKJi4/4DASgKRRWXVDnEdt7JBGP0lZPL/ly0AD1tjzPcw==}
+  transletta@0.0.3:
+    resolution: {integrity: sha512-5EbPE6VE/iqEDXmys+0y0LkuQOK8Kmq1azUSzddfZxoaowCp13oKZD5M26OhztYCT6wh8Okt2DTtg6Xm0sPLOg==}
     hasBin: true
 
   ts-api-utils@2.1.0:
@@ -7594,6 +7598,8 @@ snapshots:
 
   commander@14.0.1: {}
 
+  commander@14.0.2: {}
+
   commander@9.5.0: {}
 
   concat-map@0.0.1: {}
@@ -9948,7 +9954,7 @@ snapshots:
 
   smart-buffer@4.2.0: {}
 
-  smol-toml@1.4.2: {}
+  smol-toml@1.5.2: {}
 
   snake-case@2.1.0:
     dependencies:
@@ -10165,10 +10171,10 @@ snapshots:
     dependencies:
       tldts: 7.0.17
 
-  transletta@0.0.1:
+  transletta@0.0.3:
     dependencies:
-      commander: 14.0.1
-      smol-toml: 1.4.2
+      commander: 14.0.2
+      smol-toml: 1.5.2
 
   ts-api-utils@2.1.0(typescript@5.9.3):
     dependencies:

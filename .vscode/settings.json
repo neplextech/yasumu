@@ -2,5 +2,10 @@
     "typescript.tsdk": "node_modules/typescript/lib",
     "rust-analyzer.linkedProjects": ["apps/yasumu/src-tauri/Cargo.toml"],
     "deno.enablePaths": ["./apps/yasumu/src-tauri", "./packages/tanxium"],
-    "rust-analyzer.diagnostics.disabled": ["E0107"]
+    "rust-analyzer.diagnostics.disabled": [
+        "E0107"
+    ],
+    "cSpell.words": [
+        "transletta"
+    ]
 }

@@ -1,4 +1,3 @@
-import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
 import HttpMethodSelector from './(components)/http-methods-selector';
 import KeyValueTable from '@/components/tables/key-value-table';

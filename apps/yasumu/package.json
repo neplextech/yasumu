@@ -39,7 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "catalog:react",
     "tailwindcss": "^4",
-    "transletta": "^0.0.1",
+    "transletta": "^0.0.3",
     "typescript": "catalog:build"
   }
 }
