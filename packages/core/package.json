@@ -3,9 +3,19 @@
   "type": "module",
   "description": "Yasumu core api",
   "version": "0.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "tsx test/index.ts"
+  },
+  "exports": {
+    "deno": "./src/index.ts",
+    "bun": "./src/index.ts",
+    "node": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "license": "GPL-3.0",
   "author": "Neplex",

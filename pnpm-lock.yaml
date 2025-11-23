@@ -255,6 +255,15 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.4
         version: 0.7.4(hono@4.10.4)(zod@4.1.12)
+      '@yasumu/common':
+        specifier: file:../../packages/common
+        version: link:../common
+      '@yasumu/core':
+        specifier: file:../../packages/core
+        version: file:packages/core
+      '@yasumu/rpc':
+        specifier: file:../../packages/rpc
+        version: file:packages/rpc
       drizzle-kit:
         specifier: ^0.31.6
         version: 0.31.7
@@ -2383,6 +2392,12 @@ packages:
     resolution: {integrity: sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g==}
     cpu: [x64]
     os: [win32]
+
+  '@yasumu/core@file:packages/core':
+    resolution: {directory: packages/core, type: directory}
+
+  '@yasumu/rpc@file:packages/rpc':
+    resolution: {directory: packages/rpc, type: directory}
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
@@ -7294,6 +7309,15 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
+
+  '@yasumu/core@file:packages/core':
+    dependencies:
+      '@yasumu/common': link:packages/common
+      '@yasumu/rpc': link:packages/rpc
+
+  '@yasumu/rpc@file:packages/rpc':
+    dependencies:
+      '@yasumu/common': link:packages/common
 
   accepts@2.0.0:
     dependencies:

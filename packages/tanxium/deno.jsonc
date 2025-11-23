@@ -1,5 +1,11 @@
 {
-  "nodeModulesDir": "auto",
+  "nodeModulesDir": "manual",
+  "unstable": ["sloppy-imports"],
+  "links": [
+    "../../packages/common",
+    "../../packages/rpc",
+    "../../packages/core",
+  ],
   "imports": {
     "@/": "./src/",
     "yasumu:types": "../../apps/yasumu/src-tauri/src/tanxium/runtime/bootstrap.ts",

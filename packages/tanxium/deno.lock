@@ -403,6 +403,11 @@
         "npm:hono@^4.10.4",
         "npm:zod@^4.1.12"
       ]
+    },
+    "links": {
+      "npm:@yasumu/common@0.0.0": {},
+      "npm:@yasumu/core@0.0.0": {},
+      "npm:@yasumu/rpc@0.0.0": {}
     }
   }
 }

@@ -25,6 +25,9 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.4",
+    "@yasumu/common": "file:../../packages/common",
+    "@yasumu/rpc": "file:../../packages/rpc",
+    "@yasumu/core": "file:../../packages/core",
     "drizzle-kit": "^0.31.6",
     "drizzle-orm": "^0.44.7",
     "hono": "^4.10.4",

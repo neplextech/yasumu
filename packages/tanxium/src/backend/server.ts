@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
-import { workspacesRoute } from './routes/workspaces/route.ts';
-import { restRoute } from './routes/rest/route.ts';
+import { yasumuRpcRoute } from './routes/yasumu-rpc.ts';
 
 export const app = new Hono()
-  .route('/workspaces', workspacesRoute)
-  .route('/rest', restRoute)
+  .route('/yasumu.rpc', yasumuRpcRoute)
   .get('/', (c) => {
     return c.json({
       message: 'hello from the other side',
