@@ -1,3 +1,4 @@
+import type { PlatformBridge } from './platform-bridge.js';
 import type {
   InferParameters,
   InferReturnType,
@@ -5,17 +6,21 @@ import type {
   RpcQuery,
   RpcQueryOrMutation,
   YasumuRpcCommandMap,
+  YasumuRpcContext,
 } from './yasumu-rpc.js';
 
 export type YasumuRpcCommandHandler = {
   $query<K extends keyof YasumuRpcCommandMap = keyof YasumuRpcCommandMap>(
+    context: YasumuRpcContext,
     command: K,
     data: InferParameters<YasumuRpcCommandMap[K]>,
   ): Promise<InferReturnType<YasumuRpcCommandMap[K]>>;
   $mutation<K extends keyof YasumuRpcCommandMap = keyof YasumuRpcCommandMap>(
+    context: YasumuRpcContext,
     command: K,
     data: InferParameters<YasumuRpcCommandMap[K]>,
   ): Promise<InferReturnType<YasumuRpcCommandMap[K]>>;
+  handler: PlatformBridge['invoke'];
 };
 
 /**
@@ -40,18 +45,10 @@ export type YasumuRpcCommandHandlerDefinition = {
 /**
  * A handler for a Yasumu RPC call.
  */
-export type RpcCallHandler<P extends unknown[], R> = (...args: P) => Promise<R>;
-
-type RpcCallHandlerWithType<
-  T extends 'query' | 'mutation',
-  R extends RpcCallHandler<unknown[], unknown> = RpcCallHandler<
-    unknown[],
-    unknown
-  >,
-> = {
-  type: T;
-  handler: R;
-};
+export type RpcCallHandler<P extends unknown[], R> = (
+  context: YasumuRpcContext,
+  ...args: P
+) => Promise<R>;
 
 /**
  * Defines a handler for a Yasumu RPC command.
@@ -61,8 +58,9 @@ type RpcCallHandlerWithType<
 export function defineRpcCommandHandler(
   handler: YasumuRpcCommandHandlerDefinition,
 ): YasumuRpcCommandHandler {
-  return {
+  const rpcHandler: YasumuRpcCommandHandler = {
     async $query<K extends keyof YasumuRpcCommandMap>(
+      context: YasumuRpcContext,
       command: K,
       data: InferParameters<YasumuRpcCommandMap[K]>,
     ): Promise<InferReturnType<YasumuRpcCommandMap[K]>> {
@@ -76,10 +74,11 @@ export function defineRpcCommandHandler(
         throw new RangeError(`Cannot query the command ${command}`);
       }
 
-      const result = await target.handler(data);
+      const result = await target.handler(context, ...data);
       return result as InferReturnType<YasumuRpcCommandMap[K]>;
     },
     async $mutation<K extends keyof YasumuRpcCommandMap>(
+      context: YasumuRpcContext,
       command: K,
       data: InferParameters<YasumuRpcCommandMap[K]>,
     ): Promise<InferReturnType<YasumuRpcCommandMap[K]>> {
@@ -93,8 +92,29 @@ export function defineRpcCommandHandler(
         throw new RangeError(`Cannot mutate the command ${command}`);
       }
 
-      const result = await target.handler(data);
+      const result = await target.handler(context, ...data);
       return result as InferReturnType<YasumuRpcCommandMap[K]>;
     },
+    async handler(context, command) {
+      if (command.type === 'mutation') {
+        const result = await rpcHandler.$mutation(
+          context,
+          command.command,
+          command.parameters,
+        );
+        return result;
+      } else if (command.type === 'query') {
+        const result = await rpcHandler.$query(
+          context,
+          command.command,
+          command.parameters,
+        );
+        return result;
+      } else {
+        throw new Error(`Invalid command type: ${command.type}`);
+      }
+    },
   };
+
+  return rpcHandler;
 }

@@ -128,3 +128,13 @@ export type YasumuRpcCommands = ToCommandPathString<keyof YasumuRPC>;
 export type YasumuRpcCommandMap = {
   [K in YasumuRpcCommands]: ExtractRpcTypes<ResolveRpcCommandValue<K>>;
 };
+
+/**
+ * The context of a Yasumu RPC call.
+ */
+export interface YasumuRpcContext {
+  /**
+   * The workspace id for this context. This is `null` if no workspace is active.
+   */
+  workspaceId: string | null;
+}

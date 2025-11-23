@@ -14,6 +14,7 @@
     "url": "https://github.com/neplextech/yasumu.git"
   },
   "devDependencies": {
+    "@types/node": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
     "tsx": "^4.20.6",

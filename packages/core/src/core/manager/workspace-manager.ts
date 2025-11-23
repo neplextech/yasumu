@@ -23,7 +23,7 @@ export class WorkspaceManager {
    * Creates a new workspace manager.
    * @param yasumu The Yasumu instance that owns this manager.
    */
-  public constructor(private readonly yasumu: Yasumu) {}
+  public constructor(public readonly yasumu: Yasumu) {}
 
   /**
    * Gets the currently active workspace.
@@ -53,7 +53,10 @@ export class WorkspaceManager {
    * @returns The opened workspace.
    */
   public async open(options: WorkspaceOpenOptions): Promise<Workspace> {
-    return this.$activate(new Workspace(this, {} as WorkspaceData));
+    const data = await this.yasumu.rpc.workspaces.get.$query({
+      parameters: [options.id],
+    });
+    return this.$activate(new Workspace(this, data));
   }
 
   /**
@@ -62,7 +65,10 @@ export class WorkspaceManager {
    * @returns The created workspace.
    */
   public async create(options: WorkspaceCreateOptions): Promise<Workspace> {
-    return this.$activate(new Workspace(this, {} as WorkspaceData));
+    const data = await this.yasumu.rpc.workspaces.create.$mutate({
+      parameters: [options],
+    });
+    return this.$activate(new Workspace(this, data));
   }
 
   public async close(workspace: Workspace): Promise<void> {
@@ -87,7 +93,10 @@ export class WorkspaceManager {
    * @returns The list of workspaces.
    */
   public async list(): Promise<PartialWorkspace[]> {
-    return [];
+    const data = await this.yasumu.rpc.workspaces.list.$query({
+      parameters: [],
+    });
+    return data.map((data) => new Workspace(this, data));
   }
 
   /**
@@ -96,6 +105,7 @@ export class WorkspaceManager {
    * @returns The activated workspace.
    */
   private async $activate(workspace: Workspace): Promise<Workspace> {
+    this.workspaces.set(workspace.id, workspace);
     if (this.activeWorkspaceId === workspace.id) {
       return workspace;
     }
@@ -110,6 +120,7 @@ export class WorkspaceManager {
    * @param workspace The workspace to deactivate.
    */
   private async $deactivate(workspace: Workspace): Promise<void> {
+    this.workspaces.delete(workspace.id);
     if (this.activeWorkspaceId === workspace.id) {
       this.activeWorkspaceId = null;
     }

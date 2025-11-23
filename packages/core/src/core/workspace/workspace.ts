@@ -1,4 +1,4 @@
-import { WorkspaceManager } from '../manager/manager.js';
+import { WorkspaceManager } from '../manager/workspace-manager.js';
 import { RestModule } from '../modules/rest/rest.js';
 import type { WorkspaceData } from '@yasumu/common';
 
