@@ -14,7 +14,10 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-http": "~2.5.4",
     "@tauri-apps/plugin-dialog": "~2.4.2",
+    "@tauri-apps/plugin-process": "~2.3.1",
+    "@yasumu/core": "workspace:*",
     "hono": "^4.10.4",
     "lucide-react": "^0.475.0",
     "next": "catalog:react",

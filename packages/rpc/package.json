@@ -14,10 +14,11 @@
   "exports": {
     "deno": "./src/index.ts",
     "bun": "./src/index.ts",
-    "node": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+    "node": "./dist/index.js",
+    "default": "./dist/index.js",
+    "import": "./dist/index.js",
+    "require": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "license": "GPL-3.0",
   "author": "Neplex",

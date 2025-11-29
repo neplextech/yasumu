@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Separator } from '@yasumu/ui/components/separator';
-import VariablesTable from './(components)/variables-table';
-import SecretsTable from './(components)/secrets-table';
-import EnvironmentList from './(components)/environment-list';
+import VariablesTable from './_components/variables-table';
+import SecretsTable from './_components/secrets-table';
+import EnvironmentList from './_components/environment-list';
 
 interface Variable {
   id: string;

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Input } from '@yasumu/ui/components/input';
 import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
-import ConnectButton from './(components)/connect-button';
-import SendButton from './(components)/send-button';
+import ConnectButton from './_components/connect-button';
+import SendButton from './_components/send-button';
 import {
   Tabs,
   TabsContent,

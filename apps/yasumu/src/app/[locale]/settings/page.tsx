@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from '@yasumu/ui/components/select';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
-import SettingsSection from './(components)/settings-section';
-import SettingItem from './(components)/setting-item';
+import SettingsSection from './_components/settings-section';
+import SettingItem from './_components/setting-item';
 
 export default function SettingsPage() {
   const [theme, setTheme] = useState('system');

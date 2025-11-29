@@ -7,9 +7,9 @@ import {
   TabsList,
   TabsTrigger,
 } from '@yasumu/ui/components/tabs';
-import EmailList from './(components)/email-list';
-import EmailContent from './(components)/email-content';
-import SettingsForm from './(components)/settings-form';
+import EmailList from './_components/email-list';
+import EmailContent from './_components/email-content';
+import SettingsForm from './_components/settings-form';
 
 interface Email {
   id: string;
@@ -107,7 +107,7 @@ export default function MailboxPage() {
     <div className="flex h-full bg-background">
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as 'mailbox' | 'settings')}
+        onValueChange={(v: any) => setActiveTab(v as 'mailbox' | 'settings')}
         className="flex flex-col flex-1"
       >
         <div className="border-b bg-background/50 backdrop-blur px-6 py-3">

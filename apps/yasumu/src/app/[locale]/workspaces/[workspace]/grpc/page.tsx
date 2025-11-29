@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Input } from '@yasumu/ui/components/input';
 import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
-import SendButton from './(components)/send-button';
-import ServiceMethodSelector from './(components)/service-method-selector';
+import SendButton from './_components/send-button';
+import ServiceMethodSelector from './_components/service-method-selector';
 import {
   Tabs,
   TabsContent,

@@ -1,8 +1,8 @@
 import { Input } from '@yasumu/ui/components/input';
 import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
-import SendButton from './(components)/send-button';
-import IntrospectButton from './(components)/introspect-button';
+import SendButton from './_components/send-button';
+import IntrospectButton from './_components/introspect-button';
 import {
   Tabs,
   TabsContent,

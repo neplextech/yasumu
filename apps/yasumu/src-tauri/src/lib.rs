@@ -54,6 +54,7 @@ pub fn run() {
         .expect("Failed to install rustls crypto provider");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_http::init())
@@ -65,6 +66,12 @@ pub fn run() {
         .setup(move |app| {
             tanxium::set_app_handle(app.handle().clone());
             tanxium::initialize_prompter();
+
+            #[cfg(debug_assertions)] // only include this code on debug builds
+            {
+                let window = app.get_webview_window("main").unwrap();
+                window.open_devtools();
+            }
 
             let app_handle = app.handle().clone();
 

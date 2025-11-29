@@ -48,6 +48,7 @@ import SidebarLayoutStyleSelector from './layout-style-selector';
 import { useState } from 'react';
 import { AppMenu } from './app-menu';
 import GrpcIcon from '../visuals/grpc-icon';
+import { useYasumu } from '../providers/workspace-provider';
 
 const data = {
   user: {
@@ -222,7 +223,7 @@ function SettingsDropdown({
           sideOffset={4}
         >
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+            <div className="flex items-start gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage alt={user.name} />
                 <AvatarFallback className="rounded-lg">
@@ -283,11 +284,13 @@ function AppInfo() {
     name: 'Yasumu',
     version: '0.0.0',
   });
+  const { port } = useYasumu();
 
   return (
     <div className="grid flex-1 text-left text-sm leading-tight">
       <span className="truncate font-semibold">{info.name}</span>
       <span className="truncate text-xs">v{info.version}</span>
+      <span className="truncate text-xs">RPC Port: {port}</span>
     </div>
   );
 }

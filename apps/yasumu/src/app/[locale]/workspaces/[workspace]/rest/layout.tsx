@@ -1,7 +1,7 @@
 import LayoutGroup from '@/components/layout/layout-group';
 import { ResizableApplicationLayout } from '@/components/layout/resizable-layout';
-import { RestFileTree } from './(components)/rest-file-tree';
-import OutputConsole from './(components)/output-console';
+import { RestFileTree } from './_components/rest-file-tree';
+import OutputConsole from './_components/output-console';
 
 export default function RestLayout({ children }: React.PropsWithChildren) {
   return (

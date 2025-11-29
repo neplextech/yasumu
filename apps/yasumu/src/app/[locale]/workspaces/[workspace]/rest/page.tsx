@@ -1,10 +1,10 @@
 import { Input } from '@yasumu/ui/components/input';
-import HttpMethodSelector from './(components)/http-methods-selector';
+import HttpMethodSelector from './_components/http-methods-selector';
 import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
 import { useTranslations } from 'next-intl';
-import RequestTabList from './(components)/tabs';
-import SendButton from './(components)/send-button';
+import RequestTabList from './_components/tabs';
+import SendButton from './_components/send-button';
 import {
   Tabs,
   TabsContent,
@@ -15,6 +15,7 @@ import { Textarea } from '@yasumu/ui/components/textarea';
 
 export default function Home() {
   const t = useTranslations('rest');
+
   return (
     <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
       <RequestTabList />

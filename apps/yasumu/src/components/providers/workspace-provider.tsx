@@ -1,13 +1,121 @@
 'use client';
 
-import React, { createContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createClient } from '@/lib/api/tanxium.api';
+import { invoke } from '@tauri-apps/api/core';
+import { message } from '@tauri-apps/plugin-dialog';
+import { exit } from '@tauri-apps/plugin-process';
+import LoadingScreen from '../visuals/loading-screen';
+import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
+import { Yasumu, createYasumu } from '@yasumu/core';
 
-const YasumuContext = createContext<null>(null);
+export interface YasumuContextData {
+  client: ReturnType<typeof createClient>;
+  port: number;
+  yasumu: Yasumu;
+}
+
+const YasumuContext = createContext<YasumuContextData | null>(null);
+
+export function useYasumu() {
+  const context = useContext(YasumuContext);
+
+  if (!context) {
+    throw new Error('useYasumu() must be used within a <WorkspaceProvider />');
+  }
+
+  return context;
+}
 
 export default function WorkspaceProvider({
   children,
 }: React.PropsWithChildren) {
+  const [port, setPort] = useState<number | null>(null);
+  const [client, setClient] = useState<ReturnType<typeof createClient> | null>(
+    null,
+  );
+  const [yasumu, setYasumu] = useState<Yasumu | null>(null);
+
+  const initializeYasumuEnvironment = async () => {
+    let attempt: number;
+    for (attempt = 0; attempt < 5; attempt++) {
+      try {
+        const port = await invoke<number | null>('get_rpc_port');
+        if (!port) throw new Error('Tanxium sent invalid port');
+
+        const client = createClient(port);
+        const yasumu = createYasumu({
+          platformBridge: {
+            async invoke(context, command) {
+              const payload = {
+                command: {
+                  ...command,
+                  isType: undefined,
+                },
+                context,
+              };
+
+              const res = await client['yasumu.rpc'].$post({
+                json: payload,
+              });
+              const json = (await res.json().catch(() => null)) as any;
+
+              if (!res.ok || !json) {
+                const error =
+                  json?.message ?? json?.error?.message ?? 'Unknown error';
+                throw new Error(error);
+              }
+
+              return json;
+            },
+          },
+        });
+
+        (globalThis as any).yasumu = yasumu;
+
+        setPort(port);
+        setClient(client);
+        setYasumu(yasumu);
+
+        return;
+      } catch (error) {
+        console.error(
+          `[${attempt + 1}/5] Failed to discover the Tanxium server port:`,
+          error,
+        );
+      }
+
+      await exponentialBackoff(attempt);
+    }
+
+    await message(
+      `Failed to discover the Yasumu RPC port after ${attempt} attempts`,
+      {
+        kind: 'error',
+        title: 'Yasumu - Error',
+      },
+    );
+
+    exit(1);
+  };
+
+  useEffect(() => {
+    void initializeYasumuEnvironment();
+  }, []);
+
+  if (!client || !port || !yasumu) {
+    return <LoadingScreen fullScreen message="Connecting to RPC server..." />;
+  }
+
   return (
-    <YasumuContext.Provider value={null}>{children}</YasumuContext.Provider>
+    <YasumuContext.Provider
+      value={{
+        client,
+        port,
+        yasumu,
+      }}
+    >
+      {children}
+    </YasumuContext.Provider>
   );
 }

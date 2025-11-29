@@ -1,7 +1,7 @@
 import LayoutGroup from '@/components/layout/layout-group';
 import { ResizableApplicationLayout } from '@/components/layout/resizable-layout';
-import { SocketioFileTree } from './(components)/socketio-file-tree';
-import OutputConsole from './(components)/output-console';
+import { SocketioFileTree } from './_components/socketio-file-tree';
+import OutputConsole from './_components/output-console';
 
 export default function SocketioLayout({ children }: React.PropsWithChildren) {
   return (
