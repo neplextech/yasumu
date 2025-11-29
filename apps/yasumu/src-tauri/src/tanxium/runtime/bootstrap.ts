@@ -11,84 +11,74 @@ import { join } from 'node:path';
 
 let _resourceDir: string;
 
-/**
- * Yasumu Runtime API
- */
-interface YasumuRuntime {
+const listeners: Set<(event: string) => unknown> = new Set();
+const readyListeners: Set<() => unknown> = new Set();
+const YASUMU_INTERNAL_ON_EVENT_CALLBACK = '~yasumu__on__Event__Callback';
+
+class Yasumu {
   /**
    * Yasumu UI API
    */
-  ui: typeof YasumuUI;
+  public static readonly ui = YasumuUI;
+
+  private constructor() {
+    throw new Error('Yasumu is not a constructor');
+  }
+
   /**
    * Generate random CUID
    */
-  cuid: () => string;
+  public static cuid() {
+    return op_generate_cuid();
+  }
+  public static stripVerbatimPath(path: string): string {
+    if (path.startsWith('\\\\?\\UNC\\')) {
+      return '\\' + path.slice(8);
+    }
+
+    return path.replace(/^\\\\\?\\/, '');
+  }
   /**
    * Get the resources directory
    * @returns The resources directory
    */
-  getResourcesDir: () => string;
+  public static getResourcesDir() {
+    if (!_resourceDir) {
+      _resourceDir = join(
+        Yasumu.stripVerbatimPath(op_get_resources_dir()),
+        'resources',
+      );
+    }
+
+    return _resourceDir;
+  }
   /**
    * Get the server entrypoint
    * @returns The server entrypoint
    */
-  getServerEntrypoint: () => string;
+  public static getServerEntrypoint() {
+    return join(Yasumu.getResourcesDir(), 'yasumu-scripts', 'yasumu-server');
+  }
   /**
    * Check if the Yasumu runtime is ready
    * @returns True if the Yasumu runtime is ready, false otherwise
    */
-  isReady: () => boolean;
+  public static isReady() {
+    return op_is_yasumu_ready();
+  }
   /**
    * Set the RPC port
    * @param port The port to set
    */
-  setRpcPort: (port: number) => void;
-  /**
-   * Register a listener for events from the renderer
-   * @param listener The listener to register
-   * @returns A function to remove the listener
-   */
-  onEvent: (listener: (event: string) => unknown) => () => void;
+  public static setRpcPort(port: number) {
+    op_set_rpc_port(port);
+  }
   /**
    * Register a listener for when the Yasumu runtime is ready
    * @param listener The listener to register
    * @returns A function to remove the listener
    */
-  onReady: (listener: () => unknown) => () => void;
-  /**
-   * Internal event callback
-   * @param event The event to callback
-   * @returns The result of the callback
-   * @private
-   * @internal
-   */
-  '~yasumu__on__Event__Callback': (event: string) => unknown;
-}
-
-const listeners: Set<(event: string) => unknown> = new Set();
-const readyListeners: Set<() => unknown> = new Set();
-const Yasumu: YasumuRuntime = {
-  ui: YasumuUI,
-  cuid: () => {
-    return op_generate_cuid();
-  },
-  getResourcesDir: () => {
-    if (!_resourceDir) {
-      _resourceDir = op_get_resources_dir();
-    }
-
-    return _resourceDir;
-  },
-  getServerEntrypoint: () => {
-    return join(Yasumu.getResourcesDir(), 'yasumu-internal', 'yasumu-server');
-  },
-  isReady: () => {
-    return op_is_yasumu_ready();
-  },
-  setRpcPort: (port: number) => {
-    op_set_rpc_port(port);
-  },
-  onReady: (listener: () => unknown) => {
+  public static onReady(listener: () => unknown) {
     if (Yasumu.isReady()) {
       listener();
       return () => {};
@@ -99,15 +89,28 @@ const Yasumu: YasumuRuntime = {
     return () => {
       readyListeners.delete(listener);
     };
-  },
-  onEvent: (listener: (event: string) => unknown) => {
+  }
+  /**
+   * Register a listener for events from the renderer
+   * @param listener The listener to register
+   * @returns A function to remove the listener
+   */
+  public static onEvent(listener: (event: string) => unknown) {
     listeners.add(listener);
 
     return () => {
       listeners.delete(listener);
     };
-  },
-  '~yasumu__on__Event__Callback': async (event: string) => {
+  }
+
+  /**
+   * Internal event callback
+   * @param event The event to callback
+   * @returns The result of the callback
+   * @private
+   * @internal
+   */
+  private static async [YASUMU_INTERNAL_ON_EVENT_CALLBACK](event: string) {
     try {
       const parsed = JSON.parse(event);
       const isReadyEvent = parsed.type === 'yasumu_internal_ready_event';
@@ -128,8 +131,8 @@ const Yasumu: YasumuRuntime = {
     } catch (e) {
       console.error('Failed to parse renderer event:', e);
     }
-  },
-};
+  }
+}
 
 Object.defineProperty(globalThis, 'Yasumu', {
   value: Yasumu,
@@ -137,6 +140,8 @@ Object.defineProperty(globalThis, 'Yasumu', {
   enumerable: false,
   configurable: false,
 });
+
+type YasumuRuntime = typeof Yasumu;
 
 declare global {
   // deno-lint-ignore no-explicit-any

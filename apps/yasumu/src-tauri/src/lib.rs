@@ -76,7 +76,10 @@ pub fn run() {
             let app_handle = app.handle().clone();
 
             if let Ok(resource_dir) = app_handle.path().resource_dir() {
-                let main_path = resource_dir.join("yasumu-internal").join("main.ts");
+                let main_path = resource_dir
+                    .join("resources")
+                    .join("yasumu-scripts")
+                    .join("main.ts");
                 println!("Looking for main module at: {}", main_path.display());
 
                 if main_path.exists() {

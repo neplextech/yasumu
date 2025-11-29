@@ -5,7 +5,8 @@
   "scripts": {
     "bootstrap": "turbo gen bootstrap --args",
     "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\"",
-    "build": "turbo run build"
+    "build": "turbo run build",
+    "prepare": "pnpm --filter=tanxium run deno install"
   },
   "license": "GPL-3.0",
   "author": "Neplex",

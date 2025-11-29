@@ -18,17 +18,21 @@ export interface CreateYasumuNotification {
 /**
  * Yasumu UI API
  */
-export const YasumuUI = {
+export class YasumuUI {
+  private constructor() {
+    throw new Error('YasumuUI is not a constructor');
+  }
+
   /**
    * Show a toast notification in the ui
    * @param notification The notification to show
    */
-  showNotification(notification: CreateYasumuNotification): void {
+  public static showNotification(notification: CreateYasumuNotification): void {
     op_send_renderer_event(
       JSON.stringify({
         type: 'show-notification',
         payload: notification,
       }),
     );
-  },
-};
+  }
+}

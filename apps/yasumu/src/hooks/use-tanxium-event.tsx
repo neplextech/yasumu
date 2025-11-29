@@ -18,15 +18,12 @@ export function useTanxiumEvent() {
       try {
         const data = JSON.parse(event.payload) as TanxiumEvent;
 
-        console.log({ data });
-
         switch (data.type) {
           case 'console':
             {
               const _data = data.payload as { msg: string; level: number };
               const levelToConsoleMap = {
                 0: 'log',
-                1: 'debug',
                 2: 'info',
                 3: 'warn',
                 4: 'error',
