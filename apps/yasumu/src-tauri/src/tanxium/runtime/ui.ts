@@ -1,4 +1,4 @@
-import { op_send_renderer_event } from 'ext:core/ops';
+import { rendererEventQueue } from './utils.ts';
 
 export interface CreateYasumuNotification {
   /**
@@ -27,12 +27,10 @@ export class YasumuUI {
    * Show a toast notification in the ui
    * @param notification The notification to show
    */
-  public static showNotification(notification: CreateYasumuNotification): void {
-    op_send_renderer_event(
-      JSON.stringify({
-        type: 'show-notification',
-        payload: notification,
-      }),
-    );
+  public static showNotification(notification: CreateYasumuNotification) {
+    return rendererEventQueue.enqueue({
+      type: 'show-notification',
+      payload: notification,
+    });
   }
 }

@@ -55,7 +55,7 @@ export default function WorkspaceProvider({
                 context,
               };
 
-              const res = await client['yasumu.rpc'].$post({
+              const res = await client.rpc.$post({
                 json: payload,
               });
               const json = (await res.json().catch(() => null)) as any;

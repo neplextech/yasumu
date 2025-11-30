@@ -85,6 +85,8 @@ deno_core::extension!(
         "bootstrap.ts",
         "ui.ts",
         "patches.ts",
+        "utils.ts",
+        "common.ts",
     ],
     state = |state| {
         state.put::<deno_runtime::ops::bootstrap::SnapshotOptions>(

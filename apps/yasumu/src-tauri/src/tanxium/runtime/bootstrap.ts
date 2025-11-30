@@ -8,6 +8,7 @@ import {
   op_is_yasumu_ready,
 } from 'ext:core/ops';
 import { join } from 'node:path';
+import { rendererEventQueue } from './utils.ts';
 
 let _resourceDir: string;
 
@@ -31,6 +32,23 @@ class Yasumu {
   public static cuid() {
     return op_generate_cuid();
   }
+
+  /**
+   * Send a message to the renderer
+   * @param message The message to send
+   */
+  public static postMessage(message: unsafe) {
+    return rendererEventQueue.enqueue({
+      type: 'message',
+      payload: message,
+    });
+  }
+
+  /**
+   * Strip the verbatim path from the path
+   * @param path The path to strip
+   * @returns The stripped path
+   */
   public static stripVerbatimPath(path: string): string {
     if (path.startsWith('\\\\?\\UNC\\')) {
       return '\\' + path.slice(8);
@@ -38,6 +56,7 @@ class Yasumu {
 
     return path.replace(/^\\\\\?\\/, '');
   }
+
   /**
    * Get the resources directory
    * @returns The resources directory

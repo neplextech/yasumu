@@ -1,11 +1,6 @@
 /// <reference types="./internal.d.ts" />
 import { Console } from 'ext:deno_console/01_console.js';
-import { op_send_renderer_event } from 'ext:core/ops';
-
-let _initYasumuBuffer = false;
-
-const MAX_BUFFER_SIZE = 100;
-const buffer: string[] = [];
+import { consoleEventQueue } from './utils.ts';
 
 const originalConsole = globalThis.console;
 
@@ -15,30 +10,10 @@ globalThis.console = new Console((msg: string, level: number) => {
     (<const>['log', 'debug', 'info', 'warn', 'error'])[level] ?? 'log';
   originalConsole[lvl](msg, level);
 
-  if (!Yasumu.isReady()) {
-    if (!_initYasumuBuffer) {
-      Yasumu.onReady(() => {
-        for (const event of buffer) {
-          op_send_renderer_event(event);
-        }
-
-        buffer.length = 0;
-      });
-      _initYasumuBuffer = true;
-    }
-
-    // truncate from the beginning of the buffer
-    if (buffer.length >= MAX_BUFFER_SIZE) {
-      buffer.splice(0, buffer.length - MAX_BUFFER_SIZE);
-    }
-
-    buffer.push(JSON.stringify({ type: 'console', payload: { msg, level } }));
-    return;
-  }
-
-  op_send_renderer_event(
-    JSON.stringify({ type: 'console', payload: { msg, level } }),
-  );
+  // push the message to the console event queue
+  // this also handles the case where the Yasumu runtime is not ready yet
+  // and the message is buffered until the runtime is ready
+  consoleEventQueue.enqueue({ msg, level }).catch(Object);
 });
 
 // disable confirm() and prompt() and alert()

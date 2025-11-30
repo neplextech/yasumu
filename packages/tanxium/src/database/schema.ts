@@ -3,12 +3,14 @@
 
 /* Tables */
 export * from './schema/tables/workspaces.ts';
+export * from './schema/tables/smtp.ts';
 export * from './schema/tables/environments.ts';
 export * from './schema/tables/rest.ts';
 export * from './schema/tables/rest-entity.ts';
 
 /* Relations */
 export * from './schema/relations/workspaces.ts';
+export * from './schema/relations/smtp.ts';
 export * from './schema/relations/environments.ts';
 export * from './schema/relations/rest.ts';
 export * from './schema/relations/rest-entity.ts';

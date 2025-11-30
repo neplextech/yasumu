@@ -17,15 +17,14 @@ export async function startServer() {
       cause: error,
     });
   }
+
   const server = Deno.serve({ port: 0 }, app.fetch);
 
   Yasumu.setRpcPort(server.addr.port);
 
-  setTimeout(() => {
-    console.log(
-      `Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`,
-    );
-  }, 5000);
+  console.log(
+    `Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`,
+  );
 }
 
 export type { AppType } from './backend/server.ts';

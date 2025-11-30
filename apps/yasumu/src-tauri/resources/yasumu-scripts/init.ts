@@ -14,7 +14,7 @@ Yasumu.onEvent(async (event) => {
   const todo = await randomTodo.json();
   console.log('Random todo:', todo);
 
-  Yasumu.ui.showNotification({
+  await Yasumu.ui.showNotification({
     title: 'Random Todo Fetched',
     message: `${todo.title}`,
     variant: 'info',
