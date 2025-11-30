@@ -48,6 +48,21 @@ export class WorkspaceManager {
   }
 
   /**
+   * Fetches the active workspace from the RPC layer. This may or may not work depending on the platform.
+   */
+  public async fetchActiveWorkspace(): Promise<Workspace | null> {
+    const id = await this.yasumu.rpc.workspaces.active.$query({
+      parameters: [],
+    });
+
+    if (!id) return null;
+
+    if (id === this.activeWorkspaceId) return this.getActiveWorkspace();
+
+    return this.open({ id });
+  }
+
+  /**
    * Opens an existing workspace. Throws an error if the workspace does not exist.
    * @param options The options for opening the workspace.
    * @returns The opened workspace.
@@ -92,9 +107,9 @@ export class WorkspaceManager {
    * Lists all workspaces.
    * @returns The list of workspaces.
    */
-  public async list(): Promise<PartialWorkspace[]> {
+  public async list({ take }: { take?: number } = {}): Promise<Workspace[]> {
     const data = await this.yasumu.rpc.workspaces.list.$query({
-      parameters: [],
+      parameters: [{ take }],
     });
     return data.map((data) => new Workspace(this, data));
   }
@@ -106,11 +121,16 @@ export class WorkspaceManager {
    */
   private async $activate(workspace: Workspace): Promise<Workspace> {
     this.workspaces.set(workspace.id, workspace);
+    await this.yasumu.rpc.workspaces.activate.$mutate({
+      parameters: [workspace.id],
+    });
     if (this.activeWorkspaceId === workspace.id) {
       return workspace;
     }
 
     this.activeWorkspaceId = workspace.id;
+    this.yasumu.events.emit('onWorkspaceActivated', workspace);
+
     // TODO: invoke the lifecycle hooks for the workspace activation
     return workspace;
   }
@@ -121,9 +141,14 @@ export class WorkspaceManager {
    */
   private async $deactivate(workspace: Workspace): Promise<void> {
     this.workspaces.delete(workspace.id);
+    await this.yasumu.rpc.workspaces.deactivate.$mutate({
+      parameters: [workspace.id],
+    });
     if (this.activeWorkspaceId === workspace.id) {
       this.activeWorkspaceId = null;
     }
+
+    this.yasumu.events.emit('onWorkspaceDeactivated', workspace);
     // TODO: invoke the lifecycle hooks for the workspace deactivation
   }
 }

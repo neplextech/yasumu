@@ -1,6 +1,8 @@
 {
   "extends": "@yasumu/tsconfig/next.json",
   "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],

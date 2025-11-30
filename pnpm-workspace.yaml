@@ -2,6 +2,8 @@ packages:
   - "apps/*"
   - "packages/*"
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - transletta
 catalogs:
   build:
     "@types/node": "^24.6.2"

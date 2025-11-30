@@ -118,6 +118,9 @@ const data = {
 export function AppSidebar() {
   const { setOpen } = useSidebar();
   const path = usePathname();
+  const { currentWorkspaceId } = useYasumu();
+
+  if (!currentWorkspaceId) return null;
 
   return (
     <Sidebar

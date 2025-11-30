@@ -1,0 +1,33 @@
+{
+  "name": "@yasumu/den",
+  "type": "module",
+  "description": "Internal nest-inspired dependency injection container for Yasumu",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "deno": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "GPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "devDependencies": {
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
+    "typescript": "catalog:build"
+  },
+  "dependencies": {
+    "typedi": "^0.10.0",
+    "reflect-metadata": "^0.2.2"
+  }
+}

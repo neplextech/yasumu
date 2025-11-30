@@ -8,11 +8,13 @@ import { exit } from '@tauri-apps/plugin-process';
 import LoadingScreen from '../visuals/loading-screen';
 import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
 import { Yasumu, createYasumu } from '@yasumu/core';
+import { useRouter } from 'next/navigation';
 
 export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
   port: number;
   yasumu: Yasumu;
+  currentWorkspaceId: string | null;
 }
 
 const YasumuContext = createContext<YasumuContextData | null>(null);
@@ -35,6 +37,10 @@ export default function WorkspaceProvider({
     null,
   );
   const [yasumu, setYasumu] = useState<Yasumu | null>(null);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(
+    null,
+  );
+  const router = useRouter();
 
   const initializeYasumuEnvironment = async () => {
     let attempt: number;
@@ -55,21 +61,41 @@ export default function WorkspaceProvider({
                 context,
               };
 
+              console.log(`Invoking ${command.command}...`, {
+                data: command.parameters,
+              });
+
               const res = await client.rpc.$post({
                 json: payload,
               });
               const json = (await res.json().catch(() => null)) as any;
 
-              if (!res.ok || !json) {
+              console.log({ command: command.command, json });
+
+              if (!res.ok || !json || json.result === undefined) {
                 const error =
-                  json?.message ?? json?.error?.message ?? 'Unknown error';
+                  json?.message ??
+                  json?.error?.message ??
+                  'Unknown error from RPC layer';
                 throw new Error(error);
               }
 
-              return json;
+              return json.result;
+            },
+          },
+          events: {
+            onWorkspaceActivated: (workspace) => {
+              setCurrentWorkspaceId(workspace.id);
+              router.replace('/en/workspaces/default/rest');
+            },
+            onWorkspaceDeactivated: () => {
+              setCurrentWorkspaceId(null);
+              router.replace('/');
             },
           },
         });
+
+        await yasumu.initialize();
 
         (globalThis as any).yasumu = yasumu;
 
@@ -113,6 +139,7 @@ export default function WorkspaceProvider({
         client,
         port,
         yasumu,
+        currentWorkspaceId,
       }}
     >
       {children}

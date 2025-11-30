@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "dev.yasumu.app",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm run bundle && pnpm dev",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm run bundle && pnpm build",
     "frontendDist": "../dist"
   },
   "app": {

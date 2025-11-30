@@ -28,7 +28,20 @@ export interface YasumuRPC {
      * Workspace listing command.
      * @returns The list of workspaces.
      */
-    list: RpcQuery<[], WorkspaceData[]>;
+    list: RpcQuery<[{ take?: number }], WorkspaceData[]>;
+    /**
+     * Workspace activation command.
+     */
+    activate: RpcMutation<[string], void>;
+    /**
+     * Workspace deactivation command.
+     */
+    deactivate: RpcMutation<[string], void>;
+    /**
+     * Get the active workspace ID command.
+     * @returns The active workspace ID.
+     */
+    active: RpcQuery<[], string | null>;
   };
   /**
    * The rest commands.

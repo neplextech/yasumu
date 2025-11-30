@@ -5,9 +5,14 @@
     "../../packages/common",
     "../../packages/rpc",
     "../../packages/core",
+    "../../packages/den",
   ],
   "imports": {
     "@/": "./src/",
     "yasumu:types": "../../apps/yasumu/src-tauri/src/tanxium/runtime/bootstrap.ts",
+  },
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
   },
 }

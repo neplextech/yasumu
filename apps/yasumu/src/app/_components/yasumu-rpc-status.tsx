@@ -1,5 +1,5 @@
 'use client';
-import { useYasumu } from '../providers/workspace-provider';
+import { useYasumu } from '@/components/providers/workspace-provider';
 import { Badge } from '@yasumu/ui/components/badge';
 
 export default function YasumuRpcStatus() {

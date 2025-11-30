@@ -10,6 +10,40 @@ export function cuid(name?: string) {
   return text(name).$defaultFn(() => Yasumu.cuid());
 }
 
+type CommonColumn = {
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MappedCommonColumn<T extends CommonColumn | CommonColumn[]> =
+  T extends CommonColumn[]
+    ? MappedCommonColumn<T[number]>[]
+    : Omit<T, 'createdAt' | 'updatedAt' | 'lastOpenedAt'> & {
+        createdAt: Date;
+        updatedAt: Date;
+      };
+
+export function mapResult<T extends CommonColumn | CommonColumn[]>(
+  result: T,
+): MappedCommonColumn<T> {
+  if (Array.isArray(result)) {
+    return result.map((item) =>
+      mapResult(item),
+    ) as unknown as MappedCommonColumn<T>;
+  }
+
+  return {
+    ...result,
+    createdAt: new Date(result.createdAt),
+    updatedAt: new Date(result.updatedAt),
+    // @ts-expect-error types
+    ...(result.lastOpenedAt
+      ? // @ts-expect-error types
+        { lastOpenedAt: new Date(result.lastOpenedAt) }
+      : {}),
+  } as unknown as MappedCommonColumn<T>;
+}
+
 export function createdAt() {
   return text('createdAt')
     .notNull()
@@ -28,7 +62,9 @@ export function commonColumns<M = JSONValue>() {
     id: cuid().primaryKey(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
-    metadata: json<M>().default({} as M),
+    metadata: json<M>()
+      .notNull()
+      .default({} as M),
   };
 }
 

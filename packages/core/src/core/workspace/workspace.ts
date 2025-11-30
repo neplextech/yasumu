@@ -44,14 +44,28 @@ export class Workspace {
    * The date and time the workspace was created.
    */
   public get createdAt(): Date {
-    return this.data.createdAt;
+    return new Date(this.data.createdAt);
   }
 
   /**
    * The date and time the workspace was last updated.
    */
   public get updatedAt(): Date {
-    return this.data.updatedAt;
+    return new Date(this.data.updatedAt);
+  }
+
+  /**
+   * The path of the workspace.
+   */
+  public get path(): string {
+    return this.data.path;
+  }
+
+  /**
+   * The date and time the workspace was last opened.
+   */
+  public get lastOpenedAt(): Date {
+    return new Date(this.data.lastOpenedAt);
   }
 
   /**

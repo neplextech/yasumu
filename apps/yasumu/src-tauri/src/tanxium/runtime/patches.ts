@@ -8,7 +8,8 @@ const originalConsole = globalThis.console;
 globalThis.console = new Console((msg: string, level: number) => {
   const lvl =
     (<const>['log', 'debug', 'info', 'warn', 'error'])[level] ?? 'log';
-  originalConsole[lvl](msg, level);
+
+  originalConsole[lvl]?.(msg);
 
   // push the message to the console event queue
   // this also handles the case where the Yasumu runtime is not ready yet

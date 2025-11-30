@@ -11,6 +11,13 @@ export function createYasumu(options: YasumuOptions): Yasumu {
 
 export * from './yasumu.js';
 export * from './core/modules/common/types.js';
+export * from './events/common.js';
+export * from './events/event-bus.js';
+export * from './core/manager/workspace-manager.js';
+export * from './core/workspace/workspace.js';
+export * from './core/modules/common/types.js';
+export * from './core/modules/rest/rest.entity.js';
+export * from './core/modules/rest/rest.js';
 
 // re-export
 export * from '@yasumu/common';

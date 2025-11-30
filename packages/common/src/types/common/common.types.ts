@@ -38,5 +38,5 @@ export interface CustomMetadata {
    * The arbitrary data that can be associated with an entity.
    * This can be used to store arbitrary data that is not part of the schema.
    */
-  metadata: Record<string, unknown>;
+  metadata: any;
 }

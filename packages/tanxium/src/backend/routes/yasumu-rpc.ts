@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { yasumuRpcServer } from '../../rpc/yasumu-rpc-server.ts';
 import { z } from 'zod';
+import { rpcServer } from '../../rpc/rpc-server.ts';
+import { runInTransaction } from '../../database/index.ts';
 
 const yasumuRpcPayloadSchema = z.object({
   context: z.object({
@@ -20,14 +21,32 @@ export const yasumuRpcRoute = new Hono().post(
   async (c) => {
     const { context, command } = c.req.valid('json');
 
-    const result = await yasumuRpcServer.handler(context, {
-      ...command,
-      // @ts-expect-error override isType
-      isType(t) {
-        return t === command.command;
-      },
-    });
+    try {
+      const result = await runInTransaction(() =>
+        rpcServer.execute(
+          {
+            type: command.type,
+            action: command.command,
+            payload: command.parameters,
+          },
+          context,
+        ),
+      );
 
-    return c.json(result);
+      return c.json({ result: result === undefined ? {} : result });
+    } catch (error) {
+      if (Error.isError(error) && error.message === 'DEN_HANDLER_NOT_FOUND') {
+        return c.json(
+          {
+            error: {
+              message: `Command ${command.command} not found`,
+            },
+          },
+          404,
+        );
+      }
+
+      throw error;
+    }
   },
 );
