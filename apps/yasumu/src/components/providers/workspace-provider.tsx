@@ -9,6 +9,10 @@ import LoadingScreen from '../visuals/loading-screen';
 import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
 import { Yasumu, createYasumu } from '@yasumu/core';
 import { useRouter } from 'next/navigation';
+import {
+  asPathIdentifier,
+  DEFAULT_WORKSPACE_PATH,
+} from '@yasumu/tanxium/src/rpc/common/constants';
 
 export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
@@ -96,6 +100,12 @@ export default function WorkspaceProvider({
         });
 
         await yasumu.initialize();
+
+        if (!yasumu.workspaces.getActiveWorkspace()) {
+          await yasumu.workspaces.open({
+            id: asPathIdentifier(DEFAULT_WORKSPACE_PATH),
+          });
+        }
 
         (globalThis as any).yasumu = yasumu;
 
