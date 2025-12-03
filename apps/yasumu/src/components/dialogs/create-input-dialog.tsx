@@ -40,7 +40,8 @@ export function CreateInputDialog({
 }: Props) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isControlled = controlProps.open && controlProps.onOpenChange;
+  const isControlled =
+    controlProps.open != undefined && controlProps.onOpenChange != undefined;
   const actualOpen = isControlled ? controlProps.open : open;
 
   function handleOpenChange(open: boolean) {

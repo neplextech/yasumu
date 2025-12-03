@@ -28,9 +28,6 @@ import {
 import { MdFolder } from 'react-icons/md';
 import { CreateInputDialog } from '../dialogs/create-input-dialog';
 
-const truncate = (str: string, length: number) =>
-  str.length > length ? `${str.slice(0, length)}...` : str;
-
 export interface FileTreeItem {
   name: string;
   icon?: React.ComponentType;
