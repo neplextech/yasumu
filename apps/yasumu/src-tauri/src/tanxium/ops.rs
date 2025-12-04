@@ -68,6 +68,16 @@ fn op_is_yasumu_ready(state: &mut OpState) -> bool {
     yasumu_state.ready
 }
 
+#[op2]
+#[string]
+fn op_get_yasumu_version(state: &mut OpState) -> String {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    app_handle.package_info().version.to_string()
+}
+
 pub fn invoke_renderer_event_callback(event: &str) {
     if let Some(sender) = get_renderer_event_sender() {
         let _ = sender.send(event.to_string());
@@ -78,7 +88,14 @@ pub fn invoke_renderer_event_callback(event: &str) {
 
 deno_core::extension!(
     tanxium_rt,
-    ops = [op_send_renderer_event, op_get_resources_dir, op_set_rpc_port, op_generate_cuid, op_is_yasumu_ready],
+    ops = [
+        op_send_renderer_event,
+        op_get_resources_dir,
+        op_set_rpc_port,
+        op_generate_cuid,
+        op_is_yasumu_ready,
+        op_get_yasumu_version,
+    ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [
         dir "src/tanxium/runtime",

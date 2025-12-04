@@ -1,18 +1,20 @@
 packages:
   - "apps/*"
   - "packages/*"
-minimumReleaseAge: 10080
-minimumReleaseAgeExclude:
-  - transletta
+# TODO: re-enable in the future
+# currently disabled because react had RCE vulnerability and patch was released yesterday
+# minimumReleaseAge: 10080
+# minimumReleaseAgeExclude:
+#   - transletta
 catalogs:
   build:
     "@types/node": "^24.6.2"
     "typescript": "^5.9.3"
   react:
-    "react": "^19.2.0"
-    "react-dom": "^19.2.0"
-    "next": "^16.0.0"
-    "@types/react": "^19.1.9"
-    "@types/react-dom": "^19.1.7"
+    "react": "^19.2.1"
+    "react-dom": "^19.2.1"
+    "next": "^16.0.7"
+    "@types/react": "^19.2.7"
+    "@types/react-dom": "^19.2.3"
     "babel-plugin-react-compiler": "^1.0.0"
-    "eslint-config-next": "16.0.0"
+    "eslint-config-next": "16.0.7"

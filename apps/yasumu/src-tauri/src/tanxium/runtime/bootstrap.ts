@@ -6,11 +6,12 @@ import {
   op_set_rpc_port,
   op_generate_cuid,
   op_is_yasumu_ready,
+  op_get_yasumu_version,
 } from 'ext:core/ops';
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
 
-let _resourceDir: string;
+let _resourceDir: string, _yasumuVersion: string;
 
 const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
@@ -24,6 +25,13 @@ class Yasumu {
 
   private constructor() {
     throw new Error('Yasumu is not a constructor');
+  }
+
+  /**
+   * Get the current version of Yasumu
+   */
+  public static get version() {
+    return (_yasumuVersion ??= op_get_yasumu_version());
   }
 
   /**
