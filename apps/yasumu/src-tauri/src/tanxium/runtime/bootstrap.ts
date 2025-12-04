@@ -27,6 +27,9 @@ class Yasumu {
     throw new Error('Yasumu is not a constructor');
   }
 
+  /**
+   * Get the current version of Yasumu
+   */
   public static get version() {
     return (_yasumuVersion ??= op_get_yasumu_version());
   }

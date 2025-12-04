@@ -1,6 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+# TODO: re-enable in the future
+# currently disabled because react had RCE vulnerability and patch was released yesterday
 # minimumReleaseAge: 10080
 # minimumReleaseAgeExclude:
 #   - transletta

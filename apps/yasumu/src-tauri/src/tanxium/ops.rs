@@ -71,13 +71,12 @@ fn op_is_yasumu_ready(state: &mut OpState) -> bool {
 
 #[op2]
 #[string]
-fn op_get_yasumu_version() -> String {
-    let json = include_str!("../../tauri.conf.json");
-    serde_json::from_str::<serde_json::Value>(json)
-        .ok()
-        .and_then(|v| v["version"].as_str())
-        .unwrap_or("unknown")
-        .to_string()
+fn op_get_yasumu_version(state: &mut OpState) -> String {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    app_handle.package_info().version.to_string()
 }
 
 pub fn invoke_renderer_event_callback(event: &str) {
