@@ -4,7 +4,6 @@ use crate::YasumuInternalState;
 use cuid2::cuid;
 use deno_core::op2;
 use deno_core::OpState;
-use serde_json::json;
 use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
