@@ -73,10 +73,11 @@ fn op_is_yasumu_ready(state: &mut OpState) -> bool {
 #[string]
 fn op_get_yasumu_version() -> String {
     let json = include_str!("../../tauri.conf.json");
-    let json: serde_json::Value = serde_json::from_str(json).unwrap_or(json!({
-        "version": "unknown"
-    }));
-    json["version"].as_str().unwrap_or("unknown").to_string()
+    serde_json::from_str::<serde_json::Value>(json)
+        .ok()
+        .and_then(|v| v["version"].as_str())
+        .unwrap_or("unknown")
+        .to_string()
 }
 
 pub fn invoke_renderer_event_callback(event: &str) {
