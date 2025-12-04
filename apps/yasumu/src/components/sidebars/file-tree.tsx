@@ -1,11 +1,18 @@
-import * as React from 'react';
 import { ChevronRight, File, Folder } from 'lucide-react';
+import * as React from 'react';
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@yasumu/ui/components/collapsible';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@yasumu/ui/components/context-menu';
 import {
   Sidebar,
   SidebarContent,
@@ -20,9 +27,6 @@ import {
 } from '@yasumu/ui/components/sidebar';
 import { MdFolder } from 'react-icons/md';
 import { CreateInputDialog } from '../dialogs/create-input-dialog';
-
-const truncate = (str: string, length: number) =>
-  str.length > length ? `${str.slice(0, length)}...` : str;
 
 export interface FileTreeItem {
   name: string;
@@ -81,7 +85,68 @@ export function FileTreeSidebar({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MenuContent({ type }: { type: 'file' | 'folder' }) {
+  const forFolder = type === 'folder';
+  const [open, setOpen] = React.useState<'file' | 'folder' | null>(null);
+
+  return (
+    <React.Fragment>
+      <ContextMenuContent className="w-52">
+        {forFolder ? (
+          <>
+            <ContextMenuItem
+              inset
+              onClick={() => {
+                setOpen('file');
+              }}
+            >
+              New File
+            </ContextMenuItem>
+            <ContextMenuItem
+              inset
+              onClick={() => {
+                setOpen('folder');
+              }}
+            >
+              New Folder
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        ) : null}
+
+        <ContextMenuItem inset>Rename</ContextMenuItem>
+        <ContextMenuItem inset variant="destructive">
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+
+      <CreateInputDialog
+        title="Add new folder"
+        description="This will add a new folder"
+        onSubmit={(name) => {
+          console.log('Create folder:', name);
+        }}
+        open={open === 'folder'}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen ? 'folder' : null);
+        }}
+      />
+
+      <CreateInputDialog
+        title="Add new file"
+        description="This will add a new file"
+        onSubmit={(name) => {
+          console.log('Create file:', name);
+        }}
+        open={open === 'file'}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen ? 'file' : null);
+        }}
+      />
+    </React.Fragment>
+  );
+}
+
 function Tree({ item }: { item: FileTreeItem }) {
   const { name, children } = item;
 
@@ -89,11 +154,16 @@ function Tree({ item }: { item: FileTreeItem }) {
     const Icon = item.icon;
 
     return (
-      <SidebarMenuButton className="data-[active=true]:bg-transparent text-xs">
-        {/* @ts-ignore */}
-        {Icon && <Icon short />}
-        {truncate(name || '', 20)}
-      </SidebarMenuButton>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <SidebarMenuButton className="data-[active=true]:bg-transparent text-xs truncate">
+            {/* @ts-ignore */}
+            {Icon && <Icon short />}
+            {name || ''}
+          </SidebarMenuButton>
+        </ContextMenuTrigger>
+        <MenuContent type="file" />
+      </ContextMenu>
     );
   }
 
@@ -103,13 +173,18 @@ function Tree({ item }: { item: FileTreeItem }) {
         className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
         defaultOpen
       >
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton className="text-xs">
-            <ChevronRight className="transition-transform" />
-            <MdFolder />
-            {name}
-          </SidebarMenuButton>
-        </CollapsibleTrigger>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton className="text-xs truncate">
+                <ChevronRight className="transition-transform" />
+                <MdFolder />
+                {name}
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+          </ContextMenuTrigger>
+          <MenuContent type="folder" />
+        </ContextMenu>
         <CollapsibleContent>
           <SidebarMenuSub className="px-1 py-0">
             {children.map((subItem: any, index: number) => (
