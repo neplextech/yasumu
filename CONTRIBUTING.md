@@ -7,6 +7,67 @@ Please follow this guide before contributing to this project.
 
 If you dont know from where to start, check the issue tracker.
 
+## Architecture
+
+Yasumu is designed around a modular architecture where core features are implemented as independent packages.
+
+```mermaid
+graph TD
+    subgraph Shared ["Shared Utilities"]
+        Common["@yasumu/common"]
+    end
+
+    subgraph Client ["Client Layer"]
+        Core["@yasumu/core<br>(Client SDK)"]
+    end
+
+    subgraph Bridge ["Bridge Layer"]
+        RPC["@yasumu/rpc<br>(PlatformBridge)"]
+    end
+
+    subgraph Server ["Backend Layer (@yasumu/tanxium)"]
+        Hono["Hono Server"]
+        Den["@yasumu/den<br>(DI Framework)"]
+        DB[(SQLite + Drizzle)]
+    end
+
+    subgraph Storage ["Storage Layer"]
+        Schema["@yasumu/schema"]
+        Files["File System<br>(.ysl files)"]
+    end
+
+    %% Flows
+    Core -->|Uses| RPC
+    RPC <-->|IPC/HTTP| Hono
+    Hono --> Den
+    Den --> DB
+    DB <-->|Sync| Schema
+    Schema <-->|Serialize| Files
+
+    %% Dependencies
+    Common -.-> Core
+    Common -.-> RPC
+    Common -.-> Den
+    Common -.-> Schema
+```
+
+### Package Structure
+
+- **@yasumu/common**: A shared package that exposes common types and utilities used across the ecosystem.
+- **@yasumu/core**: The client SDK that defines how Yasumu's data is managed and structured.
+- **@yasumu/rpc**: Defines external operations and exposes the `PlatformBridge` interface, allowing `@yasumu/core` to communicate with the underlying platform (file system, external servers, etc.).
+- **@yasumu/tanxium**: The backend API running on Yasumu's custom JS/TS runtime. It uses a Hono server and **@yasumu/den** (a custom NestJS-like API built with TypeDI) to expose RPC-friendly endpoints. It manages CRUD operations using Drizzle ORM and a local SQLite database powered by `node:sqlite`, which is then synchronized with the file system.
+- **@yasumu/schema**: Handles the serialization and deserialization of Yasumu's entities into the plain text `.ysl` (Yasumu Schema Language) format.
+
+Core features are implemented as independent modules, making it possible to:
+
+- Add new protocol support without touching the core system
+- Extend the application with plugins
+- Run specific components in different environments
+- Integrate Yasumu into custom developer tooling
+
+This architecture keeps the system maintainable while allowing it to grow organically with new use cases.
+
 ## Check for existing PRs
 
 Before making a pull request, make sure to check if someone else has

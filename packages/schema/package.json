@@ -23,15 +23,15 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "license": "GPL-3.0",
+  "author": "Neplex",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neplextech/yasumu.git"
+    "url": "https://github.com/neplextech/yasumu.git"
   },
   "keywords": [
     "yasumu"
   ],
-  "author": "Zyrouge <hello@zyrouge.me>",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/neplextech/yasumu/issues"
   },

@@ -6,6 +6,12 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0"
   },
+  "license": "GPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",

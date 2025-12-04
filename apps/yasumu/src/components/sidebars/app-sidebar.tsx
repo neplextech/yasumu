@@ -47,7 +47,6 @@ import { YasumuSocials } from '@/lib/constants/socials';
 import SidebarLayoutStyleSelector from './layout-style-selector';
 import { useState } from 'react';
 import { AppMenu } from './app-menu';
-import GrpcIcon from '../visuals/grpc-icon';
 import { useYasumu } from '../providers/workspace-provider';
 
 const data = {
@@ -91,12 +90,6 @@ const data = {
       title: 'Server Sent Events',
       url: '/en/workspaces/default/sse',
       icon: Zap,
-      isActive: false,
-    },
-    {
-      title: 'GRPC',
-      url: '/en/workspaces/default/grpc',
-      icon: GrpcIcon,
       isActive: false,
     },
     {
