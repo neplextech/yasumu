@@ -4,6 +4,7 @@ use crate::YasumuInternalState;
 use cuid2::cuid;
 use deno_core::op2;
 use deno_core::OpState;
+use serde_json::json;
 use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
@@ -68,6 +69,16 @@ fn op_is_yasumu_ready(state: &mut OpState) -> bool {
     yasumu_state.ready
 }
 
+#[op2]
+#[string]
+fn op_get_yasumu_version() -> String {
+    let json = include_str!("../../tauri.conf.json");
+    let json: serde_json::Value = serde_json::from_str(json).unwrap_or(json!({
+        "version": "unknown"
+    }));
+    json["version"].as_str().unwrap_or("unknown").to_string()
+}
+
 pub fn invoke_renderer_event_callback(event: &str) {
     if let Some(sender) = get_renderer_event_sender() {
         let _ = sender.send(event.to_string());
@@ -78,7 +89,14 @@ pub fn invoke_renderer_event_callback(event: &str) {
 
 deno_core::extension!(
     tanxium_rt,
-    ops = [op_send_renderer_event, op_get_resources_dir, op_set_rpc_port, op_generate_cuid, op_is_yasumu_ready],
+    ops = [
+        op_send_renderer_event,
+        op_get_resources_dir,
+        op_set_rpc_port,
+        op_generate_cuid,
+        op_is_yasumu_ready,
+        op_get_yasumu_version,
+    ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [
         dir "src/tanxium/runtime",
