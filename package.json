@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "app": "pnpm --filter=@yasumu/app tauri dev",
     "bootstrap": "turbo gen bootstrap --args",
     "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\"",
     "build": "turbo run build",

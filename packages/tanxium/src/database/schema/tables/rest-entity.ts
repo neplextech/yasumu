@@ -69,6 +69,7 @@ export const restEntities = sqliteTable('rest_entity', {
   requestBody: json<RequestBody>('requestBody'),
   script: json<YasumuEmbeddedScript>('script'),
   testScript: json<YasumuEmbeddedScript>('testScript'),
+  groupId: cuid('groupId'),
 });
 
 export const restEntityDependencies = sqliteTable('rest_entity_dependency', {

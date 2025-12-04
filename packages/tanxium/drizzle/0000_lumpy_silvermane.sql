@@ -64,7 +64,8 @@ CREATE TABLE `rest_entity` (
 	`requestHeaders` text,
 	`requestBody` text,
 	`script` text,
-	`testScript` text
+	`testScript` text,
+	`groupId` text
 );
 --> statement-breakpoint
 CREATE TABLE `rest_entity_dependency` (
@@ -74,4 +75,15 @@ CREATE TABLE `rest_entity_dependency` (
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`restEntityId` text NOT NULL,
 	`dependsOnId` text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `entity_groups` (
+	`id` text PRIMARY KEY NOT NULL,
+	`createdAt` text DEFAULT (current_timestamp) NOT NULL,
+	`updatedAt` text DEFAULT (current_timestamp) NOT NULL,
+	`metadata` text DEFAULT '{}' NOT NULL,
+	`name` text NOT NULL,
+	`parentId` text,
+	`entityOwnerId` text NOT NULL,
+	`entityType` text NOT NULL
 );

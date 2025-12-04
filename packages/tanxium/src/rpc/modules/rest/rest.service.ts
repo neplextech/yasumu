@@ -16,6 +16,24 @@ export class RestService {
     return result ? mapResult(result) : null;
   }
 
+  public async findOneOrCreate(workspaceId: string) {
+    const rest = await this.findOneByWorkspaceId(workspaceId);
+    if (rest) return rest;
+
+    return this.create(workspaceId);
+  }
+
+  public async create(workspaceId: string) {
+    const db = this.connection.getConnection();
+    const [result] = await db
+      .insert(rest)
+      .values({
+        workspaceId,
+      })
+      .returning();
+    return mapResult(result);
+  }
+
   public async list(workspaceId: string) {
     const db = this.connection.getConnection();
     const result = await db.query.restEntities.findMany({

@@ -20,13 +20,27 @@ export class WorkspacesService implements OnModuleInit {
     await this.getDefaultWorkspace();
   }
 
-  public getDefaultWorkspace(): Promise<WorkspaceData> {
-    return this.create({
-      name: DEFAULT_WORKSPACE_NAME,
-      metadata: {
+  public async getDefaultWorkspace(): Promise<WorkspaceData> {
+    const db = this.connection.getConnection();
+    const existingWorkspace = await this.findOneByPath(DEFAULT_WORKSPACE_PATH);
+
+    if (existingWorkspace) {
+      return existingWorkspace;
+    }
+
+    const [result] = await db
+      .insert(workspaces)
+      .values({
+        name: DEFAULT_WORKSPACE_NAME,
         path: DEFAULT_WORKSPACE_PATH,
-      },
-    });
+        metadata: {
+          path: DEFAULT_WORKSPACE_PATH,
+        },
+      })
+      .returning();
+
+    // @ts-expect-error types
+    return mapResult(result);
   }
 
   public async list({ take }: { take?: number }): Promise<WorkspaceData[]> {
@@ -68,6 +82,12 @@ export class WorkspacesService implements OnModuleInit {
     const [_id, isPath] = this.resolveId(id);
 
     if (isPath) {
+      // special case for the default workspace
+      // this also ensures that the default workspace is always available
+      if (_id === DEFAULT_WORKSPACE_PATH) {
+        return this.getDefaultWorkspace();
+      }
+
       return this.findOneByPath(_id);
     }
 
@@ -76,6 +96,7 @@ export class WorkspacesService implements OnModuleInit {
       .select()
       .from(workspaces)
       .where(eq(workspaces.id, _id));
+
     // @ts-expect-error types
     return result ? mapResult(result) : null;
   }

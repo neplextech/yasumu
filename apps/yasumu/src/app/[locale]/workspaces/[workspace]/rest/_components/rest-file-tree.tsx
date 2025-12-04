@@ -24,12 +24,17 @@ const FILE_TREE_ITEMS: FileTreeItem[] = [
         icon: DeleteMethodIcon,
       },
       {
-        name: 'Forgot Password',
-        icon: PostMethodIcon,
-      },
-      {
-        name: 'Reset Password',
-        icon: PostMethodIcon,
+        name: 'Passwords',
+        children: [
+          {
+            name: 'Forgot Password',
+            icon: PostMethodIcon,
+          },
+          {
+            name: 'Reset Password',
+            icon: PostMethodIcon,
+          },
+        ],
       },
     ],
   },

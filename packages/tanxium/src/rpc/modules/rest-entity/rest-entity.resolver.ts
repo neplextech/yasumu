@@ -13,6 +13,11 @@ export class RestEntityResolver {
   }
 
   @Query()
+  public listTree(@WorkspaceId() workspaceId: string) {
+    return this.restEntityService.listTree(workspaceId);
+  }
+
+  @Query()
   public get(@WorkspaceId() workspaceId: string, id: string) {
     return this.restEntityService.get(workspaceId, id);
   }

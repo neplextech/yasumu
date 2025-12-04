@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { restEntities } from '../tables/rest-entity.ts';
 import { rest } from '../tables/rest.ts';
 import { restEntityDependencies } from '../tables/rest-entity.ts';
+import { entityGroups } from '../tables/entity-group.ts';
 
 export const restEntitiesRelations = relations(
   restEntities,
@@ -12,6 +13,10 @@ export const restEntitiesRelations = relations(
     }),
     dependencyEntries: many(restEntityDependencies),
     dependentEntries: many(restEntityDependencies),
+    group: one(entityGroups, {
+      fields: [restEntities.groupId],
+      references: [entityGroups.id],
+    }),
   }),
 );
 

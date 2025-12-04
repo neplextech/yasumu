@@ -7,7 +7,6 @@ import {
   Logs,
   Mail,
   Settings,
-  Zap,
 } from 'lucide-react';
 import { IoSync } from 'react-icons/io5';
 import {
@@ -41,13 +40,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import SidebarThemeSelector from './theme-selector';
 import { TbWorldWww } from 'react-icons/tb';
-import { SiDiscord, SiGithub, SiGraphql, SiSocketdotio } from 'react-icons/si';
-import WebSocketIcon from '@/components/visuals/websocket-icon';
+import { SiDiscord, SiGithub } from 'react-icons/si';
 import { YasumuSocials } from '@/lib/constants/socials';
 import SidebarLayoutStyleSelector from './layout-style-selector';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppMenu } from './app-menu';
 import { useYasumu } from '../providers/workspace-provider';
+import { YasumuVersion } from '@/lib/constants/version';
+import { getVersion, getName, getTauriVersion } from '@tauri-apps/api/app';
+import { Skeleton } from '@yasumu/ui/components/skeleton';
 
 const data = {
   user: {
@@ -68,30 +69,30 @@ const data = {
       icon: TbWorldWww,
       isActive: false,
     },
-    {
-      title: 'GraphQL',
-      url: '/en/workspaces/default/graphql',
-      icon: SiGraphql,
-      isActive: false,
-    },
-    {
-      title: 'Socket.IO',
-      url: '/en/workspaces/default/socketio',
-      icon: SiSocketdotio,
-      isActive: false,
-    },
-    {
-      title: 'WebSocket',
-      url: '/en/workspaces/default/websocket',
-      icon: WebSocketIcon,
-      isActive: false,
-    },
-    {
-      title: 'Server Sent Events',
-      url: '/en/workspaces/default/sse',
-      icon: Zap,
-      isActive: false,
-    },
+    // {
+    //   title: 'GraphQL',
+    //   url: '/en/workspaces/default/graphql',
+    //   icon: SiGraphql,
+    //   isActive: false,
+    // },
+    // {
+    //   title: 'Socket.IO',
+    //   url: '/en/workspaces/default/socketio',
+    //   icon: SiSocketdotio,
+    //   isActive: false,
+    // },
+    // {
+    //   title: 'WebSocket',
+    //   url: '/en/workspaces/default/websocket',
+    //   icon: WebSocketIcon,
+    //   isActive: false,
+    // },
+    // {
+    //   title: 'Server Sent Events',
+    //   url: '/en/workspaces/default/sse',
+    //   icon: Zap,
+    //   isActive: false,
+    // },
     {
       title: 'Emails',
       url: '/en/workspaces/default/emails',
@@ -276,17 +277,47 @@ function SettingsDropdown({
 }
 
 function AppInfo() {
-  const [info, setInfo] = useState({
-    name: 'Yasumu',
-    version: '0.0.0',
-  });
+  const [info, setInfo] = useState<{
+    name: string;
+    version: string;
+    tauriVersion: string;
+  } | null>(null);
   const { port } = useYasumu();
 
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const [name, version, tauriVersion] = await Promise.all([
+          getName(),
+          getVersion(),
+          getTauriVersion(),
+        ]);
+
+        setInfo({ name, version, tauriVersion });
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchInfo();
+  }, []);
+
   return (
-    <div className="grid flex-1 text-left text-sm leading-tight">
-      <span className="truncate font-semibold">{info.name}</span>
-      <span className="truncate text-xs">v{info.version}</span>
-      <span className="truncate text-xs">RPC Port: {port}</span>
+    <div className="grid flex-1 text-left text-sm leading-tight font-medium">
+      {!info ? (
+        <>
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-24 mt-1" />
+        </>
+      ) : (
+        <>
+          <span className="truncate font-semibold">{info.name}</span>
+          <span className="truncate text-xs">
+            v{info.version} | Tauri: v{info.tauriVersion}
+          </span>
+          <span className="truncate text-xs">RPC Port: {port}</span>
+        </>
+      )}
     </div>
   );
 }

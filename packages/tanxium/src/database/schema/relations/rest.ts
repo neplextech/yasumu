@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { rest } from '../tables/rest.ts';
 import { workspaces } from '../tables/workspaces.ts';
 import { restEntities } from '../tables/rest-entity.ts';
+import { entityGroups } from '../tables/entity-group.ts';
 
 export const restRelations = relations(rest, ({ one, many }) => ({
   workspace: one(workspaces, {
@@ -9,4 +10,5 @@ export const restRelations = relations(rest, ({ one, many }) => ({
     references: [workspaces.id],
   }),
   entities: many(restEntities),
+  entityGroups: many(entityGroups),
 }));
