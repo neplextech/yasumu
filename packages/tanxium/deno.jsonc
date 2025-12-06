@@ -6,6 +6,7 @@
     "../../packages/rpc",
     "../../packages/core",
     "../../packages/den",
+    "../../packages/schema",
   ],
   "imports": {
     "@/": "./src/",

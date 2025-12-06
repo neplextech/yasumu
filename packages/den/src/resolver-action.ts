@@ -1,10 +1,8 @@
-import { Service } from 'typedi';
 import { RESOLVER_METADATA } from './constants.js';
 import type { RpcHandlerMetadata } from './interfaces.js';
 
 export function Resolver(namespace?: string): ClassDecorator {
   return (target) => {
-    Service()(target);
     Reflect.defineMetadata(RESOLVER_METADATA.NAMESPACE, namespace, target);
   };
 }

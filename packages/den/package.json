@@ -27,7 +27,6 @@
     "typescript": "catalog:build"
   },
   "dependencies": {
-    "typedi": "^0.10.0",
     "reflect-metadata": "^0.2.2"
   }
 }

@@ -1,4 +1,4 @@
-import { Container } from 'typedi';
+import { Container } from './di/container.js';
 import type {
   Type,
   DenApplication,
@@ -6,6 +6,7 @@ import type {
   ModuleOptions,
   DynamicModule,
   RpcHandlerMetadata,
+  Token,
 } from './interfaces.js';
 import { MODULE_METADATA, RESOLVER_METADATA } from './constants.js';
 
@@ -16,43 +17,43 @@ interface RpcRegistryEntry {
   resolverClass: any;
 }
 
+interface ModuleDefinition {
+  ref: any; // The class or dynamic module object
+  metatype: Type<any>;
+  container: Container;
+  imports: Set<any>; // Set of refs
+  exports: Set<Token>;
+  isGlobal: boolean;
+}
+
 export class DenFactory {
   private static rpcRegistry = new Map<string, RpcRegistryEntry>();
-  private static initializedModules = new Set<any>();
-  private static moduleInstances: any[] = [];
-
-  // Note: In this simplified implementation using TypeDI, services are singletons in the global container by default.
-  // However, strictly following NestJS module isolation would require separate child containers.
-  // Given the current setup, exports/imports are mostly for initialization order and structure,
-  // as TypeDI container is global.
-  // To support @Global(), we mostly just need to ensure global modules are initialized.
+  private static modules = new Map<any, ModuleDefinition>(); // ref -> definition
+  private static globalModules = new Set<ModuleDefinition>();
 
   static async create(rootModule: Type<any>): Promise<DenApplication> {
     // Reset state
     this.rpcRegistry.clear();
-    this.initializedModules.clear();
-    this.moduleInstances = [];
+    this.modules.clear();
+    this.globalModules.clear();
 
-    // Initialize modules
-    await this.initializeModule(rootModule);
+    // 1. Scan Module Dependency Graph
+    await this.scanModule(rootModule);
 
-    // Trigger OnApplicationBootstrap
-    for (const instance of this.moduleInstances) {
-      if (this.hasLifecycleHook(instance, 'onApplicationBootstrap')) {
-        await instance.onApplicationBootstrap();
-      }
-    }
+    // 2. Link Modules (Import exports)
+    this.linkModules();
+
+    // 3. Instantiate & Initialize
+    await this.initializeModules();
 
     return {
       execute: (req, ctx) => this.execute(req, ctx),
       close: async () => {
-        for (const instance of this.moduleInstances) {
+        for (const def of this.modules.values()) {
+          const instance = def.container.get(def.metatype);
           if (this.hasLifecycleHook(instance, 'onApplicationShutdown')) {
             await instance.onApplicationShutdown();
           }
-        }
-
-        for (const instance of this.moduleInstances) {
           if (this.hasLifecycleHook(instance, 'onModuleDestroy')) {
             await instance.onModuleDestroy();
           }
@@ -61,106 +62,47 @@ export class DenFactory {
     };
   }
 
-  private static async execute(
-    request: RpcRequest,
-    context: any = {},
-  ): Promise<any> {
-    const entry = this.rpcRegistry.get(request.action);
-    if (!entry) {
-      throw new Error('DEN_HANDLER_NOT_FOUND');
+  private static async scanModule(
+    moduleRef: Type<any> | DynamicModule,
+  ): Promise<ModuleDefinition> {
+    if (this.modules.has(moduleRef)) {
+      return this.modules.get(moduleRef)!;
     }
 
-    const { handler, instance, methodName, resolverClass } = entry;
-
-    // Get parameters metadata
-    const paramsMetadata =
-      Reflect.getMetadata(RESOLVER_METADATA.PARAMS, resolverClass) || {};
-    const methodParams = paramsMetadata[methodName] || [];
-
-    // Construct arguments
-    const args: any[] = [];
-    const payload = Array.isArray(request.payload)
-      ? [...request.payload]
-      : [request.payload];
-
-    const paramLength = handler.length;
-
-    // If we have decorators, we need to iterate through all parameters index
-    // and construct args array using either the decorator factory or payload items.
-    // If a parameter has NO decorator, it should consume from payload.
-
-    // IMPORTANT: The issue with previous loop was simpler logic.
-    // Now with custom decorators, we might consume payload differently or not at all.
-    // Standard logic:
-    // - Decorated param -> use decorator logic (doesn't consume payload usually, unless decorator extracts from args)
-    // - Undecorated param -> consume next payload item
-
-    for (let i = 0; i < paramLength; i++) {
-      const paramMeta = methodParams[i];
-
-      if (paramMeta) {
-        if (paramMeta.type === 'context') {
-          // Backwards compat or specific optimization
-          args.push(context);
-        } else if (paramMeta.type === 'custom') {
-          // Custom decorator
-          const factory = paramMeta.factory;
-          const result = factory(paramMeta.data, { context, args: payload });
-          args.push(result);
-        } else {
-          // Unknown type, fallback
-          args.push(undefined);
-        }
-      } else {
-        // Undecorated: consume next payload item
-        args.push(payload.shift());
-      }
-    }
-
-    // If there are no params defined but we have payload, we can try to apply it directly?
-    // Or if the loop finished but we still have payload (e.g. rest args)
-    // But we are using decorators which usually implies fixed args.
-    // If paramLength is 0, we just pass payload spread as before.
-
-    if (paramLength === 0) {
-      return handler.apply(
-        instance,
-        request.payload === undefined
-          ? []
-          : Array.isArray(request.payload)
-            ? request.payload
-            : [request.payload],
-      );
-    }
-
-    return handler.apply(instance, args);
-  }
-
-  private static async initializeModule(moduleRef: Type<any> | DynamicModule) {
     let ModuleClass: Type<any>;
     let dynamicMetadata: Partial<ModuleOptions> = {};
+    let isGlobal = false;
 
     if (this.isDynamicModule(moduleRef)) {
       ModuleClass = moduleRef.module;
-      dynamicMetadata = moduleRef; // Contains providers, imports, etc.
+      dynamicMetadata = moduleRef;
+      isGlobal = moduleRef.global || false;
     } else {
       ModuleClass = moduleRef;
+      isGlobal =
+        Reflect.getMetadata(MODULE_METADATA.GLOBAL, ModuleClass) || false;
     }
 
-    if (this.initializedModules.has(ModuleClass)) return;
-    this.initializedModules.add(ModuleClass);
+    const container = new Container(ModuleClass.name);
+    const def: ModuleDefinition = {
+      ref: moduleRef,
+      metatype: ModuleClass,
+      container,
+      imports: new Set(),
+      exports: new Set(),
+      isGlobal,
+    };
 
-    // Get metadata from decorator
+    this.modules.set(moduleRef, def);
+    if (isGlobal) {
+      this.globalModules.add(def);
+    }
+
+    // Get metadata
     const imports = [
       ...(Reflect.getMetadata(MODULE_METADATA.IMPORTS, ModuleClass) || []),
       ...(dynamicMetadata.imports || []),
     ];
-
-    // 1. Initialize Imports (DFS)
-    // We do this FIRST to ensure dependencies are ready
-    for (const importedModule of imports) {
-      await this.initializeModule(importedModule);
-    }
 
     const providers = [
       ...(Reflect.getMetadata(MODULE_METADATA.PROVIDERS, ModuleClass) || []),
@@ -177,46 +119,174 @@ export class DenFactory {
       ...(dynamicMetadata.exports || []),
     ];
 
-    const isGlobal = Reflect.getMetadata(MODULE_METADATA.GLOBAL, ModuleClass);
-
-    // 2. Register Providers
+    // Register Providers
     for (const provider of providers) {
-      Container.get(provider);
+      container.addProvider(provider);
     }
 
-    // 3. Register Resolvers
-    for (const resolverClass of resolvers) {
-      const instance = Container.get(resolverClass);
-      const namespace = Reflect.getMetadata(
-        RESOLVER_METADATA.NAMESPACE,
-        resolverClass,
-      );
-      const handlers =
-        Reflect.getMetadata(RESOLVER_METADATA.HANDLERS, resolverClass) || {};
+    // Register Resolvers (as providers)
+    for (const resolver of resolvers) {
+      container.addProvider(resolver);
+    }
 
-      for (const [key, meta] of Object.entries(handlers) as [
-        string,
-        RpcHandlerMetadata,
-      ][]) {
-        const handlerName = meta.rpcName || key;
-        const rpcKey = namespace ? `${namespace}.${handlerName}` : handlerName;
+    // Register Module Class itself
+    container.addProvider(ModuleClass);
 
-        this.rpcRegistry.set(rpcKey, {
-          handler: meta.handler,
-          instance,
-          methodName: meta.methodName,
-          resolverClass,
-        });
+    // Process Imports
+    for (const importRef of imports) {
+      const importedDef = await this.scanModule(importRef);
+      def.imports.add(importRef);
+    }
+
+    // Process Exports
+    for (const exportToken of exports) {
+      if (this.isDynamicModule(exportToken)) {
+        // Re-exporting an imported module?
+        // Needs complex handling, simplifying to assume token export
+      } else {
+        // If export is a provider/token
+        let token: Token;
+        if (typeof exportToken === 'object' && 'provide' in exportToken) {
+          token = exportToken.provide;
+        } else {
+          token = exportToken as Token;
+        }
+        def.exports.add(token);
       }
     }
 
-    // 4. Instantiate Module and run OnModuleInit
-    const moduleInstance = Container.get(ModuleClass);
-    this.moduleInstances.push(moduleInstance);
+    return def;
+  }
 
-    if (this.hasLifecycleHook(moduleInstance, 'onModuleInit')) {
-      await moduleInstance.onModuleInit();
+  private static linkModules() {
+    for (const def of this.modules.values()) {
+      // Add imports
+      for (const importRef of def.imports) {
+        const importedDef = this.modules.get(importRef);
+        if (importedDef) {
+          def.container.addImport(importedDef.container, importedDef.exports);
+        }
+      }
+
+      // Add global modules (if not self)
+      for (const globalDef of this.globalModules) {
+        if (globalDef !== def) {
+          def.container.addImport(globalDef.container, globalDef.exports);
+        }
+      }
     }
+  }
+
+  private static async initializeModules() {
+    // Instantiate Resolvers & Register RPC
+    // Also Instantiate Module classes & run OnModuleInit
+
+    for (const def of this.modules.values()) {
+      const ModuleClass = def.metatype;
+
+      // Get Resolvers metadata from Class (dynamic modules merges this?)
+      // Note: scanning merged providers/resolvers into container.
+      // But we need to identify which are resolvers to register them.
+
+      // Re-read resolver list to register handlers
+      let resolvers =
+        Reflect.getMetadata(MODULE_METADATA.RESOLVERS, ModuleClass) || [];
+      if (this.isDynamicModule(def.ref)) {
+        resolvers = [...resolvers, ...(def.ref.resolvers || [])];
+      }
+
+      for (const resolverClass of resolvers) {
+        const instance = def.container.get(resolverClass);
+        const namespace = Reflect.getMetadata(
+          RESOLVER_METADATA.NAMESPACE,
+          resolverClass,
+        );
+        const handlers =
+          Reflect.getMetadata(RESOLVER_METADATA.HANDLERS, resolverClass) || {};
+
+        for (const [key, meta] of Object.entries(handlers) as [
+          string,
+          RpcHandlerMetadata,
+        ][]) {
+          const handlerName = meta.rpcName || key;
+          const rpcKey = namespace
+            ? `${namespace}.${handlerName}`
+            : handlerName;
+
+          this.rpcRegistry.set(rpcKey, {
+            handler: meta.handler,
+            instance,
+            methodName: meta.methodName,
+            resolverClass,
+          });
+        }
+      }
+
+      // Initialize Module
+      const moduleInstance = def.container.get(ModuleClass);
+      if (this.hasLifecycleHook(moduleInstance, 'onModuleInit')) {
+        await moduleInstance.onModuleInit();
+      }
+
+      // Run OnApplicationBootstrap (could be separate phase)
+      if (this.hasLifecycleHook(moduleInstance, 'onApplicationBootstrap')) {
+        await moduleInstance.onApplicationBootstrap();
+      }
+    }
+  }
+
+  private static async execute(
+    request: RpcRequest,
+    context: any = {},
+  ): Promise<any> {
+    const entry = this.rpcRegistry.get(request.action);
+    if (!entry) {
+      throw new Error('DEN_HANDLER_NOT_FOUND');
+    }
+
+    const { handler, instance, methodName, resolverClass } = entry;
+
+    const paramsMetadata =
+      Reflect.getMetadata(RESOLVER_METADATA.PARAMS, resolverClass) || {};
+    const methodParams = paramsMetadata[methodName] || [];
+
+    const args: any[] = [];
+    const payload = Array.isArray(request.payload)
+      ? [...request.payload]
+      : [request.payload];
+
+    const paramLength = handler.length;
+
+    for (let i = 0; i < paramLength; i++) {
+      const paramMeta = methodParams[i];
+
+      if (paramMeta) {
+        if (paramMeta.type === 'context') {
+          args.push(context);
+        } else if (paramMeta.type === 'custom') {
+          const factory = paramMeta.factory;
+          const result = factory(paramMeta.data, { context, args: payload });
+          args.push(result);
+        } else {
+          args.push(undefined);
+        }
+      } else {
+        args.push(payload.shift());
+      }
+    }
+
+    if (paramLength === 0) {
+      return handler.apply(
+        instance,
+        request.payload === undefined
+          ? []
+          : Array.isArray(request.payload)
+            ? request.payload
+            : [request.payload],
+      );
+    }
+
+    return handler.apply(instance, args);
   }
 
   private static isDynamicModule(module: any): module is DynamicModule {
@@ -227,6 +297,6 @@ export class DenFactory {
     instance: any,
     hook: string,
   ): instance is any {
-    return typeof instance[hook] === 'function';
+    return instance && typeof instance[hook] === 'function';
   }
 }

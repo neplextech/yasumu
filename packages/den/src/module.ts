@@ -1,10 +1,8 @@
-import { Service } from 'typedi';
 import type { ModuleOptions } from './interfaces.js';
 import { MODULE_METADATA } from './constants.js';
 
 export function Module(options: ModuleOptions): ClassDecorator {
   return (target) => {
-    Service()(target);
     Reflect.defineMetadata(
       MODULE_METADATA.IMPORTS,
       options.imports || [],
@@ -25,5 +23,11 @@ export function Module(options: ModuleOptions): ClassDecorator {
       options.exports || [],
       target,
     );
+  };
+}
+
+export function Global(): ClassDecorator {
+  return (target) => {
+    Reflect.defineMetadata(MODULE_METADATA.GLOBAL, true, target);
   };
 }

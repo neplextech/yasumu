@@ -14,3 +14,6 @@ export const RESOLVER_METADATA = {
 };
 
 export const INJECTABLE_METADATA = 'den:injectable';
+export const INJECT_METADATA = 'den:inject';
+export const OPTIONAL_METADATA = 'den:optional';
+export const DESIGN_PARAMTYPES = 'design:paramtypes';

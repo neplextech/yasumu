@@ -11,3 +11,8 @@ export const WorkspaceId = createParamDecorator((_data, ctx) => {
 
   return context.workspaceId;
 });
+
+export const Ctx = createParamDecorator((_data, ctx) => {
+  const context = ctx.context as YasumuRpcContext;
+  return context;
+});

@@ -1,12 +1,13 @@
 import type { Type } from './types.js';
+import type { Provider, Token } from './di/types.js';
 
-export type { Type };
+export type { Type, Token };
 
 export interface ModuleOptions {
   imports?: Array<Type<any> | DynamicModule>;
-  providers?: Type<any>[];
+  providers?: Provider[];
   resolvers?: Type<any>[];
-  exports?: Array<Type<any> | DynamicModule>;
+  exports?: Array<Token<any> | DynamicModule | Provider>;
 }
 
 export interface DynamicModule extends ModuleOptions {
@@ -18,8 +19,16 @@ export interface OnModuleInit {
   onModuleInit(): any;
 }
 
+export interface OnModuleDestroy {
+  onModuleDestroy(): any;
+}
+
 export interface OnApplicationBootstrap {
   onApplicationBootstrap(): any;
+}
+
+export interface OnApplicationShutdown {
+  onApplicationShutdown(signal?: string): any;
 }
 
 export interface RpcRequest {

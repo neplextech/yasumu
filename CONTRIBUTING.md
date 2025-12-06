@@ -9,7 +9,8 @@ If you dont know from where to start, check the issue tracker.
 
 ## Architecture
 
-Yasumu is designed around a modular architecture where core features are implemented as independent packages.
+Yasumu is designed around a modular architecture where core features
+are implemented as independent packages.
 
 ```mermaid
 graph TD
@@ -53,20 +54,33 @@ graph TD
 
 ### Package Structure
 
-- **@yasumu/common**: A shared package that exposes common types and utilities used across the ecosystem.
-- **@yasumu/core**: The client SDK that defines how Yasumu's data is managed and structured.
-- **@yasumu/rpc**: Defines external operations and exposes the `PlatformBridge` interface, allowing `@yasumu/core` to communicate with the underlying platform (file system, external servers, etc.).
-- **@yasumu/tanxium**: The backend API running on Yasumu's custom JS/TS runtime. It uses a Hono server and **@yasumu/den** (a custom NestJS-like API built with TypeDI) to expose RPC-friendly endpoints. It manages CRUD operations using Drizzle ORM and a local SQLite database powered by `node:sqlite`, which is then synchronized with the file system.
-- **@yasumu/schema**: Handles the serialization and deserialization of Yasumu's entities into the plain text `.ysl` (Yasumu Schema Language) format.
+- **@yasumu/common**: A shared package that exposes common types and
+  utilities used across the ecosystem.
+- **@yasumu/core**: The client SDK that defines how Yasumu's data is
+  managed and structured.
+- **@yasumu/rpc**: Defines external operations and exposes the
+  `PlatformBridge` interface, allowing `@yasumu/core` to communicate
+  with the underlying platform (file system, external servers, etc.).
+- **@yasumu/tanxium**: The backend API running on Yasumu's custom
+  JS/TS runtime. It uses a Hono server and **@yasumu/den** (a custom
+  NestJS-like dependency injection container and module system) to
+  expose RPC-friendly endpoints. It manages CRUD operations using
+  Drizzle ORM and a local SQLite database powered by `node:sqlite`,
+  which is then synchronized with the file system.
+- **@yasumu/schema**: Handles the serialization and deserialization of
+  Yasumu's entities into the plain text `.ysl` (Yasumu Schema
+  Language) format.
 
-Core features are implemented as independent modules, making it possible to:
+Core features are implemented as independent modules, making it
+possible to:
 
 - Add new protocol support without touching the core system
 - Extend the application with plugins
 - Run specific components in different environments
 - Integrate Yasumu into custom developer tooling
 
-This architecture keeps the system maintainable while allowing it to grow organically with new use cases.
+This architecture keeps the system maintainable while allowing it to
+grow organically with new use cases.
 
 ## Check for existing PRs
 

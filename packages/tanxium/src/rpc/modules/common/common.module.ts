@@ -1,9 +1,9 @@
-import { Module, Global } from '@yasumu/den';
+import { Module, Global, EventBus } from '@yasumu/den';
 import { TransactionalConnection } from './transactional-connection.service.ts';
 
 @Global()
 @Module({
-  exports: [TransactionalConnection],
-  providers: [TransactionalConnection],
+  exports: [TransactionalConnection, EventBus],
+  providers: [TransactionalConnection, EventBus],
 })
 export class CommonModule {}

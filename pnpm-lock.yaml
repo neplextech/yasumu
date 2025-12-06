@@ -203,9 +203,6 @@ importers:
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
-      typedi:
-        specifier: ^0.10.0
-        version: 0.10.0
     devDependencies:
       '@yasumu/shared':
         specifier: workspace:*
@@ -307,6 +304,9 @@ importers:
       '@yasumu/rpc':
         specifier: file:../../packages/rpc
         version: file:packages/rpc
+      '@yasumu/schema':
+        specifier: file:../../packages/schema
+        version: link:../schema
       drizzle-kit:
         specifier: ^0.31.6
         version: 0.31.7
@@ -5687,9 +5687,6 @@ packages:
   typed-array-length@1.0.7:
     resolution: {integrity: sha512-3KS2b+kL7fsuk/eJZ7EQdnEmQoaho/r6KUef7hxvltNA5DR8NAUM+8wJMbJyZ4G9/7i3v5zPBIMN5aybAh2/Jg==}
     engines: {node: '>= 0.4'}
-
-  typedi@0.10.0:
-    resolution: {integrity: sha512-v3UJF8xm68BBj6AF4oQML3ikrfK2c9EmZUyLOfShpJuItAqVBHWP/KtpGinkSsIiP6EZyyb6Z3NXyW9dgS9X1w==}
 
   typescript-eslint@8.46.2:
     resolution: {integrity: sha512-vbw8bOmiuYNdzzV3lsiWv6sRwjyuKJMQqWulBOU7M0RrxedXledX8G8kBbQeiOYDnTfiXz0Y4081E1QMNB6iQg==}
@@ -11808,8 +11805,6 @@ snapshots:
       is-typed-array: 1.1.15
       possible-typed-array-names: 1.1.0
       reflect.getprototypeof: 1.0.10
-
-  typedi@0.10.0: {}
 
   typescript-eslint@8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3):
     dependencies:

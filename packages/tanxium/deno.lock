@@ -1437,11 +1437,11 @@
       "npm:@yasumu/core@0.0.0": {},
       "npm:@yasumu/den@0.0.0": {
         "dependencies": [
-          "npm:reflect-metadata@~0.2.2",
-          "npm:typedi@0.10"
+          "npm:reflect-metadata@~0.2.2"
         ]
       },
-      "npm:@yasumu/rpc@0.0.0": {}
+      "npm:@yasumu/rpc@0.0.0": {},
+      "npm:@yasumu/schema@0.0.1": {}
     }
   }
 }
