@@ -20,6 +20,14 @@ export class Container {
 
   constructor(private readonly name: string = 'Container') {}
 
+  public getProviders(): Map<Token, Provider> {
+    return this.providers;
+  }
+
+  public getInstances(): Map<Token, any> {
+    return this.instances;
+  }
+
   public addProvider(provider: Provider) {
     if (this.isType(provider)) {
       this.providers.set(provider, {

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "52420c1e-1d6d-40e1-9c4c-c5b4903d3191",
+  "id": "9ca5cc9f-b089-4701-846e-ea9a0d6ca549",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "workspaces": {
@@ -44,6 +44,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "variables": {
           "name": "variables",

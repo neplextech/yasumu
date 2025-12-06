@@ -21,3 +21,6 @@ export abstract class YasumuSchemaParsable<T> {
 export type YasumuSchemaParsableToType<
   T extends YasumuSchemaParsable<unknown>,
 > = T extends YasumuSchemaParsable<infer U> ? U : never;
+
+export type AnyYasumuSchema = YasumuSchemaParsable<unknown>;
+export type Infer<T extends AnyYasumuSchema> = YasumuSchemaParsableToType<T>;

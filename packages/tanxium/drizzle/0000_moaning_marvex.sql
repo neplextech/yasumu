@@ -4,6 +4,7 @@ CREATE TABLE `workspaces` (
 	`updatedAt` text DEFAULT (current_timestamp) NOT NULL,
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`name` text NOT NULL,
+	`version` integer DEFAULT 0 NOT NULL,
 	`variables` text,
 	`path` text NOT NULL,
 	`lastOpenedAt` text DEFAULT (current_timestamp) NOT NULL

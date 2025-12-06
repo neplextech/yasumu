@@ -5,7 +5,7 @@ import {
   EntityGroupUpdateOptions,
   TreeViewOptions,
 } from './types.ts';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { entityGroups } from '../../../database/schema.ts';
 import { RestService } from '../rest/rest.service.ts';
 import {
@@ -102,6 +102,23 @@ export class EntityGroupService {
       );
     }
     return result;
+  }
+
+  public async findAll(workspaceId: string) {
+    const db = this.connection.getConnection();
+    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
+
+    if (!restModule) {
+      throw new NotFoundException(
+        `Rest module for workspace ${workspaceId} not found`,
+      );
+    }
+
+    const result = await db.query.entityGroups.findMany({
+      where: inArray(entityGroups.entityOwnerId, [restModule.id]),
+    });
+
+    return mapResult(result);
   }
 
   public async update(

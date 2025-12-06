@@ -11,3 +11,6 @@ export const entityGroups = sqliteTable('entity_groups', {
     enum: ['rest', 'graphql', 'websocket', 'socketio', 'sse'] as const,
   }).notNull(),
 });
+
+export type EntityGroupEntityType =
+  (typeof entityGroups.$inferSelect)['entityType'];

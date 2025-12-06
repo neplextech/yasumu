@@ -50,12 +50,13 @@ export class DenFactory {
       execute: (req, ctx) => this.execute(req, ctx),
       close: async () => {
         for (const def of this.modules.values()) {
-          const instance = def.container.get(def.metatype);
-          if (this.hasLifecycleHook(instance, 'onApplicationShutdown')) {
-            await instance.onApplicationShutdown();
-          }
-          if (this.hasLifecycleHook(instance, 'onModuleDestroy')) {
-            await instance.onModuleDestroy();
+          for (const instance of def.container.getInstances().values()) {
+            if (this.hasLifecycleHook(instance, 'onApplicationShutdown')) {
+              await instance.onApplicationShutdown();
+            }
+            if (this.hasLifecycleHook(instance, 'onModuleDestroy')) {
+              await instance.onModuleDestroy();
+            }
           }
         }
       },
@@ -181,6 +182,7 @@ export class DenFactory {
     // Instantiate Resolvers & Register RPC
     // Also Instantiate Module classes & run OnModuleInit
 
+    // 1. Register Resolvers
     for (const def of this.modules.values()) {
       const ModuleClass = def.metatype;
 
@@ -221,16 +223,25 @@ export class DenFactory {
           });
         }
       }
+    }
 
-      // Initialize Module
-      const moduleInstance = def.container.get(ModuleClass);
-      if (this.hasLifecycleHook(moduleInstance, 'onModuleInit')) {
-        await moduleInstance.onModuleInit();
+    // 2. Trigger Lifecycle Hooks (OnModuleInit)
+    for (const def of this.modules.values()) {
+      for (const [token] of def.container.getProviders()) {
+        const instance = def.container.get(token);
+        if (this.hasLifecycleHook(instance, 'onModuleInit')) {
+          await instance.onModuleInit();
+        }
       }
+    }
 
-      // Run OnApplicationBootstrap (could be separate phase)
-      if (this.hasLifecycleHook(moduleInstance, 'onApplicationBootstrap')) {
-        await moduleInstance.onApplicationBootstrap();
+    // 3. Trigger Lifecycle Hooks (OnApplicationBootstrap)
+    for (const def of this.modules.values()) {
+      for (const [token] of def.container.getProviders()) {
+        const instance = def.container.get(token);
+        if (this.hasLifecycleHook(instance, 'onApplicationBootstrap')) {
+          await instance.onApplicationBootstrap();
+        }
       }
     }
   }

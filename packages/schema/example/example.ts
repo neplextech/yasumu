@@ -1,4 +1,9 @@
-import { t, YasumuSchemaActions, YasumuSchemaParsableToType } from '../src';
+import {
+  t,
+  serialize,
+  deserialize,
+  type YasumuSchemaParsableToType,
+} from '../src/index.js';
 
 const script = `
 @Example
@@ -75,11 +80,10 @@ const scriptValue: YasumuSchemaParsableToType<typeof YasumuExampleScript> = {
 };
 
 const start = () => {
-  const actions = new YasumuSchemaActions(YasumuExampleScript);
-  const parsed = actions.parse(script);
+  const parsed = deserialize(script, YasumuExampleScript);
   console.log(JSON.stringify(parsed, null, 4));
   console.log('');
-  console.log(actions.serialize(parsed));
+  console.log(serialize(parsed, YasumuExampleScript));
 };
 
 start();

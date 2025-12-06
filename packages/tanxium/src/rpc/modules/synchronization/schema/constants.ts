@@ -1,4 +1,4 @@
 export const YasumuAnnotations = {
-  Workspace: 'Workspace',
-  Rest: 'Rest',
+  Workspace: 'workspace',
+  Rest: 'rest',
 } as const;

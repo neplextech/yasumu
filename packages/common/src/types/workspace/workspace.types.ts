@@ -35,6 +35,10 @@ export interface WorkspaceData extends CustomMetadata {
    */
   name: string;
   /**
+   * The version of the workspace.
+   */
+  version: number;
+  /**
    * The date and time the workspace was created.
    */
   createdAt: Date;

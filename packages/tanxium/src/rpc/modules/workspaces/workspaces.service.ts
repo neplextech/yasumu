@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@yasumu/den';
+import { EventBus, Injectable, OnModuleInit } from '@yasumu/den';
 import type { WorkspaceCreateOptions, WorkspaceData } from '@yasumu/common';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { mapResult } from '@/database/common/index.ts';
@@ -9,11 +9,15 @@ import {
   DEFAULT_WORKSPACE_PATH,
   PATH_IDENTIFIER_PREFIX,
 } from '../../common/constants.ts';
+import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
 
 @Injectable()
 export class WorkspacesService implements OnModuleInit {
   private activeWorkspaceId: string | null = null;
-  public constructor(private readonly connection: TransactionalConnection) {}
+  public constructor(
+    private readonly connection: TransactionalConnection,
+    private readonly eventBus: EventBus,
+  ) {}
 
   public async onModuleInit() {
     // ensure the default workspace exists
@@ -138,6 +142,8 @@ export class WorkspacesService implements OnModuleInit {
         lastOpenedAt: sql`(current_timestamp)`,
       })
       .where(eq(workspaces.id, id));
+
+    await this.eventBus.publish(new FsSyncEvent({ workspaceId: id }));
   }
 
   public deactivate(id: string) {
