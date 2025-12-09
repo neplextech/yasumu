@@ -4,6 +4,8 @@ import type {
   WorkspaceData,
   RestEntityData,
   RestEntityCreateOptions,
+  EntityGroupCreateOptions,
+  EntityGroupData,
 } from '@yasumu/common';
 
 /**
@@ -62,5 +64,20 @@ export interface YasumuRPC {
      * @returns The list of rest entities.
      */
     list: RpcQuery<[], RestEntityData[]>;
+    /**
+     * Rest entity listing command.
+     * @returns The list of rest entities.
+     */
+    listTree: RpcQuery<[], RestEntityData[]>;
+  };
+  /**
+   * The entity groups commands.
+   */
+  entityGroups: {
+    /**
+     * Entity group creation command.
+     * @param data The data for the entity group.
+     */
+    create: RpcMutation<[EntityGroupCreateOptions], EntityGroupData>;
   };
 }

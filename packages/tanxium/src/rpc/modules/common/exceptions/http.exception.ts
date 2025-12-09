@@ -11,3 +11,9 @@ export class BadRequestException extends HTTPException {
     super(400, { message: message || 'BAD_REQUEST' });
   }
 }
+
+export class NotImplementedException extends HTTPException {
+  public constructor(message?: string) {
+    super(501, { message: message || 'NOT_IMPLEMENTED' });
+  }
+}

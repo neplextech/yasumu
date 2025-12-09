@@ -3,6 +3,7 @@ import { TransactionalConnection } from '../common/transactional-connection.serv
 import {
   EntityGroupCreateOptions,
   EntityGroupUpdateOptions,
+  EntityType,
   TreeViewOptions,
 } from './types.ts';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -39,11 +40,20 @@ export class EntityGroupService {
     return result;
   }
 
+  private getOwnerModule(workspaceId: string, entityType: EntityType) {
+    switch (entityType) {
+      case 'rest':
+        return this.restService.findOneByWorkspaceId(workspaceId);
+      default:
+        throw new NotFoundException(`Entity type ${entityType} not found`);
+    }
+  }
+
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
+    const ownerModule = await this.getOwnerModule(workspaceId, data.entityType);
 
-    if (!restModule) {
+    if (!ownerModule) {
       throw new NotFoundException(
         `Rest module for workspace ${workspaceId} not found`,
       );
@@ -51,7 +61,7 @@ export class EntityGroupService {
 
     const maybeExisting = await this.locateGroupWithCommonParent(
       data.name,
-      restModule.id,
+      ownerModule.id,
       data.parentId,
     );
 
@@ -65,7 +75,7 @@ export class EntityGroupService {
         name: data.name,
         parentId: data.parentId,
         entityType: data.entityType,
-        entityOwnerId: restModule.id,
+        entityOwnerId: ownerModule.id,
       })
       .returning();
 
