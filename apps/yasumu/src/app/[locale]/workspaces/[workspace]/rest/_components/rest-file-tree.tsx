@@ -5,7 +5,14 @@ import {
   GetMethodIcon,
   PostMethodIcon,
   PutMethodIcon,
+  resolveHttpMethodIcon,
 } from './http-methods';
+import {
+  useActiveWorkspace,
+  useYasumu,
+} from '@/components/providers/workspace-provider';
+import { useEffect, useState } from 'react';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 
 const FILE_TREE_ITEMS: FileTreeItem[] = [
   {
@@ -84,12 +91,52 @@ const FILE_TREE_ITEMS: FileTreeItem[] = [
 ];
 
 export function RestFileTree() {
+  const { yasumu } = useYasumu();
+  const workspace = useActiveWorkspace();
+  const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    yasumu.events.on(
+      'onRestEntityUpdate',
+      async () => {
+        const entities = await workspace.rest.list();
+
+        setFileTree(
+          entities.map((entity) => ({
+            name: entity.name ?? 'New Request',
+            id: entity.id,
+            icon: resolveHttpMethodIcon(entity.method),
+          })),
+        );
+      },
+      {
+        signal: controller.signal,
+      },
+    );
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
   return (
     <FileTreeSidebar
-      fileTree={FILE_TREE_ITEMS}
+      fileTree={fileTree}
       className="font-sans w-full"
       collapsible="none"
-      onFileCreate={() => {}}
+      onFileCreate={withErrorHandler(async (name: string) => {
+        await workspace.rest.create({
+          name,
+          method: 'GET',
+          url: null,
+          metadata: {},
+        });
+      })}
+      onFolderCreate={withErrorHandler(async (name: string) => {
+        throw new Error('Folder creation is not supported yet');
+      })}
     />
   );
 }

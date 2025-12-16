@@ -5,6 +5,6 @@ export default defineConfig({
   schema: './src/database/schema.ts',
   dialect: 'sqlite',
   dbCredentials: {
-    url: 'file:yasumu.db',
+    url: 'yasumu.db',
   },
 });

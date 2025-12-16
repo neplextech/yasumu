@@ -4,6 +4,7 @@ import {
   type PlatformBridge,
   type YasumuRPC,
   type YasumuRpcContext,
+  type RpcSubscriptionEvents,
 } from '@yasumu/rpc';
 import type { YasumuEventHandlerInterface } from './events/common.js';
 import { YasumuEventBus } from './events/event-bus.js';
@@ -15,12 +16,28 @@ export interface YasumuOptions {
   /**
    * The platform bridge to use with this Yasumu instance.
    */
-  platformBridge: Pick<PlatformBridge, 'invoke'>;
+  platformBridge: PlatformBridge;
   /**
    * The event handler interface to use with this Yasumu instance.
    */
   events?: Partial<YasumuEventHandlerInterface>;
 }
+
+/**
+ * The interface for a subscription event.
+ */
+export type SubscriptionEventPayload<
+  T extends RpcSubscriptionEvents = RpcSubscriptionEvents,
+> = {
+  /**
+   * The event name.
+   */
+  event: keyof T;
+  /**
+   * The data for the event.
+   */
+  data: T[keyof T];
+};
 
 /**
  * The Yasumu class.
@@ -66,6 +83,36 @@ export class Yasumu {
    * The RPC proxy for this Yasumu instance.
    */
   public get rpc(): YasumuRPC {
-    return createYasumuRPC(this.options.platformBridge, this.getRpcContext());
+    return createYasumuRPC(this.getPlatformBridge(), this.getRpcContext());
+  }
+
+  /**
+   * Gets the platform bridge for this Yasumu instance.
+   * @returns The platform bridge for this Yasumu instance.
+   */
+  public getPlatformBridge(): PlatformBridge {
+    return this.options.platformBridge;
+  }
+
+  /**
+   * Handles a subscription event.
+   * @param payload The event payload.
+   */
+  public async onSubscription(
+    payload: SubscriptionEventPayload,
+  ): Promise<void> {
+    const event = payload.event;
+    const activeWorkspace = this.workspaces.getActiveWorkspace();
+
+    switch (event) {
+      case 'rest-entity-updated':
+        {
+          if (activeWorkspace?.id !== payload.data.workspaceId) return;
+          this.events.emit('onRestEntityUpdate', activeWorkspace);
+        }
+        break;
+      default:
+        return void (event satisfies never);
+    }
   }
 }

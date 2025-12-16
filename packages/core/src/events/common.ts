@@ -11,4 +11,9 @@ export interface YasumuEventHandlerInterface {
    * @param workspace - The workspace that was deactivated.
    */
   onWorkspaceDeactivated: (workspace: Workspace) => unknown;
+  /**
+   * Called when a rest entity is updated.
+   * @param entity - The rest entity that was updated.
+   */
+  onRestEntityUpdate: (workspace: Workspace) => unknown;
 }

@@ -6,12 +6,12 @@ use deno_ast::SourceMapOption;
 use deno_ast::{JsxAutomaticOptions, ModuleSpecifier};
 use deno_ast::{JsxRuntime, MediaType};
 use deno_core::ModuleLoadReferrer;
-use deno_runtime::deno_core::error::ModuleLoaderError;
 use deno_runtime::deno_core::ModuleSourceCode;
 use deno_runtime::deno_core::ModuleType;
+use deno_runtime::deno_core::error::ModuleLoaderError;
 use deno_runtime::deno_core::{
-    resolve_import, ModuleLoadResponse, ModuleLoader, ModuleSource, RequestedModuleType,
-    ResolutionKind,
+    ModuleLoadResponse, ModuleLoader, ModuleSource, RequestedModuleType, ResolutionKind,
+    resolve_import,
 };
 
 use crate::tanxium::yasumu_modules::YASUMU_MODULES;

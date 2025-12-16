@@ -14,6 +14,7 @@
     "deno": "deno",
     "bundle": "deno task generate-schema && deno --allow-write --allow-read --unstable-bundle scripts/bundle.ts",
     "drizzle:generate": "deno task generate-schema && drizzle-kit generate",
+    "studio": "deno task generate-schema && drizzle-kit studio",
     "generate-schema": "deno --allow-read --allow-write ./scripts/generate-schema.ts",
     "lint": "deno lint"
   },

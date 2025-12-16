@@ -11894,6 +11894,7 @@ name = "yasumu"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "color-print",
  "crossbeam-channel",
  "cuid2",
  "deno_ast 0.51.0",
@@ -11902,6 +11903,7 @@ dependencies = [
  "deno_fs",
  "deno_resolver",
  "deno_runtime",
+ "deno_terminal",
  "dirs 5.0.1",
  "node_resolver",
  "once_cell",

@@ -1,28 +1,23 @@
-import { EventBus, Injectable, OnModuleInit } from '@yasumu/den';
+import { Injectable, OnModuleInit } from '@yasumu/den';
 import type { WorkspaceCreateOptions, WorkspaceData } from '@yasumu/common';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { mapResult } from '@/database/common/index.ts';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { workspaces } from '@/database/schema.ts';
 import {
   DEFAULT_WORKSPACE_NAME,
   DEFAULT_WORKSPACE_PATH,
   PATH_IDENTIFIER_PREFIX,
 } from '../../common/constants.ts';
-import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
+import { WorkspaceActivatorService } from './workspace-activator.service.ts';
 
 @Injectable()
-export class WorkspacesService implements OnModuleInit {
+export class WorkspacesService {
   private activeWorkspaceId: string | null = null;
   public constructor(
     private readonly connection: TransactionalConnection,
-    private readonly eventBus: EventBus,
+    private readonly workspaceActivatorService: WorkspaceActivatorService,
   ) {}
-
-  public async onModuleInit() {
-    // ensure the default workspace exists
-    await this.getDefaultWorkspace();
-  }
 
   public async getDefaultWorkspace(): Promise<WorkspaceData> {
     const db = this.connection.getConnection();
@@ -129,25 +124,17 @@ export class WorkspacesService implements OnModuleInit {
   }
 
   public getActiveWorkspaceId(): string | null {
+    console.log(`Getting active workspace ID: ${this.activeWorkspaceId}`);
     return this.activeWorkspaceId;
   }
 
   public async activate(id: string) {
-    this.activeWorkspaceId = id;
-    const db = this.connection.getConnection();
-
-    await db
-      .update(workspaces)
-      .set({
-        lastOpenedAt: sql`(current_timestamp)`,
-      })
-      .where(eq(workspaces.id, id));
-
-    await this.eventBus.publish(new FsSyncEvent({ workspaceId: id }));
+    console.log(`Activating workspace ${id}`);
+    this.activeWorkspaceId = await this.workspaceActivatorService.activate(id);
   }
 
   public deactivate(id: string) {
-    void id;
+    console.log(`Deactivating workspace ${id}`);
     this.activeWorkspaceId = null;
   }
 }

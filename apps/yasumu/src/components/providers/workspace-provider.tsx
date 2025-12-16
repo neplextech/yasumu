@@ -7,7 +7,7 @@ import { message } from '@tauri-apps/plugin-dialog';
 import { exit } from '@tauri-apps/plugin-process';
 import LoadingScreen from '../visuals/loading-screen';
 import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
-import { Yasumu, createYasumu } from '@yasumu/core';
+import { Workspace, Yasumu, createYasumu } from '@yasumu/core';
 import { useRouter } from 'next/navigation';
 import {
   asPathIdentifier,
@@ -31,6 +31,20 @@ export function useYasumu() {
   }
 
   return context;
+}
+
+export function useActiveWorkspace(): Workspace;
+export function useActiveWorkspace(strict: true): Workspace;
+export function useActiveWorkspace(strict: false): Workspace | null;
+export function useActiveWorkspace(strict: boolean = true): Workspace | null {
+  const { yasumu } = useYasumu();
+  const workspace = yasumu.workspaces.getActiveWorkspace();
+
+  if (strict && !workspace) {
+    throw new Error('Active workspace not found');
+  }
+
+  return workspace;
 }
 
 export default function WorkspaceProvider({
@@ -101,13 +115,13 @@ export default function WorkspaceProvider({
 
         await yasumu.initialize();
 
-        if (!yasumu.workspaces.getActiveWorkspace()) {
-          await yasumu.workspaces.open({
-            id: asPathIdentifier(DEFAULT_WORKSPACE_PATH),
-          });
-        }
+        // if (!yasumu.workspaces.getActiveWorkspace()) {
+        //   await yasumu.workspaces.open({
+        //     id: asPathIdentifier(DEFAULT_WORKSPACE_PATH),
+        //   });
+        // }
 
-        (globalThis as any).yasumu = yasumu;
+        globalThis.yasumu = yasumu;
 
         setPort(port);
         setClient(client);

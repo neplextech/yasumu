@@ -8,8 +8,20 @@ export class RestEntity implements OnRequestLifecycle {
     private readonly data: RestEntityData,
   ) {}
 
+  public get id() {
+    return this.data.id;
+  }
+
+  public get name() {
+    return this.data.name;
+  }
+
   public get url() {
     return this.data.url;
+  }
+
+  public get method() {
+    return this.data.method;
   }
 
   public getSearchParameters() {

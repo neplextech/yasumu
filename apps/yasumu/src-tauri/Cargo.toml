@@ -3,7 +3,7 @@ name = "yasumu"
 version = "0.1.0"
 description = "Yasumu desktop app"
 authors = ["Neplex"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "yasumu_lib"
@@ -40,3 +40,5 @@ uuid = "1.18.1"
 tauri-plugin-dialog = "2"
 cuid2 = "0.1.4"
 tauri-plugin-process = "2"
+color-print = "0.3.7"
+deno_terminal = "0.2.2"

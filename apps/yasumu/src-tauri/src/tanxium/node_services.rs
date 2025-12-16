@@ -7,22 +7,23 @@ use deno_resolver::npm::NpmResolver;
 use deno_runtime::deno_node::NodeExtInitServices;
 use deno_runtime::deno_node::NodeRequireLoader;
 use deno_runtime::deno_node::NodeResolver;
-use node_resolver::cache::NodeResolutionSys;
-use node_resolver::errors::PackageJsonLoadError;
 use node_resolver::DenoIsBuiltInNodeModuleChecker;
 use node_resolver::NodeResolverOptions;
 use node_resolver::PackageJsonResolver;
+use node_resolver::cache::NodeResolutionSys;
+use node_resolver::errors::PackageJsonLoadError;
 use std::borrow::Cow;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
-use sys_traits::impls::RealSys;
 use sys_traits::FsRead;
+use sys_traits::impls::RealSys;
 
 use deno_error::JsErrorBox;
 
 pub struct TanxiumNodeRequireLoader {
     sys: RealSys,
+    #[allow(dead_code)]
     in_npm_pkg_checker: DenoInNpmPackageChecker,
 }
 

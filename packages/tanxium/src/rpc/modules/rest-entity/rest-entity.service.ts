@@ -30,7 +30,7 @@ export class RestEntityService {
 
   public async get(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
+    const restModule = await this.restService.findOneOrCreate(workspaceId);
 
     if (!restModule) {
       throw new NotFoundException(
@@ -56,7 +56,7 @@ export class RestEntityService {
 
   public async create(workspaceId: string, data: RestEntityCreateOptions) {
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
+    const restModule = await this.restService.findOneOrCreate(workspaceId);
 
     if (!restModule) {
       throw new NotFoundException(
@@ -74,11 +74,15 @@ export class RestEntityService {
       })
       .returning();
 
+    console.log({ result });
+
+    await this.restService.dispatchUpdate(workspaceId);
+
     return mapResult(result);
   }
 
   public async listTree(workspaceId: string, groupId?: string) {
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
+    const restModule = await this.restService.findOneOrCreate(workspaceId);
 
     if (!restModule) {
       throw new NotFoundException(

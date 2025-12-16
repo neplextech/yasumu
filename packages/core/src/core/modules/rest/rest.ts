@@ -13,7 +13,7 @@ export class RestModule {
     return new RestEntity(this, result);
   }
 
-  public async open(id: string): Promise<RestEntity> {
+  public async get(id: string): Promise<RestEntity> {
     const data = await this.workspace.manager.yasumu.rpc.rest.get.$query({
       parameters: [id],
     });
