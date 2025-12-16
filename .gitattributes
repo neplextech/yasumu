@@ -1,6 +1,2 @@
 * text=auto eol=lf
-*.mjs linguist-language=TypeScript
-*.cjs linguist-language=TypeScript
-*.js linguist-language=TypeScript
 *.hbs linguist-detectable=false
-*.css linguist-detectable=false
