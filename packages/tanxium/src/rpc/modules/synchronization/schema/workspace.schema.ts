@@ -16,7 +16,7 @@ export const WorkspaceSchema = t.script({
         name: t.string(),
         entity: t.enum('rest' as EntityGroupEntityType),
         parentId: t.nullable(t.string()),
-        entityOwnerId: t.string(),
+        workspaceId: t.string(),
       }),
     ),
   },

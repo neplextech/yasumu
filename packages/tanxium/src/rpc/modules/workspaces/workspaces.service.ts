@@ -12,12 +12,17 @@ import {
 import { WorkspaceActivatorService } from './workspace-activator.service.ts';
 
 @Injectable()
-export class WorkspacesService {
+export class WorkspacesService implements OnModuleInit {
   private activeWorkspaceId: string | null = null;
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly workspaceActivatorService: WorkspaceActivatorService,
   ) {}
+
+  public async onModuleInit() {
+    // seed default workspace
+    await this.getDefaultWorkspace();
+  }
 
   public async getDefaultWorkspace(): Promise<WorkspaceData> {
     const db = this.connection.getConnection();

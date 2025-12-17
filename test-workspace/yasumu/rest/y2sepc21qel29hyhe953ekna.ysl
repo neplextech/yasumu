@@ -1,0 +1,17 @@
+@rest
+
+metadata {
+  name: "sathi unique"
+  method: "GET"
+  id: "y2sepc21qel29hyhe953ekna"
+  groupId: "pw1l0hwrofttwnhd8nfbqhce"
+}
+
+request {
+  url: null
+  headers: []
+  body: null
+}
+
+dependencies []
+

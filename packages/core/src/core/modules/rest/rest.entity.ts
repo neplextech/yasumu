@@ -1,6 +1,6 @@
 import type { OnRequestLifecycle } from '../common/types.js';
 import type { RestModule } from './rest.js';
-import type { RestEntityData } from '@yasumu/common';
+import type { RestEntityData, RestEntityUpdateOptions } from '@yasumu/common';
 
 export class RestEntity implements OnRequestLifecycle {
   public constructor(
@@ -22,6 +22,14 @@ export class RestEntity implements OnRequestLifecycle {
 
   public get method() {
     return this.data.method;
+  }
+
+  public update(data: Partial<RestEntityUpdateOptions>): Promise<void> {
+    return this.rest.update(this.id, data);
+  }
+
+  public delete(): Promise<void> {
+    return this.rest.delete(this.id);
   }
 
   public getSearchParameters() {

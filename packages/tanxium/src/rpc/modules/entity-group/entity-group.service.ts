@@ -3,12 +3,10 @@ import { TransactionalConnection } from '../common/transactional-connection.serv
 import {
   EntityGroupCreateOptions,
   EntityGroupUpdateOptions,
-  EntityType,
   TreeViewOptions,
 } from './types.ts';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { entityGroups } from '../../../database/schema.ts';
-import { RestService } from '../rest/rest.service.ts';
 import {
   NotFoundException,
   BadRequestException,
@@ -17,21 +15,18 @@ import { mapResult } from '../../../database/common/index.ts';
 
 @Injectable()
 export class EntityGroupService {
-  public constructor(
-    private readonly connection: TransactionalConnection,
-    private readonly restService: RestService,
-  ) {}
+  public constructor(private readonly connection: TransactionalConnection) {}
 
   private async locateGroupWithCommonParent(
     name: string,
-    entityOwnerId: string,
+    workspaceId: string,
     parentId: string | null,
   ) {
     const db = this.connection.getConnection();
     const result = await db.query.entityGroups.findFirst({
       where: and(
         eq(entityGroups.name, name),
-        eq(entityGroups.entityOwnerId, entityOwnerId),
+        eq(entityGroups.workspaceId, workspaceId),
         parentId
           ? eq(entityGroups.parentId, parentId)
           : isNull(entityGroups.parentId),
@@ -40,28 +35,11 @@ export class EntityGroupService {
     return result;
   }
 
-  private getOwnerModule(workspaceId: string, entityType: EntityType) {
-    switch (entityType) {
-      case 'rest':
-        return this.restService.findOneByWorkspaceId(workspaceId);
-      default:
-        throw new NotFoundException(`Entity type ${entityType} not found`);
-    }
-  }
-
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
     const db = this.connection.getConnection();
-    const ownerModule = await this.getOwnerModule(workspaceId, data.entityType);
-
-    if (!ownerModule) {
-      throw new NotFoundException(
-        `Rest module for workspace ${workspaceId} not found`,
-      );
-    }
-
     const maybeExisting = await this.locateGroupWithCommonParent(
       data.name,
-      ownerModule.id,
+      workspaceId,
       data.parentId,
     );
 
@@ -75,7 +53,7 @@ export class EntityGroupService {
         name: data.name,
         parentId: data.parentId,
         entityType: data.entityType,
-        entityOwnerId: ownerModule.id,
+        workspaceId,
       })
       .returning();
 
@@ -84,18 +62,10 @@ export class EntityGroupService {
 
   public async get(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
-
-    if (!restModule) {
-      throw new NotFoundException(
-        `Rest module for workspace ${workspaceId} not found`,
-      );
-    }
-
     const result = await db.query.entityGroups.findFirst({
       where: and(
         eq(entityGroups.id, id),
-        eq(entityGroups.entityOwnerId, restModule.id),
+        eq(entityGroups.workspaceId, workspaceId),
       ),
     });
 
@@ -116,16 +86,8 @@ export class EntityGroupService {
 
   public async findAll(workspaceId: string) {
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
-
-    if (!restModule) {
-      throw new NotFoundException(
-        `Rest module for workspace ${workspaceId} not found`,
-      );
-    }
-
     const result = await db.query.entityGroups.findMany({
-      where: inArray(entityGroups.entityOwnerId, [restModule.id]),
+      where: eq(entityGroups.workspaceId, workspaceId),
     });
 
     return mapResult(result);
@@ -141,14 +103,6 @@ export class EntityGroupService {
     }
 
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
-
-    if (!restModule) {
-      throw new NotFoundException(
-        `Rest module for workspace ${workspaceId} not found`,
-      );
-    }
-
     const entityGroup = await this.getOrThrow(workspaceId, id);
 
     const [updated] = await db
@@ -166,14 +120,6 @@ export class EntityGroupService {
 
   public async delete(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const restModule = await this.restService.findOneByWorkspaceId(workspaceId);
-
-    if (!restModule) {
-      throw new NotFoundException(
-        `Rest module for workspace ${workspaceId} not found`,
-      );
-    }
-
     const entityGroup = await this.getOrThrow(workspaceId, id);
 
     const [deleted] = await db
@@ -185,21 +131,20 @@ export class EntityGroupService {
   }
 
   public async listTree(options: TreeViewOptions) {
-    const { tableName, owner, entityField, workspaceId, groupId, entityType } =
+    const { tableName, entityField, workspaceId, groupId, entityType } =
       options;
     const db = this.connection.getConnection();
-    const groupOwner = await this.restService.findOneOrCreate(workspaceId);
 
     const groups = await db.query.entityGroups.findMany({
       where: and(
-        eq(entityGroups.entityOwnerId, owner.id),
+        eq(entityGroups.workspaceId, workspaceId),
         eq(entityGroups.entityType, entityType),
         groupId ? eq(entityGroups.id, groupId) : undefined,
       ),
     });
 
     const entities = await db.query[tableName].findMany({
-      where: eq(entityField, groupOwner.id),
+      where: eq(entityField, workspaceId),
     });
 
     const _mappedGroups = mapResult(groups);

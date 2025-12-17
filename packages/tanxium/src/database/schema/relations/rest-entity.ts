@@ -1,15 +1,15 @@
 import { relations } from 'drizzle-orm';
 import { restEntities } from '../tables/rest-entity.ts';
-import { rest } from '../tables/rest.ts';
 import { restEntityDependencies } from '../tables/rest-entity.ts';
+import { workspaces } from '../tables/workspaces.ts';
 import { entityGroups } from '../tables/entity-group.ts';
 
 export const restEntitiesRelations = relations(
   restEntities,
   ({ one, many }) => ({
-    rest: one(rest, {
-      fields: [restEntities.restId],
-      references: [rest.id],
+    workspace: one(workspaces, {
+      fields: [restEntities.workspaceId],
+      references: [workspaces.id],
     }),
     dependencyEntries: many(restEntityDependencies),
     dependentEntries: many(restEntityDependencies),

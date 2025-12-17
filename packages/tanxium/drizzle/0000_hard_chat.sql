@@ -44,21 +44,13 @@ CREATE TABLE `environments` (
 	`secrets` text
 );
 --> statement-breakpoint
-CREATE TABLE `rest` (
-	`id` text PRIMARY KEY NOT NULL,
-	`createdAt` text DEFAULT (current_timestamp) NOT NULL,
-	`updatedAt` text DEFAULT (current_timestamp) NOT NULL,
-	`metadata` text DEFAULT '{}' NOT NULL,
-	`workspaceId` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `rest_entity` (
 	`id` text PRIMARY KEY NOT NULL,
 	`createdAt` text DEFAULT (current_timestamp) NOT NULL,
 	`updatedAt` text DEFAULT (current_timestamp) NOT NULL,
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`name` text NOT NULL,
-	`restId` text NOT NULL,
+	`workspaceId` text NOT NULL,
 	`method` text NOT NULL,
 	`url` text,
 	`requestParameters` text,
@@ -85,6 +77,6 @@ CREATE TABLE `entity_groups` (
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`name` text NOT NULL,
 	`parentId` text,
-	`entityOwnerId` text NOT NULL,
+	`workspaceId` text NOT NULL,
 	`entityType` text NOT NULL
 );

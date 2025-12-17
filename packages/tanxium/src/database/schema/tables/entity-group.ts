@@ -6,7 +6,7 @@ export const entityGroups = sqliteTable('entity_groups', {
   ...commonColumns(),
   name: text('name').notNull(),
   parentId: cuid('parentId'),
-  entityOwnerId: cuid('entityOwnerId').notNull(),
+  workspaceId: cuid('workspaceId').notNull(),
   entityType: text({
     enum: ['rest', 'graphql', 'websocket', 'socketio', 'sse'] as const,
   }).notNull(),

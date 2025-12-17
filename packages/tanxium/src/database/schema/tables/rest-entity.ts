@@ -61,7 +61,7 @@ export interface RequestBody {
 export const restEntities = sqliteTable('rest_entity', {
   ...commonColumns<RestEntityMetadata>(),
   name: text('name').notNull(),
-  restId: cuid('restId').notNull(),
+  workspaceId: cuid('workspaceId').notNull(),
   method: text('method').notNull(),
   url: text('url'),
   requestParameters: json<KeyValuePair[]>('requestParameters'),

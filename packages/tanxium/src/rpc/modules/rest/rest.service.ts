@@ -1,8 +1,14 @@
 import { EventBus, Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { mapResult } from '@/database/common/index.ts';
-import { rest } from '@/database/schema.ts';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { restEntities } from '@/database/schema.ts';
+import {
+  RestEntityCreateOptions,
+  RestEntityUpdateOptions,
+} from '@yasumu/common';
+import { NotFoundException } from '../common/exceptions/http.exception.ts';
+import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
 import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
 
@@ -10,6 +16,7 @@ import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
 export class RestService {
   public constructor(
     private readonly connection: TransactionalConnection,
+    private readonly entityGroupService: EntityGroupService,
     private readonly tanxiumService: TanxiumService,
     private readonly eventBus: EventBus,
   ) {}
@@ -21,39 +28,96 @@ export class RestService {
     await this.eventBus.publish(new FsSyncEvent({ workspaceId }));
   }
 
-  public async findOneByWorkspaceId(workspaceId: string) {
+  public async list(workspaceId: string) {
     const db = this.connection.getConnection();
-    const result = await db.query.rest.findFirst({
-      where: eq(rest.workspaceId, workspaceId),
-    });
-    return result ? mapResult(result) : null;
-  }
 
-  public async findOneOrCreate(workspaceId: string) {
-    const rest = await this.findOneByWorkspaceId(workspaceId);
-    if (rest) return rest;
-
-    return this.create(workspaceId);
-  }
-
-  public async create(workspaceId: string) {
-    const db = this.connection.getConnection();
-    const [result] = await db
-      .insert(rest)
-      .values({
-        workspaceId,
-      })
-      .returning();
+    const result = await db
+      .select()
+      .from(restEntities)
+      .where(eq(restEntities.workspaceId, workspaceId));
 
     return mapResult(result);
   }
 
-  public async list(workspaceId: string) {
+  public async get(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const result = await db.query.restEntities.findMany({
-      where: eq(rest.workspaceId, workspaceId),
+
+    const result = await db.query.restEntities.findFirst({
+      where: and(
+        eq(restEntities.workspaceId, workspaceId),
+        eq(restEntities.id, id),
+      ),
     });
 
+    if (!result) {
+      throw new NotFoundException(
+        `Rest entity ${id} for workspace ${workspaceId} not found`,
+      );
+    }
+
+    return mapResult(result);
+  }
+
+  public async create(workspaceId: string, data: RestEntityCreateOptions) {
+    const db = this.connection.getConnection();
+
+    const [result] = await db
+      .insert(restEntities)
+      .values({
+        workspaceId,
+        name: data.name,
+        method: data.method,
+        url: data.url,
+      })
+      .returning();
+
+    await this.dispatchUpdate(workspaceId);
+
+    return mapResult(result);
+  }
+
+  public async update(
+    workspaceId: string,
+    id: string,
+    data: Partial<RestEntityUpdateOptions>,
+  ) {
+    const db = this.connection.getConnection();
+
+    const [result] = await db
+      .update(restEntities)
+      .set(data)
+      .where(
+        and(eq(restEntities.id, id), eq(restEntities.workspaceId, workspaceId)),
+      )
+      .returning();
+
+    await this.dispatchUpdate(workspaceId);
+
+    return mapResult(result);
+  }
+
+  public async delete(workspaceId: string, id: string) {
+    const db = this.connection.getConnection();
+
+    await db
+      .delete(restEntities)
+      .where(
+        and(eq(restEntities.id, id), eq(restEntities.workspaceId, workspaceId)),
+      );
+
+    await this.dispatchUpdate(workspaceId);
+  }
+
+  public async listTree(workspaceId: string, groupId?: string) {
+    const result = await this.entityGroupService.listTree({
+      workspaceId,
+      entityField: restEntities.workspaceId,
+      tableName: 'restEntities',
+      entityType: 'rest',
+      groupId,
+    });
+
+    // @ts-expect-error types
     return mapResult(result);
   }
 }

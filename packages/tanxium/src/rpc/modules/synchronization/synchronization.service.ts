@@ -8,7 +8,7 @@ import { YasumuAnnotations } from './schema/constants.ts';
 import { WorkspaceData } from '@yasumu/common';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { RestEntityService } from '../rest-entity/rest-entity.service.ts';
+import { RestService } from '../rest/rest.service.ts';
 import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { RestSchema } from './schema/rest.schema.ts';
 import { Infer } from '@yasumu/schema';
@@ -21,7 +21,7 @@ export class SynchronizationService implements OnModuleInit {
     private readonly connection: TransactionalConnection,
     private readonly workspaceService: WorkspacesService,
     private readonly yslService: YslService,
-    private readonly restEntityService: RestEntityService,
+    private readonly restService: RestService,
     private readonly entityGroupService: EntityGroupService,
   ) {}
 
@@ -83,7 +83,7 @@ export class SynchronizationService implements OnModuleInit {
               name: group.name,
               entity: group.entityType,
               parentId: group.parentId,
-              entityOwnerId: group.entityOwnerId,
+              workspaceId: group.workspaceId,
             };
             return acc;
           },
@@ -101,7 +101,7 @@ export class SynchronizationService implements OnModuleInit {
       join(workspaceDir, 'workspace.ysl'),
     );
 
-    const restEntities = await this.restEntityService.list(workspaceId);
+    const restEntities = await this.restService.list(workspaceId);
 
     const restDir = this.getPath(workspace, 'rest');
     await this.ensurePath(restDir);

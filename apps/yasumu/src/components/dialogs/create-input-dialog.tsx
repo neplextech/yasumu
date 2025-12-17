@@ -16,6 +16,9 @@ import { useRef, useState } from 'react';
 type Props = React.PropsWithChildren<{
   title?: string;
   description?: string;
+  defaultValue?: string;
+  submitLabel?: string;
+  cancelLabel?: string;
   onSubmit?: (value: string) => void;
   onCancel?: () => void;
 }> &
@@ -36,6 +39,9 @@ export function CreateInputDialog({
   children,
   description,
   title,
+  defaultValue,
+  submitLabel,
+  cancelLabel,
   ...controlProps
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -58,7 +64,7 @@ export function CreateInputDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <Input ref={inputRef} />
+          <Input ref={inputRef} defaultValue={defaultValue} />
         </div>
         <DialogFooter>
           <Button
@@ -69,7 +75,7 @@ export function CreateInputDialog({
               onCancel?.();
             }}
           >
-            Cancel
+            {cancelLabel ?? 'Cancel'}
           </Button>
           <Button
             type="button"
@@ -78,7 +84,7 @@ export function CreateInputDialog({
               handleOpenChange(false);
             }}
           >
-            Create
+            {submitLabel ?? 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>

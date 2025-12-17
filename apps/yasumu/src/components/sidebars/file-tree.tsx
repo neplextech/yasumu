@@ -29,6 +29,7 @@ import { MdFolder } from 'react-icons/md';
 import { CreateInputDialog } from '../dialogs/create-input-dialog';
 
 export interface FileTreeItem {
+  id: string;
   name: string;
   icon?: React.ComponentType;
   children?: FileTreeItem[];
@@ -38,11 +39,19 @@ export function FileTreeSidebar({
   fileTree,
   onFileCreate,
   onFolderCreate,
+  onFileDelete,
+  onFolderDelete,
+  onFileRename,
+  onFolderRename,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   fileTree: FileTreeItem[];
   onFileCreate?: (name: string) => void;
   onFolderCreate?: (name: string) => void;
+  onFileDelete?: (id: string) => void;
+  onFolderDelete?: (id: string) => void;
+  onFileRename?: (id: string, name: string) => void;
+  onFolderRename?: (id: string, name: string) => void;
 }) {
   const tree = Array.isArray(fileTree) ? fileTree : [fileTree];
 
@@ -73,8 +82,17 @@ export function FileTreeSidebar({
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {tree.map((item, index) => (
-                <Tree key={index} item={item} />
+              {tree.map((item) => (
+                <Tree
+                  key={item.id}
+                  item={item}
+                  onFileDelete={onFileDelete}
+                  onFolderDelete={onFolderDelete}
+                  onFileRename={onFileRename}
+                  onFolderRename={onFolderRename}
+                  onCreateFile={onFileCreate}
+                  onCreateFolder={onFolderCreate}
+                />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -85,9 +103,25 @@ export function FileTreeSidebar({
   );
 }
 
-function MenuContent({ type }: { type: 'file' | 'folder' }) {
+function MenuContent({
+  type,
+  name,
+  onDelete,
+  onRename,
+  onCreateFile,
+  onCreateFolder,
+}: {
+  type: 'file' | 'folder';
+  name: string;
+  onDelete?: () => void;
+  onRename?: (name: string) => void;
+  onCreateFile?: (name: string) => void;
+  onCreateFolder?: (name: string) => void;
+}) {
   const forFolder = type === 'folder';
-  const [open, setOpen] = React.useState<'file' | 'folder' | null>(null);
+  const [open, setOpen] = React.useState<'file' | 'folder' | 'rename' | null>(
+    null,
+  );
 
   return (
     <React.Fragment>
@@ -114,17 +148,38 @@ function MenuContent({ type }: { type: 'file' | 'folder' }) {
           </>
         ) : null}
 
-        <ContextMenuItem inset>Rename</ContextMenuItem>
-        <ContextMenuItem inset variant="destructive">
+        <ContextMenuItem
+          inset
+          onClick={() => {
+            setOpen('rename');
+          }}
+        >
+          Rename
+        </ContextMenuItem>
+        <ContextMenuItem inset variant="destructive" onClick={onDelete}>
           Delete
         </ContextMenuItem>
       </ContextMenuContent>
 
       <CreateInputDialog
+        title="Rename"
+        description="Enter the new name"
+        defaultValue={name}
+        onSubmit={(newName) => {
+          onRename?.(newName);
+        }}
+        open={open === 'rename'}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen ? 'rename' : null);
+        }}
+        submitLabel="Rename"
+      />
+
+      <CreateInputDialog
         title="Add new folder"
         description="This will add a new folder"
         onSubmit={(name) => {
-          console.log('Create folder:', name);
+          onCreateFolder?.(name);
         }}
         open={open === 'folder'}
         onOpenChange={(isOpen) => {
@@ -136,7 +191,7 @@ function MenuContent({ type }: { type: 'file' | 'folder' }) {
         title="Add new file"
         description="This will add a new file"
         onSubmit={(name) => {
-          console.log('Create file:', name);
+          onCreateFile?.(name);
         }}
         open={open === 'file'}
         onOpenChange={(isOpen) => {
@@ -147,7 +202,23 @@ function MenuContent({ type }: { type: 'file' | 'folder' }) {
   );
 }
 
-function Tree({ item }: { item: FileTreeItem }) {
+function Tree({
+  item,
+  onFileDelete,
+  onFolderDelete,
+  onFileRename,
+  onFolderRename,
+  onCreateFile,
+  onCreateFolder,
+}: {
+  item: FileTreeItem;
+  onFileDelete?: (id: string) => void;
+  onFolderDelete?: (id: string) => void;
+  onFileRename?: (id: string, name: string) => void;
+  onFolderRename?: (id: string, name: string) => void;
+  onCreateFile?: (name: string) => void;
+  onCreateFolder?: (name: string) => void;
+}) {
   const { name, children } = item;
 
   if (!children?.length) {
@@ -162,7 +233,14 @@ function Tree({ item }: { item: FileTreeItem }) {
             {name || ''}
           </SidebarMenuButton>
         </ContextMenuTrigger>
-        <MenuContent type="file" />
+        <MenuContent
+          type="file"
+          name={name}
+          onDelete={() => onFileDelete?.(item.id)}
+          onRename={(newName) => onFileRename?.(item.id, newName)}
+          onCreateFile={onCreateFile}
+          onCreateFolder={onCreateFolder}
+        />
       </ContextMenu>
     );
   }
@@ -183,12 +261,28 @@ function Tree({ item }: { item: FileTreeItem }) {
               </SidebarMenuButton>
             </CollapsibleTrigger>
           </ContextMenuTrigger>
-          <MenuContent type="folder" />
+          <MenuContent
+            type="folder"
+            name={name}
+            onDelete={() => onFolderDelete?.(item.id)}
+            onRename={(newName) => onFolderRename?.(item.id, newName)}
+            onCreateFile={onCreateFile}
+            onCreateFolder={onCreateFolder}
+          />
         </ContextMenu>
         <CollapsibleContent>
           <SidebarMenuSub className="px-1 py-0">
-            {children.map((subItem: any, index: number) => (
-              <Tree key={index} item={subItem} />
+            {children.map((subItem) => (
+              <Tree
+                key={subItem.id}
+                item={subItem}
+                onFileDelete={onFileDelete}
+                onFolderDelete={onFolderDelete}
+                onFileRename={onFileRename}
+                onFolderRename={onFolderRename}
+                onCreateFile={onCreateFile}
+                onCreateFolder={onCreateFolder}
+              />
             ))}
           </SidebarMenuSub>
         </CollapsibleContent>

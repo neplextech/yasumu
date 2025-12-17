@@ -1,10 +1,9 @@
 import { Module } from '@yasumu/den';
 import { EntityGroupService } from './entity-group.service.ts';
-import { RestModule } from '../rest/rest.module.ts';
 import { EntityGroupResolver } from './entity-group.resolver.ts';
 
 @Module({
-  imports: [RestModule],
+  imports: [],
   providers: [EntityGroupService],
   exports: [EntityGroupService],
   resolvers: [EntityGroupResolver],

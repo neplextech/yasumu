@@ -3,11 +3,11 @@ import type { MigrationConfig } from 'drizzle-orm/migrator';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import type { NodeSQLiteDatabase } from './driver.ts';
 
-export function migrate<TSchema extends Record<string, unknown>>(
+export async function migrate<TSchema extends Record<string, unknown>>(
   db: NodeSQLiteDatabase<TSchema>,
   config: MigrationConfig,
 ) {
   const migrations = readMigrationFiles(config);
   // @ts-expect-error types
-  db.dialect.migrate(migrations, db.session, config);
+  await db.dialect.migrate(migrations, db.session, config);
 }

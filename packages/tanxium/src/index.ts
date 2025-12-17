@@ -1,11 +1,14 @@
 /// <reference types="yasumu:types" />
-import { join } from 'node:path';
-import { app } from './backend/server.ts';
-import { db } from './database/index.ts';
-import { migrate } from './database/sqlite/migrator.ts';
 
-export async function startServer() {
+// run migrations
+async function runMigrations() {
   try {
+    // dynamically import dependencies
+    // to avoid instantiating the server before migrations are run
+    const { join } = await import('node:path');
+    const { migrate } = await import('./database/sqlite/migrator.ts');
+    const { db } = await import('./database/index.ts');
+
     const migrationsFolder = join(Yasumu.getServerEntrypoint(), 'drizzle');
     console.log(`Migrations folder: ${migrationsFolder}`);
     await migrate(db, {
@@ -17,6 +20,15 @@ export async function startServer() {
       cause: error,
     });
   }
+}
+
+// entrypoint
+export async function startServer() {
+  await runMigrations();
+
+  // dynamically import the server
+  // to avoid instantiating the server before migrations are run
+  const { app } = await import('./backend/server.ts');
 
   const server = Deno.serve({ port: 0 }, app.fetch);
 

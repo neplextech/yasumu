@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9ca5cc9f-b089-4701-846e-ea9a0d6ca549",
+  "id": "2d0ddf98-c081-4103-84c4-0bcc45d93f96",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "workspaces": {
@@ -297,54 +297,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "rest": {
-      "name": "rest",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(current_timestamp)"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(current_timestamp)"
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
-        },
-        "workspaceId": {
-          "name": "workspaceId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "rest_entity": {
       "name": "rest_entity",
       "columns": {
@@ -386,8 +338,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "restId": {
-          "name": "restId",
+        "workspaceId": {
+          "name": "workspaceId",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -559,8 +511,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "entityOwnerId": {
-          "name": "entityOwnerId",
+        "workspaceId": {
+          "name": "workspaceId",
           "type": "text",
           "primaryKey": false,
           "notNull": true,

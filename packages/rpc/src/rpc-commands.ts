@@ -6,6 +6,7 @@ import type {
   RestEntityCreateOptions,
   EntityGroupCreateOptions,
   EntityGroupData,
+  RestEntityUpdateOptions,
 } from '@yasumu/common';
 
 /**
@@ -69,6 +70,20 @@ export interface YasumuRPC {
      * @returns The list of rest entities.
      */
     listTree: RpcQuery<[], RestEntityData[]>;
+    /**
+     * Rest entity update command.
+     * @param id The ID of the rest entity.
+     * @param data The data for the rest entity.
+     */
+    update: RpcMutation<
+      [string, Partial<RestEntityUpdateOptions>],
+      RestEntityData
+    >;
+    /**
+     * Rest entity deletion command.
+     * @param id The ID of the rest entity.
+     */
+    delete: RpcMutation<[string], void>;
   };
   /**
    * The entity groups commands.
