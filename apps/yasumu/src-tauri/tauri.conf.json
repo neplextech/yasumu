@@ -10,13 +10,6 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      {
-        "title": "Yasumu",
-        "width": 1280,
-        "height": 720
-      }
-    ],
     "security": {
       "csp": null
     }
@@ -31,6 +24,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["resources/"]
+    "resources": [
+      "resources/"
+    ]
   }
 }

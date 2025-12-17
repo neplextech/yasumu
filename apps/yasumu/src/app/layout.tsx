@@ -5,6 +5,7 @@ import { Toaster } from '@yasumu/ui/components/sonner';
 import LayoutGroup from '@/components/layout/layout-group';
 import { SidebarProvider } from '@yasumu/ui/components/sidebar';
 import { AppSidebar } from '@/components/sidebars/app-sidebar';
+import { TitleBar } from '@/components/layout/title-bar';
 
 const poppins = Poppins({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
@@ -31,13 +32,16 @@ export default async function RootLayout({
         className={`${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <Toaster />
-          <LayoutGroup>
-            <SidebarProvider>
-              <AppSidebar />
-              {children}
-            </SidebarProvider>
-          </LayoutGroup>
+          <TitleBar />
+          <div className="pt-[30px] h-screen w-full">
+            <Toaster />
+            <LayoutGroup>
+              <SidebarProvider>
+                <AppSidebar />
+                {children}
+              </SidebarProvider>
+            </LayoutGroup>
+          </div>
         </Providers>
       </body>
     </html>

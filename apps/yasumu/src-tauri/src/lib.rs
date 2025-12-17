@@ -3,7 +3,7 @@ mod tanxium;
 use deno_runtime::deno_core::ModuleSpecifier;
 use serde_json::json;
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 
 struct YasumuInternalState {
     ready: bool,
@@ -64,12 +64,27 @@ pub fn run() {
             rpc_port: None,
         }))
         .setup(move |app| {
+            // Create the main window manually
+            let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+                .title("Yasumu")
+                .inner_size(1280.0, 720.0);
+
+            // Platform-specific configuration
+            #[cfg(target_os = "macos")]
+            let win_builder = win_builder
+                .title_bar_style(TitleBarStyle::Overlay)
+                .hidden_title(true);
+
+            #[cfg(not(target_os = "macos"))]
+            let win_builder = win_builder.decorations(false);
+
+            let window = win_builder.build().unwrap();
+
             tanxium::set_app_handle(app.handle().clone());
             tanxium::initialize_prompter();
 
             #[cfg(debug_assertions)] // only include this code on debug builds
             {
-                let window = app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
 

@@ -8,6 +8,8 @@
     "opener:default",
     "dialog:default",
     "process:default",
+    "core:window:default",
+    "core:window:allow-start-dragging",
     {
       "identifier": "http:default",
       "allow": [
