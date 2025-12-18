@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import React, { useMemo } from 'react';
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
+import { DEFAULT_WORKSPACE_PATH } from '@yasumu/tanxium/src/rpc/common/constants';
 
 dayjs.extend(utc);
 
@@ -27,6 +28,11 @@ export default function RecentWorkspaceCard({
     return formatDistanceToNow(workspace.lastOpenedAt);
   }, [workspace.lastOpenedAt]);
 
+  const pathValue =
+    workspace.path === DEFAULT_WORKSPACE_PATH
+      ? 'Default Workspace'
+      : workspace.path;
+
   return (
     <a
       onClick={withErrorHandler(async (e) => {
@@ -40,7 +46,7 @@ export default function RecentWorkspaceCard({
           {workspace.name}
         </span>
         <span className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">
-          {workspace.path}
+          {pathValue}
         </span>
       </div>
       <div className="flex items-center gap-4">

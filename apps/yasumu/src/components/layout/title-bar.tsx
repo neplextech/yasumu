@@ -70,7 +70,7 @@ export function TitleBar() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 h-[30px] flex items-center justify-between z-50 bg-background border-b select-none"
+      className="h-[30px] flex items-center justify-between z-50 bg-background border-b select-none shrink-0"
       data-tauri-drag-region
     >
       {/* Left Section */}
@@ -97,7 +97,7 @@ export function TitleBar() {
         className="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-muted-foreground pointer-events-none"
         data-tauri-drag-region
       >
-        Yasumu
+        {title}
       </div>
 
       {/* Right Section */}

@@ -29,14 +29,14 @@ export default async function RootLayout({
   return (
     <html suppressHydrationWarning suppressContentEditableWarning>
       <body
-        className={`${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased overflow-hidden h-screen w-screen flex flex-col`}
       >
         <Providers>
           <TitleBar />
-          <div className="pt-[30px] h-screen w-full">
+          <div className="flex-1 min-h-0 w-full overflow-hidden">
             <Toaster />
             <LayoutGroup>
-              <SidebarProvider>
+              <SidebarProvider className="h-full min-h-0">
                 <AppSidebar />
                 {children}
               </SidebarProvider>
