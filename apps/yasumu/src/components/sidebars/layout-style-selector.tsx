@@ -12,8 +12,11 @@ import {
   YasumuLayoutList,
 } from '@/lib/constants/layout';
 import { VscLayout } from 'react-icons/vsc';
+import { useAppLayout } from '../providers/app-layout-provider';
 
 export default function SidebarLayoutStyleSelector() {
+  const { layout, setLayout } = useAppLayout();
+
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger className="gap-2">
@@ -31,10 +34,10 @@ export default function SidebarLayoutStyleSelector() {
             return (
               <DropdownMenuCheckboxItem
                 key={target}
-                // checked={layout === target}
-                // onCheckedChange={() => {
-                //   setAppLayout(target);
-                // }}
+                checked={layout === target}
+                onCheckedChange={() => {
+                  setLayout(target);
+                }}
                 className="gap-2"
               >
                 {Icon && <Icon className="size-4" />}

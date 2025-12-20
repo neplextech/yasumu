@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import WorkspaceProvider from './workspace-provider';
 import { useTanxiumEvent } from '@/hooks/use-tanxium-event';
 import { PermissionPromptProvider } from './permission-prompt-provider';
+import { AppLayoutProvider } from './app-layout-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
@@ -19,9 +20,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <NextIntlClientProvider locale="en" timeZone="UTC">
-        <WorkspaceProvider>
-          <PermissionPromptProvider>{children}</PermissionPromptProvider>
-        </WorkspaceProvider>
+        <AppLayoutProvider>
+          <WorkspaceProvider>
+            <PermissionPromptProvider>{children}</PermissionPromptProvider>
+          </WorkspaceProvider>
+        </AppLayoutProvider>
       </NextIntlClientProvider>
     </NextThemesProvider>
   );

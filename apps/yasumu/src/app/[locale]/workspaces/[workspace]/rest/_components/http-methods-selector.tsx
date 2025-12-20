@@ -7,7 +7,6 @@ import {
   SelectValue,
 } from '@yasumu/ui/components/select';
 import { cn } from '@yasumu/ui/lib/utils';
-import React, { useState } from 'react';
 
 export const HttpMethods = [
   { name: 'GET', color: 'text-green-500' },
@@ -19,15 +18,22 @@ export const HttpMethods = [
   { name: 'HEAD', color: 'text-teal-500' },
 ];
 
-export default function HttpMethodSelector() {
-  const [method, setMethod] = useState<string>(HttpMethods[0]!.name);
-  const currentMethod = HttpMethods.find((m) => m.name === method);
+export interface HttpMethodSelectorProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export default function HttpMethodSelector({
+  value,
+  onChange,
+}: HttpMethodSelectorProps) {
+  const currentMethod = HttpMethods.find((m) => m.name === value);
 
   return (
     <Select
-      value={method}
+      value={value}
       onValueChange={(value) => {
-        setMethod(value);
+        onChange(value);
       }}
     >
       <SelectTrigger

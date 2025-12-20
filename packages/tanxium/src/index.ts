@@ -29,6 +29,7 @@ export async function startServer() {
   // dynamically import the server
   // to avoid instantiating the server before migrations are run
   const { app } = await import('./backend/server.ts');
+  const { rpcServer } = await import('./rpc/rpc-server.ts');
 
   const server = Deno.serve({ port: 0 }, app.fetch);
 
@@ -37,6 +38,12 @@ export async function startServer() {
   console.log(
     `Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`,
   );
+
+  return {
+    app,
+    server,
+    rpcServer,
+  };
 }
 
 export type { AppType } from './backend/server.ts';

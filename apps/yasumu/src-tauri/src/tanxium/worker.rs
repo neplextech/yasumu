@@ -4,6 +4,7 @@ use crate::tanxium::ops::tanxium_rt;
 use crate::tanxium::permissions::setup_permission_channel;
 use crate::tanxium::state::init_renderer_event_channel;
 use crate::tanxium::types::AppHandleState;
+use crate::tanxium::version::DENO_VERSION;
 use deno_resolver::npm::DenoInNpmPackageChecker;
 use deno_resolver::npm::NpmResolver;
 use deno_runtime::UNSTABLE_FEATURES;
@@ -36,6 +37,8 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_dialog::MessageDialogKind;
 
+use crate::tanxium::version::YASUMU_VERSION;
+
 struct WorkerSharedState {
     blob_store: Arc<BlobStore>,
     broadcast_channel: InMemoryBroadcastChannel,
@@ -48,7 +51,11 @@ struct WorkerSharedState {
 }
 
 impl WorkerSharedState {
-    fn create_web_worker_callback(self: &Arc<Self>, stdio: Stdio) -> Arc<CreateWebWorkerCb> {
+    fn create_web_worker_callback(
+        self: &Arc<Self>,
+        stdio: Stdio,
+        is_parent_main_worker: bool,
+    ) -> Arc<CreateWebWorkerCb> {
         let shared = self.clone();
         Arc::new(move |args| {
             let worker_thread_id = thread::current().id();
@@ -63,12 +70,16 @@ impl WorkerSharedState {
             let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
                 Arc::new(RuntimePermissionDescriptorParser::new(RealSys));
 
-            let permissions_container = PermissionsContainer::new(
-                permission_desc_parser.clone(),
-                Permissions::none_with_prompt(),
-            );
+            let permissions_container = if is_parent_main_worker {
+                args.parent_permissions.clone()
+            } else {
+                PermissionsContainer::new(
+                    permission_desc_parser.clone(),
+                    Permissions::none_with_prompt(),
+                )
+            };
 
-            let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone());
+            let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone(), false);
 
             let node_require_loader = Rc::new(node_services::TanxiumNodeRequireLoader::new());
             let node_services = Some(node_services::create_node_init_services(
@@ -103,14 +114,14 @@ impl WorkerSharedState {
                     permissions: permissions_container,
                 };
 
-            let user_agent = format!("Yasumu/{}", env!("CARGO_PKG_VERSION"));
+            let user_agent = format!("Yasumu/{}", YASUMU_VERSION);
 
             let options = WebWorkerOptions {
                 name: args.name,
                 main_module: args.main_module.clone(),
                 worker_id: args.worker_id,
                 bootstrap: BootstrapOptions {
-                    deno_version: env!("CARGO_PKG_VERSION").to_string(),
+                    deno_version: DENO_VERSION.to_string(),
                     args: vec![],
                     cpu_count: std::thread::available_parallelism()
                         .map(|p| p.get())
@@ -185,7 +196,7 @@ async fn initialize_worker(
 
     let source_map_store = Rc::new(RefCell::new(HashMap::new()));
 
-    let user_agent = format!("Yasumu/{}", env!("CARGO_PKG_VERSION"));
+    let user_agent = format!("Yasumu/{}", YASUMU_VERSION);
 
     // main worker is allowed to do anything
     // as it is supposed to run our own/trusted code
@@ -194,7 +205,7 @@ async fn initialize_worker(
 
     let stdio = Stdio::default();
 
-    let create_web_worker_cb = shared_state.create_web_worker_callback(stdio.clone());
+    let create_web_worker_cb = shared_state.create_web_worker_callback(stdio.clone(), true);
 
     let mut feature_checker = FeatureChecker::default();
 
@@ -241,6 +252,7 @@ async fn initialize_worker(
         WorkerOptions {
             extensions: vec![tanxium_rt::init()],
             bootstrap: BootstrapOptions {
+                deno_version: DENO_VERSION.to_string(),
                 user_agent: user_agent.clone(),
                 close_on_idle: false,
                 unstable_features: UNSTABLE_FEATURES

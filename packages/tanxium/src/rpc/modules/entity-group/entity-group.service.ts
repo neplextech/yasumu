@@ -11,7 +11,6 @@ import {
   NotFoundException,
   BadRequestException,
 } from '../common/exceptions/http.exception.ts';
-import { mapResult } from '../../../database/common/index.ts';
 
 @Injectable()
 export class EntityGroupService {
@@ -57,7 +56,7 @@ export class EntityGroupService {
       })
       .returning();
 
-    return mapResult(result);
+    return result;
   }
 
   public async get(workspaceId: string, id: string) {
@@ -71,7 +70,7 @@ export class EntityGroupService {
 
     if (!result) return null;
 
-    return mapResult(result);
+    return result;
   }
 
   public async getOrThrow(workspaceId: string, id: string) {
@@ -90,7 +89,7 @@ export class EntityGroupService {
       where: eq(entityGroups.workspaceId, workspaceId),
     });
 
-    return mapResult(result);
+    return result;
   }
 
   public async update(
@@ -115,7 +114,7 @@ export class EntityGroupService {
       .where(eq(entityGroups.id, id))
       .returning();
 
-    return mapResult(updated);
+    return updated;
   }
 
   public async delete(workspaceId: string, id: string) {
@@ -147,8 +146,8 @@ export class EntityGroupService {
       where: eq(entityField, workspaceId),
     });
 
-    const _mappedGroups = mapResult(groups);
-    const mappedEntities = mapResult(entities);
+    const _mappedGroups = groups;
+    const mappedEntities = entities;
 
     type MappedGroup = (typeof _mappedGroups)[number];
     type MappedEntity = (typeof mappedEntities)[number];

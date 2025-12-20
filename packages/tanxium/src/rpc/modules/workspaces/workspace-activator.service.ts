@@ -1,7 +1,7 @@
 import { EventBus, Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { workspaces } from '@/database/schema.ts';
-import { sql, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class WorkspaceActivatorService {
     await db
       .update(workspaces)
       .set({
-        lastOpenedAt: sql`(current_timestamp)`,
+        lastOpenedAt: Date.now(),
       })
       .where(eq(workspaces.id, id));
 

@@ -15,7 +15,7 @@ export default function LoadingScreen({
     <div
       className={cn(
         'flex items-center justify-center',
-        fullScreen && 'h-screen w-full',
+        fullScreen && 'h-screen w-full overflow-hidden',
       )}
     >
       <div className="flex flex-col items-center justify-center gap-2">

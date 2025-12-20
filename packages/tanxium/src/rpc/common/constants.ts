@@ -9,3 +9,7 @@ export function asPathIdentifier(path: string) {
 export function isDefaultWorkspacePath(path: string) {
   return path === DEFAULT_WORKSPACE_PATH;
 }
+
+export function isBodyLessMethod(method: string) {
+  return ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+}

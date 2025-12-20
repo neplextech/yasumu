@@ -14,7 +14,7 @@ export interface RecentWorkspace {
   id: string;
   name: string;
   path: string;
-  lastOpenedAt?: Date;
+  lastOpenedAt?: Date | null;
 }
 
 export default function RecentWorkspaceCard({
@@ -25,7 +25,7 @@ export default function RecentWorkspaceCard({
   const { yasumu } = useYasumu();
   const time = useMemo(() => {
     if (!workspace.lastOpenedAt) return '';
-    return formatDistanceToNow(workspace.lastOpenedAt);
+    return `${formatDistanceToNow(workspace.lastOpenedAt)} ago`;
   }, [workspace.lastOpenedAt]);
 
   const pathValue =

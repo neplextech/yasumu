@@ -7,6 +7,12 @@ import type {
   EntityGroupCreateOptions,
   EntityGroupData,
   RestEntityUpdateOptions,
+  SmtpConfig,
+  ListEmailOptions,
+  EmailData,
+  PaginatedResult,
+  RestEntityExecutionResult,
+  ScriptableEntity,
 } from '@yasumu/common';
 
 /**
@@ -84,6 +90,12 @@ export interface YasumuRPC {
      * @param id The ID of the rest entity.
      */
     delete: RpcMutation<[string], void>;
+    /**
+     * Execute a script on a rest entity.
+     * @param entity The entity to execute the script on.
+     * @returns The result of the script execution.
+     */
+    executeScript: RpcMutation<[ScriptableEntity], RestEntityExecutionResult>;
   };
   /**
    * The entity groups commands.
@@ -94,5 +106,33 @@ export interface YasumuRPC {
      * @param data The data for the entity group.
      */
     create: RpcMutation<[EntityGroupCreateOptions], EntityGroupData>;
+  };
+  emails: {
+    /**
+     * Configure the SMTP server.
+     * @param data The data for the SMTP server.
+     */
+    updateSmtpConfig: RpcMutation<[Partial<SmtpConfig>], void>;
+    /**
+     * Get the SMTP server configuration.
+     * @returns The SMTP server configuration.
+     */
+    getSmtpConfig: RpcQuery<[], SmtpConfig>;
+    /**
+     * Get the list of emails.
+     * @returns The list of emails.
+     */
+    listEmails: RpcQuery<[ListEmailOptions], PaginatedResult<EmailData>>;
+    /**
+     * Get the email by ID.
+     * @param id The ID of the email.
+     * @returns The email.
+     */
+    getEmail: RpcQuery<[string], EmailData>;
+    /**
+     * Delete the email by ID.
+     * @param id The ID of the email.
+     */
+    deleteEmail: RpcMutation<[string], void>;
   };
 }

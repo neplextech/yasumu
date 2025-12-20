@@ -104,3 +104,35 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
    */
   body?: RestEntityBody | null;
 }
+
+/**
+ * The result of executing a rest entity.
+ */
+export interface RestEntityExecutionResult {
+  /**
+   * The stage of the execution.
+   */
+  stage: 'pre' | 'post';
+  /**
+   * The data of the execution.
+   */
+  data: MaybePatchableEntityExecutionData;
+}
+
+/**
+ * The data of the execution result.
+ */
+export interface MaybePatchableEntityExecutionData {
+  /**
+   * The headers of the response.
+   */
+  headers: TabularPair[];
+  /**
+   * The type of the data.
+   */
+  type: 'json' | 'text' | 'unknown';
+  /**
+   * The body of the response.
+   */
+  body: string | null;
+}

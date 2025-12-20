@@ -1,4 +1,4 @@
-import { sqliteTable, int, text } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, int, text, integer } from 'drizzle-orm/sqlite-core';
 import { commonColumns, cuid } from '../../common/index.ts';
 
 export const smtp = sqliteTable('smtp', {
@@ -16,4 +16,5 @@ export const emails = sqliteTable('emails', {
   html: text('html').notNull(),
   text: text('text').notNull(),
   cc: text('cc'),
+  unread: integer('unread', { mode: 'boolean' }).notNull().default(false),
 });

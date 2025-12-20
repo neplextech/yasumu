@@ -64,7 +64,8 @@ export class Workspace {
   /**
    * The date and time the workspace was last opened.
    */
-  public get lastOpenedAt(): Date {
+  public get lastOpenedAt(): Date | null {
+    if (!this.data.lastOpenedAt) return null;
     return new Date(this.data.lastOpenedAt);
   }
 

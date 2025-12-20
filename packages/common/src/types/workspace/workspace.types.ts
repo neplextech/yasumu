@@ -19,7 +19,7 @@ export interface PartialWorkspace {
   /**
    * The date and time the workspace was last opened.
    */
-  lastOpenedAt: Date;
+  lastOpenedAt: number | null;
 }
 
 /**
@@ -41,11 +41,11 @@ export interface WorkspaceData extends CustomMetadata {
   /**
    * The date and time the workspace was created.
    */
-  createdAt: Date;
+  createdAt: number;
   /**
    * The date and time the workspace was last updated.
    */
-  updatedAt: Date;
+  updatedAt: number;
   /**
    * The path of the workspace.
    */
@@ -53,7 +53,7 @@ export interface WorkspaceData extends CustomMetadata {
   /**
    * The date and time the workspace was last opened.
    */
-  lastOpenedAt: Date;
+  lastOpenedAt: number | null;
 }
 
 /**

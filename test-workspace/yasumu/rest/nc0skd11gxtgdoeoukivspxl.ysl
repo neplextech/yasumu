@@ -1,0 +1,17 @@
+@rest
+
+metadata {
+  name: "Todo 1"
+  method: "GET"
+  id: "nc0skd11gxtgdoeoukivspxl"
+  groupId: "zdwc9hf35k9njgcd0lv6d75z"
+}
+
+request {
+  url: "https://jsonplaceholder.typicode.com/todos/1"
+  headers: []
+  body: null
+}
+
+dependencies []
+

@@ -43,9 +43,11 @@ export function FileTreeSidebar({
   onFolderDelete,
   onFileRename,
   onFolderRename,
+  onFileSelect,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   fileTree: FileTreeItem[];
+  onFileSelect?: (id: string) => void;
   onFileCreate?: (name: string) => void;
   onFolderCreate?: (name: string) => void;
   onFileDelete?: (id: string) => void;
@@ -86,6 +88,7 @@ export function FileTreeSidebar({
                 <Tree
                   key={item.id}
                   item={item}
+                  onFileSelect={onFileSelect}
                   onFileDelete={onFileDelete}
                   onFolderDelete={onFolderDelete}
                   onFileRename={onFileRename}
@@ -204,6 +207,7 @@ function MenuContent({
 
 function Tree({
   item,
+  onFileSelect,
   onFileDelete,
   onFolderDelete,
   onFileRename,
@@ -212,6 +216,7 @@ function Tree({
   onCreateFolder,
 }: {
   item: FileTreeItem;
+  onFileSelect?: (id: string) => void;
   onFileDelete?: (id: string) => void;
   onFolderDelete?: (id: string) => void;
   onFileRename?: (id: string, name: string) => void;
@@ -227,7 +232,10 @@ function Tree({
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <SidebarMenuButton className="data-[active=true]:bg-transparent text-xs truncate">
+          <SidebarMenuButton
+            className="data-[active=true]:bg-transparent text-xs truncate"
+            onClick={() => onFileSelect?.(item.id)}
+          >
             {/* @ts-ignore */}
             {Icon && <Icon short />}
             {name || ''}

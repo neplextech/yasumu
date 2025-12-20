@@ -1,6 +1,5 @@
 import { EventBus, Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { mapResult } from '@/database/common/index.ts';
 import { and, eq } from 'drizzle-orm';
 import { restEntities } from '@/database/schema.ts';
 import {
@@ -36,18 +35,18 @@ export class RestService {
       .from(restEntities)
       .where(eq(restEntities.workspaceId, workspaceId));
 
-    return mapResult(result);
+    return result;
   }
 
   public async get(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
 
-    const result = await db.query.restEntities.findFirst({
-      where: and(
-        eq(restEntities.workspaceId, workspaceId),
-        eq(restEntities.id, id),
-      ),
-    });
+    const [result] = await db
+      .select()
+      .from(restEntities)
+      .where(
+        and(eq(restEntities.workspaceId, workspaceId), eq(restEntities.id, id)),
+      );
 
     if (!result) {
       throw new NotFoundException(
@@ -55,7 +54,7 @@ export class RestService {
       );
     }
 
-    return mapResult(result);
+    return result;
   }
 
   public async create(workspaceId: string, data: RestEntityCreateOptions) {
@@ -73,7 +72,7 @@ export class RestService {
 
     await this.dispatchUpdate(workspaceId);
 
-    return mapResult(result);
+    return result;
   }
 
   public async update(
@@ -91,9 +90,13 @@ export class RestService {
       )
       .returning();
 
-    await this.dispatchUpdate(workspaceId);
+    // NOTE(twilight):
+    // only dispatch if specific fields are updated
+    // as current "dispatchUpdate" is used to sync the file tree
+    // in the future we should use a more specific event for this
+    if (data.name || data.method) await this.dispatchUpdate(workspaceId);
 
-    return mapResult(result);
+    return result;
   }
 
   public async delete(workspaceId: string, id: string) {
@@ -117,7 +120,6 @@ export class RestService {
       groupId,
     });
 
-    // @ts-expect-error types
-    return mapResult(result);
+    return result;
   }
 }

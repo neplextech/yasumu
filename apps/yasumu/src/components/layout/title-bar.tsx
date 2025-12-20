@@ -16,13 +16,15 @@ import {
 import { cn } from '@yasumu/ui/lib/utils';
 import { useYasumu } from '../providers/workspace-provider';
 import { truncate } from '@/lib/utils/truncate';
+import { useAppLayout } from '../providers/app-layout-provider';
+import { YasumuLayout } from '@/lib/constants/layout';
 
 export function TitleBar() {
   const [isMac, setIsMac] = useState(true);
   const [isMaximized, setIsMaximized] = useState(false);
-  const [sidebarState, setSidebarState] = useState<'right' | 'bottom'>('right');
   const { yasumu } = useYasumu();
   const [title, setTitle] = useState('Yasumu');
+  const { layout, setLayout } = useAppLayout();
 
   const getPlatform = useEffectEvent(async () => {
     const platformName = await platform();
@@ -65,7 +67,11 @@ export function TitleBar() {
   };
 
   const toggleSidebarState = () => {
-    setSidebarState((prev) => (prev === 'right' ? 'bottom' : 'right'));
+    setLayout((prev) =>
+      prev === YasumuLayout.Default
+        ? YasumuLayout.Classic
+        : YasumuLayout.Default,
+    );
   };
 
   return (
@@ -83,10 +89,10 @@ export function TitleBar() {
             className="text-muted-foreground hover:text-foreground transition-colors p-1"
             onClick={toggleSidebarState}
           >
-            {sidebarState === 'right' ? (
-              <TbLayoutSidebarRightFilled />
-            ) : (
+            {layout === YasumuLayout.Classic ? (
               <TbLayoutBottombarFilled />
+            ) : (
+              <TbLayoutSidebarRightFilled />
             )}
           </button>
         )}
@@ -108,10 +114,10 @@ export function TitleBar() {
               className="text-muted-foreground hover:text-foreground transition-colors p-1"
               onClick={toggleSidebarState}
             >
-              {sidebarState === 'right' ? (
-                <TbLayoutSidebarRightFilled />
-              ) : (
+              {layout === YasumuLayout.Classic ? (
                 <TbLayoutBottombarFilled />
+              ) : (
+                <TbLayoutSidebarRightFilled />
               )}
             </button>
           </div>

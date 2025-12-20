@@ -4,6 +4,7 @@ import { CommonModule } from './common/common.module.ts';
 import { RestModule } from './rest/rest.module.ts';
 import { EntityGroupModule } from './entity-group/entity-group.module.ts';
 import { SynchronizationModule } from './synchronization/synchronization.module.ts';
+import { ScriptRuntimeModule } from './script-runtime/script-runtime.module.ts';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { SynchronizationModule } from './synchronization/synchronization.module.
     RestModule,
     EntityGroupModule,
     SynchronizationModule,
+    ScriptRuntimeModule,
   ],
 })
 export class AppModule {}

@@ -51,11 +51,7 @@ export interface YasumuEmbeddedScript {
 
 export interface RequestBody {
   type: 'text' | 'json' | 'form-data' | 'urlencoded';
-  value:
-    | string
-    | KeyValuePair<{
-        type: 'text' | 'binary';
-      }>[];
+  value: string;
 }
 
 export const restEntities = sqliteTable('rest_entity', {

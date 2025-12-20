@@ -1,11 +1,15 @@
-import type { OnRequestLifecycle } from '../common/types.js';
 import type { RestModule } from './rest.js';
-import type { RestEntityData, RestEntityUpdateOptions } from '@yasumu/common';
+import type {
+  HttpMethod,
+  RestEntityData,
+  RestEntityExecutionResult,
+  RestEntityUpdateOptions,
+} from '@yasumu/common';
 
-export class RestEntity implements OnRequestLifecycle {
+export class RestEntity {
   public constructor(
     public readonly rest: RestModule,
-    private readonly data: RestEntityData,
+    private data: RestEntityData,
   ) {}
 
   public get id() {
@@ -16,16 +20,30 @@ export class RestEntity implements OnRequestLifecycle {
     return this.data.name;
   }
 
+  public async setName(name: string): Promise<this> {
+    return this.update({ name });
+  }
+
   public get url() {
     return this.data.url;
+  }
+
+  public async setUrl(url: string): Promise<this> {
+    return this.update({ url });
   }
 
   public get method() {
     return this.data.method;
   }
 
-  public update(data: Partial<RestEntityUpdateOptions>): Promise<void> {
-    return this.rest.update(this.id, data);
+  public async setMethod(method: HttpMethod): Promise<this> {
+    return this.update({ method });
+  }
+
+  public async update(data: Partial<RestEntityUpdateOptions>): Promise<this> {
+    const result = await this.rest.update(this.id, data);
+    Object.assign(this.data, result);
+    return this;
   }
 
   public delete(): Promise<void> {
@@ -34,7 +52,10 @@ export class RestEntity implements OnRequestLifecycle {
 
   public getSearchParameters() {
     return new URLSearchParams(
-      this.data.parameters.map((parameter) => [parameter.key, parameter.value]),
+      (this.data.parameters || []).map((parameter) => [
+        parameter.key,
+        parameter.value,
+      ]),
     );
   }
 
@@ -51,16 +72,9 @@ export class RestEntity implements OnRequestLifecycle {
     return url.toString();
   }
 
-  public async onPostResponse(): Promise<void> {}
-
-  public async onPreRequest(): Promise<void> {}
-
-  public async execute() {
-    await this.onPreRequest();
-
-    // TODO
-
-    await this.onPostResponse();
+  public async execute(): Promise<RestEntityExecutionResult> {
+    const result = await this.rest.executeById(this.id);
+    return result;
   }
 
   public toJSON(): RestEntityData {

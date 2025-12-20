@@ -3,7 +3,7 @@ import { Badge } from '@yasumu/ui/components/badge';
 interface ResponseStatusBarProps {
   status?: number;
   statusText?: string;
-  time?: number;
+  time?: number | string;
 }
 
 export function ResponseStatusBar({

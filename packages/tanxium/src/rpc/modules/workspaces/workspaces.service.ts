@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from '@yasumu/den';
 import type { WorkspaceCreateOptions, WorkspaceData } from '@yasumu/common';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { mapResult } from '@/database/common/index.ts';
 import { desc, eq } from 'drizzle-orm';
 import { workspaces } from '@/database/schema.ts';
 import {
@@ -43,8 +42,7 @@ export class WorkspacesService implements OnModuleInit {
       })
       .returning();
 
-    // @ts-expect-error types
-    return mapResult(result);
+    return result;
   }
 
   public async list({ take }: { take?: number }): Promise<WorkspaceData[]> {
@@ -56,8 +54,7 @@ export class WorkspacesService implements OnModuleInit {
       .orderBy(desc(workspaces.lastOpenedAt))
       .limit(take);
 
-    // @ts-expect-error types
-    return mapResult(result);
+    return result;
   }
 
   public async findOneByPath(path: string): Promise<WorkspaceData | null> {
@@ -67,8 +64,7 @@ export class WorkspacesService implements OnModuleInit {
       .from(workspaces)
       .where(eq(workspaces.path, path));
 
-    // @ts-expect-error types
-    return result ? mapResult(result) : null;
+    return result ?? null;
   }
 
   private resolveId(id: string) {
@@ -101,8 +97,7 @@ export class WorkspacesService implements OnModuleInit {
       .from(workspaces)
       .where(eq(workspaces.id, _id));
 
-    // @ts-expect-error types
-    return result ? mapResult(result) : null;
+    return result ?? null;
   }
 
   public async create(data: WorkspaceCreateOptions): Promise<WorkspaceData> {
@@ -124,8 +119,7 @@ export class WorkspacesService implements OnModuleInit {
       })
       .returning();
 
-    // @ts-expect-error types
-    return mapResult(result);
+    return result;
   }
 
   public getActiveWorkspaceId(): string | null {

@@ -53,9 +53,8 @@ export async function createEmail(
     })
     .returning();
 
-  Yasumu.postMessage({
+  await Yasumu.postMessage({
     event: 'new-email',
-    data: newEmail,
-    workspaceId,
+    data: { workspaceId, newEmail },
   });
 }

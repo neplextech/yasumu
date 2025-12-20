@@ -42,7 +42,7 @@ class Yasumu {
   }
 
   /**
-   * Send a message to the renderer
+   * Send a custom message to the renderer
    * @param message The message to send
    */
   public static postMessage(message: unsafe) {
@@ -173,6 +173,9 @@ type YasumuRuntime = typeof Yasumu;
 declare global {
   // deno-lint-ignore no-explicit-any
   export type unsafe = any;
+  /**
+   * Yasumu specific runtime APIs
+   */
   // deno-lint-ignore no-var
   export var Yasumu: YasumuRuntime;
   // deno-lint-ignore no-var

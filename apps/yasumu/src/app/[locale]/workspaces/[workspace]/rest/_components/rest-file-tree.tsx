@@ -1,23 +1,21 @@
 'use client';
 import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
-import {
-  DeleteMethodIcon,
-  GetMethodIcon,
-  PostMethodIcon,
-  PutMethodIcon,
-  resolveHttpMethodIcon,
-} from './http-methods';
+import { resolveHttpMethodIcon } from './http-methods';
 import {
   useActiveWorkspace,
   useYasumu,
 } from '@/components/providers/workspace-provider';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useRestContext } from '../_providers/rest-context';
+import { useRestOutput } from '../_providers/rest-output';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
+  const { setEntityId } = useRestContext();
+  const { setOutput } = useRestOutput();
 
   const listWorkspaces = useEffectEvent(async () => {
     const entities = await workspace.rest.list();
@@ -50,6 +48,10 @@ export function RestFileTree() {
       fileTree={fileTree}
       className="font-sans w-full"
       collapsible="none"
+      onFileSelect={(id: string) => {
+        setEntityId(id);
+        setOutput(null);
+      }}
       onFileCreate={withErrorHandler(async (name: string) => {
         await workspace.rest.create({
           name,

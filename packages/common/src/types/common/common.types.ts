@@ -1,3 +1,5 @@
+import type { HttpMethod } from '../rest/rest.constants.js';
+
 /**
  * The script of the request.
  */
@@ -99,4 +101,57 @@ export interface EntityGroupData {
    * The entity owner ID.
    */
   entityOwnerId: string;
+}
+
+/**
+ * The paginated list of items.
+ */
+export interface PaginatedResult<T> {
+  /**
+   * The total number of items.
+   */
+  totalItems: number;
+  /**
+   * The items in the list.
+   */
+  items: T[];
+}
+
+/**
+ * The entity that can be scripted. This is typically used while executing a script.
+ */
+export interface ScriptableEntity {
+  /**
+   * The entity type.
+   */
+  type: EntityType;
+  /**
+   * The id of the entity.
+   */
+  id: string;
+  /**
+   * The script target to invoke
+   */
+  target: 'onRequest' | 'onResponse';
+  /**
+   * The serialized data of the entity.
+   */
+  serializedData: {
+    /**
+     * The serialized request.
+     */
+    request: {
+      method: string;
+      url: string;
+      headers: Record<string, string>;
+    };
+    /**
+     * The serialized response.
+     */
+    response: {
+      status: number;
+      headers: Record<string, string>;
+      body: string;
+    } | null;
+  };
 }

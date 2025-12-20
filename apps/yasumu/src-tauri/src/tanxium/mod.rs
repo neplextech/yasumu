@@ -7,6 +7,7 @@ mod ops;
 mod permissions;
 mod state;
 mod types;
+mod version;
 mod worker;
 mod yasumu_modules;
 
