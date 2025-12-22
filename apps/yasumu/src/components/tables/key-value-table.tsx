@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Input } from '@yasumu/ui/components/input';
 import {
@@ -14,42 +14,41 @@ import {
 } from '@yasumu/ui/components/table';
 import { Trash, Plus } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
+import { flushSync } from 'react-dom';
 
 interface KeyValuePair {
   key: string;
   value: string;
   enabled: boolean;
+  onChange?: (pair: KeyValuePair) => void;
 }
 
-export default function KeyValueTable({ value = {} }: { value?: any }) {
+export default function KeyValueTable({
+  onChange,
+  initialPairs,
+}: {
+  onChange?: (pairs: KeyValuePair[]) => void;
+  initialPairs?: KeyValuePair[];
+}) {
+  const inputRefs = useRef<Array<HTMLInputElement>>([]);
   const [pairs, setPairs] = useState<KeyValuePair[]>(() => {
-    const initialPairs = Object.values(value) as KeyValuePair[];
-
-    return initialPairs.length
+    return initialPairs?.length
       ? initialPairs
       : [{ key: '', value: '', enabled: true }];
   });
 
-  const onChange = useCallback((newValue: any) => {
-    updatePairs(newValue);
-  }, []);
-
   const updatePairs = (newPairs: KeyValuePair[]) => {
     setPairs(newPairs);
-    const newValue = newPairs.reduce(
-      (acc, { key, value, enabled }) => {
-        if (enabled && key) {
-          acc[key] = value;
-        }
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
-    onChange(newValue);
+    onChange?.(newPairs);
   };
 
-  const addNewPair = () => {
-    updatePairs([...pairs, { key: '', value: '', enabled: true }]);
+  const addNewPair = (index = pairs.length) => {
+    const newPairs = [
+      ...pairs.slice(0, index),
+      { key: '', value: '', enabled: true },
+      ...pairs.slice(index),
+    ];
+    updatePairs(newPairs);
   };
 
   const deletePair = (index: number) => {
@@ -70,6 +69,32 @@ export default function KeyValueTable({ value = {} }: { value?: any }) {
     updatePairs(newPairs);
   };
 
+  function handleKeyDown(e: React.KeyboardEvent, index: number) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      flushSync(() => {
+        addNewPair(index + 1);
+      });
+
+      if (inputRefs.current[index + 1]) {
+        inputRefs.current[index + 1].focus();
+      }
+    }
+    if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      deletePair(index);
+      const isLastIndex = index === pairs.length - 1;
+      if (isLastIndex && inputRefs.current[index - 1]) {
+        inputRefs.current[index - 1].focus();
+      }
+    }
+
+    if (e.key === 't' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      updatePair(index, 'enabled', !pairs[index].enabled);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Table className="border">
@@ -82,9 +107,17 @@ export default function KeyValueTable({ value = {} }: { value?: any }) {
         </TableHeader>
         <TableBody>
           {pairs.map((pair, i) => (
-            <TableRow key={i}>
+            <TableRow
+              key={i}
+              onKeyDown={(e) => {
+                handleKeyDown(e, i);
+              }}
+            >
               <TableCell>
                 <Input
+                  ref={(el) => {
+                    if (el) inputRefs.current[i] = el;
+                  }}
                   placeholder="Name"
                   value={pair.key}
                   onChange={(e) => updatePair(i, 'key', e.target.value)}
@@ -123,7 +156,7 @@ export default function KeyValueTable({ value = {} }: { value?: any }) {
       </Table>
       <Button
         variant="link"
-        onClick={addNewPair}
+        onClick={() => addNewPair()}
         className="text-sm p-0 h-auto font-normal"
       >
         <Plus className="mr-1 h-3 w-3" /> Add new row
