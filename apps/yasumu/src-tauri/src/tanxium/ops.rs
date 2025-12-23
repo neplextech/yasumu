@@ -1,9 +1,9 @@
+use crate::YasumuInternalState;
 use crate::tanxium::state::get_renderer_event_sender;
 use crate::tanxium::types::AppHandleState;
-use crate::YasumuInternalState;
 use cuid2::cuid;
-use deno_core::op2;
 use deno_core::OpState;
+use deno_core::op2;
 use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
@@ -51,6 +51,22 @@ fn op_set_rpc_port(state: &mut OpState, port: u16) {
     }
 }
 
+#[op2(fast)]
+fn op_set_echo_server_port(state: &mut OpState, port: u16) {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let mut yasumu_state = state.lock().unwrap();
+
+    // only set the echo server port if it is not already set
+    // this is to prevent the echo server port from being set multiple times
+    if yasumu_state.echo_server_port.is_none() {
+        yasumu_state.echo_server_port = Some(port);
+    }
+}
+
 #[op2]
 #[string]
 fn op_generate_cuid() -> String {
@@ -95,6 +111,7 @@ deno_core::extension!(
         op_generate_cuid,
         op_is_yasumu_ready,
         op_get_yasumu_version,
+        op_set_echo_server_port,
     ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [

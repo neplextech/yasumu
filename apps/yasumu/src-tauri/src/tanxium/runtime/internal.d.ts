@@ -8,6 +8,7 @@ declare module 'ext:core/ops' {
   export function op_generate_cuid(): string;
   export function op_is_yasumu_ready(): boolean;
   export function op_get_yasumu_version(): string;
+  export function op_set_echo_server_port(port: number): void;
 }
 
 declare module 'yasumu:ui/jsx-runtime' {

@@ -8,7 +8,7 @@ metadata {
 }
 
 request {
-  url: "https://postman-echo.com/post"
+  url: "https://echo.yasumu.local/users/:id?delay=3000&status=400"
   headers: []
   body: null
 }

@@ -30,10 +30,13 @@ export async function startServer() {
   // to avoid instantiating the server before migrations are run
   const { app } = await import('./backend/server.ts');
   const { rpcServer } = await import('./rpc/rpc-server.ts');
+  const { echoServer } = await import('./echo-server/server.ts');
 
   const server = Deno.serve({ port: 0 }, app.fetch);
-
   Yasumu.setRpcPort(server.addr.port);
+
+  const echoServerResult = await Deno.serve({ port: 0 }, echoServer.fetch);
+  Yasumu.setEchoServerPort(echoServerResult.addr.port);
 
   console.log(
     `Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`,

@@ -8,6 +8,7 @@ use tauri::{Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 struct YasumuInternalState {
     ready: bool,
     rpc_port: Option<u16>,
+    echo_server_port: Option<u16>,
 }
 
 #[tauri::command]
@@ -47,6 +48,13 @@ fn get_rpc_port(app: tauri::AppHandle) -> Option<u16> {
     yasumu_state.rpc_port
 }
 
+#[tauri::command]
+fn get_echo_server_port(app: tauri::AppHandle) -> Option<u16> {
+    let state = app.state::<Mutex<YasumuInternalState>>();
+    let yasumu_state = state.lock().unwrap();
+    yasumu_state.echo_server_port
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     rustls::crypto::ring::default_provider()
@@ -63,6 +71,7 @@ pub fn run() {
         .manage(Mutex::new(YasumuInternalState {
             ready: false,
             rpc_port: None,
+            echo_server_port: None,
         }))
         .setup(move |app| {
             // Create the main window manually
@@ -132,6 +141,7 @@ pub fn run() {
             tanxium_send_event,
             on_frontend_ready,
             get_rpc_port,
+            get_echo_server_port,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

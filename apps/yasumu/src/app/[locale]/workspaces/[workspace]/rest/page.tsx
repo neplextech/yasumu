@@ -1,7 +1,10 @@
 'use client';
 // @ts-nocheck TODO: fix ts errors and remove this line
 import { restQueries } from '@/app/[locale]/workspaces/[workspace]/rest/_constant/rest-queries-options';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import {
+  useActiveWorkspace,
+  useYasumu,
+} from '@/components/providers/workspace-provider';
 import { FormDataPair } from '@/components/tables/form-data-table';
 import { KeyValuePair } from '@/components/tables/key-value-table';
 import LoadingScreen from '@/components/visuals/loading-screen';
@@ -18,8 +21,11 @@ import { RestRequestTabs } from './_components/request-editor/rest-request-tabs'
 import RequestTabList from './_components/tabs';
 import { useState } from 'react';
 
+const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
+
 export default function Home() {
   const { entityId } = useRestContext();
+  const { echoServerPort } = useYasumu();
   const workspace = useActiveWorkspace();
   const { setOutput, setIsLoading, isLoading } = useRestOutput();
   const queryClient = useQueryClient();
@@ -61,7 +67,9 @@ export default function Home() {
       setIsLoading(true);
       const start = performance.now();
 
-      const requestHeaders = new Headers();
+      const requestHeaders = new Headers({
+        'user-agent': 'Yasumu/1.0',
+      });
       if (data?.data.requestHeaders) {
         data.data.requestHeaders.forEach((h: any) => {
           if (h.enabled && h.key) {
@@ -122,6 +130,20 @@ export default function Home() {
       }
 
       let finalUrl = url;
+
+      if (echoServerPort) {
+        try {
+          const urlObj = new URL(url);
+
+          if (urlObj.hostname === ECHO_SERVER_DOMAIN) {
+            urlObj.protocol = 'http';
+            urlObj.port = echoServerPort.toString();
+            urlObj.hostname = 'localhost';
+            finalUrl = urlObj.toString();
+          }
+        } catch {}
+      }
+
       const paramRegex = /:([a-zA-Z0-9_]+)/g;
       finalUrl = finalUrl.replace(paramRegex, (match, key) => {
         const param = pathParams[key];

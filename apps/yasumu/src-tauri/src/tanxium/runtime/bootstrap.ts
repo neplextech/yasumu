@@ -7,6 +7,7 @@ import {
   op_generate_cuid,
   op_is_yasumu_ready,
   op_get_yasumu_version,
+  op_set_echo_server_port,
 } from 'ext:core/ops';
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
@@ -100,6 +101,15 @@ class Yasumu {
   public static setRpcPort(port: number) {
     op_set_rpc_port(port);
   }
+
+  /**
+   * Set the echo server port
+   * @param port The port to set
+   */
+  public static setEchoServerPort(port: number) {
+    op_set_echo_server_port(port);
+  }
+
   /**
    * Register a listener for when the Yasumu runtime is ready
    * @param listener The listener to register

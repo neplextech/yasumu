@@ -17,6 +17,7 @@ import {
 export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
   port: number;
+  echoServerPort: number | null;
   yasumu: Yasumu;
   currentWorkspaceId: string | null;
 }
@@ -51,6 +52,7 @@ export default function WorkspaceProvider({
   children,
 }: React.PropsWithChildren) {
   const [port, setPort] = useState<number | null>(null);
+  const [echoServerPort, setEchoServerPort] = useState<number | null>(null);
   const [client, setClient] = useState<ReturnType<typeof createClient> | null>(
     null,
   );
@@ -66,6 +68,9 @@ export default function WorkspaceProvider({
       try {
         const port = await invoke<number | null>('get_rpc_port');
         if (!port) throw new Error('Tanxium sent invalid port');
+        const echoServerPort = await invoke<number | null>(
+          'get_echo_server_port',
+        );
 
         const client = createClient(port);
         const yasumu = createYasumu({
@@ -124,6 +129,7 @@ export default function WorkspaceProvider({
         globalThis.yasumu = yasumu;
 
         setPort(port);
+        setEchoServerPort(echoServerPort);
         setClient(client);
         setYasumu(yasumu);
 
@@ -162,6 +168,7 @@ export default function WorkspaceProvider({
       value={{
         client,
         port,
+        echoServerPort,
         yasumu,
         currentWorkspaceId,
       }}
