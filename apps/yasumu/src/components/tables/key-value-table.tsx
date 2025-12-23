@@ -20,6 +20,7 @@ export interface KeyValuePair {
   key: string;
   value: string;
   enabled: boolean;
+  onChange?: (pair: KeyValuePair) => void;
 }
 
 export default function KeyValueTable(props: {
