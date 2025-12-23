@@ -1,0 +1,17 @@
+@rest
+
+metadata {
+  name: "quest healthcheck"
+  method: "GET"
+  id: "imrrbpvioclrfusdnvallf4q"
+  groupId: "gfjub6iu1zbwqdhuu1e72jiv"
+}
+
+request {
+  url: "https://quest-api.staging.icares.quest/health"
+  headers: []
+  body: null
+}
+
+dependencies []
+

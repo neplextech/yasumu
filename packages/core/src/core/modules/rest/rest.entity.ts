@@ -9,7 +9,7 @@ import type {
 export class RestEntity {
   public constructor(
     public readonly rest: RestModule,
-    private data: RestEntityData,
+    public data: RestEntityData,
   ) {}
 
   public get id() {

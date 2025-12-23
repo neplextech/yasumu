@@ -2,39 +2,28 @@
 // @ts-nocheck TODO: fix ts errors and remove this line
 import { restQueries } from '@/app/[locale]/workspaces/[workspace]/rest/_constant/rest-queries-options';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import KeyValueTable, {
-  KeyValuePair,
-} from '@/components/tables/key-value-table';
+import { KeyValuePair } from '@/components/tables/key-value-table';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
 import useDebounced from '@/hooks/use-debounced';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetch } from '@tauri-apps/plugin-http';
-import { Button } from '@yasumu/ui/components/button';
-import { Input } from '@yasumu/ui/components/input';
 import { Separator } from '@yasumu/ui/components/separator';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
-import { Textarea } from '@yasumu/ui/components/textarea';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import HttpMethodSelector from './_components/http-methods-selector';
 import { useRestContext } from './_providers/rest-context';
 import { useRestOutput } from './_providers/rest-output';
 import { RestEntityUpdateOptions } from '@yasumu/core';
+import { RequestUrlBar } from './_components/request-editor/request-url-bar';
+import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
 
 export default function Home() {
   const { entityId } = useRestContext();
   const workspace = useActiveWorkspace();
-  const { setOutput, setIsLoading } = useRestOutput();
+  const { setOutput, setIsLoading, isLoading } = useRestOutput();
   const queryClient = useQueryClient();
   const { isFetching, data } = useQuery(
     restQueries.getEntityOptions(entityId, workspace),
   );
-  const method = data?.method || 'GET';
+  const method = data?.data.method || 'GET';
   const url = data?.data.url || '';
 
   async function updateCache(newData: Partial<RestEntityUpdateOptions>) {
@@ -45,6 +34,7 @@ export default function Home() {
 
     await queryClient.setQueryData(
       restQueries.getEntityOptions(entityId, workspace).queryKey,
+      // @ts-expect-error TODO: fix this
       (oldData) => {
         if (!oldData) return oldData;
 
@@ -63,8 +53,71 @@ export default function Home() {
     try {
       setIsLoading(true);
       const start = performance.now();
+
+      const requestHeaders = new Headers();
+      if (data?.data.requestHeaders) {
+        data.data.requestHeaders.forEach((h: any) => {
+          if (h.enabled && h.key) {
+            requestHeaders.append(h.key, h.value);
+          }
+        });
+      }
+
+      let body = undefined;
+      if (data?.data.body) {
+        const { type, data: bodyData } = data.data.body;
+
+        if (type === 'json' || type === 'text') {
+          body = bodyData;
+          if (type === 'json' && !requestHeaders.has('Content-Type')) {
+            requestHeaders.set('Content-Type', 'application/json');
+          } else if (type === 'text' && !requestHeaders.has('Content-Type')) {
+            requestHeaders.set('Content-Type', 'text/plain');
+          }
+        } else if (type === 'binary' && bodyData instanceof File) {
+          body = bodyData;
+          if (!requestHeaders.has('Content-Type')) {
+            requestHeaders.set(
+              'Content-Type',
+              bodyData.type || 'application/octet-stream',
+            );
+          }
+        } else if (type === 'form-data' && Array.isArray(bodyData)) {
+          const formData = new FormData();
+          bodyData.forEach((pair: KeyValuePair) => {
+            if (pair.enabled && pair.key) {
+              formData.append(pair.key, pair.value);
+            }
+          });
+          body = formData;
+          // Let browser set Content-Type with boundary for FormData
+          if (requestHeaders.has('Content-Type')) {
+            requestHeaders.delete('Content-Type');
+          }
+        } else if (
+          type === 'x-www-form-urlencoded' &&
+          Array.isArray(bodyData)
+        ) {
+          const searchParams = new URLSearchParams();
+          bodyData.forEach((pair: KeyValuePair) => {
+            if (pair.enabled && pair.key) {
+              searchParams.append(pair.key, pair.value);
+            }
+          });
+          body = searchParams;
+          if (!requestHeaders.has('Content-Type')) {
+            requestHeaders.set(
+              'Content-Type',
+              'application/x-www-form-urlencoded',
+            );
+          }
+        }
+      }
+
       const response = await fetch(url, {
         method,
+        headers: requestHeaders,
+        body,
       });
       const end = performance.now();
       const time = end - start;
@@ -141,6 +194,14 @@ export default function Home() {
     mutation.mutate({ requestHeaders: pairs });
   }
 
+  function handleBodyChange(body: { type: string; data: any } | null) {
+    updateCache({ body });
+    if (body?.type !== 'binary') {
+      // Was file, now binary. Don't sync binary file data to server (usually too big/not serializable simply)
+      mutation.mutate({ body });
+    }
+  }
+
   if (!entityId) {
     return (
       <main className="w-full h-screen relative grid place-items-center">
@@ -155,61 +216,24 @@ export default function Home() {
 
   return (
     <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
-      {/* <RequestTabList /> */}
-      <div className="flex gap-4">
-        <HttpMethodSelector
-          onChange={withErrorHandler(setHttpMethod)}
-          value={method}
-        />
-        <Input
-          placeholder="Enter a URL"
-          value={url}
-          onChange={withErrorHandler((e) => setRequestUrl(e.target.value))}
-          onBlur={handleURLInputBlur}
-        />
-        <Button onClick={withErrorHandler(sendRequest)}>Send</Button>
-      </div>
+      <RequestUrlBar
+        method={method}
+        url={url}
+        onMethodChange={setHttpMethod}
+        onUrlChange={setRequestUrl}
+        onUrlBlur={handleURLInputBlur}
+        onSend={sendRequest}
+        isSending={isLoading}
+      />
       <Separator />
-      <Tabs defaultValue="parameters">
-        <TabsList>
-          <TabsTrigger value="parameters">Parameters</TabsTrigger>
-          <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="body">Body</TabsTrigger>
-          <TabsTrigger value="pre-request-script">
-            Pre-request Script
-          </TabsTrigger>
-          <TabsTrigger value="post-response-script">
-            Post-response Script
-          </TabsTrigger>
-          <TabsTrigger value="tests">Tests</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        <TabsContent value="parameters">
-          <KeyValueTable
-            pairs={data?.data.requestParameters || []}
-            onChange={handleRequestParametersChange}
-          />
-        </TabsContent>
-        <TabsContent value="headers">
-          <KeyValueTable
-            pairs={data?.data.requestHeaders || []}
-            onChange={handleRequestHeadersChange}
-          />
-        </TabsContent>
-        <TabsContent value="body">
-          <Textarea placeholder="Your request body goes here..." />
-        </TabsContent>
-        <TabsContent value="pre-request-script">
-          <Textarea placeholder="Your pre-request script goes here..." />
-        </TabsContent>
-        <TabsContent value="post-response-script">
-          <Textarea placeholder="Your post-response script goes here..." />
-        </TabsContent>
-        <TabsContent value="tests">
-          <Textarea placeholder="Your test script goes here..." />
-        </TabsContent>
-        <TabsContent value="settings">Settings Editor</TabsContent>
-      </Tabs>
+      <RestRequestTabs
+        parameters={data?.data.requestParameters || []}
+        headers={data?.data.requestHeaders || []}
+        body={data?.data.body || null}
+        onParametersChange={handleRequestParametersChange}
+        onHeadersChange={handleRequestHeadersChange}
+        onBodyChange={handleBodyChange}
+      />
     </main>
   );
 }

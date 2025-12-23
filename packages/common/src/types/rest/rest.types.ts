@@ -12,7 +12,7 @@ export interface RestEntityBody extends CustomMetadata {
   /**
    * The type of the body.
    */
-  type: 'json' | 'text' | 'form-data' | 'multipart/form-data';
+  type: 'json' | 'text' | 'binary' | 'form-data' | 'x-www-form-urlencoded';
   /**
    * The data of the body.
    */

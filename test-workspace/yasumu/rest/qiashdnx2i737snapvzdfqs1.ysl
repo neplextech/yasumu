@@ -1,0 +1,17 @@
+@rest
+
+metadata {
+  name: "post request"
+  method: "POST"
+  id: "qiashdnx2i737snapvzdfqs1"
+  groupId: "cqv9rgnosbk05fv3sughqetb"
+}
+
+request {
+  url: "https://postman-echo.com/post"
+  headers: []
+  body: null
+}
+
+dependencies []
+
