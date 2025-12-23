@@ -6,6 +6,7 @@ interface OutputResponse {
   statusText: string;
   time: number;
   headers: Record<string, string>;
+  cookies: string[];
   body: string;
   raw: string;
 }

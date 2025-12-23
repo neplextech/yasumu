@@ -4,10 +4,16 @@ import { useHorizontalScroll } from '@yasumu/ui/hooks/use-horizontal-scroll';
 import { cn } from '@yasumu/ui/lib/utils';
 import { X } from 'lucide-react';
 import EnvironmentSelector from './environment-selector';
+import { useQuery } from '@tanstack/react-query';
+import { restQueries } from '../_constant/rest-queries-options';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { resolveHttpMethodIcon } from './http-methods';
 
 export interface RequestTab {
-  name: string;
-  icon?: () => React.ReactNode;
+  id: string;
+  active: boolean;
+  onSelect: () => void;
+  onClose: () => void;
 }
 
 export function RequestTabs({ tabs }: { tabs: RequestTab[] }) {
@@ -16,16 +22,16 @@ export function RequestTabs({ tabs }: { tabs: RequestTab[] }) {
   if (!tabs.length) return null;
 
   return (
-    <div className="flex items-center gap-2 select-none max-w-[80vw]">
+    <div className="flex items-center gap-2 select-none w-full max-w-[80vw]">
       <div
         ref={ref}
-        className="flex flex-row items-center w-full overflow-x-auto zw-scrollbar border-x"
+        className="flex flex-row items-center w-full overflow-x-auto zw-scrollbar border-x h-9"
       >
         {tabs.map((tab, id, arr) => {
           return (
-            <RequestTab
+            <RequestTabItem
               tab={tab}
-              key={id}
+              key={tab.id}
               isFirst={id === 0}
               isLast={id === arr.length - 1}
             />
@@ -37,7 +43,7 @@ export function RequestTabs({ tabs }: { tabs: RequestTab[] }) {
   );
 }
 
-function RequestTab({
+function RequestTabItem({
   tab,
   isFirst,
   isLast,
@@ -46,38 +52,36 @@ function RequestTab({
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const isActive = false;
+  const workspace = useActiveWorkspace();
+  const { data } = useQuery(restQueries.getEntityOptions(tab.id, workspace));
+
+  const name = data?.data.name || 'Loading...';
+  const Icon = data ? resolveHttpMethodIcon(data.data.method) : null;
 
   return (
-    <button
+    <div
       className={cn(
-        'text-xs flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/80 min-w-fit',
-        isActive && 'bg-muted/80 hover:bg-muted/50',
-        'border border-muted/80',
-        'group',
-        {
-          'border-l-0': isFirst,
-          'border-r-0': isLast,
-        },
+        'text-xs flex items-center gap-2 px-3 h-full cursor-pointer hover:bg-muted/50 min-w-fit border-b-2 border-transparent transition-colors',
+        tab.active && 'bg-muted/50 border-b-primary hover:bg-muted/50',
+        'border-r',
+        'group relative pr-8',
       )}
+      onClick={tab.onSelect}
     >
-      {tab.icon && <tab.icon />} {tab.name}
-      <X
-        className={cn('h-3 w-3', !isActive && 'invisible group-hover:visible')}
-        // onClick={async (e) => {
-        //   e.stopPropagation();
-        //   removeHistoryByPath(tab.path);
-
-        //   await Yasumu.workspace?.rest.removeFromHistory(tab.path).catch(console.error);
-
-        //   if (isActive) {
-        //     const nextItem = history.filter((item) => item.path !== tab.path)[0] ?? null;
-        //     const item = nextItem ? await Yasumu.workspace?.rest.open(nextItem?.path) : null;
-        //     setCurrent(item ?? null);
-        //     await Yasumu.workspace?.rest.setLastOpenedRequest(item ?? null).catch(console.error);
-        //   }
-        // }}
-      />
-    </button>
+      {Icon && <Icon />}
+      <span className="truncate max-w-[150px]">{name}</span>
+      <button
+        className={cn(
+          'absolute right-2 p-0.5 rounded-sm hover:bg-muted-foreground/20',
+          !tab.active && 'invisible group-hover:visible',
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          tab.onClose();
+        }}
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </div>
   );
 }

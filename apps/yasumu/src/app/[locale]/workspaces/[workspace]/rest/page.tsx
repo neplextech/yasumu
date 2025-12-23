@@ -2,6 +2,7 @@
 // @ts-nocheck TODO: fix ts errors and remove this line
 import { restQueries } from '@/app/[locale]/workspaces/[workspace]/rest/_constant/rest-queries-options';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { FormDataPair } from '@/components/tables/form-data-table';
 import { KeyValuePair } from '@/components/tables/key-value-table';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
@@ -14,6 +15,7 @@ import { useRestOutput } from './_providers/rest-output';
 import { RestEntityUpdateOptions } from '@yasumu/core';
 import { RequestUrlBar } from './_components/request-editor/request-url-bar';
 import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
+import RequestTabList from './_components/tabs';
 
 export default function Home() {
   const { entityId } = useRestContext();
@@ -84,7 +86,7 @@ export default function Home() {
           }
         } else if (type === 'form-data' && Array.isArray(bodyData)) {
           const formData = new FormData();
-          bodyData.forEach((pair: KeyValuePair) => {
+          bodyData.forEach((pair: FormDataPair) => {
             if (pair.enabled && pair.key) {
               formData.append(pair.key, pair.value);
             }
@@ -125,11 +127,37 @@ export default function Home() {
       const raw = await response.text();
       const headers = Object.fromEntries(response.headers.entries());
 
+      // Try to get cookies safely.
+      // Note: standard fetch API often hides Set-Cookie, but Tauri's plugin might expose it or we might need a workaround.
+      // If getSetCookie is available (modern standard), use it.
+      let cookies: string[] = [];
+      if (
+        'getSetCookie' in response.headers &&
+        typeof response.headers.getSetCookie === 'function'
+      ) {
+        // @ts-ignore
+        cookies = response.headers.getSetCookie();
+      } else {
+        // Fallback or check if 'set-cookie' is in entries (it might be comma separated which is bad for dates)
+        // But for now let's rely on what we can get.
+        const setCookie = response.headers.get('set-cookie');
+        if (setCookie) {
+          // Basic splitting by comma if it looks like multiple cookies,
+          // but strictly splitting by comma breaks dates.
+          // A proper parser handles this, but here we just get the raw string.
+          // For display purposes, we might just put it in an array if it's a single string.
+          // Or try to split smart.
+          // Let's just wrap it for now if getSetCookie isn't there.
+          cookies = [setCookie];
+        }
+      }
+
       setOutput({
         status: response.status,
         statusText: response.statusText,
         time,
         headers,
+        cookies,
         body: raw,
         raw: `Time: ${time}ms\nStatus: ${response.status} ${response.statusText}\n${Object.entries(
           headers,
@@ -216,6 +244,7 @@ export default function Home() {
 
   return (
     <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
+      <RequestTabList />
       <RequestUrlBar
         method={method}
         url={url}
@@ -227,6 +256,7 @@ export default function Home() {
       />
       <Separator />
       <RestRequestTabs
+        key={entityId}
         parameters={data?.data.requestParameters || []}
         headers={data?.data.requestHeaders || []}
         body={data?.data.body || null}
