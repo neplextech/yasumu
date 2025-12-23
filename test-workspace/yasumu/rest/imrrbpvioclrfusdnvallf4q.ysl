@@ -1,7 +1,7 @@
 @rest
 
 metadata {
-  name: "quest healthcheck"
+  name: "Health Check"
   method: "GET"
   id: "imrrbpvioclrfusdnvallf4q"
   groupId: "gfjub6iu1zbwqdhuu1e72jiv"

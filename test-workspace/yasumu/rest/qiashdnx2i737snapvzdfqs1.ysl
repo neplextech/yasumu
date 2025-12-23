@@ -1,14 +1,14 @@
 @rest
 
 metadata {
-  name: "post request"
+  name: "Create User"
   method: "POST"
   id: "qiashdnx2i737snapvzdfqs1"
   groupId: "cqv9rgnosbk05fv3sughqetb"
 }
 
 request {
-  url: "https://echo.yasumu.local/users/:id?delay=3000&status=400"
+  url: "https://echo.yasumu.local/users/:id?delay=3000"
   headers: []
   body: null
 }

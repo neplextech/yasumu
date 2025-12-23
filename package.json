@@ -9,7 +9,7 @@
     "build": "turbo run build",
     "prepare": "pnpm --filter=tanxium run deno install"
   },
-  "license": "GPL-3.0",
+  "license": "AGPL-3.0",
   "author": "Neplex",
   "repository": {
     "type": "git",

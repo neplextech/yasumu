@@ -19,7 +19,7 @@
     "generate-schema": "deno --allow-read --allow-write ./scripts/generate-schema.ts",
     "lint": "deno lint"
   },
-  "license": "GPL-3.0",
+  "license": "AGPL-3.0",
   "author": "Neplex",
   "repository": {
     "type": "git",
