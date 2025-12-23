@@ -11,25 +11,70 @@ import { Textarea } from '@yasumu/ui/components/textarea';
 import { BodyEditor } from './body-editor';
 
 import { FormDataPair } from '@/components/tables/form-data-table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@yasumu/ui/components/table';
+import { Input } from '@yasumu/ui/components/input';
+import { Checkbox } from '@yasumu/ui/components/checkbox';
+import { Button } from '@yasumu/ui/components/button';
+import { Trash } from 'lucide-react';
 
 // @ts-ignore
 interface RestRequestTabsProps {
   parameters: KeyValuePair[];
   headers: KeyValuePair[];
   body: { type: string; data: any } | null;
+  url?: string;
+  pathParams?: Record<string, { value: string; enabled: boolean }>;
   onParametersChange: (pairs: KeyValuePair[]) => void;
   onHeadersChange: (pairs: KeyValuePair[]) => void;
   onBodyChange: (body: { type: string; data: any } | null) => void;
+  onPathParamsChange?: (
+    params: Record<string, { value: string; enabled: boolean }>,
+  ) => void;
 }
 
 export function RestRequestTabs({
   parameters,
   headers,
   body,
+  url = '',
+  pathParams = {},
   onParametersChange,
   onHeadersChange,
   onBodyChange,
+  onPathParamsChange,
 }: RestRequestTabsProps) {
+  const paramKeys = Array.from(url.matchAll(/:([a-zA-Z0-9_]+)/g)).map(
+    (m) => m[1],
+  );
+  const uniqueKeys = Array.from(new Set(paramKeys));
+  const hasPathParams = uniqueKeys.length > 0;
+
+  const handlePathParamChange = (
+    key: string,
+    field: 'value' | 'enabled',
+    value: any,
+  ) => {
+    const current = pathParams[key] || { value: '', enabled: true };
+    const newParams = {
+      ...pathParams,
+      [key]: { ...current, [field]: value },
+    };
+    onPathParamsChange?.(newParams);
+  };
+
+  const deletePathParam = (key: string) => {
+    const newParams = { ...pathParams };
+    delete newParams[key];
+    onPathParamsChange?.(newParams);
+  };
+
   return (
     <Tabs defaultValue="parameters" className="flex-1 flex flex-col min-h-0">
       <div className="px-1 border-b">
@@ -75,8 +120,79 @@ export function RestRequestTabs({
 
       <div className="flex-1 overflow-y-auto p-4">
         <TabsContent value="parameters" className="h-full mt-0 space-y-4">
+          {hasPathParams && (
+            <div className="space-y-2 mb-6">
+              <div className="text-sm text-muted-foreground">
+                Path Parameters
+              </div>
+              <Table className="border">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {uniqueKeys.map((key) => {
+                    const param = pathParams[key] || {
+                      value: '',
+                      enabled: true,
+                    };
+                    return (
+                      <TableRow key={key}>
+                        <TableCell>
+                          <Input
+                            value={key}
+                            disabled
+                            readOnly
+                            className="bg-muted"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={param.value}
+                            onChange={(e) =>
+                              handlePathParamChange(
+                                key,
+                                'value',
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Value"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              checked={param.enabled}
+                              onCheckedChange={(c) =>
+                                handlePathParamChange(
+                                  key,
+                                  'enabled',
+                                  c === true,
+                                )
+                              }
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deletePathParam(key)}
+                            >
+                              <Trash className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
           <div className="text-sm text-muted-foreground mb-2">
-            Query Parameters
+            Search Parameters
           </div>
           <KeyValueTable pairs={parameters} onChange={onParametersChange} />
         </TabsContent>

@@ -16,6 +16,7 @@ import { RestEntityUpdateOptions } from '@yasumu/core';
 import { RequestUrlBar } from './_components/request-editor/request-url-bar';
 import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
 import RequestTabList from './_components/tabs';
+import { useState } from 'react';
 
 export default function Home() {
   const { entityId } = useRestContext();
@@ -27,6 +28,10 @@ export default function Home() {
   );
   const method = data?.data.method || 'GET';
   const url = data?.data.url || '';
+
+  const [pathParams, setPathParams] = useState<
+    Record<string, { value: string; enabled: boolean }>
+  >({});
 
   async function updateCache(newData: Partial<RestEntityUpdateOptions>) {
     if (!entityId) return;
@@ -116,7 +121,17 @@ export default function Home() {
         }
       }
 
-      const response = await fetch(url, {
+      let finalUrl = url;
+      const paramRegex = /:([a-zA-Z0-9_]+)/g;
+      finalUrl = finalUrl.replace(paramRegex, (match, key) => {
+        const param = pathParams[key];
+        if (param && param.enabled) {
+          return param.value;
+        }
+        return match;
+      });
+
+      const response = await fetch(finalUrl, {
         method,
         headers: requestHeaders,
         body,
@@ -260,6 +275,9 @@ export default function Home() {
         parameters={data?.data.requestParameters || []}
         headers={data?.data.requestHeaders || []}
         body={data?.data.body || null}
+        url={url}
+        pathParams={pathParams}
+        onPathParamsChange={setPathParams}
         onParametersChange={handleRequestParametersChange}
         onHeadersChange={handleRequestHeadersChange}
         onBodyChange={handleBodyChange}
