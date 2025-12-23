@@ -1,0 +1,32 @@
+{
+  "name": "www",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "next": "catalog:react",
+    "react": "catalog:react",
+    "react-dom": "catalog:react",
+    "react-icons": "^5.5.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "catalog:tailwind",
+    "@types/node": "catalog:build",
+    "@types/react": "catalog:react",
+    "@types/react-dom": "catalog:react",
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
+    "@yasumu/ui": "workspace:*",
+    "eslint": "^9",
+    "eslint-config-next": "catalog:react",
+    "tailwindcss": "catalog:tailwind",
+    "typescript": "catalog:build"
+  }
+}

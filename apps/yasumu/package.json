@@ -43,9 +43,9 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "catalog:tailwind",
     "@tauri-apps/cli": "^2",
-    "@types/node": "^20",
+    "@types/node": "catalog:build",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
     "@types/set-cookie-parser": "^2.4.10",
@@ -55,7 +55,7 @@
     "babel-plugin-react-compiler": "catalog:react",
     "eslint": "^9",
     "eslint-config-next": "catalog:react",
-    "tailwindcss": "^4",
+    "tailwindcss": "catalog:tailwind",
     "transletta": "^0.0.3",
     "typescript": "catalog:build"
   }
