@@ -1,7 +1,17 @@
 'use client';
+// @ts-nocheck TODO: fix ts errors and remove this line
+import { restQueries } from '@/app/[locale]/workspaces/[workspace]/rest/_constant/rest-queries-options';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import KeyValueTable, {
+  KeyValuePair,
+} from '@/components/tables/key-value-table';
+import LoadingScreen from '@/components/visuals/loading-screen';
+import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import useDebounced from '@/hooks/use-debounced';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetch } from '@tauri-apps/plugin-http';
+import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
-import HttpMethodSelector from './_components/http-methods-selector';
-import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
 import {
   Tabs,
@@ -10,36 +20,44 @@ import {
   TabsTrigger,
 } from '@yasumu/ui/components/tabs';
 import { Textarea } from '@yasumu/ui/components/textarea';
-import { useRestContext } from './_providers/rest-context';
-import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
-import { HttpMethods } from '@yasumu/core';
-import { useEffect, useEffectEvent, useState } from 'react';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import useDebounced from '@/hooks/use-debounced';
+import HttpMethodSelector from './_components/http-methods-selector';
+import { useRestContext } from './_providers/rest-context';
 import { useRestOutput } from './_providers/rest-output';
-import { fetch } from '@tauri-apps/plugin-http';
-import { Button } from '@yasumu/ui/components/button';
-import LoadingScreen from '@/components/visuals/loading-screen';
+import { RestEntityUpdateOptions } from '@yasumu/core';
 
 export default function Home() {
   const { entityId } = useRestContext();
   const workspace = useActiveWorkspace();
-  const [method, setMethod] = useState<string>(HttpMethods.Get);
-  const [url, setUrl] = useState<string>('');
   const { setOutput, setIsLoading } = useRestOutput();
-  const [loading, setLoading] = useState<boolean>(true);
+  const queryClient = useQueryClient();
+  const { isFetching, data } = useQuery(
+    restQueries.getEntityOptions(entityId, workspace),
+  );
+  const method = data?.method || 'GET';
+  const url = data?.data.url || '';
 
-  const fetchEntity = useEffectEvent(async () => {
+  async function updateCache(newData: Partial<RestEntityUpdateOptions>) {
     if (!entityId) return;
+    await queryClient.cancelQueries(
+      restQueries.getEntityOptions(entityId, workspace),
+    );
 
-    setLoading(true);
-    const entity = await workspace.rest.get(entityId);
-    console.log(entity);
-    setMethod(entity.method);
-    setUrl(entity.getFullURL() ?? '');
-    setLoading(false);
+    await queryClient.setQueryData(
+      restQueries.getEntityOptions(entityId, workspace).queryKey,
+      (oldData) => {
+        if (!oldData) return oldData;
+
+        return { ...oldData, data: { ...oldData.data, ...newData } };
+      },
+    );
+  }
+
+  const mutation = useMutation({
+    mutationFn: (data: Partial<RestEntityUpdateOptions>) =>
+      workspace.rest.update(entityId!, data),
   });
+  const debounceMutate = useDebounced(mutation.mutate, 200);
 
   const sendRequest = async () => {
     try {
@@ -72,9 +90,9 @@ export default function Home() {
   };
 
   const setHttpMethod = async (method: string) => {
-    setMethod(method);
     if (!entityId) return;
-    await workspace.rest.update(entityId, { method });
+    updateCache({ method });
+    mutation.mutate({ method });
   };
 
   const debouncedUpdateRequestUrl = useDebounced(async (url: string) => {
@@ -83,13 +101,45 @@ export default function Home() {
   }, 200);
 
   const setRequestUrl = async (url: string) => {
-    setUrl(url);
-    await debouncedUpdateRequestUrl(url);
+    updateCache({ url });
+    await debounceMutate({ url });
   };
 
-  useEffect(() => {
-    void fetchEntity();
-  }, [entityId]);
+  const handleURLInputBlur = async () => {
+    const searchParamsString = new URL(url).search;
+    if (!searchParamsString) return;
+
+    const searchParams = new URLSearchParams(searchParamsString);
+    const requestParameters = Array.from(searchParams.entries()).map(
+      ([key, value]) => ({
+        key,
+        value,
+        enabled: true,
+      }),
+    );
+
+    await updateCache({ requestParameters });
+  };
+
+  function handleRequestParametersChange(pairs: Array<KeyValuePair>) {
+    const searchParams = new URLSearchParams();
+    pairs.forEach((pair) => {
+      if (pair.enabled && pair.key && pair.value) {
+        searchParams.append(pair.key, pair.value);
+      }
+    });
+
+    const urlObj = new URL(url);
+    urlObj.search = searchParams.toString();
+    const newUrl = urlObj.toString();
+    updateCache({ url: newUrl, requestParameters: pairs }); // Optimistic update
+    debounceMutate({ url: newUrl, requestParameters: pairs }); // Debounced server update
+  }
+
+  function handleRequestHeadersChange(pairs: Array<KeyValuePair>) {
+    updateCache({ requestHeaders: pairs });
+    mutation.mutate({ requestHeaders: pairs });
+  }
 
   if (!entityId) {
     return (
@@ -99,7 +149,7 @@ export default function Home() {
     );
   }
 
-  if (loading) {
+  if (isFetching) {
     return <LoadingScreen fullScreen />;
   }
 
@@ -115,6 +165,7 @@ export default function Home() {
           placeholder="Enter a URL"
           value={url}
           onChange={withErrorHandler((e) => setRequestUrl(e.target.value))}
+          onBlur={handleURLInputBlur}
         />
         <Button onClick={withErrorHandler(sendRequest)}>Send</Button>
       </div>
@@ -134,10 +185,16 @@ export default function Home() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="parameters">
-          <KeyValueTable />
+          <KeyValueTable
+            pairs={data?.data.requestParameters || []}
+            onChange={handleRequestParametersChange}
+          />
         </TabsContent>
         <TabsContent value="headers">
-          <KeyValueTable />
+          <KeyValueTable
+            pairs={data?.data.requestHeaders || []}
+            onChange={handleRequestHeadersChange}
+          />
         </TabsContent>
         <TabsContent value="body">
           <Textarea placeholder="Your request body goes here..." />

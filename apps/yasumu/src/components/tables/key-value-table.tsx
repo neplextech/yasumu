@@ -16,30 +16,24 @@ import { Trash, Plus } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
 import { flushSync } from 'react-dom';
 
-interface KeyValuePair {
+export interface KeyValuePair {
   key: string;
   value: string;
   enabled: boolean;
   onChange?: (pair: KeyValuePair) => void;
 }
 
-export default function KeyValueTable({
-  onChange,
-  initialPairs,
-}: {
+export default function KeyValueTable(props: {
   onChange?: (pairs: KeyValuePair[]) => void;
-  initialPairs?: KeyValuePair[];
+  pairs?: KeyValuePair[];
 }) {
   const inputRefs = useRef<Array<HTMLInputElement>>([]);
-  const [pairs, setPairs] = useState<KeyValuePair[]>(() => {
-    return initialPairs?.length
-      ? initialPairs
-      : [{ key: '', value: '', enabled: true }];
-  });
+  const pairs = props.pairs?.length
+    ? props.pairs
+    : [{ key: '', value: '', enabled: true }];
 
   const updatePairs = (newPairs: KeyValuePair[]) => {
-    setPairs(newPairs);
-    onChange?.(newPairs);
+    props.onChange?.(newPairs);
   };
 
   const addNewPair = (index = pairs.length) => {

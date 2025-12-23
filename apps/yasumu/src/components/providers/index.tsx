@@ -7,6 +7,7 @@ import WorkspaceProvider from './workspace-provider';
 import { useTanxiumEvent } from '@/hooks/use-tanxium-event';
 import { PermissionPromptProvider } from './permission-prompt-provider';
 import { AppLayoutProvider } from './app-layout-provider';
+import { QueryClientProvider } from './query-client-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
@@ -21,9 +22,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <NextIntlClientProvider locale="en" timeZone="UTC">
         <AppLayoutProvider>
-          <WorkspaceProvider>
-            <PermissionPromptProvider>{children}</PermissionPromptProvider>
-          </WorkspaceProvider>
+          <QueryClientProvider>
+            <WorkspaceProvider>
+              <PermissionPromptProvider>{children}</PermissionPromptProvider>
+            </WorkspaceProvider>
+          </QueryClientProvider>
         </AppLayoutProvider>
       </NextIntlClientProvider>
     </NextThemesProvider>
