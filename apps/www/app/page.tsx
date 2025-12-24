@@ -178,9 +178,15 @@ export default function Home() {
               </div>
               <div className="text-white">
                 $ git clone{' '}
-                <span className="text-blue-400">
-                  https://github.com/neplextech/yasumu
-                </span>
+                <a
+                  href="https://github.com/neplextech/yasumu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="text-blue-400 hover:underline">
+                    https://github.com/neplextech/yasumu
+                  </span>
+                </a>
               </div>
               <div className="text-gray-500 mb-2">Cloning into 'yasumu'...</div>
               <div className="text-gray-400 select-none mt-4">
