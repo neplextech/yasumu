@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import '@yasumu/ui/globals.css';
 import './styles.css';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import Navbar from '../components/navbar';
+import Footer from '../components/footer';
 
 const inter = Inter({
   variable: '--font-sans',
