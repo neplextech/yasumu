@@ -1,5 +1,5 @@
 import React from 'react';
-import { BackgroundGrid } from '../../components/BackgroundGrid';
+import { BackgroundGrid } from '../../components/background-grid';
 import { MdDownload } from 'react-icons/md';
 import { FaApple, FaWindows } from 'react-icons/fa6';
 import { VscTerminalLinux } from 'react-icons/vsc';

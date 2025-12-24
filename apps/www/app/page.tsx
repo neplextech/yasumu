@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import AppPreview from '../components/AppPreview';
-import { BackgroundGrid } from '../components/BackgroundGrid';
+import AppPreview from '../components/app-preview';
+import { BackgroundGrid } from '../components/background-grid';
 import { Button } from '@yasumu/ui/components/button';
 import {
   MdCode,

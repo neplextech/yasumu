@@ -1,5 +1,5 @@
 import React from 'react';
-import { BackgroundGrid } from '../../components/BackgroundGrid';
+import { BackgroundGrid } from '../../components/background-grid';
 import { MdAddCircle, MdBuild } from 'react-icons/md';
 
 export default function Changelog() {
