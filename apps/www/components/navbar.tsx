@@ -19,7 +19,7 @@ const Navbar: React.FC = () => {
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center gap-3 group">
               <img
-                src="https://github.com/yasumu-org.png"
+                src="/logo-dark-glow.png"
                 alt="Yasumu Logo"
                 className="select-none w-8 h-8 rounded-lg"
                 draggable={false}

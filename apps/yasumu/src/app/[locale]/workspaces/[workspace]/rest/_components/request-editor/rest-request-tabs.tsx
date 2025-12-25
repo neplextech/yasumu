@@ -23,6 +23,7 @@ import { Input } from '@yasumu/ui/components/input';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Button } from '@yasumu/ui/components/button';
 import { Trash } from 'lucide-react';
+import AuthEditor from './auth-editor';
 
 // @ts-ignore
 interface RestRequestTabsProps {
@@ -92,6 +93,12 @@ export function RestRequestTabs({
             Headers
           </TabsTrigger>
           <TabsTrigger
+            value="auth"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
+          >
+            Auth
+          </TabsTrigger>
+          <TabsTrigger
             value="body"
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
           >
@@ -108,12 +115,6 @@ export function RestRequestTabs({
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
           >
             Tests
-          </TabsTrigger>
-          <TabsTrigger
-            value="settings"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Settings
           </TabsTrigger>
         </TabsList>
       </div>
@@ -202,6 +203,12 @@ export function RestRequestTabs({
           </div>
           <KeyValueTable pairs={headers} onChange={onHeadersChange} />
         </TabsContent>
+        <TabsContent value="auth" className="h-full mt-0">
+          <div className="p-4 border rounded-md bg-muted/5 text-muted-foreground text-sm">
+            Authentication
+          </div>
+          <AuthEditor headers={headers} onChange={onHeadersChange} />
+        </TabsContent>
         <TabsContent value="body" className="h-full mt-0">
           <BodyEditor body={body} onChange={onBodyChange} />
         </TabsContent>
@@ -223,11 +230,6 @@ export function RestRequestTabs({
               className="flex-1 resize-none font-mono bg-muted/5 border-muted-foreground/20 p-4"
               spellCheck={false}
             />
-          </div>
-        </TabsContent>
-        <TabsContent value="settings" className="h-full mt-0">
-          <div className="p-4 border rounded-md bg-muted/5 text-muted-foreground text-sm">
-            Request Settings (Coming Soon)
           </div>
         </TabsContent>
       </div>

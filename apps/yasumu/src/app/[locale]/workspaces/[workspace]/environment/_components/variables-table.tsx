@@ -14,12 +14,7 @@ import { Trash, Plus } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 
-interface Variable {
-  id: string;
-  key: string;
-  value: string;
-  enabled: boolean;
-}
+import { Variable } from '../../../_stores/environment-store';
 
 interface VariablesTableProps {
   variables: Variable[];
@@ -31,30 +26,25 @@ export default function VariablesTable({
   onChange,
 }: VariablesTableProps) {
   const updateVariable = (
-    id: string,
+    index: number,
     field: keyof Variable,
     value: string | boolean,
   ) => {
-    const updated = variables.map((v) =>
-      v.id === id ? { ...v, [field]: value } : v,
+    const updated = variables.map((v, i) =>
+      i === index ? { ...v, [field]: value } : v,
     );
     onChange(updated);
   };
 
   const addVariable = () => {
-    onChange([
-      ...variables,
-      { id: Date.now().toString(), key: '', value: '', enabled: true },
-    ]);
+    onChange([...variables, { key: '', value: '', enabled: true }]);
   };
 
-  const deleteVariable = (id: string) => {
+  const deleteVariable = (index: number) => {
     if (variables.length > 1) {
-      onChange(variables.filter((v) => v.id !== id));
+      onChange(variables.filter((_, i) => i !== index));
     } else {
-      onChange([
-        { id: Date.now().toString(), key: '', value: '', enabled: true },
-      ]);
+      onChange([{ key: '', value: '', enabled: true }]);
     }
   };
 
@@ -70,13 +60,13 @@ export default function VariablesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {variables.map((variable) => (
-            <TableRow key={variable.id}>
+          {variables.map((variable, index) => (
+            <TableRow key={index}>
               <TableCell>
                 <Checkbox
                   checked={variable.enabled}
                   onCheckedChange={(checked) =>
-                    updateVariable(variable.id, 'enabled', checked === true)
+                    updateVariable(index, 'enabled', checked === true)
                   }
                 />
               </TableCell>
@@ -84,9 +74,7 @@ export default function VariablesTable({
                 <Input
                   placeholder="Variable name"
                   value={variable.key}
-                  onChange={(e) =>
-                    updateVariable(variable.id, 'key', e.target.value)
-                  }
+                  onChange={(e) => updateVariable(index, 'key', e.target.value)}
                   disabled={!variable.enabled}
                   className="font-mono"
                 />
@@ -96,7 +84,7 @@ export default function VariablesTable({
                   placeholder="Variable value"
                   value={variable.value}
                   onChange={(e) =>
-                    updateVariable(variable.id, 'value', e.target.value)
+                    updateVariable(index, 'value', e.target.value)
                   }
                   disabled={!variable.enabled}
                   className="font-mono"
@@ -106,7 +94,7 @@ export default function VariablesTable({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => deleteVariable(variable.id)}
+                  onClick={() => deleteVariable(index)}
                   disabled={variables.length === 1}
                 >
                   <Trash className="h-4 w-4 text-red-500" />

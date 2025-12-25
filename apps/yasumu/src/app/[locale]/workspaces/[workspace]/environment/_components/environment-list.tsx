@@ -13,11 +13,7 @@ import {
   DialogTrigger,
 } from '@yasumu/ui/components/dialog';
 import { Input } from '@yasumu/ui/components/input';
-
-interface Environment {
-  id: string;
-  name: string;
-}
+import { Environment } from '../../../_stores/environment-store';
 
 interface EnvironmentListProps {
   environments: Environment[];

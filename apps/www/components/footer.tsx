@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center gap-2">
             <img
-              src="https://github.com/yasumu-org.png"
+              src="/logo-dark-glow.png"
               alt="Yasumu Logo"
               className="w-6 h-6 rounded-md select-none"
               draggable={false}

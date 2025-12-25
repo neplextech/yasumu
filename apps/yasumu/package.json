@@ -39,7 +39,8 @@
     "react-dom": "catalog:react",
     "react-icons": "^5.5.0",
     "set-cookie-parser": "^2.7.2",
-    "shadcn": "^3.5.0"
+    "shadcn": "^3.5.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

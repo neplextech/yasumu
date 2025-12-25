@@ -20,6 +20,10 @@ import { RequestUrlBar } from './_components/request-editor/request-url-bar';
 import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
 import RequestTabList from './_components/tabs';
 import { useState } from 'react';
+import {
+  interpolateEnvironmentVariables,
+  useEnvironmentStore,
+} from '../../_stores/environment-store';
 
 const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
 
@@ -32,6 +36,7 @@ export default function Home() {
   const { isFetching, data } = useQuery(
     restQueries.getEntityOptions(entityId, workspace),
   );
+  const { getSelectedEnvironment } = useEnvironmentStore();
   const method = data?.data.method || 'GET';
   const url = data?.data.url || '';
 
@@ -73,12 +78,18 @@ export default function Home() {
       if (data?.data.requestHeaders) {
         data.data.requestHeaders.forEach((h: any) => {
           if (h.enabled && h.key) {
-            requestHeaders.append(h.key, h.value);
+            requestHeaders.append(
+              interpolateEnvironmentVariables(getSelectedEnvironment(), h.key),
+              interpolateEnvironmentVariables(
+                getSelectedEnvironment(),
+                h.value,
+              ),
+            );
           }
         });
       }
 
-      let body = undefined;
+      let body: any = undefined;
       if (data?.data.body) {
         const { type, data: bodyData } = data.data.body;
 
@@ -101,7 +112,16 @@ export default function Home() {
           const formData = new FormData();
           bodyData.forEach((pair: FormDataPair) => {
             if (pair.enabled && pair.key) {
-              formData.append(pair.key, pair.value);
+              formData.append(
+                interpolateEnvironmentVariables(
+                  getSelectedEnvironment(),
+                  pair.key,
+                ),
+                interpolateEnvironmentVariables(
+                  getSelectedEnvironment(),
+                  pair.value,
+                ),
+              );
             }
           });
           body = formData;
@@ -116,7 +136,16 @@ export default function Home() {
           const searchParams = new URLSearchParams();
           bodyData.forEach((pair: KeyValuePair) => {
             if (pair.enabled && pair.key) {
-              searchParams.append(pair.key, pair.value);
+              searchParams.append(
+                interpolateEnvironmentVariables(
+                  getSelectedEnvironment(),
+                  pair.key,
+                ),
+                interpolateEnvironmentVariables(
+                  getSelectedEnvironment(),
+                  pair.value,
+                ),
+              );
             }
           });
           body = searchParams;
@@ -129,11 +158,18 @@ export default function Home() {
         }
       }
 
-      let finalUrl = url;
+      let finalUrl = interpolateEnvironmentVariables(
+        getSelectedEnvironment(),
+        url,
+      );
+
+      console.log({ finalUrl, env: getSelectedEnvironment(), echoServerPort });
 
       if (echoServerPort) {
         try {
-          const urlObj = new URL(url);
+          const urlObj = new URL(finalUrl);
+
+          console.log({ urlObj });
 
           if (urlObj.hostname === ECHO_SERVER_DOMAIN) {
             urlObj.protocol = 'http';
@@ -148,7 +184,10 @@ export default function Home() {
       finalUrl = finalUrl.replace(paramRegex, (match, key) => {
         const param = pathParams[key];
         if (param && param.enabled) {
-          return param.value;
+          return interpolateEnvironmentVariables(
+            getSelectedEnvironment(),
+            param.value,
+          );
         }
         return match;
       });
@@ -247,7 +286,9 @@ export default function Home() {
       }
     });
 
-    const urlObj = new URL(url);
+    const urlObj = new URL(
+      interpolateEnvironmentVariables(getSelectedEnvironment(), url),
+    );
     urlObj.search = searchParams.toString();
     const newUrl = urlObj.toString();
     updateCache({ url: newUrl, requestParameters: pairs }); // Optimistic update

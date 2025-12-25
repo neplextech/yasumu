@@ -1,93 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Separator } from '@yasumu/ui/components/separator';
 import VariablesTable from './_components/variables-table';
 import SecretsTable from './_components/secrets-table';
 import EnvironmentList from './_components/environment-list';
-
-interface Variable {
-  id: string;
-  key: string;
-  value: string;
-  enabled: boolean;
-}
-
-interface Secret {
-  id: string;
-  key: string;
-  value: string;
-  enabled: boolean;
-  visible: boolean;
-}
-
-interface Environment {
-  id: string;
-  name: string;
-  variables: Variable[];
-  secrets: Secret[];
-}
-
-const mockEnvironments: Environment[] = [
-  {
-    id: '1',
-    name: 'Production',
-    variables: [
-      {
-        id: 'v1',
-        key: 'API_URL',
-        value: 'https://api.production.com',
-        enabled: true,
-      },
-      { id: 'v2', key: 'ENV', value: 'production', enabled: true },
-    ],
-    secrets: [
-      {
-        id: 's1',
-        key: 'API_KEY',
-        value: 'prod-api-key-12345',
-        enabled: true,
-        visible: false,
-      },
-      {
-        id: 's2',
-        key: 'DATABASE_PASSWORD',
-        value: 'prod-db-pass',
-        enabled: true,
-        visible: false,
-      },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Local',
-    variables: [
-      {
-        id: 'v3',
-        key: 'API_URL',
-        value: 'http://localhost:3000',
-        enabled: true,
-      },
-      { id: 'v4', key: 'ENV', value: 'development', enabled: true },
-    ],
-    secrets: [
-      {
-        id: 's3',
-        key: 'API_KEY',
-        value: 'dev-api-key-12345',
-        enabled: true,
-        visible: false,
-      },
-    ],
-  },
-];
+import {
+  useEnvironmentStore,
+  Environment,
+  Variable,
+} from '../../_stores/environment-store';
 
 export default function EnvironmentPage() {
-  const [environments, setEnvironments] =
-    useState<Environment[]>(mockEnvironments);
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>(
-    mockEnvironments[0].id,
-  );
+  const {
+    environments,
+    addEnvironment,
+    deleteEnvironment,
+    setVariables,
+    setSecrets,
+  } = useEnvironmentStore();
+  const [selectedEnvironmentId, setSelectedEnvironmentId] =
+    useState<string>('');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    if (environments.length > 0) {
+      const exists = environments.find((e) => e.id === selectedEnvironmentId);
+      if (!selectedEnvironmentId || !exists) {
+        setSelectedEnvironmentId(environments[0].id);
+      }
+    }
+  }, [environments, selectedEnvironmentId, isMounted]);
 
   const selectedEnvironment = environments.find(
     (e) => e.id === selectedEnvironmentId,
@@ -97,56 +46,40 @@ export default function EnvironmentPage() {
     const newEnv: Environment = {
       id: Date.now().toString(),
       name,
-      variables: [
-        { id: Date.now().toString(), key: '', value: '', enabled: true },
-      ],
-      secrets: [
-        {
-          id: (Date.now() + 1).toString(),
-          key: '',
-          value: '',
-          enabled: true,
-          visible: false,
-        },
-      ],
+      variables: [{ key: '', value: '', enabled: true }],
+      secrets: [{ key: '', value: '', enabled: true }],
     };
-    setEnvironments([...environments, newEnv]);
+    addEnvironment(newEnv);
     setSelectedEnvironmentId(newEnv.id);
   };
 
   const handleDeleteEnvironment = (id: string) => {
     if (environments.length > 1) {
-      const updated = environments.filter((e) => e.id !== id);
-      setEnvironments(updated);
-      if (selectedEnvironmentId === id) {
-        setSelectedEnvironmentId(updated[0].id);
-      }
+      deleteEnvironment(id);
     }
   };
 
   const handleVariablesChange = (variables: Variable[]) => {
-    if (selectedEnvironment) {
-      const updated = environments.map((e) =>
-        e.id === selectedEnvironment.id ? { ...e, variables } : e,
-      );
-      setEnvironments(updated);
+    if (selectedEnvironmentId) {
+      setVariables(selectedEnvironmentId, variables);
     }
   };
 
-  const handleSecretsChange = (secrets: Secret[]) => {
-    if (selectedEnvironment) {
-      const updated = environments.map((e) =>
-        e.id === selectedEnvironment.id ? { ...e, secrets } : e,
-      );
-      setEnvironments(updated);
+  const handleSecretsChange = (secrets: Variable[]) => {
+    if (selectedEnvironmentId) {
+      setSecrets(selectedEnvironmentId, secrets);
     }
   };
+
+  if (!isMounted) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="flex h-full bg-background">
       <div className="w-[280px] shrink-0">
         <EnvironmentList
-          environments={environments.map((e) => ({ id: e.id, name: e.name }))}
+          environments={environments}
           selectedEnvironmentId={selectedEnvironmentId}
           onSelectEnvironment={setSelectedEnvironmentId}
           onAddEnvironment={handleAddEnvironment}
@@ -175,7 +108,7 @@ export default function EnvironmentPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Variables</h3>
                 <VariablesTable
-                  variables={selectedEnvironment.variables}
+                  variables={selectedEnvironment.variables || []}
                   onChange={handleVariablesChange}
                 />
               </div>
@@ -183,7 +116,7 @@ export default function EnvironmentPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Secrets</h3>
                 <SecretsTable
-                  secrets={selectedEnvironment.secrets}
+                  secrets={selectedEnvironment.secrets || []}
                   onChange={handleSecretsChange}
                 />
               </div>
@@ -195,7 +128,9 @@ export default function EnvironmentPage() {
               <p className="text-lg font-medium mb-2">
                 No environment selected
               </p>
-              <p className="text-sm">Select an environment from the list</p>
+              <p className="text-sm">
+                Select or create an environment from the list
+              </p>
             </div>
           </div>
         )}

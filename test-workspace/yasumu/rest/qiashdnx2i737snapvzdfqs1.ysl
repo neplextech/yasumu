@@ -8,7 +8,7 @@ metadata {
 }
 
 request {
-  url: "https://echo.yasumu.local/users/:id?delay=3000"
+  url: "{{API_URL}}/users/:id"
   headers: []
   body: null
 }

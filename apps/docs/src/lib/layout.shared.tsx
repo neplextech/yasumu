@@ -7,7 +7,7 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <div className="flex items-center gap-2">
           <img
-            src="https://github.com/yasumu-org.png"
+            src="/logo-dark-glow.png"
             alt="Yasumu Logo"
             className="w-6 h-6 rounded-md"
           />

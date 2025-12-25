@@ -9,33 +9,24 @@ import {
   SelectValue,
 } from '@yasumu/ui/components/select';
 import { useRouter } from 'next/navigation';
+import { useEnvironmentStore } from '../../../_stores/environment-store';
+import { Check } from 'lucide-react';
 
 export default function EnvironmentSelector() {
+  const { environments, selectedEnvironmentId, setSelectedEnvironmentId } =
+    useEnvironmentStore();
   const router = useRouter();
   const nullId = useId();
-  const [selectedEnvironment, setSelectedEnvironment] = React.useState<
-    string | null
-  >(null);
-  const [environments, setEnvironments] = React.useState<
-    {
-      id: string;
-      name: string;
-    }[]
-  >([
-    { id: 'nightly', name: 'Nightly' },
-    { id: 'staging', name: 'Staging' },
-    { id: 'production', name: 'Production' },
-  ]);
 
   return (
     <Select
-      value={selectedEnvironment ?? undefined}
+      value={selectedEnvironmentId ?? undefined}
       onValueChange={(id) => {
         if (id === nullId) {
-          router.push('/');
+          router.push('/en/workspaces/default/environment');
           return;
         }
-        setSelectedEnvironment(id);
+        setSelectedEnvironmentId(id);
       }}
     >
       <SelectTrigger className="w-[180px] h-8">
@@ -46,6 +37,11 @@ export default function EnvironmentSelector() {
           {environments.length ? (
             environments.map((env) => (
               <SelectItem key={env.id} value={env.id}>
+                {env.id === selectedEnvironmentId ? (
+                  <Check className="size-4" />
+                ) : (
+                  ''
+                )}{' '}
                 {env.name}
               </SelectItem>
             ))
