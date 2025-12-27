@@ -146,7 +146,7 @@ export default function Home() {
                 experience.
               </p>
               <div className="flex flex-wrap gap-3 text-xs font-mono text-gray-400 mb-8">
-                {['Rust', 'Tauri', 'TypeScript', 'Tailwind'].map((tech) => (
+                {['Rust', 'Tauri', 'TypeScript', 'Deno'].map((tech) => (
                   <span
                     key={tech}
                     className="px-3 py-1.5 bg-white/5 rounded border border-white/10 hover:border-white/30 transition-colors cursor-default"

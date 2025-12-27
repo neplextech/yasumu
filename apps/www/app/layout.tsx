@@ -19,6 +19,12 @@ export const metadata: Metadata = {
   title: 'Yasumu - The Modern API Laboratory',
   description:
     'A modern, free, and open-source API laboratory for designing and testing API workflows.',
+  openGraph: {
+    images: '/logo-dark-glow.png',
+  },
+  twitter: {
+    images: '/logo-dark-glow.png',
+  },
 };
 
 export default function RootLayout({
@@ -34,6 +40,7 @@ export default function RootLayout({
       className="dark"
     >
       <head>
+        <link rel="icon" href="/logo-dark-glow.png" />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
