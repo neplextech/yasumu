@@ -1,0 +1,23 @@
+@environment
+
+metadata {
+  id: "z85bde4ytdta7d1u0ndjfoh6"
+  name: "Staging"
+}
+
+variables [
+  {
+    key: "API_URL"
+    value: "https://echo.yasumu.local"
+    enabled: true
+  },
+]
+
+secrets [
+  {
+    key: "API_KEY"
+    value: ""
+    enabled: true
+  },
+]
+

@@ -6,6 +6,7 @@ export const WorkspaceSchema = t.script({
   annotation: YasumuAnnotations.Workspace,
   blocks: {
     metadata: t.object({
+      id: t.string(),
       name: t.string(),
       version: t.number(),
     }),

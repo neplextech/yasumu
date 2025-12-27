@@ -1,3 +1,4 @@
 {
-  "extends": "@yasumu/tsconfig/base.json"
+  "extends": "@yasumu/tsconfig/base.json",
+  "exclude": ["node_modules", "dist"]
 }

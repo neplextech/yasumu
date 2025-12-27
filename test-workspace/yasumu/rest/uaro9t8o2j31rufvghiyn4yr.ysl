@@ -1,0 +1,17 @@
+@rest
+
+metadata {
+  name: "Post"
+  method: "POST"
+  id: "uaro9t8o2j31rufvghiyn4yr"
+  groupId: "l1408rrjt33b8x4vh1x6edi8"
+}
+
+request {
+  url: "{{API_URL}}/?apiKey={{API_KEY}}"
+  headers: []
+  body: null
+}
+
+dependencies []
+

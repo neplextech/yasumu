@@ -1,4 +1,4 @@
-import { EventBus, Injectable } from '@yasumu/den';
+import { Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { and, eq } from 'drizzle-orm';
 import { restEntities } from '@/database/schema.ts';
@@ -9,7 +9,6 @@ import {
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
 import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
-import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
 
 @Injectable()
 export class RestService {
@@ -17,14 +16,12 @@ export class RestService {
     private readonly connection: TransactionalConnection,
     private readonly entityGroupService: EntityGroupService,
     private readonly tanxiumService: TanxiumService,
-    private readonly eventBus: EventBus,
   ) {}
 
   public async dispatchUpdate(workspaceId: string) {
     await this.tanxiumService.publishMessage('rest-entity-updated', {
       workspaceId,
     });
-    await this.eventBus.publish(new FsSyncEvent({ workspaceId }));
   }
 
   public async list(workspaceId: string) {

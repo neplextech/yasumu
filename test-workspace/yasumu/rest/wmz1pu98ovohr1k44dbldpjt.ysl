@@ -1,0 +1,17 @@
+@rest
+
+metadata {
+  name: "Echo"
+  method: "GET"
+  id: "wmz1pu98ovohr1k44dbldpjt"
+  groupId: "xpm4mym1hqvcqq3fqc0hppv1"
+}
+
+request {
+  url: "{{API_URL}}/?apiKey={{API_KEY}}"
+  headers: []
+  body: null
+}
+
+dependencies []
+

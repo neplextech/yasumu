@@ -1,0 +1,23 @@
+@environment
+
+metadata {
+  id: "ipapmufxwgm558jh1cpfbkwe"
+  name: "Nightly"
+}
+
+variables [
+  {
+    key: "API_URL"
+    value: "https://echo.yasumu.local"
+    enabled: true
+  },
+]
+
+secrets [
+  {
+    key: "API_KEY"
+    value: ""
+    enabled: true
+  },
+]
+

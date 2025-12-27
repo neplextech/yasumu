@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@yasumu/den';
+import { EventBus, Injectable, OnModuleInit } from '@yasumu/den';
 import type { WorkspaceCreateOptions, WorkspaceData } from '@yasumu/common';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { desc, eq } from 'drizzle-orm';
@@ -10,6 +10,10 @@ import {
 } from '../../common/constants.ts';
 import { WorkspaceActivatorService } from './workspace-activator.service.ts';
 import { EmailService } from '../email/email.service.ts';
+import { WorkspaceEvent } from '../common/events/workspace.event.ts';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { WorkspaceDiscoveryEvent } from '../common/events/workspace-discovery.event.ts';
 
 @Injectable()
 export class WorkspacesService implements OnModuleInit {
@@ -18,6 +22,7 @@ export class WorkspacesService implements OnModuleInit {
     private readonly connection: TransactionalConnection,
     private readonly workspaceActivatorService: WorkspaceActivatorService,
     private readonly emailService: EmailService,
+    private readonly eventBus: EventBus,
   ) {}
 
   public async onModuleInit() {
@@ -102,6 +107,11 @@ export class WorkspacesService implements OnModuleInit {
     return result ?? null;
   }
 
+  private pathContainsYasumuFiles(path: string): boolean {
+    const hasYasumuFiles = existsSync(join(path, 'yasumu', 'workspace.ysl'));
+    return hasYasumuFiles;
+  }
+
   public async create(data: WorkspaceCreateOptions): Promise<WorkspaceData> {
     const db = this.connection.getConnection();
     const existingWorkspace = await this.findOneByPath(data.metadata.path);
@@ -110,6 +120,36 @@ export class WorkspacesService implements OnModuleInit {
       return existingWorkspace;
     }
 
+    const hasYasumuFiles = await this.pathContainsYasumuFiles(
+      data.metadata.path,
+    );
+
+    if (hasYasumuFiles) {
+      // the target path probably contains yasumu files
+      // so we need to treat it as the source of truth
+      // and create a new workspace with the contents from that location
+      const { promise, resolve } =
+        Promise.withResolvers<WorkspaceData | null>();
+
+      const completeCallback = async (workspace: WorkspaceData | null) => {
+        await resolve(workspace);
+      };
+
+      await this.eventBus.publish(
+        new WorkspaceDiscoveryEvent(
+          { workspaceId: null },
+          data.metadata.path,
+          completeCallback,
+        ),
+      );
+
+      const result = await promise;
+
+      // workspace was discovered
+      if (result) return result;
+    }
+
+    // workspace was not discovered, create a new one
     const [result] = await db
       .insert(workspaces)
       .values({
@@ -130,7 +170,8 @@ export class WorkspacesService implements OnModuleInit {
   }
 
   public async activate(id: string) {
-    this.activeWorkspaceId = await this.workspaceActivatorService.activate(id);
+    const workspace = await this.workspaceActivatorService.activate(id);
+    this.activeWorkspaceId = workspace.id;
 
     await this.emailService.createSmtpServer(id).catch((e) => {
       console.error('Failed to create SMTP server for workspace', id, e);
@@ -141,10 +182,18 @@ export class WorkspacesService implements OnModuleInit {
         variant: 'error',
       });
     });
+
+    console.log(`Workspace ${id} activated`);
+    await this.eventBus.publish(
+      new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'activated'),
+    );
   }
 
   public async deactivate(id: string) {
     this.activeWorkspaceId = null;
+    const workspace = await this.findOneById(id);
+    if (!workspace) return;
+
     await this.emailService.closeSmtpServer(id).catch((e) => {
       console.error('Failed to close SMTP server for workspace', id, e);
       return Yasumu.ui.showNotification({
@@ -154,5 +203,15 @@ export class WorkspacesService implements OnModuleInit {
         variant: 'error',
       });
     });
+
+    console.log(`Workspace ${id} deactivated`);
+    await this.eventBus.publish(
+      new WorkspaceEvent(
+        { workspaceId: id },
+        id,
+        workspace.path,
+        'deactivated',
+      ),
+    );
   }
 }

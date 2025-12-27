@@ -11,5 +11,6 @@
     "inlineSourceMap": true,
     "pretty": true,
     "skipDefaultLibCheck": true
-  }
+  },
+  "exclude": ["node_modules", "dist"]
 }

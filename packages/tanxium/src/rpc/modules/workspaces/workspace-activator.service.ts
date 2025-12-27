@@ -1,29 +1,24 @@
-import { EventBus, Injectable } from '@yasumu/den';
+import { Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { workspaces } from '@/database/schema.ts';
 import { eq } from 'drizzle-orm';
-import { FsSyncEvent } from '../common/events/fs-sync.event.ts';
 
 @Injectable()
 export class WorkspaceActivatorService {
-  public constructor(
-    private readonly connection: TransactionalConnection,
-    private readonly eventBus: EventBus,
-  ) {}
+  public constructor(private readonly connection: TransactionalConnection) {}
 
-  public async activate(id: string): Promise<string> {
+  public async activate(id: string): Promise<typeof workspaces.$inferSelect> {
     const db = this.connection.getConnection();
 
     // update workspace last opened at
-    await db
+    const [workspace] = await db
       .update(workspaces)
       .set({
         lastOpenedAt: Date.now(),
       })
-      .where(eq(workspaces.id, id));
+      .where(eq(workspaces.id, id))
+      .returning();
 
-    await this.eventBus.publish(new FsSyncEvent({ workspaceId: id }));
-
-    return id;
+    return workspace;
   }
 }

@@ -86,4 +86,13 @@ export class Workspace {
   public toJSON(): WorkspaceData {
     return this.data;
   }
+
+  /**
+   * Synchronizes this workspace.
+   */
+  public async synchronize(): Promise<void> {
+    await this.manager.yasumu.rpc.synchronization.synchronize.$mutate({
+      parameters: [],
+    });
+  }
 }

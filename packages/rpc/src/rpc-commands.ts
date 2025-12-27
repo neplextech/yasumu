@@ -62,6 +62,15 @@ export interface YasumuRPC {
     active: RpcQuery<[], string | null>;
   };
   /**
+   * The synchronization commands.
+   */
+  synchronization: {
+    /**
+     * Synchronize a workspace command.
+     */
+    synchronize: RpcMutation<[], void>;
+  };
+  /**
    * The rest commands.
    */
   rest: {

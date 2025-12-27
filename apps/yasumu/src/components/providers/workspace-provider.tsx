@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useState,
+} from 'react';
 import { createClient } from '@/lib/api/tanxium.api';
 import { invoke } from '@tauri-apps/api/core';
 import { message } from '@tauri-apps/plugin-dialog';
@@ -14,6 +20,8 @@ import {
   DEFAULT_WORKSPACE_PATH,
 } from '@yasumu/tanxium/src/rpc/common/constants';
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { toast } from '@yasumu/ui/components/sonner';
 
 export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
@@ -175,8 +183,37 @@ export default function WorkspaceProvider({
     exit(1);
   };
 
+  const runSynchronization = useEffectEvent(
+    withErrorHandler(async () => {
+      const workspace = yasumu?.workspaces.getActiveWorkspace();
+      if (!workspace) return;
+
+      await workspace.synchronize();
+
+      toast.success('Workspace synchronized successfully!');
+    }),
+  );
+
   useEffect(() => {
+    const ac = new AbortController();
     void initializeYasumuEnvironment();
+
+    // if the user presses Ctrl+S or Cmd+S, synchronize the workspace
+    document.addEventListener(
+      'keyup',
+      async (event) => {
+        if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          event.stopPropagation();
+          await runSynchronization();
+        }
+      },
+      { signal: ac.signal },
+    );
+
+    return () => {
+      ac.abort();
+    };
   }, []);
 
   if (!client || !port || !yasumu) {
