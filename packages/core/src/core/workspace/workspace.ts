@@ -1,4 +1,6 @@
+import { EnvironmentManager } from '../manager/environment-manager.js';
 import { WorkspaceManager } from '../manager/workspace-manager.js';
+import { EmailModule } from '../modules/email/email.js';
 import { RestModule } from '../modules/rest/rest.js';
 import type { WorkspaceData } from '@yasumu/common';
 
@@ -14,6 +16,14 @@ export class Workspace {
    * The REST module for the workspace.
    */
   public readonly rest = new RestModule(this);
+  /**
+   * The environment manager for this workspace.
+   */
+  public readonly environments = new EnvironmentManager(this);
+  /**
+   * The email module for the workspace.
+   */
+  public readonly emails = new EmailModule(this);
 
   /**
    * Creates a new workspace.

@@ -61,15 +61,11 @@ export interface EmailData {
    */
   unread: boolean;
   /**
-   * The timestamp of the email.
-   */
-  timestamp: Date;
-  /**
    * The date and time the email was created.
    */
-  createdAt: Date;
+  createdAt: number;
   /**
    * The date and time the email was last updated.
    */
-  updatedAt: Date;
+  updatedAt: number;
 }

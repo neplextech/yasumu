@@ -7,6 +7,10 @@ export const environments = sqliteTable('environments', {
   ...commonColumns(),
   workspaceId: cuid('workspaceId').notNull(),
   name: text('name').notNull(),
-  variables: json<KeyValuePair[]>('variables'),
-  secrets: json<KeyValuePair[]>('secrets'),
+  variables: json<KeyValuePair[]>('variables')
+    .notNull()
+    .$default(() => []),
+  secrets: json<KeyValuePair[]>('secrets')
+    .notNull()
+    .$default(() => []),
 });

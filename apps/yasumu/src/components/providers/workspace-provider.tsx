@@ -13,6 +13,7 @@ import {
   asPathIdentifier,
   DEFAULT_WORKSPACE_PATH,
 } from '@yasumu/tanxium/src/rpc/common/constants';
+import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 
 export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
@@ -51,6 +52,7 @@ export function useActiveWorkspace(strict: boolean = true): Workspace | null {
 export default function WorkspaceProvider({
   children,
 }: React.PropsWithChildren) {
+  const { setSelectedEnvironment, setEnvironments } = useEnvironmentStore();
   const [port, setPort] = useState<number | null>(null);
   const [echoServerPort, setEchoServerPort] = useState<number | null>(null);
   const [client, setClient] = useState<ReturnType<typeof createClient> | null>(
@@ -114,6 +116,24 @@ export default function WorkspaceProvider({
             onWorkspaceDeactivated: () => {
               setCurrentWorkspaceId(null);
               router.replace('/');
+            },
+            async onEnvironmentActivated(workspace) {
+              const env = await workspace.environments.getActiveEnvironment();
+              setSelectedEnvironment(env);
+            },
+            async onEnvironmentCreated(environment) {
+              const environments =
+                await environment.workspace.environments.list();
+              setEnvironments(environments);
+            },
+            async onEnvironmentDeleted(workspace) {
+              const environments = await workspace.environments.list();
+              setEnvironments(environments);
+            },
+            async onEnvironmentUpdated(environment) {
+              const environments =
+                await environment.workspace.environments.list();
+              setEnvironments(environments);
             },
           },
         });

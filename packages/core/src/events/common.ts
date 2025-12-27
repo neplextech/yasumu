@@ -1,3 +1,4 @@
+import type { Environment } from '@/core/workspace/environment/environment.js';
 import type { Workspace } from '@/core/workspace/workspace.js';
 
 export interface YasumuEventHandlerInterface {
@@ -16,4 +17,24 @@ export interface YasumuEventHandlerInterface {
    * @param entity - The rest entity that was updated.
    */
   onRestEntityUpdate: (workspace: Workspace) => unknown;
+  /**
+   * Called when an environment is updated.
+   * @param environment - The environment that was updated.
+   */
+  onEnvironmentUpdated: (environment: Environment) => unknown;
+  /**
+   * Called when an environment is activated.
+   * @param workspace - The workspace that the environment was activated for.
+   */
+  onEnvironmentActivated: (workspace: Workspace) => unknown;
+  /**
+   * Called when an environment is deleted.
+   * @param workspace - The workspace that the environment was deleted from.
+   */
+  onEnvironmentDeleted: (workspace: Workspace) => unknown;
+  /**
+   * Called when an environment is created.
+   * @param environment - The environment that was created.
+   */
+  onEnvironmentCreated: (environment: Environment) => unknown;
 }

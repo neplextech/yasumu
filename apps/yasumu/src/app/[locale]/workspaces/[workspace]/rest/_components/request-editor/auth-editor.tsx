@@ -10,10 +10,7 @@ import {
 import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
 import { Button } from '@yasumu/ui/components/button';
-import {
-  interpolateEnvironmentVariables,
-  useEnvironmentStore,
-} from '@/app/[locale]/workspaces/_stores/environment-store';
+import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 
 interface AuthEditorProps {
   headers: KeyValuePair[];
@@ -22,9 +19,7 @@ interface AuthEditorProps {
 
 export default function AuthEditor({ headers, onChange }: AuthEditorProps) {
   const [authType, setAuthType] = useState<'basic' | 'bearer' | null>(null);
-  const environment = useEnvironmentStore((state) =>
-    state.getSelectedEnvironment(),
-  );
+  const { interpolate } = useEnvironmentStore();
 
   const updateAuthHeader = (value: string | null) => {
     if (!value)
@@ -36,7 +31,7 @@ export default function AuthEditor({ headers, onChange }: AuthEditorProps) {
     );
     newHeaders.push({
       key: 'Authorization',
-      value: interpolateEnvironmentVariables(environment, value),
+      value: interpolate(value),
       enabled: true,
     });
     onChange(newHeaders);

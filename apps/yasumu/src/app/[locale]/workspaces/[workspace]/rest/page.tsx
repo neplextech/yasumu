@@ -1,5 +1,7 @@
-'use client';
 // @ts-nocheck TODO: fix ts errors and remove this line
+// TODO: rewrite this page with better/robust architecture.
+// Current implementation is a mess as it was built quickly and without a proper plan for a prototype
+'use client';
 import { restQueries } from '@/app/[locale]/workspaces/[workspace]/rest/_constant/rest-queries-options';
 import {
   useActiveWorkspace,
@@ -20,10 +22,7 @@ import { RequestUrlBar } from './_components/request-editor/request-url-bar';
 import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
 import RequestTabList from './_components/tabs';
 import { useState } from 'react';
-import {
-  interpolateEnvironmentVariables,
-  useEnvironmentStore,
-} from '../../_stores/environment-store';
+import { useEnvironmentStore } from '../../_stores/environment-store';
 
 const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
 
@@ -36,7 +35,7 @@ export default function Home() {
   const { isFetching, data } = useQuery(
     restQueries.getEntityOptions(entityId, workspace),
   );
-  const { getSelectedEnvironment } = useEnvironmentStore();
+  const { interpolate } = useEnvironmentStore();
   const method = data?.data.method || 'GET';
   const url = data?.data.url || '';
 
@@ -78,13 +77,7 @@ export default function Home() {
       if (data?.data.requestHeaders) {
         data.data.requestHeaders.forEach((h: any) => {
           if (h.enabled && h.key) {
-            requestHeaders.append(
-              interpolateEnvironmentVariables(getSelectedEnvironment(), h.key),
-              interpolateEnvironmentVariables(
-                getSelectedEnvironment(),
-                h.value,
-              ),
-            );
+            requestHeaders.append(interpolate(h.key), interpolate(h.value));
           }
         });
       }
@@ -112,16 +105,7 @@ export default function Home() {
           const formData = new FormData();
           bodyData.forEach((pair: FormDataPair) => {
             if (pair.enabled && pair.key) {
-              formData.append(
-                interpolateEnvironmentVariables(
-                  getSelectedEnvironment(),
-                  pair.key,
-                ),
-                interpolateEnvironmentVariables(
-                  getSelectedEnvironment(),
-                  pair.value,
-                ),
-              );
+              formData.append(interpolate(pair.key), interpolate(pair.value));
             }
           });
           body = formData;
@@ -137,14 +121,8 @@ export default function Home() {
           bodyData.forEach((pair: KeyValuePair) => {
             if (pair.enabled && pair.key) {
               searchParams.append(
-                interpolateEnvironmentVariables(
-                  getSelectedEnvironment(),
-                  pair.key,
-                ),
-                interpolateEnvironmentVariables(
-                  getSelectedEnvironment(),
-                  pair.value,
-                ),
+                interpolate(pair.key),
+                interpolate(pair.value),
               );
             }
           });
@@ -158,12 +136,7 @@ export default function Home() {
         }
       }
 
-      let finalUrl = interpolateEnvironmentVariables(
-        getSelectedEnvironment(),
-        url,
-      );
-
-      console.log({ finalUrl, env: getSelectedEnvironment(), echoServerPort });
+      let finalUrl = interpolate(url);
 
       if (echoServerPort) {
         try {
@@ -184,10 +157,7 @@ export default function Home() {
       finalUrl = finalUrl.replace(paramRegex, (match, key) => {
         const param = pathParams[key];
         if (param && param.enabled) {
-          return interpolateEnvironmentVariables(
-            getSelectedEnvironment(),
-            param.value,
-          );
+          return interpolate(param.value);
         }
         return match;
       });
@@ -286,13 +256,11 @@ export default function Home() {
       }
     });
 
-    const urlObj = new URL(
-      interpolateEnvironmentVariables(getSelectedEnvironment(), url),
-    );
+    const urlObj = new URL(interpolate(url));
     urlObj.search = searchParams.toString();
     const newUrl = urlObj.toString();
-    updateCache({ url: newUrl, requestParameters: pairs }); // Optimistic update
-    debounceMutate({ url: newUrl, requestParameters: pairs }); // Debounced server update
+    updateCache({ url: newUrl }); // Optimistic update
+    debounceMutate({ url: newUrl }); // Debounced server update
   }
 
   function handleRequestHeadersChange(pairs: Array<KeyValuePair>) {

@@ -1,6 +1,5 @@
 import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { commonColumns, json, timestamp } from '../../common/index.ts';
-import { KeyValuePair } from '@/common/types.ts';
+import { commonColumns, cuid, timestamp } from '../../common/index.ts';
 
 export interface WorkspaceMetadata {
   /**
@@ -13,7 +12,7 @@ export const workspaces = sqliteTable('workspaces', {
   ...commonColumns<WorkspaceMetadata>(),
   name: text('name').notNull(),
   version: int('version').notNull().default(0),
-  variables: json<Omit<KeyValuePair, 'enabled'>[]>('variables'),
   path: text('path').notNull(),
   lastOpenedAt: timestamp('lastOpenedAt'),
+  activeEnvironmentId: cuid('activeEnvironmentId'),
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@yasumu/ui/components/input';
 import {
   Table,
@@ -10,18 +10,29 @@ import {
   TableHeader,
   TableRow,
 } from '@yasumu/ui/components/table';
-import { Trash, Plus, Eye, EyeOff } from 'lucide-react';
+import { Trash, Plus, Eye, EyeOff, Save } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { Variable } from '../../../_stores/environment-store';
+import { Environment, TabularPair } from '@yasumu/core';
+import { parseEnvFormat } from './shared/env-parser';
 
 interface SecretsTableProps {
-  secrets: Variable[];
-  onChange: (secrets: Variable[]) => void;
+  environment: Environment;
+  secrets: TabularPair[];
+  onSave: (environment: Environment, secrets: TabularPair[]) => void;
 }
 
-export default function SecretsTable({ secrets, onChange }: SecretsTableProps) {
+export default function SecretsTable({
+  environment,
+  secrets,
+  onSave,
+}: SecretsTableProps) {
+  const [localSecrets, setLocalSecrets] = useState<TabularPair[]>(secrets);
   const [visibleIndices, setVisibleIndices] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    setLocalSecrets(secrets);
+  }, [secrets]);
 
   const toggleVisibility = (index: number) => {
     const newVisible = new Set(visibleIndices);
@@ -35,29 +46,29 @@ export default function SecretsTable({ secrets, onChange }: SecretsTableProps) {
 
   const updateSecret = (
     index: number,
-    field: keyof Variable,
+    field: keyof TabularPair,
     value: string | boolean,
   ) => {
-    const updated = secrets.map((s, i) =>
+    const updated = localSecrets.map((s, i) =>
       i === index ? { ...s, [field]: value } : s,
     );
-    onChange(updated);
+    setLocalSecrets(updated);
   };
 
   const addSecret = () => {
-    onChange([
-      ...secrets,
+    const updated = [
+      ...localSecrets,
       {
         key: '',
         value: '',
         enabled: true,
       },
-    ]);
+    ];
+    setLocalSecrets(updated);
   };
 
   const deleteSecret = (index: number) => {
-    if (secrets.length > 1) {
-      // Adjust visible indices
+    if (localSecrets.length > 1) {
       const newVisible = new Set<number>();
       visibleIndices.forEach((idx) => {
         if (idx < index) newVisible.add(idx);
@@ -65,21 +76,47 @@ export default function SecretsTable({ secrets, onChange }: SecretsTableProps) {
       });
       setVisibleIndices(newVisible);
 
-      onChange(secrets.filter((_, i) => i !== index));
+      const updated = localSecrets.filter((_, i) => i !== index);
+      setLocalSecrets(updated);
     } else {
       setVisibleIndices(new Set());
-      onChange([
+      const updated = [
         {
           key: '',
           value: '',
           enabled: true,
         },
-      ]);
+      ];
+      setLocalSecrets(updated);
+    }
+  };
+
+  const handleSave = () => {
+    onSave(environment, localSecrets);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (!pastedText) return;
+
+    const parsed = parseEnvFormat(pastedText);
+    if (parsed.length === 0) return;
+
+    const existingKeys = new Set(
+      localSecrets.map((s) => s.key.trim().toLowerCase()),
+    );
+    const newPairs = parsed.filter(
+      (p) => !existingKeys.has(p.key.trim().toLowerCase()),
+    );
+
+    if (newPairs.length > 0) {
+      const updated = [...localSecrets, ...newPairs];
+      setLocalSecrets(updated);
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onPaste={handlePaste}>
       <Table className="border">
         <TableHeader>
           <TableRow>
@@ -90,7 +127,7 @@ export default function SecretsTable({ secrets, onChange }: SecretsTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {secrets.map((secret, index) => {
+          {localSecrets.map((secret, index) => {
             const isVisible = visibleIndices.has(index);
             return (
               <TableRow key={index}>
@@ -142,7 +179,6 @@ export default function SecretsTable({ secrets, onChange }: SecretsTableProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => deleteSecret(index)}
-                    disabled={secrets.length === 1}
                   >
                     <Trash className="h-4 w-4 text-red-500" />
                   </Button>
@@ -152,13 +188,19 @@ export default function SecretsTable({ secrets, onChange }: SecretsTableProps) {
           })}
         </TableBody>
       </Table>
-      <Button
-        variant="link"
-        onClick={addSecret}
-        className="text-sm p-0 h-auto font-normal"
-      >
-        <Plus className="mr-1 h-3 w-3" /> Add new secret
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="link"
+          onClick={addSecret}
+          className="text-sm p-0 h-auto font-normal"
+        >
+          <Plus className="mr-1 h-3 w-3" /> Add new secret
+        </Button>
+        <Button onClick={handleSave} className="gap-2">
+          <Save className="h-4 w-4" />
+          Save
+        </Button>
+      </div>
     </div>
   );
 }

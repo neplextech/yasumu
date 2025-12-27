@@ -54,6 +54,10 @@ export interface WorkspaceData extends CustomMetadata {
    * The date and time the workspace was last opened.
    */
   lastOpenedAt: number | null;
+  /**
+   * The ID of the active environment.
+   */
+  activeEnvironmentId: string | null;
 }
 
 /**

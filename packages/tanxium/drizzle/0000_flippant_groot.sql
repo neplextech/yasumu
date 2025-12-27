@@ -1,37 +1,12 @@
-CREATE TABLE `workspaces` (
+CREATE TABLE `entity_groups` (
 	`id` text PRIMARY KEY NOT NULL,
 	`createdAt` integer NOT NULL,
 	`updatedAt` integer NOT NULL,
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`name` text NOT NULL,
-	`version` integer DEFAULT 0 NOT NULL,
-	`variables` text,
-	`path` text NOT NULL,
-	`lastOpenedAt` integer
-);
---> statement-breakpoint
-CREATE TABLE `emails` (
-	`id` text PRIMARY KEY NOT NULL,
-	`createdAt` integer NOT NULL,
-	`updatedAt` integer NOT NULL,
-	`metadata` text DEFAULT '{}' NOT NULL,
-	`smtpId` text NOT NULL,
-	`from` text NOT NULL,
-	`to` text NOT NULL,
-	`subject` text NOT NULL,
-	`html` text NOT NULL,
-	`text` text NOT NULL,
-	`cc` text,
-	`unread` integer DEFAULT false NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE `smtp` (
-	`id` text PRIMARY KEY NOT NULL,
-	`createdAt` integer NOT NULL,
-	`updatedAt` integer NOT NULL,
-	`metadata` text DEFAULT '{}' NOT NULL,
+	`parentId` text,
 	`workspaceId` text NOT NULL,
-	`port` integer DEFAULT 50478 NOT NULL
+	`entityType` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `environments` (
@@ -41,8 +16,8 @@ CREATE TABLE `environments` (
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`workspaceId` text NOT NULL,
 	`name` text NOT NULL,
-	`variables` text,
-	`secrets` text
+	`variables` text NOT NULL,
+	`secrets` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `rest_entity` (
@@ -71,13 +46,38 @@ CREATE TABLE `rest_entity_dependency` (
 	`dependsOnId` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `entity_groups` (
+CREATE TABLE `emails` (
+	`id` text PRIMARY KEY NOT NULL,
+	`createdAt` integer NOT NULL,
+	`updatedAt` integer NOT NULL,
+	`metadata` text DEFAULT '{}' NOT NULL,
+	`smtpId` text NOT NULL,
+	`from` text NOT NULL,
+	`to` text NOT NULL,
+	`subject` text NOT NULL,
+	`html` text NOT NULL,
+	`text` text NOT NULL,
+	`cc` text,
+	`unread` integer DEFAULT false NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `smtp` (
+	`id` text PRIMARY KEY NOT NULL,
+	`createdAt` integer NOT NULL,
+	`updatedAt` integer NOT NULL,
+	`metadata` text DEFAULT '{}' NOT NULL,
+	`workspaceId` text NOT NULL,
+	`port` integer DEFAULT 50478 NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `workspaces` (
 	`id` text PRIMARY KEY NOT NULL,
 	`createdAt` integer NOT NULL,
 	`updatedAt` integer NOT NULL,
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`name` text NOT NULL,
-	`parentId` text,
-	`workspaceId` text NOT NULL,
-	`entityType` text NOT NULL
+	`version` integer DEFAULT 0 NOT NULL,
+	`path` text NOT NULL,
+	`lastOpenedAt` integer,
+	`activeEnvironmentId` text
 );

@@ -122,18 +122,18 @@ export class WorkspacesService implements OnModuleInit {
     return result;
   }
 
-  public getActiveWorkspaceId(): string | null {
-    console.log(`Getting active workspace ID: ${this.activeWorkspaceId}`);
+  // deno-lint-ignore require-await
+  public async getActiveWorkspaceId(): Promise<string | null> {
     return this.activeWorkspaceId;
   }
 
   public async activate(id: string) {
-    console.log(`Activating workspace ${id}`);
     this.activeWorkspaceId = await this.workspaceActivatorService.activate(id);
   }
 
-  public deactivate(id: string) {
-    console.log(`Deactivating workspace ${id}`);
+  // deno-lint-ignore require-await
+  public async deactivate(id: string) {
     this.activeWorkspaceId = null;
+    void id;
   }
 }

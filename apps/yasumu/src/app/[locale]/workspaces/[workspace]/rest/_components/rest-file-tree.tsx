@@ -9,6 +9,8 @@ import { useEffect, useEffectEvent, useState } from 'react';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { useRestContext } from '../_providers/rest-context';
 import { useRestOutput } from '../_providers/rest-output';
+import { useQuery } from '@tanstack/react-query';
+import LoadingScreen from '@/components/visuals/loading-screen';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();
@@ -16,32 +18,46 @@ export function RestFileTree() {
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const { setEntityId } = useRestContext();
   const { setOutput } = useRestOutput();
-
-  const listWorkspaces = useEffectEvent(async () => {
-    const entities = await workspace.rest.list();
-
-    setFileTree(
-      entities.map((entity) => ({
-        name: entity.name ?? 'New Request',
-        id: entity.id,
-        icon: resolveHttpMethodIcon(entity.method),
-      })),
-    );
+  const {
+    data: restEntities,
+    isLoading: isLoadingRestEntities,
+    refetch,
+  } = useQuery({
+    queryKey: ['restEntities'],
+    queryFn: () => workspace.rest.list(),
   });
+
+  const refetchRestEntities = useEffectEvent(() => {
+    return refetch();
+  });
+
+  useEffect(() => {
+    if (restEntities) {
+      setFileTree(
+        restEntities.map((entity) => ({
+          name: entity.name ?? 'New Request',
+          id: entity.id,
+          icon: resolveHttpMethodIcon(entity.method),
+        })),
+      );
+    }
+  }, [restEntities]);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    yasumu.events.on('onRestEntityUpdate', listWorkspaces, {
+    yasumu.events.on('onRestEntityUpdate', refetchRestEntities, {
       signal: controller.signal,
     });
-
-    void withErrorHandler(listWorkspaces)();
 
     return () => {
       controller.abort();
     };
   }, []);
+
+  if (isLoadingRestEntities) {
+    return <LoadingScreen fullScreen />;
+  }
 
   return (
     <FileTreeSidebar

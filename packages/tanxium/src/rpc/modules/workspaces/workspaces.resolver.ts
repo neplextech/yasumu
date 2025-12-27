@@ -2,9 +2,12 @@ import { Resolver, Query, Mutation } from '@yasumu/den';
 import { WorkspacesService } from './workspaces.service.ts';
 import type { WorkspaceCreateOptions, WorkspaceData } from '@yasumu/common';
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
+import { YasumuRpcService } from '@yasumu/rpc';
 
 @Resolver('workspaces')
-export class WorkspacesResolver {
+export class WorkspacesResolver
+  implements YasumuRpcService<'workspaces', true>
+{
   public constructor(private readonly workspacesService: WorkspacesService) {}
 
   @Query()
@@ -29,7 +32,7 @@ export class WorkspacesResolver {
   }
 
   @Query()
-  public active(): string | null {
+  public active(): Promise<string | null> {
     return this.workspacesService.getActiveWorkspaceId();
   }
 

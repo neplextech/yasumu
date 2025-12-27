@@ -1,78 +1,161 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
 import { Separator } from '@yasumu/ui/components/separator';
 import VariablesTable from './_components/variables-table';
 import SecretsTable from './_components/secrets-table';
 import EnvironmentList from './_components/environment-list';
-import {
-  useEnvironmentStore,
-  Environment,
-  Variable,
-} from '../../_stores/environment-store';
+import { useEnvironmentStore } from '../../_stores/environment-store';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import LoadingScreen from '@/components/visuals/loading-screen';
+import ErrorScreen from '@/components/visuals/error-screen';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { Environment, TabularPair } from '@yasumu/core';
+import { Badge } from '@yasumu/ui/components/badge';
+import { toast } from '@yasumu/ui/components/sonner';
 
 export default function EnvironmentPage() {
   const {
     environments,
-    addEnvironment,
-    deleteEnvironment,
-    setVariables,
-    setSecrets,
+    selectedEnvironment,
+    setSelectedEnvironment,
+    setEnvironments,
   } = useEnvironmentStore();
-  const [selectedEnvironmentId, setSelectedEnvironmentId] =
-    useState<string>('');
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isMounted) return;
-
-    if (environments.length > 0) {
-      const exists = environments.find((e) => e.id === selectedEnvironmentId);
-      if (!selectedEnvironmentId || !exists) {
-        setSelectedEnvironmentId(environments[0].id);
-      }
-    }
-  }, [environments, selectedEnvironmentId, isMounted]);
-
-  const selectedEnvironment = environments.find(
-    (e) => e.id === selectedEnvironmentId,
+  const workspace = useActiveWorkspace();
+  const [currentEnvironmentId, setCurrentEnvironmentId] = useState<
+    string | undefined
+  >(() => selectedEnvironment?.id);
+  const currentEnvironment = environments.find(
+    (env) => env.id === currentEnvironmentId,
   );
 
-  const handleAddEnvironment = (name: string) => {
-    const newEnv: Environment = {
-      id: Date.now().toString(),
+  const [
+    { data: environmentsList, refetch, isError, isLoading },
+    { data: selectedEnvironmentData, isLoading: isLoadingSelectedEnvironment },
+  ] = useQueries({
+    queries: [
+      {
+        queryKey: ['environments'],
+        queryFn: () => workspace.environments.list(),
+        enabled: environments.length === 0,
+      },
+      {
+        queryKey: ['currentEnvironment'],
+        queryFn: () => workspace.environments.getActiveEnvironment(),
+        enabled: !selectedEnvironment,
+      },
+    ],
+  });
+
+  const updateCurrentEnvironment = useEffectEvent(() => {
+    if (currentEnvironmentId) return;
+    if (selectedEnvironment) {
+      setCurrentEnvironmentId(selectedEnvironment.id);
+      return;
+    }
+    if (environments.length > 0) {
+      setCurrentEnvironmentId(environments[0]?.id);
+    }
+  });
+
+  useEffect(() => {
+    if (environmentsList) {
+      setEnvironments(environmentsList);
+      updateCurrentEnvironment();
+    }
+  }, [environmentsList]);
+
+  useEffect(() => {
+    if (selectedEnvironmentData === undefined) return;
+    setSelectedEnvironment(selectedEnvironmentData);
+    updateCurrentEnvironment();
+  }, [selectedEnvironmentData]);
+
+  const handleAddEnvironment = async (
+    name: string,
+    secrets?: TabularPair[],
+    variables?: TabularPair[],
+  ) => {
+    const env = await workspace.environments.create({
       name,
-      variables: [{ key: '', value: '', enabled: true }],
-      secrets: [{ key: '', value: '', enabled: true }],
-    };
-    addEnvironment(newEnv);
-    setSelectedEnvironmentId(newEnv.id);
+      secrets,
+      variables,
+    });
+    setEnvironments([...environments, env]);
+    setCurrentEnvironmentId(env.id);
   };
 
-  const handleDeleteEnvironment = (id: string) => {
-    if (environments.length > 1) {
-      deleteEnvironment(id);
+  const handleDeleteEnvironment = async (id: string) => {
+    await workspace.environments.delete(id);
+    setEnvironments(environments.filter((env) => env.id !== id));
+    if (currentEnvironmentId === id) {
+      setCurrentEnvironmentId(environments[0]?.id);
     }
   };
 
-  const handleVariablesChange = (variables: Variable[]) => {
-    if (selectedEnvironmentId) {
-      setVariables(selectedEnvironmentId, variables);
-    }
+  const handleRenameEnvironment = async (id: string, name: string) => {
+    const env = environments.find((e) => e.id === id);
+    if (!env) return;
+    await env.update({ name });
+    await refetch();
+    toast.success('Environment renamed successfully');
   };
 
-  const handleSecretsChange = (secrets: Variable[]) => {
-    if (selectedEnvironmentId) {
-      setSecrets(selectedEnvironmentId, secrets);
-    }
+  const handleDuplicateEnvironment = async (
+    _sourceId: string,
+    newName: string,
+    secrets?: TabularPair[],
+    variables?: TabularPair[],
+  ) => {
+    const env = await workspace.environments.create({
+      name: newName,
+      secrets,
+      variables,
+    });
+    setEnvironments([...environments, env]);
+    setCurrentEnvironmentId(env.id);
+    toast.success('Environment duplicated successfully');
   };
 
-  if (!isMounted) {
-    return null; // or a loading spinner
+  const onVariablesSave = async (
+    environment: Environment,
+    variables: TabularPair[],
+  ) => {
+    await environment.update(
+      {
+        variables,
+      },
+      { noEmit: true },
+    );
+
+    await refetch();
+
+    toast.success('Variables saved successfully');
+  };
+
+  const onSecretsSave = async (
+    environment: Environment,
+    secrets: TabularPair[],
+  ) => {
+    await environment.update(
+      {
+        secrets,
+      },
+      { noEmit: true },
+    );
+
+    await refetch();
+
+    toast.success('Secrets saved successfully');
+  };
+
+  if (isLoading) {
+    return <LoadingScreen fullScreen message="Loading environments..." />;
+  }
+
+  if (isError) {
+    return <ErrorScreen fullScreen message="Error loading environments" />;
   }
 
   return (
@@ -80,27 +163,33 @@ export default function EnvironmentPage() {
       <div className="w-[280px] shrink-0">
         <EnvironmentList
           environments={environments}
-          selectedEnvironmentId={selectedEnvironmentId}
-          onSelectEnvironment={setSelectedEnvironmentId}
-          onAddEnvironment={handleAddEnvironment}
-          onDeleteEnvironment={handleDeleteEnvironment}
-          canDelete={environments.length > 1}
+          activeEnvironmentId={selectedEnvironment?.id}
+          selectedEnvironmentId={currentEnvironmentId}
+          onSelectEnvironment={setCurrentEnvironmentId}
+          onAddEnvironment={withErrorHandler(handleAddEnvironment)}
+          onDeleteEnvironment={withErrorHandler(handleDeleteEnvironment)}
+          onRenameEnvironment={withErrorHandler(handleRenameEnvironment)}
+          onDuplicateEnvironment={withErrorHandler(handleDuplicateEnvironment)}
         />
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
-        {selectedEnvironment ? (
+        {currentEnvironment ? (
           <div className="flex-1 overflow-auto p-6 space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-semibold">
-                  {selectedEnvironment.name}
+                  {currentEnvironment.name}
                 </h2>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                  Environment
-                </span>
+                {selectedEnvironment?.id === currentEnvironmentId ? (
+                  <Badge variant="outline">Active</Badge>
+                ) : null}
               </div>
               <p className="text-sm text-muted-foreground">
-                Manage variables and secrets for this environment
+                Manage variables and secrets for{' '}
+                <span className="font-semibold font-mono underline">
+                  {currentEnvironment.name}
+                </span>{' '}
+                environment
               </p>
             </div>
             <Separator />
@@ -108,16 +197,18 @@ export default function EnvironmentPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Variables</h3>
                 <VariablesTable
-                  variables={selectedEnvironment.variables || []}
-                  onChange={handleVariablesChange}
+                  environment={currentEnvironment}
+                  variables={currentEnvironment.variables.toJSON() || []}
+                  onSave={withErrorHandler(onVariablesSave)}
                 />
               </div>
               <Separator />
               <div>
                 <h3 className="text-lg font-semibold mb-4">Secrets</h3>
                 <SecretsTable
-                  secrets={selectedEnvironment.secrets || []}
-                  onChange={handleSecretsChange}
+                  environment={currentEnvironment}
+                  secrets={currentEnvironment.secrets.toJSON() || []}
+                  onSave={withErrorHandler(onSecretsSave)}
                 />
               </div>
             </div>
