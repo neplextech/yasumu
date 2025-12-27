@@ -1,5 +1,6 @@
 import type { Environment } from '@/core/workspace/environment/environment.js';
 import type { Workspace } from '@/core/workspace/workspace.js';
+import type { EmailData } from '@yasumu/common';
 
 export interface YasumuEventHandlerInterface {
   /**
@@ -37,4 +38,10 @@ export interface YasumuEventHandlerInterface {
    * @param environment - The environment that was created.
    */
   onEnvironmentCreated: (environment: Environment) => unknown;
+  /**
+   * Called when a new email is received.
+   * @param workspaceId - The workspace ID that the email was received in.
+   * @param email - The email that was received.
+   */
+  onNewEmail: (workspaceId: string, email: EmailData) => unknown;
 }

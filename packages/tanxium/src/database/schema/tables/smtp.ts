@@ -4,7 +4,9 @@ import { commonColumns, cuid } from '../../common/index.ts';
 export const smtp = sqliteTable('smtp', {
   ...commonColumns(),
   workspaceId: cuid('workspaceId').notNull(),
-  port: int('port').notNull().default(50478),
+  port: int('port').notNull().default(0),
+  username: text('username'),
+  password: text('password'),
 });
 
 export const emails = sqliteTable('emails', {

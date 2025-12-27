@@ -2,6 +2,7 @@
   "name": "@yasumu/workspace",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "app": "pnpm --filter=@yasumu/app tauri dev",
     "bootstrap": "turbo gen bootstrap --args",
@@ -17,8 +18,10 @@
   },
   "devDependencies": {
     "@turbo/gen": "^2.5.8",
+    "@types/nodemailer": "^7.0.4",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
+    "nodemailer": "^7.0.12",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
     "typescript": "catalog:build"

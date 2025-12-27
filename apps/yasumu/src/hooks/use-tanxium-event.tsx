@@ -3,7 +3,7 @@ import { event, app } from '@tauri-apps/api';
 import { useEffect } from 'react';
 import { toast } from '@yasumu/ui/components/sonner';
 import { invoke } from '@tauri-apps/api/core';
-import { SubscriptionEventPayload } from '@yasumu/core';
+import { EmailData, SubscriptionEventPayload } from '@yasumu/core';
 
 export interface TanxiumEvent<T = unknown> {
   type: 'console' | 'show-notification' | 'message';
@@ -63,9 +63,8 @@ export function useTanxiumEvent() {
           case 'message': {
             console.log({ data });
             // TODO: handle other message types
+            if (!(data.payload && typeof data.payload === 'object')) return;
             if (
-              data.payload &&
-              typeof data.payload === 'object' &&
               'type' in data.payload &&
               data.payload.type === 'yasumu-subscription'
             ) {
@@ -77,6 +76,25 @@ export function useTanxiumEvent() {
               if (!globalThis.yasumu) return;
 
               await globalThis.yasumu.onSubscription(messageData.data);
+            }
+
+            if (
+              'event' in data.payload &&
+              data.payload.event === 'new-email' &&
+              'data' in data.payload
+            ) {
+              const messageData = data.payload.data as {
+                workspaceId: string;
+                newEmail: EmailData;
+              };
+
+              if (!globalThis.yasumu) return;
+
+              globalThis.yasumu.events.emit(
+                'onNewEmail',
+                messageData.workspaceId,
+                messageData.newEmail,
+              );
             }
           }
         }

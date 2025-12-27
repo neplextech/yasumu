@@ -121,6 +121,11 @@ export interface YasumuRPC {
   };
   emails: {
     /**
+     * Get the port number of the SMTP server.
+     * @returns The port number of the SMTP server. Null if the server is not running.
+     */
+    getSmtpPort: RpcQuery<[], number | null>;
+    /**
      * Configure the SMTP server.
      * @param data The data for the SMTP server.
      */

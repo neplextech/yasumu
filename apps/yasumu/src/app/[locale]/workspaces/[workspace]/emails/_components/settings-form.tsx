@@ -3,14 +3,18 @@
 import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
 import { Button } from '@yasumu/ui/components/button';
+import { Badge } from '@yasumu/ui/components/badge';
+import { toast } from '@yasumu/ui/components/sonner';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 
 interface SettingsFormProps {
   username: string;
   password: string;
-  port: string;
+  port: number | undefined;
+  activePort: number | undefined;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
-  onPortChange: (value: string) => void;
+  onPortChange: (value: number) => void;
   onSave: () => void;
 }
 
@@ -22,6 +26,7 @@ export default function SettingsForm({
   onPasswordChange,
   onPortChange,
   onSave,
+  activePort,
 }: SettingsFormProps) {
   return (
     <div className="space-y-6 p-8">
@@ -31,6 +36,36 @@ export default function SettingsForm({
           Configure your local SMTP server settings. This is a catch-all mailbox
           for development purposes.
         </p>
+        {activePort && (
+          <div className="flex items-center gap-3 mb-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 rounded-lg">
+            <div className="relative">
+              <div className="h-3 w-3 bg-green-500 rounded-full"></div>
+              <div className="absolute inset-0 h-3 w-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                SMTP Server Online
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-400">
+                Running on port{' '}
+                <span className="font-bold font-mono underline">
+                  {activePort}
+                </span>
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+              onClick={withErrorHandler(async () => {
+                if (activePort == null) return;
+                await navigator.clipboard.writeText(`${activePort}`);
+                toast.success('Port copied to clipboard');
+              })}
+            >
+              Copy Port
+            </Button>
+          </div>
+        )}
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="username">Username (Optional)</Label>
@@ -62,11 +97,13 @@ export default function SettingsForm({
             <Input
               id="port"
               type="number"
-              placeholder="1025"
+              placeholder="0"
               value={port}
-              onChange={(e) => onPortChange(e.target.value)}
+              onChange={(e) => onPortChange(e.target.valueAsNumber)}
             />
-            <p className="text-xs text-muted-foreground">Default port: 1025</p>
+            <p className="text-xs text-muted-foreground">
+              Default port: 0 (random)
+            </p>
           </div>
         </div>
         <Button onClick={onSave} className="mt-6">

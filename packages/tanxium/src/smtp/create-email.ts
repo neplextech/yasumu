@@ -1,27 +1,14 @@
 import type { SMTPServerDataStream } from 'smtp-server';
 import { simpleParser } from 'mailparser';
 import { db } from '../database/index.ts';
-import { workspaces } from '../database/schema.ts';
-import { eq } from 'drizzle-orm';
-import { emails, smtp } from '../database/schema/tables/smtp.ts';
+import { emails } from '../database/schema/tables/smtp.ts';
 
 export async function createEmail(
   stream: SMTPServerDataStream,
   workspaceId: string,
+  smtpId: string,
 ) {
   const email = await simpleParser(stream);
-
-  const workspace = await db.query.workspaces.findFirst({
-    where: eq(workspaces.id, workspaceId),
-  });
-
-  if (!workspace) return;
-
-  const smtpConfig = await db.query.smtp.findFirst({
-    where: eq(smtp.workspaceId, workspaceId),
-  });
-
-  if (!smtpConfig) return;
 
   const mailFrom = email.from?.text;
   const mailTo = Array.isArray(email.to)
@@ -31,14 +18,23 @@ export async function createEmail(
     (Array.isArray(email.cc)
       ? email.cc.map((c) => c.text).join(',')
       : email.cc?.text) || null;
-  const mailSubject = email.subject;
-  const mailHtml = email.html || '';
-  const mailText = email.text || '';
+  const mailSubject = email.subject || '(No subject)';
+  const mailHtml = email.html || '(No Body)';
+  const mailText = email.text || '(No Body)';
+
+  console.log(email);
+  console.log({
+    from: mailFrom,
+    to: mailTo,
+    subject: mailSubject,
+    html: mailHtml,
+    text: mailText,
+    cc: mailCc,
+    smtpId,
+  });
 
   // missing required fields
-  if (!mailFrom || !mailTo || !mailSubject) {
-    return;
-  }
+  if (!mailFrom || !mailTo) return;
 
   const [newEmail] = await db
     .insert(emails)
@@ -49,12 +45,18 @@ export async function createEmail(
       html: mailHtml,
       text: mailText,
       cc: mailCc,
-      smtpId: smtpConfig.id,
+      smtpId,
     })
     .returning();
 
   await Yasumu.postMessage({
     event: 'new-email',
     data: { workspaceId, newEmail },
+  });
+
+  await Yasumu.ui.showNotification({
+    title: 'You have received a new email',
+    message: 'Check your email inbox to view the new email',
+    variant: 'success',
   });
 }

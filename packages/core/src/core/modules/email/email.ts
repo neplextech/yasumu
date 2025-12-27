@@ -9,6 +9,15 @@ import type {
 export class EmailModule {
   public constructor(private readonly workspace: Workspace) {}
 
+  public async getSmtpPort(): Promise<number | null> {
+    const result =
+      await this.workspace.manager.yasumu.rpc.emails.getSmtpPort.$query({
+        parameters: [],
+      });
+
+    return result;
+  }
+
   public async getSmtpConfig(): Promise<SmtpConfig> {
     const result =
       await this.workspace.manager.yasumu.rpc.emails.getSmtpConfig.$query({

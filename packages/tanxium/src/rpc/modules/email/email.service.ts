@@ -9,10 +9,65 @@ import {
   SmtpConfig,
 } from '@yasumu/common';
 import { ilike } from 'drizzle-orm/sql';
+import { createSmtpServer, SMTPServerInstance } from '@/smtp/server.ts';
+import { areDifferentByKeys } from '../../common/utils.ts';
 
 @Injectable()
 export class EmailService {
+  private readonly servers = new Map<string, SMTPServerInstance>();
   public constructor(private readonly connection: TransactionalConnection) {}
+
+  public getActiveSmtpPort(workspaceId: string): number | null {
+    const server = this.servers.get(workspaceId);
+    return server?.port ?? null;
+  }
+
+  public closeSmtpServer(workspaceId: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const existingServer = this.servers.get(workspaceId);
+      if (!existingServer) return resolve();
+
+      try {
+        existingServer.server.close(resolve);
+      } catch (e) {
+        reject(e);
+      } finally {
+        this.servers.delete(workspaceId);
+      }
+    });
+  }
+
+  public async createSmtpServer(workspaceId: string, force: boolean = false) {
+    const existingServer = this.servers.get(workspaceId);
+
+    if (force || (existingServer && !existingServer.server.server.listening)) {
+      await this.closeSmtpServer(workspaceId).catch((e) => {
+        console.error('Failed to close dead SMTP server', e);
+        return Yasumu.ui.showNotification({
+          title: 'Failed to close SMTP server',
+          message:
+            'Please try again later. If the problem persists, please restart the application.',
+          variant: 'error',
+        });
+      });
+    }
+
+    if (existingServer) return existingServer;
+
+    const config = await this.getSmtp(workspaceId);
+
+    const server = await createSmtpServer({
+      workspaceId,
+      password: config.password,
+      username: config.username,
+      port: config.port,
+      smtpId: config.id,
+    });
+
+    this.servers.set(workspaceId, server);
+
+    return server;
+  }
 
   public async getSmtp(workspaceId: string) {
     const db = this.connection.getConnection();
@@ -53,6 +108,11 @@ export class EmailService {
     const [result] = await db
       .select()
       .from(emails)
+      .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
+
+    await db
+      .update(emails)
+      .set({ unread: false })
       .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
 
     return result ?? null;
@@ -104,6 +164,31 @@ export class EmailService {
     const db = this.connection.getConnection();
     const smtpData = await this.getSmtp(workspaceId);
 
-    await db.update(smtp).set(data).where(eq(smtp.id, smtpData.id));
+    const [updatedSmtpData] = await db
+      .update(smtp)
+      .set(data)
+      .where(eq(smtp.id, smtpData.id))
+      .returning();
+
+    // kill the existing server if the config has changed
+    // only applicable if the server is running
+    if (
+      areDifferentByKeys(updatedSmtpData, smtpData, [
+        'password',
+        'username',
+        'port',
+      ]) &&
+      this.servers.has(workspaceId)
+    ) {
+      await this.createSmtpServer(workspaceId, true).catch((e) => {
+        console.error('Failed to create SMTP server', e);
+        return Yasumu.ui.showNotification({
+          title: 'Failed to create SMTP server',
+          message:
+            'Please try again later. If the problem persists, please restart the application.',
+          variant: 'error',
+        });
+      });
+    }
   }
 }

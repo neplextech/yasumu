@@ -10,6 +10,13 @@ import type { PaginatedResult } from '@yasumu/common';
 export class EmailResolver implements YasumuRpcService<'emails'> {
   public constructor(private readonly emailService: EmailService) {}
 
+  @Query()
+  public getSmtpPort(
+    @WorkspaceId() workspaceId: string,
+  ): Promise<number | null> {
+    return Promise.resolve(this.emailService.getActiveSmtpPort(workspaceId));
+  }
+
   @Mutation()
   public deleteEmail(
     @WorkspaceId() workspaceId: string,

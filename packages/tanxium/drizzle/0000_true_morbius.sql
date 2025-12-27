@@ -67,7 +67,9 @@ CREATE TABLE `smtp` (
 	`updatedAt` integer NOT NULL,
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`workspaceId` text NOT NULL,
-	`port` integer DEFAULT 50478 NOT NULL
+	`port` integer DEFAULT 0 NOT NULL,
+	`username` text,
+	`password` text
 );
 --> statement-breakpoint
 CREATE TABLE `workspaces` (

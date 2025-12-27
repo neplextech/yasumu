@@ -9,9 +9,9 @@ export interface SmtpConfig {
   /**
    * The username to use for the SMTP server.
    */
-  username?: string;
+  username?: string | null;
   /**
    * The password to use for the SMTP server.
    */
-  password?: string;
+  password?: string | null;
 }

@@ -4,18 +4,10 @@ import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Badge } from '@yasumu/ui/components/badge';
 import { Tabs, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { cn } from '@yasumu/ui/lib/utils';
-
-interface Email {
-  id: string;
-  from: string;
-  subject: string;
-  preview: string;
-  timestamp: string;
-  unread: boolean;
-}
+import { EmailData } from '@yasumu/core';
 
 interface EmailListProps {
-  emails: Email[];
+  emails: EmailData[];
   selectedEmailId?: string;
   onSelectEmail: (emailId: string) => void;
   filter: 'all' | 'unread';
@@ -57,7 +49,7 @@ export default function EmailList({
   const filteredEmails =
     filter === 'unread' ? emails.filter((email) => email.unread) : emails;
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -171,7 +163,7 @@ export default function EmailList({
                             <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
                           )}
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatTime(email.timestamp)}
+                            {formatTime(email.createdAt)}
                           </span>
                         </div>
                       </div>
@@ -190,7 +182,7 @@ export default function EmailList({
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {email.preview}
+                        {email.text.slice(0, 100)}...
                       </p>
                     </div>
                   </div>

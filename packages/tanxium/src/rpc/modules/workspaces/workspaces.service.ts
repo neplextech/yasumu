@@ -9,6 +9,7 @@ import {
   PATH_IDENTIFIER_PREFIX,
 } from '../../common/constants.ts';
 import { WorkspaceActivatorService } from './workspace-activator.service.ts';
+import { EmailService } from '../email/email.service.ts';
 
 @Injectable()
 export class WorkspacesService implements OnModuleInit {
@@ -16,6 +17,7 @@ export class WorkspacesService implements OnModuleInit {
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly workspaceActivatorService: WorkspaceActivatorService,
+    private readonly emailService: EmailService,
   ) {}
 
   public async onModuleInit() {
@@ -129,11 +131,28 @@ export class WorkspacesService implements OnModuleInit {
 
   public async activate(id: string) {
     this.activeWorkspaceId = await this.workspaceActivatorService.activate(id);
+
+    await this.emailService.createSmtpServer(id).catch((e) => {
+      console.error('Failed to create SMTP server for workspace', id, e);
+      return Yasumu.ui.showNotification({
+        title: 'Failed to create SMTP server',
+        message:
+          'Please try again later. If the problem persists, please restart the application.',
+        variant: 'error',
+      });
+    });
   }
 
-  // deno-lint-ignore require-await
   public async deactivate(id: string) {
     this.activeWorkspaceId = null;
-    void id;
+    await this.emailService.closeSmtpServer(id).catch((e) => {
+      console.error('Failed to close SMTP server for workspace', id, e);
+      return Yasumu.ui.showNotification({
+        title: 'Failed to close SMTP server',
+        message:
+          'Please try again later. If the problem persists, please restart the application.',
+        variant: 'error',
+      });
+    });
   }
 }

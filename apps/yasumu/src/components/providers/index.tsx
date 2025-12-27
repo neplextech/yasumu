@@ -8,6 +8,7 @@ import { useTanxiumEvent } from '@/hooks/use-tanxium-event';
 import { PermissionPromptProvider } from './permission-prompt-provider';
 import { AppLayoutProvider } from './app-layout-provider';
 import { QueryClientProvider } from './query-client-provider';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
@@ -21,13 +22,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <NextIntlClientProvider locale="en" timeZone="UTC">
-        <AppLayoutProvider>
-          <QueryClientProvider>
-            <WorkspaceProvider>
-              <PermissionPromptProvider>{children}</PermissionPromptProvider>
-            </WorkspaceProvider>
-          </QueryClientProvider>
-        </AppLayoutProvider>
+        <NuqsAdapter>
+          <AppLayoutProvider>
+            <QueryClientProvider>
+              <WorkspaceProvider>
+                <PermissionPromptProvider>{children}</PermissionPromptProvider>
+              </WorkspaceProvider>
+            </QueryClientProvider>
+          </AppLayoutProvider>
+        </NuqsAdapter>
       </NextIntlClientProvider>
     </NextThemesProvider>
   );

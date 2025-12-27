@@ -1,21 +1,12 @@
 'use client';
 
+import { EmailData } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { cn } from '@yasumu/ui/lib/utils';
 
-interface Email {
-  id: string;
-  from: string;
-  to: string[];
-  subject: string;
-  body: string;
-  timestamp: string;
-  unread: boolean;
-}
-
 interface EmailContentProps {
-  email: Email | null;
+  email: EmailData | null;
 }
 
 const getInitials = (from: string) => {
@@ -74,7 +65,7 @@ export default function EmailContent({ email }: EmailContentProps) {
     );
   }
 
-  const formatDate = (timestamp: string) => {
+  const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleString([], {
       weekday: 'long',
@@ -120,16 +111,24 @@ export default function EmailContent({ email }: EmailContentProps) {
                   <span className="text-muted-foreground font-medium min-w-[60px]">
                     To:
                   </span>
-                  <span className="break-all text-foreground">
-                    {email.to.join(', ')}
-                  </span>
+                  <span className="break-all text-foreground">{email.to}</span>
                 </div>
+                {email.cc && (
+                  <div className="flex items-start gap-3">
+                    <span className="text-muted-foreground font-medium min-w-[60px]">
+                      CC:
+                    </span>
+                    <span className="break-all text-foreground">
+                      {email.cc}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-start gap-3">
                   <span className="text-muted-foreground font-medium min-w-[60px]">
                     Date:
                   </span>
                   <span className="text-foreground">
-                    {formatDate(email.timestamp)}
+                    {formatDate(email.createdAt)}
                   </span>
                 </div>
               </div>
@@ -142,17 +141,28 @@ export default function EmailContent({ email }: EmailContentProps) {
           </div>
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="p-8">
-          <div className="max-w-3xl">
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-foreground/90 prose-p:leading-relaxed">
-              <div className="whitespace-pre-wrap break-words text-base leading-relaxed text-foreground/90">
-                {email.body}
+      {email.html ? (
+        <iframe
+          srcDoc={`${email.html}`}
+          className="flex-1 w-full border-0 bg-white"
+          sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
+          title="Email content"
+          referrerPolicy="no-referrer"
+          loading="lazy"
+        />
+      ) : (
+        <ScrollArea className="flex-1">
+          <div className="p-8">
+            <div className="max-w-3xl">
+              <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-foreground/90 prose-p:leading-relaxed">
+                <div className="whitespace-pre-wrap break-words text-base leading-relaxed text-foreground/90">
+                  {email.text}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      )}
     </div>
   );
 }
