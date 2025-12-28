@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Yasumu",
+  "productName": "Yasumu Canary",
   "version": "0.0.1",
-  "identifier": "com.neplextech.yasumu",
+  "identifier": "com.neplextech.yasumu.canary",
   "build": {
     "beforeDevCommand": "pnpm run bundle && pnpm dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "pnpm run bundle && pnpm build",
-    "frontendDist": "../dist"
+    "frontendDist": "../out"
   },
   "app": {
     "security": {

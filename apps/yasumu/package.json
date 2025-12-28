@@ -17,7 +17,8 @@
     "lint": "eslint",
     "tauri": "tauri",
     "shadcn": "shadcn",
-    "cargo": "cd src-tauri && cargo"
+    "cargo": "cd src-tauri && cargo",
+    "generate-icons": "node scripts/generate-icon.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
