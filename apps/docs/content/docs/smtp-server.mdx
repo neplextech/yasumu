@@ -1,0 +1,219 @@
+---
+title: SMTP Server
+description: Catch-all SMTP server for testing email functionality in development.
+---
+
+# SMTP Server
+
+Yasumu includes a built-in **catch-all SMTP server** that captures all emails sent to it, providing a local mailbox for testing email functionality during development. No more sending test emails to real addresses or setting up complex email infrastructure.
+
+## Overview
+
+The SMTP server:
+- **Captures all emails** — Acts as a real SMTP server that accepts any email
+- **Stores locally** — Emails are stored in your workspace database
+- **Provides a mailbox** — View, search, and manage received emails in Yasumu
+- **Works with any library** — Compatible with Nodemailer, SendGrid SDK, or any SMTP-capable tool
+
+## Accessing the Mailbox
+
+Navigate to **Emails** in the Yasumu sidebar to access the email features. You'll see two tabs:
+
+| Tab | Description |
+| :--- | :--- |
+| **Mailbox** | View and read captured emails |
+| **Settings** | Configure SMTP server port and authentication |
+
+## Mailbox Features
+
+### Email List
+
+The mailbox displays all captured emails with:
+- **Sender avatar** — Color-coded initials based on sender email
+- **From address** — Who sent the email
+- **Subject line** — Email subject (or "No subject" if empty)
+- **Preview** — First 150 characters of the email body
+- **Timestamp** — When the email was received
+- **Unread indicator** — Blue dot for unread emails
+
+### Filtering
+
+Filter emails by:
+- **All** — Show all captured emails
+- **Unread** — Show only unread emails
+
+The unread count is displayed as a badge next to the filter.
+
+### Email Content
+
+Click an email to view its full content:
+- **From/To/CC** — Full email addresses
+- **Date** — When the email was received
+- **Subject** — Full subject line
+- **Body** — Rendered HTML or plain text content
+
+HTML emails are rendered in a sandboxed iframe for security.
+
+## Settings
+
+### Server Status
+
+When the SMTP server is running, you'll see a status indicator showing:
+- **Online status** — Green indicator when active
+- **Active port** — The port the server is listening on
+- **Copy Port** — Quick button to copy the port number
+
+### Configuration Options
+
+| Setting | Description |
+| :--- | :--- |
+| **Username** | Optional authentication username (leave empty for catch-all) |
+| **Password** | Optional authentication password |
+| **Port** | Server port (0 = random available port) |
+
+After changing settings, click **Save Settings** to apply.
+
+## Using the SMTP Server
+
+### With Nodemailer
+
+The settings page includes a ready-to-use code snippet:
+
+```typescript
+import { createTransport } from 'nodemailer';
+
+const transport = createTransport({
+  host: 'localhost',
+  port: 2525, // Use the port shown in Yasumu settings
+});
+
+await transport.sendMail({
+  from: 'sender@example.com',
+  to: 'recipient@example.com',
+  subject: 'Hello from Yasumu',
+  text: 'Hello World!',
+});
+```
+
+### With Other Libraries
+
+Any SMTP-capable library can send to the Yasumu SMTP server:
+
+**Python (smtplib)**
+```python
+import smtplib
+from email.message import EmailMessage
+
+msg = EmailMessage()
+msg['Subject'] = 'Test Email'
+msg['From'] = 'sender@example.com'
+msg['To'] = 'recipient@example.com'
+msg.set_content('Hello from Python!')
+
+with smtplib.SMTP('localhost', 2525) as smtp:
+    smtp.send_message(msg)
+```
+
+**Go (net/smtp)**
+```go
+package main
+
+import (
+    "net/smtp"
+)
+
+func main() {
+    msg := []byte("Subject: Test Email\r\n\r\nHello from Go!")
+    smtp.SendMail("localhost:2525", nil, "sender@example.com",
+        []string{"recipient@example.com"}, msg)
+}
+```
+
+## Workspace Configuration
+
+SMTP settings are stored in `smtp.ysl` in your workspace:
+
+```
+@smtp
+
+metadata {
+  id: "udlji8yaooo11ud8aetg3omr"
+  port: 0
+  username: null
+  password: null
+}
+```
+
+| Field | Description |
+| :--- | :--- |
+| `id` | Unique identifier for the SMTP configuration |
+| `port` | Configured port (0 = random) |
+| `username` | Authentication username (null = disabled) |
+| `password` | Authentication password (null = disabled) |
+
+## Simulating Rejections
+
+The SMTP server can simulate email rejections for testing error handling. Use email addresses starting with `reject` (case-insensitive) to trigger a rejection:
+
+```typescript
+// These will be rejected by the SMTP server
+await transport.sendMail({
+  from: 'reject@example.com',  // Rejected - sender starts with "reject"
+  to: 'user@example.com',
+  subject: 'This will fail',
+  text: 'Never delivered',
+});
+
+await transport.sendMail({
+  from: 'sender@example.com',
+  to: 'rejected@example.com',  // Rejected - recipient starts with "reject"
+  subject: 'This will also fail',
+  text: 'Never delivered',
+});
+```
+
+This is useful for testing:
+- Error handling in your email sending code
+- Retry logic
+- User notifications when emails fail
+
+## Real-time Updates
+
+The mailbox automatically refreshes when new emails arrive. No need to manually refresh — emails appear in the list as soon as they're received.
+
+## Use Cases
+
+### Testing Transactional Emails
+```typescript
+await sendPasswordResetEmail(user.email);
+// Check Yasumu mailbox to verify email content and formatting
+```
+
+### Testing Email Templates
+Send emails with different templates to verify:
+- HTML rendering
+- Dynamic content substitution
+- Responsive layouts
+
+### Testing Email Workflows
+Test multi-step email flows:
+- Welcome emails
+- Verification emails
+- Notification chains
+
+### Test environment
+Configure your test environment to use Yasumu's SMTP server:
+
+```
+SMTP_HOST=localhost
+SMTP_PORT=2525
+```
+
+## Best Practices
+
+1. **Use port 0 for random** — Avoids conflicts with other services
+2. **Check the active port** — The displayed port is what the server is actually using
+3. **No auth for local dev** — Skip username/password for simpler local testing
+4. **Use auth for shared environments** — Add credentials if multiple people access the same instance
+5. **Clear old emails periodically** — Keep the mailbox manageable for performance
+

@@ -1,13 +1,66 @@
 ---
-title: Hello World
-description: Your first document
+title: Introduction
+description: A modern, free, and open-source API laboratory for designing, testing, and debugging API workflows.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+# Welcome to Yasumu
 
-## What is Next?
+**Yasumu** is a modern, free, and open-source API laboratory for designing, testing, and debugging API workflows. Built with performance, developer productivity, and long-term extensibility in mind — without vendor lock-in.
+
+<Callout type="warn" title="Beta Software">
+  Yasumu is actively under development. You may encounter unfinished features, bugs, or inconsistent behavior as we rapidly prototype and iterate. We welcome your feedback and contributions!
+</Callout>
+
+## Why Yasumu?
+
+Unlike traditional API clients that store data in hidden databases or require cloud accounts, Yasumu operates like an **IDE for your APIs**. Your configurations live directly in your project folder, making collaboration and version control seamless.
+
+### Key Features
+
+- **🌐 Multi-Protocol Testing** — Unified interface for REST, GraphQL, WebSocket, and more.
+- **💾 Git-Friendly Storage** — Configurations stored as `.ysl` files for seamless version control.
+- **⚡ Native Performance** — Powered by Rust (Tauri) and a custom JavaScript runtime.
+- **🎨 Modern UI** — Built with Next.js for a responsive developer experience.
+- **🔓 Open Source** — No artificial feature limitations or mandatory cloud dependencies.
+
+## Protocol Support
+
+| Protocol | Status | Notes |
+| :--- | :---: | :--- |
+| **REST API** | ✅ Ready | Full support for HTTP/HTTPS requests |
+| **Catch-all SMTP** | ✅ Ready | Local email server for testing |
+| **GraphQL** | 🚧 Soon | Planned |
+| **WebSocket** | 🚧 Soon | Planned |
+| **Server-Sent Events** | 🚧 Soon | Planned |
+| **Socket.IO** | 🚧 Soon | Planned |
+| **Plugins API** | 🚧 Soon | Planned |
+
+## Quick Start
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card title="Getting Started" href="/docs/getting-started" />
+  <Card title="Core Concepts" href="/docs/workspaces" />
+  <Card title="SMTP Server" href="/docs/smtp-server" />
+  <Card title="Echo Server" href="/docs/echo-server" />
 </Cards>
+
+## Tech Stack
+
+Yasumu is built on a modern, performant stack:
+
+- **Frontend:** Next.js with React
+- **Desktop Shell:** Tauri (Rust)
+- **Backend Runtime:** Custom JavaScript runtime (Deno-based) with Drizzle ORM and Hono
+- **Platforms:** Windows, Linux, macOS
+
+## Project Philosophy
+
+- **Open-source by default** — The entire codebase is available on GitHub.
+- **No vendor lock-in** — Your data belongs to you, stored in readable files.
+- **No artificial paywalls** — All features are free to use.
+- **Developer-first design** — Built by developers, for developers.
+- **Long-term maintainability** — Designed for stability and extensibility.
+
+## License
+
+Yasumu is developed by [Neplex](https://neplextech.com) and is licensed under the **AGPL-3.0** license.

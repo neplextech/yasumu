@@ -1,0 +1,16 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "---Core Concepts---",
+    "workspaces",
+    "requests",
+    "environments",
+    "---Features---",
+    "smtp-server",
+    "echo-server",
+    "---Reference---",
+    "architecture"
+  ]
+}

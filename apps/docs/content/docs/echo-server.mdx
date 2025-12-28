@@ -1,0 +1,210 @@
+---
+title: Echo Server
+description: Built-in echo server for testing HTTP clients and requests.
+---
+
+# Echo Server
+
+The Tanxium Echo Server is a built-in utility for testing HTTP clients, similar to Postman Echo or Bruno's echo service. It mirrors back your request details, making it perfect for debugging and development.
+
+The echo server is available at `http://echo.yasumu.local` when Yasumu is running.
+
+## Overview
+
+The echo server intercepts requests to **any path** (except specific helper endpoints) and returns a JSON response containing details about the request you sent. This is useful for:
+
+- Debugging request configurations
+- Verifying headers and authentication
+- Testing request body parsing
+- Validating query parameters
+- Simulating various server conditions
+
+## Basic Usage
+
+Send any HTTP request to the echo server:
+
+```http
+POST /any/path?foo=bar
+Host: echo.yasumu.local
+Content-Type: application/json
+
+{ "key": "value" }
+```
+
+## Response Structure
+
+The server responds with a JSON object containing your request details:
+
+```json
+{
+  "url": "http://echo.yasumu.local/any/path?foo=bar",
+  "path": "/any/path",
+  "method": "POST",
+  "headers": {
+    "host": "echo.yasumu.local",
+    "content-type": "application/json"
+  },
+  "args": {
+    "foo": "bar"
+  },
+  "cookies": {},
+  "body": {
+    "key": "value"
+  },
+  "json": {
+    "key": "value"
+  },
+  "form": null,
+  "files": {},
+  "data": null,
+  "meta": {
+    "timestamp": "2024-01-15T12:00:00.000Z",
+    "source": "tanxium-echo-server"
+  }
+}
+```
+
+### Response Fields
+
+| Field | Description |
+| :--- | :--- |
+| `url` | Full request URL |
+| `path` | Request path without query string |
+| `method` | HTTP method used |
+| `headers` | All request headers |
+| `args` | Query parameters as key-value pairs |
+| `cookies` | Parsed cookies |
+| `body` | Raw request body |
+| `json` | Parsed JSON body (if applicable) |
+| `form` | Parsed form data (if applicable) |
+| `files` | Uploaded files (multipart) |
+| `meta` | Server metadata |
+
+## Simulation Parameters
+
+Control server behavior by adding query parameters to any request.
+
+### Latency Simulation (`?delay=ms`)
+
+Add artificial delay to simulate slow network conditions:
+
+```http
+GET /test?delay=2000
+Host: echo.yasumu.local
+```
+
+The server waits 2000ms (2 seconds) before responding.
+
+### Status Codes (`?status=code`)
+
+Force the server to respond with a specific HTTP status code:
+
+```http
+GET /test?status=404
+Host: echo.yasumu.local
+```
+
+Returns `404 Not Found`.
+
+### Rejection (`?reject=true`)
+
+Simulate a server error immediately:
+
+```http
+GET /test?reject=true
+Host: echo.yasumu.local
+```
+
+Returns `500 Internal Server Error`.
+
+### Combining Parameters
+
+Parameters can be combined:
+
+```http
+GET /test?delay=1000&status=201
+Host: echo.yasumu.local
+```
+
+Waits 1 second, then returns `201 Created`.
+
+## Helper Endpoints
+
+### IP Address
+
+Returns the client's IP address:
+
+```http
+GET /ip
+Host: echo.yasumu.local
+```
+
+### Basic Authentication
+
+Tests Basic Authentication headers:
+
+```http
+GET /basic-auth
+Host: echo.yasumu.local
+Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+```
+
+### Bearer Authentication
+
+Tests Bearer Token headers:
+
+```http
+GET /bearer-auth
+Host: echo.yasumu.local
+Authorization: Bearer my-secret-token
+```
+
+## HTTP Methods
+
+The echo server supports all standard HTTP methods:
+
+| Method | Description |
+| :--- | :--- |
+| `GET` | Retrieve (no body expected) |
+| `POST` | Create (body expected) |
+| `PUT` | Update/replace |
+| `PATCH` | Partial update |
+| `DELETE` | Remove |
+| `HEAD` | Headers only |
+| `OPTIONS` | CORS preflight |
+
+## Content Types
+
+The server correctly parses various content types:
+
+### JSON
+
+```http
+POST /test
+Content-Type: application/json
+
+{"name": "John", "age": 30}
+```
+
+### Form Data
+
+```http
+POST /test
+Content-Type: application/x-www-form-urlencoded
+
+name=John&age=30
+```
+
+### Multipart
+
+```http
+POST /test
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+File contents here
+------FormBoundary--
+```
