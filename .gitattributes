@@ -6,4 +6,5 @@
 *.cjs linguist-detectable=false
 *.mdx linguist-detectable=false
 *.css linguist-detectable=false
-*.qml linguist-detectable=false
+*.ysl linguist-detectable=false
+*.hbs linguist-detectable=false
