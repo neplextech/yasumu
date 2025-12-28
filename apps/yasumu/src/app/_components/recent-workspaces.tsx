@@ -11,28 +11,23 @@ import {
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import RecentWorkspaceCard, { RecentWorkspace } from './recent-workspace-card';
 import { useYasumu } from '@/components/providers/workspace-provider';
+import { useQuery } from '@tanstack/react-query';
+import LoadingScreen from '@/components/visuals/loading-screen';
 
 export default function RecentWorkspaces() {
   const { yasumu } = useYasumu();
-  const [recentWorkspaces, setRecentWorkspaces] = useState<RecentWorkspace[]>(
-    [],
-  );
-
-  useEffect(() => {
-    const fetchRecentWorkspaces = async () => {
+  const { data: recentWorkspaces, isLoading } = useQuery({
+    queryKey: ['recent-workspaces'],
+    queryFn: async () => {
       const workspaces = await yasumu.workspaces.list({ take: 5 });
-      setRecentWorkspaces(
-        workspaces.map((workspace) => ({
-          id: workspace.id,
-          name: workspace.name,
-          path: workspace.path,
-          lastOpenedAt: workspace.lastOpenedAt,
-        })),
-      );
-    };
-
-    fetchRecentWorkspaces();
-  }, []);
+      return workspaces.map((workspace) => ({
+        id: workspace.id,
+        name: workspace.name,
+        path: workspace.path,
+        lastOpenedAt: workspace.lastOpenedAt,
+      }));
+    },
+  });
 
   return (
     <Card className="h-full border-none shadow-none bg-transparent lg:bg-card lg:border lg:shadow-sm">
@@ -47,10 +42,12 @@ export default function RecentWorkspaces() {
       <CardContent className="px-0 lg:px-6">
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-3">
-            {recentWorkspaces.length === 0 ? (
+            {isLoading ? (
+              <LoadingScreen />
+            ) : recentWorkspaces?.length === 0 ? (
               <EmptyRecentWorkspace />
             ) : (
-              recentWorkspaces.map((workspace) => (
+              recentWorkspaces?.map((workspace) => (
                 <RecentWorkspaceCard key={workspace.id} workspace={workspace} />
               ))
             )}
