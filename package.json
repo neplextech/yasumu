@@ -8,7 +8,7 @@
     "bootstrap": "turbo gen bootstrap --args",
     "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\"",
     "build": "turbo run build",
-    "build:app": "turbo run build --filter=!./apps/www --filter=!./apps/docs --filter=!./apps/yasumu && pnpm --filter=@yasumu/app tauri build",
+    "build:app": "turbo run build --filter=!./apps/www --filter=!./apps/docs --filter=!./apps/yasumu",
     "prepare": "pnpm --filter=tanxium run deno install"
   },
   "license": "AGPL-3.0",

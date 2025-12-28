@@ -12,6 +12,7 @@ import {
   MdPublic,
 } from 'react-icons/md';
 import { FaArrowRight, FaDownload, FaGithub } from 'react-icons/fa6';
+import { SiDeno, SiRust, SiTauri, SiTypescript } from 'react-icons/si';
 
 export default function Home() {
   return (
@@ -146,13 +147,38 @@ export default function Home() {
                 experience.
               </p>
               <div className="flex flex-wrap gap-3 text-xs font-mono text-gray-400 mb-8">
-                {['Rust', 'Tauri', 'TypeScript', 'Deno'].map((tech) => (
-                  <span
-                    key={tech}
-                    className="px-3 py-1.5 bg-white/5 rounded border border-white/10 hover:border-white/30 transition-colors cursor-default"
+                {[
+                  {
+                    name: 'Rust',
+                    url: 'https://www.rust-lang.org/',
+                    icon: <SiRust className="size-4 text-orange-400" />,
+                  },
+                  {
+                    name: 'Tauri',
+                    url: 'https://tauri.app/',
+                    icon: <SiTauri className="size-4 text-yellow-400" />,
+                  },
+                  {
+                    name: 'TypeScript',
+                    url: 'https://www.typescriptlang.org/',
+                    icon: <SiTypescript className="size-4 text-blue-400" />,
+                  },
+                  {
+                    name: 'Deno',
+                    url: 'https://deno.com/',
+                    icon: <SiDeno className="size-4 text-gray-300" />,
+                  },
+                ].map((tech) => (
+                  <a
+                    key={tech.name}
+                    href={tech.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-white/5 rounded border border-white/10 hover:border-white/30 transition-colors cursor-pointer flex items-center gap-2"
                   >
-                    {tech}
-                  </span>
+                    {tech.icon}
+                    {tech.name}
+                  </a>
                 ))}
               </div>
               <div>
@@ -193,7 +219,7 @@ export default function Home() {
                 # Run the development server
               </div>
               <div className="text-white">
-                $ pnpm i && pnpm build && pnpm app
+                $ pnpm i && pnpm build:app && pnpm app
               </div>
               <div className="text-gray-500">
                 {' '}
