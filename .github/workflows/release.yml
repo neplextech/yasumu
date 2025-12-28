@@ -65,7 +65,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: pnpm build
+        run: "pnpm build:app"
         env:
           TURBO_TEAM: ${{ secrets.YASUMU_TURBO_TEAM }}
           TURBO_TOKEN: ${{ secrets.YASUMU_RELEASE_TURBO_TOKEN }}
