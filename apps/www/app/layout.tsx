@@ -25,6 +25,24 @@ export const metadata: Metadata = {
   twitter: {
     images: '/logo-dark-glow.png',
   },
+  keywords: [
+    'Yasumu',
+    'Neplex',
+    'API Laboratory',
+    'API Design',
+    'API Development',
+    'API Documentation',
+    'API Client',
+    'API Testing',
+    'Open Source',
+    'Rest',
+    'Smtp',
+    'Graphql',
+    'WebSocket',
+    'Server-Sent Events',
+    'Socket.IO',
+    'Plugins',
+  ],
 };
 
 export default function RootLayout({
