@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  ChevronsUpDown,
-  Keyboard,
-  Lock,
-  Logs,
-  Mail,
-  Settings,
-} from 'lucide-react';
-import { IoSync } from 'react-icons/io5';
+import { ChevronsUpDown, Lock, Logs, Mail, Settings } from 'lucide-react';
 import {
   Avatar,
   AvatarFallback,
@@ -43,6 +35,7 @@ import { TbWorldWww } from 'react-icons/tb';
 import { SiDiscord, SiGithub } from 'react-icons/si';
 import { YasumuSocials } from '@/lib/constants/socials';
 import SidebarLayoutStyleSelector from './layout-style-selector';
+import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import { useEffect, useState } from 'react';
 import { AppMenu } from './app-menu';
 import { useYasumu } from '../providers/workspace-provider';
@@ -233,22 +226,21 @@ function SettingsDropdown({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             {/* @ts-ignore */}
-            <Link href="/en/settings">
+            {/* <Link href="/en/settings">
               <DropdownMenuItem>
                 <Settings />
                 Settings
               </DropdownMenuItem>
-            </Link>
+            </Link> */}
             <SidebarThemeSelector />
             <SidebarLayoutStyleSelector />
-            <DropdownMenuItem>
-              <Keyboard />
-              Keyboard Shortcuts
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Logs />
-              Changelogs
-            </DropdownMenuItem>
+            <KeyboardShortcutsDialog />
+            <Link href={YasumuSocials.Changelogs as any} target="_blank">
+              <DropdownMenuItem>
+                <Logs />
+                Changelogs
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
@@ -264,11 +256,11 @@ function SettingsDropdown({
                 Discord
               </DropdownMenuItem>
             </Link>
-            <DropdownMenuSeparator />
+            {/* <DropdownMenuSeparator />
             <DropdownMenuItem>
               <IoSync />
               Check for Updates
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
