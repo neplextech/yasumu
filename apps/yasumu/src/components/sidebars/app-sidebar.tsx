@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  ChevronsUpDown,
-  Keyboard,
-  Lock,
-  Logs,
-  Mail,
-  Settings,
-} from 'lucide-react';
-import { IoSync } from 'react-icons/io5';
+import { ChevronsUpDown, Lock, Logs, Mail, Settings } from 'lucide-react';
 import {
   Avatar,
   AvatarFallback,
@@ -43,12 +35,15 @@ import { TbWorldWww } from 'react-icons/tb';
 import { SiDiscord, SiGithub } from 'react-icons/si';
 import { YasumuSocials } from '@/lib/constants/socials';
 import SidebarLayoutStyleSelector from './layout-style-selector';
+import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import { useEffect, useState } from 'react';
 import { AppMenu } from './app-menu';
 import { useYasumu } from '../providers/workspace-provider';
-import { YasumuVersion } from '@/lib/constants/version';
 import { getVersion, getName, getTauriVersion } from '@tauri-apps/api/app';
 import { Skeleton } from '@yasumu/ui/components/skeleton';
+import { useUpdater } from '../providers/updater-provider';
+import { cn } from '@yasumu/ui/lib/utils';
+import { IoSync } from 'react-icons/io5';
 
 const data = {
   user: {
@@ -233,22 +228,21 @@ function SettingsDropdown({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             {/* @ts-ignore */}
-            <Link href="/en/settings">
+            {/* <Link href="/en/settings">
               <DropdownMenuItem>
                 <Settings />
                 Settings
               </DropdownMenuItem>
-            </Link>
+            </Link> */}
             <SidebarThemeSelector />
             <SidebarLayoutStyleSelector />
-            <DropdownMenuItem>
-              <Keyboard />
-              Keyboard Shortcuts
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Logs />
-              Changelogs
-            </DropdownMenuItem>
+            <KeyboardShortcutsDialog />
+            <Link href={YasumuSocials.Changelogs as any} target="_blank">
+              <DropdownMenuItem>
+                <Logs />
+                Changelogs
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
@@ -265,14 +259,22 @@ function SettingsDropdown({
               </DropdownMenuItem>
             </Link>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <IoSync />
-              Check for Updates
-            </DropdownMenuItem>
+            <CheckForUpdates />
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>
+  );
+}
+
+function CheckForUpdates() {
+  const { isChecking, checkForUpdates } = useUpdater();
+
+  return (
+    <DropdownMenuItem onClick={() => void checkForUpdates()}>
+      <IoSync className={cn(isChecking && 'animate-spin')} />
+      {isChecking ? 'Checking for Updates...' : 'Check for Updates'}
+    </DropdownMenuItem>
   );
 }
 

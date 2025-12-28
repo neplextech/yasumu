@@ -1,9 +1,9 @@
 use crate::tanxium::state::{PERMISSION_CHANNELS, RECEIVER_MAP};
 use crate::tanxium::types::{PermissionPrompt, PermissionsResponse};
 use crossbeam_channel::unbounded;
-use deno_runtime::deno_permissions::prompter::set_prompter;
 use deno_runtime::deno_permissions::prompter::PermissionPrompter;
 use deno_runtime::deno_permissions::prompter::PromptResponse;
+use deno_runtime::deno_permissions::prompter::set_prompter;
 use serde_json::json;
 use std::thread;
 use tauri::{AppHandle, Emitter};

@@ -17,7 +17,8 @@
     "lint": "eslint",
     "tauri": "tauri",
     "shadcn": "shadcn",
-    "cargo": "cd src-tauri && cargo"
+    "cargo": "cd src-tauri && cargo",
+    "generate-icons": "node scripts/generate-icon.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
@@ -27,6 +28,8 @@
     "@tauri-apps/plugin-http": "~2.5.4",
     "@tauri-apps/plugin-os": "~2.3.2",
     "@tauri-apps/plugin-process": "~2.3.1",
+    "@tauri-apps/plugin-updater": "~2.9.0",
+    "@tauri-apps/plugin-window-state": "~2.4.1",
     "@yasumu/core": "workspace:*",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",

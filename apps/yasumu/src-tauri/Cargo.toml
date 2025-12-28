@@ -48,3 +48,7 @@ tauri-plugin-process = "2"
 color-print = "0.3.7"
 deno_terminal = "0.2.2"
 tauri-plugin-os = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+tauri-plugin-window-state = "2"
