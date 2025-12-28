@@ -148,7 +148,7 @@ export default function EmailList({
                         <div className="flex-1 min-w-0">
                           <p
                             className={cn(
-                              'text-sm truncate',
+                              'text-sm break-words',
                               email.unread ? 'font-semibold' : 'font-medium',
                               selectedEmailId === email.id
                                 ? 'text-foreground'
@@ -169,7 +169,7 @@ export default function EmailList({
                       </div>
                       <p
                         className={cn(
-                          'text-sm truncate',
+                          'text-sm break-words',
                           email.unread
                             ? 'font-semibold text-foreground'
                             : 'font-normal text-foreground/80',
@@ -181,8 +181,8 @@ export default function EmailList({
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {email.text.slice(0, 100)}...
+                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed break-words">
+                        {email.text.slice(0, 150)}
                       </p>
                     </div>
                   </div>

@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@yasumu/ui/components/resizable';
 import EmailList from './email-list';
 import EmailContent from './email-content';
 import LoadingScreen from '@/components/visuals/loading-screen';
@@ -66,8 +71,8 @@ export default function MailboxTab() {
   };
 
   return (
-    <div className="flex h-full">
-      <div className="w-[420px] shrink-0 border-r">
+    <ResizablePanelGroup direction="horizontal" className="h-full">
+      <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
         {isLoading ? (
           <LoadingScreen fullScreen />
         ) : (
@@ -79,14 +84,15 @@ export default function MailboxTab() {
             onFilterChange={setFilter}
           />
         )}
-      </div>
-      <div className="flex-1 min-w-0">
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={70} minSize={50}>
         {isLoading ? (
           <LoadingScreen fullScreen />
         ) : (
           <EmailContent email={selectedEmail || null} />
         )}
-      </div>
-    </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }
