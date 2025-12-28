@@ -9,6 +9,7 @@ import { PermissionPromptProvider } from './permission-prompt-provider';
 import { AppLayoutProvider } from './app-layout-provider';
 import { QueryClientProvider } from './query-client-provider';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import UpdaterProvider from './updater-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
@@ -23,13 +24,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <NextIntlClientProvider locale="en" timeZone="UTC">
         <NuqsAdapter>
-          <AppLayoutProvider>
+          <UpdaterProvider>
             <QueryClientProvider>
-              <WorkspaceProvider>
-                <PermissionPromptProvider>{children}</PermissionPromptProvider>
-              </WorkspaceProvider>
+              <AppLayoutProvider>
+                <WorkspaceProvider>
+                  <PermissionPromptProvider>
+                    {children}
+                  </PermissionPromptProvider>
+                </WorkspaceProvider>
+              </AppLayoutProvider>
             </QueryClientProvider>
-          </AppLayoutProvider>
+          </UpdaterProvider>
         </NuqsAdapter>
       </NextIntlClientProvider>
     </NextThemesProvider>

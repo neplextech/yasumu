@@ -39,9 +39,11 @@ import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import { useEffect, useState } from 'react';
 import { AppMenu } from './app-menu';
 import { useYasumu } from '../providers/workspace-provider';
-import { YasumuVersion } from '@/lib/constants/version';
 import { getVersion, getName, getTauriVersion } from '@tauri-apps/api/app';
 import { Skeleton } from '@yasumu/ui/components/skeleton';
+import { useUpdater } from '../providers/updater-provider';
+import { cn } from '@yasumu/ui/lib/utils';
+import { IoSync } from 'react-icons/io5';
 
 const data = {
   user: {
@@ -256,15 +258,23 @@ function SettingsDropdown({
                 Discord
               </DropdownMenuItem>
             </Link>
-            {/* <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <IoSync />
-              Check for Updates
-            </DropdownMenuItem> */}
+            <DropdownMenuSeparator />
+            <CheckForUpdates />
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>
+  );
+}
+
+function CheckForUpdates() {
+  const { isChecking, checkForUpdates } = useUpdater();
+
+  return (
+    <DropdownMenuItem onClick={() => void checkForUpdates()}>
+      <IoSync className={cn(isChecking && 'animate-spin')} />
+      {isChecking ? 'Checking for Updates...' : 'Check for Updates'}
+    </DropdownMenuItem>
   );
 }
 
