@@ -1,12 +1,15 @@
 # Yasumu Server
 
-A robust HTTP server built with Go, featuring PostgreSQL integration via GORM.
+A robust self-hostable backend server for Yasumu built with Go, featuring PostgreSQL integration via GORM.
 
 ## Prerequisites
 
 - Go 1.23+
 - Docker & Docker Compose (optional)
 - PostgreSQL 16+ (if running locally without Docker)
+
+> [!WARNING]
+> The server part of Yasumu is currently in a **very early stage** and development has not started yet. It may take a while until we start working on it.
 
 ## Project Structure
 
