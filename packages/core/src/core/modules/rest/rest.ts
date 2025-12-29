@@ -1,6 +1,8 @@
 import type { Workspace } from '@/core/workspace/workspace.js';
 import { RestEntity } from './rest.entity.js';
 import type {
+  EntityGroupCreateOptions,
+  EntityGroupData,
   RestEntityCreateOptions,
   RestEntityData,
   RestEntityUpdateOptions,
@@ -57,6 +59,14 @@ export class RestModule {
     });
 
     return data.map((data) => new RestEntity(this, data));
+  }
+
+  public async createEntityGroup(data: EntityGroupCreateOptions): Promise<EntityGroupData> {
+    const result = await this.workspace.manager.yasumu.rpc.entityGroups.create.$mutate({
+      parameters: [data],
+    });
+
+    return result;
   }
 
   public async executeScript(

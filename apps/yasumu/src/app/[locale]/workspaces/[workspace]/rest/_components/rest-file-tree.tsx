@@ -78,7 +78,12 @@ export function RestFileTree() {
         });
       })}
       onFolderCreate={withErrorHandler(async () => {
-        throw new Error('Folder creation is not supported yet');
+        // Todo: Implement sub folder creation using parent id
+        withErrorHandler(async (name: string) => {
+          await workspace.rest.createEntityGroup({
+            name,
+          });
+        });
       })}
       onFileDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.delete(id);
