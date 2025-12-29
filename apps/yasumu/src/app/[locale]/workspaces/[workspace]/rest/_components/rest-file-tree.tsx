@@ -1,23 +1,23 @@
 'use client';
+
+import { useEffect, useEffectEvent, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
-import { resolveHttpMethodIcon } from './http-methods';
 import {
   useActiveWorkspace,
   useYasumu,
 } from '@/components/providers/workspace-provider';
-import { useEffect, useEffectEvent, useState } from 'react';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { useRestContext } from '../_providers/rest-context';
-import { useRestOutput } from '../_providers/rest-output';
-import { useQuery } from '@tanstack/react-query';
 import LoadingScreen from '@/components/visuals/loading-screen';
+import { useRestContext } from '../_providers/rest-context';
+import { resolveHttpMethodIcon } from './http-methods';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const { setEntityId } = useRestContext();
-  const { setOutput } = useRestOutput();
+
   const {
     data: restEntities,
     isLoading: isLoadingRestEntities,
@@ -55,7 +55,7 @@ export function RestFileTree() {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [yasumu.events, refetchRestEntities]);
 
   if (isLoadingRestEntities) {
     return <LoadingScreen fullScreen />;
@@ -68,7 +68,6 @@ export function RestFileTree() {
       collapsible="none"
       onFileSelect={(id: string) => {
         setEntityId(id);
-        setOutput(null);
       }}
       onFileCreate={withErrorHandler(async (name: string) => {
         await workspace.rest.create({
@@ -78,21 +77,19 @@ export function RestFileTree() {
           metadata: {},
         });
       })}
-      onFolderCreate={withErrorHandler(async (name: string) => {
+      onFolderCreate={withErrorHandler(async () => {
         throw new Error('Folder creation is not supported yet');
       })}
       onFileDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.delete(id);
       })}
-      onFolderDelete={withErrorHandler(async (id: string) => {
+      onFolderDelete={withErrorHandler(async () => {
         throw new Error('Folder deletion is not supported yet');
       })}
       onFileRename={withErrorHandler(async (id: string, name: string) => {
-        await workspace.rest.update(id, {
-          name,
-        });
+        await workspace.rest.update(id, { name });
       })}
-      onFolderRename={withErrorHandler(async (id: string, name: string) => {
+      onFolderRename={withErrorHandler(async () => {
         throw new Error('Folder renaming is not supported yet');
       })}
     />

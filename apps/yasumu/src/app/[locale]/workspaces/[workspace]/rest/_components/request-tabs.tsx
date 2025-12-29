@@ -1,11 +1,10 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useHorizontalScroll } from '@yasumu/ui/hooks/use-horizontal-scroll';
 import { cn } from '@yasumu/ui/lib/utils';
 import { X } from 'lucide-react';
 import EnvironmentSelector from './environment-selector';
-import { useQuery } from '@tanstack/react-query';
-import { restQueries } from '../_constant/rest-queries-options';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import { resolveHttpMethodIcon } from './http-methods';
 
@@ -27,16 +26,14 @@ export function RequestTabs({ tabs }: { tabs: RequestTab[] }) {
         ref={ref}
         className="flex flex-row items-center w-full overflow-x-auto zw-scrollbar border-x h-9"
       >
-        {tabs.map((tab, id, arr) => {
-          return (
-            <RequestTabItem
-              tab={tab}
-              key={tab.id}
-              isFirst={id === 0}
-              isLast={id === arr.length - 1}
-            />
-          );
-        })}
+        {tabs.map((tab, id, arr) => (
+          <RequestTabItem
+            tab={tab}
+            key={tab.id}
+            isFirst={id === 0}
+            isLast={id === arr.length - 1}
+          />
+        ))}
       </div>
       <EnvironmentSelector />
     </div>
@@ -53,10 +50,19 @@ function RequestTabItem({
   isLast: boolean;
 }) {
   const workspace = useActiveWorkspace();
-  const { data } = useQuery(restQueries.getEntityOptions(tab.id, workspace));
 
-  const name = data?.data.name || 'Loading...';
-  const Icon = data ? resolveHttpMethodIcon(data.data.method) : null;
+  const { data } = useQuery({
+    queryKey: ['rest-tab', tab.id],
+    queryFn: async () => {
+      const entity = await workspace.rest.get(tab.id);
+      return entity.data;
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const name = data?.name || 'Loading...';
+  const Icon = data ? resolveHttpMethodIcon(data.method) : null;
 
   return (
     <div

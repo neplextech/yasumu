@@ -1,14 +1,15 @@
 import type {
+  CommonEntity,
   CustomMetadata,
   TabularPair,
-  YasumuScript,
+  YasumuEmbeddedScript,
 } from '../common/common.types.js';
 import type { HttpMethod } from './rest.constants.js';
 
 /**
  * The body of the request.
  */
-export interface RestEntityBody extends CustomMetadata {
+export interface RestEntityRequestBody extends CustomMetadata {
   /**
    * The type of the body.
    */
@@ -16,21 +17,44 @@ export interface RestEntityBody extends CustomMetadata {
   /**
    * The data of the body.
    */
-  data: unknown;
+  value: unknown;
+}
+
+export interface TestResult {
+  /**
+   * The test name.
+   */
+  test: string;
+  /**
+   * The result of the test.
+   */
+  result: 'pass' | 'fail' | 'skip';
+  /**
+   * The error message of the test in case of failure.
+   */
+  error: string | null;
+}
+
+export interface RestEntityMetadata {
+  responseCache: {
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: string | null;
+  };
+  requestCache: {
+    binaryPaths: {
+      // the mapping of the RequestBody.value[i].key to the file-system path to the binary file
+      [key: string]: string | null;
+    };
+  };
+  testResultCache: TestResult[];
 }
 
 /**
  * The data of the request.
  */
-export interface RestEntityData extends CustomMetadata {
-  /**
-   * The id of the request.
-   */
-  id: string;
-  /**
-   * The scripts of the request.
-   */
-  scripts: YasumuScript[];
+export interface RestEntityData extends CommonEntity {
   /**
    * The name of the request.
    */
@@ -44,17 +68,37 @@ export interface RestEntityData extends CustomMetadata {
    */
   url: string | null;
   /**
+   * The group id of the request.
+   */
+  groupId: string | null;
+  /**
    * The headers of the request.
    */
-  headers: TabularPair[];
+  requestHeaders: TabularPair[];
   /**
    * The parameters of the request.
    */
-  parameters: TabularPair[];
+  requestParameters: TabularPair[];
+  /**
+   * The search parameters of the request.
+   */
+  searchParameters: TabularPair[];
   /**
    * The body of the request.
    */
-  body: RestEntityBody | null;
+  requestBody: RestEntityRequestBody | null;
+  /**
+   * The script of this entity.
+   */
+  script: YasumuEmbeddedScript;
+  /**
+   * The test script of this entity.
+   */
+  testScript: YasumuEmbeddedScript;
+  /**
+   * The dependencies of this entity.
+   */
+  dependencies: string[];
 }
 
 /**
@@ -73,6 +117,38 @@ export interface RestEntityCreateOptions extends CustomMetadata {
    * The url of the request.
    */
   url: string | null;
+  /**
+   * The group id of the request.
+   */
+  groupId?: string | null;
+  /**
+   * The request parameters of this entity.
+   */
+  requestParameters?: TabularPair[];
+  /**
+   * The search parameters of this entity.
+   */
+  searchParameters?: TabularPair[];
+  /**
+   * The request headers of this entity.
+   */
+  requestHeaders?: TabularPair[];
+  /**
+   * The request body of this entity.
+   */
+  requestBody?: RestEntityRequestBody | null;
+  /**
+   * The script of this entity.
+   */
+  script?: YasumuEmbeddedScript;
+  /**
+   * The test script of this entity.
+   */
+  testScript?: YasumuEmbeddedScript;
+  /**
+   * The dependencies of this entity.
+   */
+  dependencies?: string[];
 }
 
 /**
@@ -92,47 +168,35 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
    */
   url?: string | null;
   /**
-   * The headers of the request.
+   * The group id of the request.
    */
-  headers?: TabularPair[];
+  groupId?: string | null;
   /**
-   * The parameters of the request.
+   * The request parameters of this entity.
    */
-  parameters?: TabularPair[];
+  requestParameters?: TabularPair[];
   /**
-   * The body of the request.
+   * The search parameters of this entity.
    */
-  body?: RestEntityBody | null;
-}
-
-/**
- * The result of executing a rest entity.
- */
-export interface RestEntityExecutionResult {
+  searchParameters?: TabularPair[];
   /**
-   * The stage of the execution.
+   * The request headers of this entity.
    */
-  stage: 'pre' | 'post';
+  requestHeaders?: TabularPair[];
   /**
-   * The data of the execution.
+   * The request body of this entity.
    */
-  data: MaybePatchableEntityExecutionData;
-}
-
-/**
- * The data of the execution result.
- */
-export interface MaybePatchableEntityExecutionData {
+  requestBody?: RestEntityRequestBody | null;
   /**
-   * The headers of the response.
+   * The script of this entity.
    */
-  headers: TabularPair[];
+  script?: YasumuEmbeddedScript;
   /**
-   * The type of the data.
+   * The test script of this entity.
    */
-  type: 'json' | 'text' | 'unknown';
+  testScript?: YasumuEmbeddedScript;
   /**
-   * The body of the response.
+   * The dependencies of this entity.
    */
-  body: string | null;
+  dependencies?: string[];
 }

@@ -1,100 +1,70 @@
 import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { ScriptableEntity } from '@yasumu/common';
-import { restEntities } from '../../../database/schema.ts';
-import { and, eq } from 'drizzle-orm';
-import { NotFoundException } from '../common/exceptions/http.exception.ts';
-import { runInNewContext, createContext, type Context } from 'node:vm';
-
-interface RunnableContext {
-  onRequest?: (req: Request) => Promise<void>;
-  onResponse?: (req: Request, res: Response) => Promise<void>;
-}
+import {
+  ExecutableScript,
+  ScriptExecutionResult,
+  YasumuScriptingLanguage,
+} from '@yasumu/common';
+import { ScriptWorkerManager } from '../../../workers/script-worker-manager.ts';
 
 @Injectable()
 export class ScriptRuntimeService {
-  private context: Context | null = null;
-  public constructor(private readonly connection: TransactionalConnection) {}
+  private readonly workerManager = new ScriptWorkerManager();
 
-  private getContext() {
-    if (this.context) return this.context;
+  private makeKey(workspaceId: string, entityId: string) {
+    return `${workspaceId}/${entityId}.ts`;
+  }
 
-    this.context = createContext({
-      Yasumu,
-      inEmbeddedScript: true,
+  public async executeScript<Context, Entity extends ExecutableScript<Context>>(
+    workspaceId: string,
+    entity: Entity,
+    preload: string,
+  ): Promise<ScriptExecutionResult<Context>> {
+    if (entity.script.language !== YasumuScriptingLanguage.JavaScript) {
+      throw new Error('Unsupported script language');
+    }
+
+    const key = this.makeKey(workspaceId, entity.entityId);
+
+    Yasumu.registerVirtualModule(key, entity.script.code);
+
+    const worker = this.workerManager.getOrCreate<Context>({
+      key,
+      source: preload,
+      moduleKey: key,
+      onTerminate: () => {
+        Yasumu.unregisterVirtualModule(key);
+      },
     });
 
-    return this.context;
+    try {
+      const response = await worker.execute(
+        entity.invocationTarget,
+        entity.context,
+      );
+
+      return {
+        context: response.context,
+        result: response.success
+          ? { success: true, result: response.result }
+          : { success: false, error: response.error ?? 'Unknown error' },
+      };
+    } catch (error) {
+      return {
+        context: entity.context,
+        result: {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
   }
 
-  private async getScriptCode(workspaceId: string, entity: ScriptableEntity) {
-    const db = this.connection.getConnection();
-
-    const result = await (async () => {
-      switch (entity.type) {
-        case 'rest': {
-          const [result] = await db
-            .select()
-            .from(restEntities)
-            .where(
-              and(
-                eq(restEntities.workspaceId, workspaceId),
-                eq(restEntities.id, entity.id),
-              ),
-            );
-
-          return result;
-        }
-        default:
-          throw new NotFoundException(
-            `Entity type ${entity.type} is not supported yet`,
-          );
-      }
-    })();
-
-    if (!result) {
-      throw new NotFoundException(
-        `Entity ${entity.id} for workspace ${workspaceId} not found`,
-      );
-    }
-
-    return result.script;
+  public terminateWorker(workspaceId: string, entityId: string): boolean {
+    const key = this.makeKey(workspaceId, entityId);
+    return this.workerManager.terminate(key);
   }
 
-  public async executeScript(workspaceId: string, entity: ScriptableEntity) {
-    const script = await this.getScriptCode(workspaceId, entity);
-    if (!script) return null;
-
-    const context = runInNewContext(script.code, this.getContext(), {
-      timeout: 60_000,
-      filename: `yasumu-embedded-script/${entity.type}/${entity.id}.js`,
-    }) as RunnableContext;
-
-    if (entity.target === 'onRequest' && context.onRequest !== undefined) {
-      const req = entity.serializedData.request;
-      await context.onRequest(
-        new Request(req.url, {
-          method: req.method,
-          headers: req.headers,
-        }),
-      );
-    }
-
-    if (entity.target === 'onResponse' && context.onResponse !== undefined) {
-      const res = entity.serializedData.response;
-      if (!res) return;
-      const req = entity.serializedData.request;
-
-      await context.onResponse(
-        new Request(req.url, {
-          method: req.method,
-          headers: req.headers,
-        }),
-        new Response(res.body, {
-          status: res.status,
-          headers: res.headers,
-        }),
-      );
-    }
+  public terminateAllWorkers() {
+    this.workerManager.terminateAll();
   }
 }

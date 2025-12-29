@@ -8,6 +8,8 @@ import {
   op_is_yasumu_ready,
   op_get_yasumu_version,
   op_set_echo_server_port,
+  op_register_virtual_module,
+  op_unregister_virtual_module,
 } from 'ext:core/ops';
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
@@ -17,6 +19,9 @@ let _resourceDir: string, _yasumuVersion: string;
 const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
 const YASUMU_INTERNAL_ON_EVENT_CALLBACK = '~yasumu__on__Event__Callback';
+const inWorker =
+  // @ts-ignore types
+  typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
 
 class Yasumu {
   /**
@@ -26,6 +31,26 @@ class Yasumu {
 
   private constructor() {
     throw new Error('Yasumu is not a constructor');
+  }
+
+  /**
+   * Register a virtual module. This allows workers or scripts to access modules that are not part of the main bundle.
+   * The registered module is available as `yasumu:virtual/<name>` in the worker or script.
+   * @param name The name of the module to register
+   * @param code The code of the module to register
+   */
+  public static registerVirtualModule(name: string, code: string) {
+    if (inWorker) return;
+    op_register_virtual_module(name, code);
+  }
+
+  /**
+   * Unregister a virtual module. This is used to clean up the virtual module store when a worker or script is terminated.
+   * @param name The name of the module to unregister
+   */
+  public static unregisterVirtualModule(name: string) {
+    if (inWorker) return;
+    op_unregister_virtual_module(name);
   }
 
   /**

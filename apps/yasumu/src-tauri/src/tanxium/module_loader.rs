@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use deno_ast::ParseParams;
@@ -18,11 +19,14 @@ use crate::tanxium::yasumu_modules::YASUMU_MODULES;
 
 const YASUMU_MODULE_PREFIX: &str = "yasumu:";
 const YASUMU_INTERNAL_PREFIX: &str = "file://yasumu_internal/";
+const YASUMU_VIRTUAL_PREFIX: &str = "yasumu:virtual/";
 
 type SourceMapStore = Rc<RefCell<HashMap<String, Vec<u8>>>>;
+type VirtualModulesStore = Arc<Mutex<HashMap<String, String>>>;
 
 pub struct TypescriptModuleLoader {
     pub source_maps: SourceMapStore,
+    pub virtual_modules: Option<VirtualModulesStore>,
 }
 
 impl ModuleLoader for TypescriptModuleLoader {
@@ -32,7 +36,7 @@ impl ModuleLoader for TypescriptModuleLoader {
         referrer: &str,
         _kind: ResolutionKind,
     ) -> Result<ModuleSpecifier, ModuleLoaderError> {
-        // handle yasumu: prefixed modules
+        // handle yasumu: prefixed modules (including virtual modules)
         if specifier.starts_with(YASUMU_MODULE_PREFIX) {
             let resolved_specifier = format!("{}{}", YASUMU_INTERNAL_PREFIX, specifier);
             resolve_import(resolved_specifier.as_str(), referrer)
@@ -50,8 +54,11 @@ impl ModuleLoader for TypescriptModuleLoader {
         _requested_module_type: RequestedModuleType,
     ) -> ModuleLoadResponse {
         let source_maps = self.source_maps.clone();
+        let virtual_modules = self.virtual_modules.clone();
+
         fn load(
             source_maps: SourceMapStore,
+            virtual_modules: Option<VirtualModulesStore>,
             module_specifier: &ModuleSpecifier,
         ) -> Result<ModuleSource, ModuleLoaderError> {
             println!("load: {}", module_specifier);
@@ -61,82 +68,111 @@ impl ModuleLoader for TypescriptModuleLoader {
                     .to_string()
                     .starts_with(YASUMU_INTERNAL_PREFIX);
 
-            let (code, should_transpile, media_type, module_type) =
-                if module_specifier.scheme() == "file" && !is_yasumu_internal {
-                    let path = module_specifier.to_file_path().map_err(|_| {
-                        ModuleLoaderError::type_error(
-                            "There was an error converting the module specifier to a file path",
-                        )
-                    })?;
+            let is_yasumu_virtual = is_yasumu_internal
+                && module_specifier.to_string().starts_with(&format!(
+                    "{}{}",
+                    YASUMU_INTERNAL_PREFIX, YASUMU_VIRTUAL_PREFIX
+                ));
 
-                    let media_type = MediaType::from_path(&path);
-                    let (module_type, should_transpile) = match MediaType::from_path(&path) {
-                        MediaType::JavaScript | MediaType::Mjs | MediaType::Cjs => {
-                            (ModuleType::JavaScript, false)
-                        }
-                        MediaType::Jsx => (ModuleType::JavaScript, true),
-                        MediaType::TypeScript
-                        | MediaType::Mts
-                        | MediaType::Cts
-                        | MediaType::Dts
-                        | MediaType::Dmts
-                        | MediaType::Dcts
-                        | MediaType::Tsx => (ModuleType::JavaScript, true),
-                        MediaType::Json => (ModuleType::Json, false),
-                        _ => (ModuleType::Other("Unknown".into()), false),
-                    };
+            let (code, should_transpile, media_type, module_type) = if module_specifier.scheme()
+                == "file"
+                && !is_yasumu_internal
+            {
+                let path = module_specifier.to_file_path().map_err(|_| {
+                    ModuleLoaderError::type_error(
+                        "There was an error converting the module specifier to a file path",
+                    )
+                })?;
 
-                    if module_type == ModuleType::Other("Unknown".into()) {
-                        return Err(ModuleLoaderError::type_error(format!(
-                            "Unknown extension {:?}",
-                            path.extension()
-                        )));
+                let media_type = MediaType::from_path(&path);
+                let (module_type, should_transpile) = match MediaType::from_path(&path) {
+                    MediaType::JavaScript | MediaType::Mjs | MediaType::Cjs => {
+                        (ModuleType::JavaScript, false)
                     }
+                    MediaType::Jsx => (ModuleType::JavaScript, true),
+                    MediaType::TypeScript
+                    | MediaType::Mts
+                    | MediaType::Cts
+                    | MediaType::Dts
+                    | MediaType::Dmts
+                    | MediaType::Dcts
+                    | MediaType::Tsx => (ModuleType::JavaScript, true),
+                    MediaType::Json => (ModuleType::Json, false),
+                    _ => (ModuleType::Other("Unknown".into()), false),
+                };
 
-                    (
-                        std::fs::read_to_string(&path)
-                            .map_err(|e| ModuleLoaderError::from_err(e))?,
-                        should_transpile,
-                        media_type,
-                        module_type,
-                    )
-                } else if module_specifier.scheme() == "https" {
-                    let url = module_specifier.to_string();
+                if module_type == ModuleType::Other("Unknown".into()) {
+                    return Err(ModuleLoaderError::type_error(format!(
+                        "Unknown extension {:?}",
+                        path.extension()
+                    )));
+                }
 
-                    let response = ureq::get(&url)
-                        .call()
-                        .map_err(|e| ModuleLoaderError::type_error(e.to_string()))?
-                        .into_string()
-                        .map_err(|e| ModuleLoaderError::from_err(e))?;
+                (
+                    std::fs::read_to_string(&path).map_err(|e| ModuleLoaderError::from_err(e))?,
+                    should_transpile,
+                    media_type,
+                    module_type,
+                )
+            } else if module_specifier.scheme() == "https" {
+                let url = module_specifier.to_string();
 
-                    (
-                        response,
-                        false,
-                        MediaType::JavaScript,
-                        ModuleType::JavaScript,
-                    )
-                } else if is_yasumu_internal {
-                    let specifier = module_specifier.to_string();
-                    let parsed_specifier = specifier.strip_prefix(YASUMU_INTERNAL_PREFIX).unwrap();
-                    let module = YASUMU_MODULES.get(parsed_specifier).ok_or_else(|| {
+                let response = ureq::get(&url)
+                    .call()
+                    .map_err(|e| ModuleLoaderError::type_error(e.to_string()))?
+                    .into_string()
+                    .map_err(|e| ModuleLoaderError::from_err(e))?;
+
+                (
+                    response,
+                    false,
+                    MediaType::JavaScript,
+                    ModuleType::JavaScript,
+                )
+            } else if is_yasumu_virtual {
+                let specifier = module_specifier.to_string();
+                let full_prefix = format!("{}{}", YASUMU_INTERNAL_PREFIX, YASUMU_VIRTUAL_PREFIX);
+                let identifier = specifier.strip_prefix(&full_prefix).ok_or_else(|| {
+                    ModuleLoaderError::type_error(format!(
+                        "Invalid virtual module specifier: {}",
+                        specifier
+                    ))
+                })?;
+
+                let code = virtual_modules
+                    .as_ref()
+                    .and_then(|vm| vm.lock().ok())
+                    .and_then(|guard| guard.get(identifier).cloned())
+                    .ok_or_else(|| {
                         ModuleLoaderError::type_error(format!(
-                            "Unknown yasumu module: {}",
-                            module_specifier.to_string()
+                            "Virtual module not found: {}",
+                            identifier
                         ))
                     })?;
 
-                    (
-                        module.to_string(),
-                        true,
-                        MediaType::TypeScript,
-                        ModuleType::JavaScript,
-                    )
-                } else {
-                    return Err(ModuleLoaderError::type_error(format!(
-                        "Unknown scheme {:?}",
-                        module_specifier.scheme()
-                    )));
-                };
+                (code, true, MediaType::TypeScript, ModuleType::JavaScript)
+            } else if is_yasumu_internal {
+                let specifier = module_specifier.to_string();
+                let parsed_specifier = specifier.strip_prefix(YASUMU_INTERNAL_PREFIX).unwrap();
+                let module = YASUMU_MODULES.get(parsed_specifier).ok_or_else(|| {
+                    ModuleLoaderError::type_error(format!(
+                        "Unknown yasumu module: {}",
+                        module_specifier.to_string()
+                    ))
+                })?;
+
+                (
+                    module.to_string(),
+                    true,
+                    MediaType::TypeScript,
+                    ModuleType::JavaScript,
+                )
+            } else {
+                return Err(ModuleLoaderError::type_error(format!(
+                    "Unknown scheme {:?}",
+                    module_specifier.scheme()
+                )));
+            };
 
             let code = if should_transpile {
                 let parsed = deno_ast::parse_module(ParseParams {
@@ -186,7 +222,7 @@ impl ModuleLoader for TypescriptModuleLoader {
             ))
         }
 
-        ModuleLoadResponse::Sync(load(source_maps, module_specifier))
+        ModuleLoadResponse::Sync(load(source_maps, virtual_modules, module_specifier))
     }
 
     fn get_source_map(&self, specifier: &str) -> Option<Cow<'_, [u8]>> {

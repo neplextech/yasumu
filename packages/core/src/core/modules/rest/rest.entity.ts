@@ -2,8 +2,8 @@ import type { RestModule } from './rest.js';
 import type {
   HttpMethod,
   RestEntityData,
-  RestEntityExecutionResult,
   RestEntityUpdateOptions,
+  RestScriptContext,
 } from '@yasumu/common';
 
 export class RestEntity {
@@ -50,31 +50,40 @@ export class RestEntity {
     return this.rest.delete(this.id);
   }
 
-  public getSearchParameters() {
-    return new URLSearchParams(
-      (this.data.parameters || []).map((parameter) => [
-        parameter.key,
-        parameter.value,
-      ]),
-    );
-  }
-
   public getFullURL() {
     if (!this.data.url) {
       return null;
     }
 
-    const searchParameters = this.getSearchParameters();
+    const searchParameters = new URLSearchParams(
+      (this.data.searchParameters || [])
+        .filter((p) => p.enabled)
+        .map((parameter) => [parameter.key, parameter.value]),
+    );
+
     const url = new URL(this.data.url);
 
     url.search = searchParameters.toString();
 
-    return url.toString();
+    const stringifiedUrl = url
+      .toString()
+      .replace(/\:([a-zA-Z0-9_]+)/g, (match, key) => {
+        const parameter = this.data.requestParameters?.find(
+          (p) => p.key === key && p.enabled,
+        );
+
+        return parameter?.value ?? match;
+      });
+
+    return stringifiedUrl;
   }
 
-  public async execute(): Promise<RestEntityExecutionResult> {
-    const result = await this.rest.executeById(this.id);
-    return result;
+  public async executePreRequestScript(context: RestScriptContext) {
+    return this.rest.executeScript(this.id, this.data.script, context);
+  }
+
+  public async executePostResponseScript(context: RestScriptContext) {
+    return this.rest.executeScript(this.id, this.data.testScript, context);
   }
 
   public toJSON(): RestEntityData {
