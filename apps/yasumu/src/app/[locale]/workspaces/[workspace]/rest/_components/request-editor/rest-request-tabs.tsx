@@ -91,7 +91,7 @@ export function RestRequestTabs({
         code,
       });
     },
-    [script, onScriptChange],
+    [script?.language, onScriptChange],
   );
 
   const handleTestScriptCodeChange = useCallback(
@@ -101,7 +101,7 @@ export function RestRequestTabs({
         code,
       });
     },
-    [testScript, onTestScriptChange],
+    [testScript?.language, onTestScriptChange],
   );
 
   return (
@@ -140,6 +140,12 @@ export function RestRequestTabs({
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
           >
             Scripts
+          </TabsTrigger>
+          <TabsTrigger
+            value="tests"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
+          >
+            Tests
           </TabsTrigger>
         </TabsList>
       </div>
@@ -245,53 +251,68 @@ export function RestRequestTabs({
         </TabsContent>
 
         <TabsContent value="scripts" className="h-full mt-0">
-          <div className="grid grid-cols-2 gap-4 h-full">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground font-medium">
-                  Pre-Request Script
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  export function onRequest(ctx) {'{ }'}
-                </span>
-              </div>
-              <Textarea
-                value={script?.code || ''}
-                onChange={(e) => handleScriptCodeChange(e.target.value)}
-                placeholder={`// Pre-request script
-// Modify request before sending
-
-export function onRequest(ctx) {
-  // ctx.request.headers['X-Custom'] = 'value';
-  return ctx;
-}`}
-                className="flex-1 resize-none font-mono text-sm bg-muted/30 border-muted-foreground/20 p-4 min-h-[200px]"
-                spellCheck={false}
-              />
+          <div className="flex flex-col gap-2 h-full">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground font-medium">
+                Request Scripts
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                onRequest(req) · onResponse(req, res)
+              </span>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground font-medium">
-                  Post-Response Script
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  export function onResponse(ctx) {'{ }'}
-                </span>
-              </div>
-              <Textarea
-                value={testScript?.code || ''}
-                onChange={(e) => handleTestScriptCodeChange(e.target.value)}
-                placeholder={`// Post-response script
-// Process response after receiving
+            <Textarea
+              value={script?.code || ''}
+              onChange={(e) => handleScriptCodeChange(e.target.value)}
+              placeholder={`// Request lifecycle scripts
+// Export onRequest to modify request before sending
+// Export onResponse to process response after receiving
 
-export function onResponse(ctx) {
-  // console.log(ctx.response.status);
-  return ctx;
+export function onRequest(req) {
+  // Modify request headers, body, etc.
+  // req.headers.set('X-Custom', 'value');
+  // Return a response object to show fake response data
+  // return new YasumuResponse(200, { body: 'Hello, world!' });
+}
+
+export function onResponse(req, res) {
+  // Process response data
+  // console.log(res.status);
 }`}
-                className="flex-1 resize-none font-mono text-sm bg-muted/30 border-muted-foreground/20 p-4 min-h-[200px]"
-                spellCheck={false}
-              />
+              className="flex-1 resize-none font-mono text-sm bg-muted/30 border-muted-foreground/20 p-4 min-h-[300px]"
+              spellCheck={false}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tests" className="h-full mt-0">
+          <div className="flex flex-col gap-2 h-full">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground font-medium">
+                Test Assertions
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                test(name, fn)
+              </span>
             </div>
+            <Textarea
+              value={testScript?.code || ''}
+              onChange={(e) => handleTestScriptCodeChange(e.target.value)}
+              disabled // TODO: Implement test assertions
+              placeholder={`// Test assertions
+// Write tests to validate response data
+
+test('status should be 200', (ctx) => {
+  expect(ctx.response.status).toBe(200);
+});
+
+test('should return user data', (ctx) => {
+  const body = JSON.parse(ctx.response.body);
+  expect(body.id).toBeDefined();
+  expect(body.name).toBeString();
+});`}
+              className="flex-1 resize-none font-mono text-sm bg-muted/30 border-muted-foreground/20 p-4 min-h-[300px]"
+              spellCheck={false}
+            />
           </div>
         </TabsContent>
       </div>

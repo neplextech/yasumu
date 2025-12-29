@@ -59,6 +59,7 @@ export function useRestRequest({
   const [state, setState] = useState<RequestState>(INITIAL_STATE);
   const controllerRef = useRef(new RestRequestController());
   const isCancelledRef = useRef(false);
+  const { selectedEnvironment } = useEnvironmentStore();
 
   const appendScriptOutput = useCallback((message: string) => {
     setState((prev) => ({
@@ -83,7 +84,7 @@ export function useRestRequest({
       });
 
       let currentContext: RestScriptContext = {
-        environment: null,
+        environment: selectedEnvironment?.toJSON() ?? null,
         request: {
           url: entity.url || '',
           method: entity.method,
@@ -99,7 +100,7 @@ export function useRestRequest({
               .map(([k, v]) => [k, v.value]),
           ),
         },
-        response: null as unknown as RestScriptContext['response'],
+        response: null,
       };
 
       try {
@@ -172,9 +173,9 @@ export function useRestRequest({
         const response = outcome.response!;
         setState((prev) => ({ ...prev, response }));
 
-        if (entity.testScript?.code?.trim()) {
+        if (entity.script?.code?.trim()) {
           setState((prev) => ({ ...prev, phase: 'post-response-script' }));
-          appendScriptOutput('[Post-Response] Executing script...');
+          appendScriptOutput('[Post-Response] Executing onResponse...');
 
           const responseContext: RestScriptContext = {
             ...currentContext,
@@ -188,7 +189,7 @@ export function useRestRequest({
           try {
             const result = await workspace.rest.executeScript(
               entityId,
-              entity.testScript,
+              entity.script,
               responseContext,
             );
 
@@ -208,6 +209,8 @@ export function useRestRequest({
           }
         }
 
+        // TODO: Run test assertions using entity.testScript
+
         setState((prev) => ({ ...prev, phase: 'completed' }));
       } catch (err) {
         if (!isCancelledRef.current) {
@@ -219,7 +222,14 @@ export function useRestRequest({
         }
       }
     },
-    [entityId, workspace, echoServerPort, interpolate, appendScriptOutput],
+    [
+      entityId,
+      workspace,
+      echoServerPort,
+      interpolate,
+      appendScriptOutput,
+      selectedEnvironment,
+    ],
   );
 
   const cancel = useCallback(() => {
