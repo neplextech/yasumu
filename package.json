@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "app": "pnpm --filter=@yasumu/app tauri dev",
+    "app": "pnpm --filter=@yasumu/app tauri dev --additional-watch-folders ../../../packages/tanxium/src",
     "bootstrap": "turbo gen bootstrap --args",
     "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\"",
     "build": "turbo run build",

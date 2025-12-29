@@ -64,6 +64,7 @@ export class RestService {
         name: data.name,
         method: data.method,
         url: data.url,
+        groupId: data.groupId,
       })
       .returning();
 

@@ -73,6 +73,10 @@ export interface RestEntityCreateOptions extends CustomMetadata {
    * The url of the request.
    */
   url: string | null;
+  /**
+   * The group id of the request.
+   */
+  groupId?: string | null;
 }
 
 /**
@@ -103,6 +107,10 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
    * The body of the request.
    */
   body?: RestEntityBody | null;
+  /**
+   * The group id of the request.
+   */
+  groupId?: string | null;
 }
 
 /**
