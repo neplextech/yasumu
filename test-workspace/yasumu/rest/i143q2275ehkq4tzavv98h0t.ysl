@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Next.js"
+  method: "GET"
+  id: "i143q2275ehkq4tzavv98h0t"
+  groupId: null
+}
+
+request {
+  url: "https://nextjs.org"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

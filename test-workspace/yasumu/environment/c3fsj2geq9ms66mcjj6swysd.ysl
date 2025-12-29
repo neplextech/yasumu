@@ -18,7 +18,7 @@ variables [
   },
   {
     key: "TIMESTAMP"
-    value: "15235135315"
+    value: "2025-12-29T18:39:38.140Z"
     enabled: true
   },
 ]

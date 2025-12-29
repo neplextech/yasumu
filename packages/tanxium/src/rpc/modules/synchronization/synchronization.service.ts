@@ -253,14 +253,18 @@ export class SynchronizationService implements OnModuleInit {
         url: request.url,
         groupId: metadata.groupId,
         requestHeaders: request.headers,
+        requestParameters: request.parameters,
+        searchParameters: request.searchParameters,
         requestBody: request.body
           ? {
               type: request.body.type as
-                | 'text'
                 | 'json'
+                | 'text'
+                | 'binary'
                 | 'form-data'
-                | 'urlencoded',
+                | 'x-www-form-urlencoded',
               value: request.body.content ?? '',
+              metadata: {},
             }
           : null,
         script: script
@@ -525,14 +529,18 @@ export class SynchronizationService implements OnModuleInit {
       url: request.url,
       groupId: metadata.groupId,
       requestHeaders: request.headers,
+      requestParameters: request.parameters,
+      searchParameters: request.searchParameters,
       requestBody: request.body
         ? {
             type: request.body.type as
-              | 'text'
               | 'json'
+              | 'text'
+              | 'binary'
               | 'form-data'
-              | 'urlencoded',
+              | 'x-www-form-urlencoded',
             value: request.body.content ?? '',
+            metadata: {},
           }
         : null,
       script: script ? { language: 'javascript' as const, code: script } : null,
@@ -749,6 +757,13 @@ export class SynchronizationService implements OnModuleInit {
     url: string | null;
     groupId: string | null;
     requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
+    requestParameters:
+      | { key: string; value: string; enabled: boolean }[]
+      | null;
+    searchParameters: { key: string; value: string; enabled: boolean }[] | null;
+    requestBody: { type: string; value: unknown } | null;
+    script: { code: string } | null;
+    testScript: { code: string } | null;
   }): string {
     return JSON.stringify({
       id: entity.id,
@@ -757,6 +772,11 @@ export class SynchronizationService implements OnModuleInit {
       url: entity.url,
       groupId: entity.groupId,
       headers: entity.requestHeaders ?? [],
+      parameters: entity.requestParameters ?? [],
+      searchParameters: entity.searchParameters ?? [],
+      body: entity.requestBody,
+      script: entity.script,
+      testScript: entity.testScript,
     });
   }
 
@@ -834,7 +854,13 @@ export class SynchronizationService implements OnModuleInit {
       url: string | null;
       groupId: string | null;
       requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
-      requestBody: { type: string; value: string } | null;
+      requestParameters:
+        | { key: string; value: string; enabled: boolean }[]
+        | null;
+      searchParameters:
+        | { key: string; value: string; enabled: boolean }[]
+        | null;
+      requestBody: { type: string; value: unknown } | null;
       script: { code: string } | null;
       testScript: { code: string } | null;
     },
@@ -853,10 +879,27 @@ export class SynchronizationService implements OnModuleInit {
           body: entity.requestBody
             ? {
                 type: entity.requestBody.type,
-                content: entity.requestBody.value,
+                content:
+                  typeof entity.requestBody.value === 'string'
+                    ? entity.requestBody.value
+                    : JSON.stringify(entity.requestBody.value),
               }
             : null,
-          headers: entity.requestHeaders ?? [],
+          headers: (entity.requestHeaders ?? []).map((h) => ({
+            key: h.key ?? '',
+            value: h.value ?? '',
+            enabled: h.enabled,
+          })),
+          parameters: (entity.requestParameters ?? []).map((p) => ({
+            key: p.key ?? '',
+            value: p.value ?? '',
+            enabled: p.enabled,
+          })),
+          searchParameters: (entity.searchParameters ?? []).map((s) => ({
+            key: s.key ?? '',
+            value: s.value ?? '',
+            enabled: s.enabled,
+          })),
           url: entity.url,
         },
         script: entity.script?.code ?? null,
@@ -891,7 +934,11 @@ export class SynchronizationService implements OnModuleInit {
           id: env.id,
           name: env.name,
         },
-        variables: env.variables,
+        variables: env.variables.map((v) => ({
+          key: v.key,
+          value: v.value ?? '',
+          enabled: v.enabled,
+        })),
         secrets: env.secrets.map((s) => ({
           key: s.key,
           value: '',

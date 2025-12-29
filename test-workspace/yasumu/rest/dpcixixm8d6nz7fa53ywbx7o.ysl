@@ -8,22 +8,50 @@ metadata {
 }
 
 request {
-  url: "{{API_URL}}"
-  headers: []
+  url: "{{API_URL}}/:path"
+  headers: [
+    {
+      key: "X-Custom-Header"
+      value: "1234HELLO"
+      enabled: true
+    },
+  ]
+  parameters: [
+    {
+      key: "path"
+      value: "users"
+      enabled: true
+    },
+  ]
+  searchParameters: [
+    {
+      key: "userId"
+      value: "{{USER_ID}}"
+      enabled: true
+    },
+  ]
   body: null
 }
 
 dependencies []
 
 script {
-  export function onRequest(req) {
+  export async function onRequest(req) {
+    const reqId = Yasumu.cuid()
     const userId = req.env.getSecret('USER_ID')
     req.headers.set('x-current-user-id', userId ?? 'NONE')
+    req.headers.set('x-request-id', reqId)
   }
   
-  export function onResponse(req, res) {
+  export async function onResponse(req, res) {
     res.env.setVariable('SOURCE', res.json().meta.source)
-  res.env.setVariable('TIMESTAMP', res.json().timestamp)
+    res.env.setVariable('TIMESTAMP', res.json().meta.timestamp)
+  
+    await Yasumu.ui.showNotification({
+      title: 'Info for You',
+      message: 'Your request has been processed!',
+      variant: 'info',
+    });
   }
 }
 

@@ -392,13 +392,13 @@ export function onResponse(req, res) {
 
 ```javascript
 // Different notification variants
-Yasumu.ui.showNotification({
+await Yasumu.ui.showNotification({
   title: 'Info',
   message: 'Processing your request...',
   variant: 'info',
 });
 
-Yasumu.ui.showNotification({
+await Yasumu.ui.showNotification({
   title: 'Warning',
   message: 'Rate limit approaching',
   variant: 'warning',
