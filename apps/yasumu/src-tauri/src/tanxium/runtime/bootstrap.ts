@@ -131,6 +131,7 @@ class Yasumu {
    * @param port The port to set
    */
   public static setRpcPort(port: number) {
+    if (inWorker) return;
     op_set_rpc_port(port);
   }
 
@@ -139,6 +140,7 @@ class Yasumu {
    * @param port The port to set
    */
   public static setEchoServerPort(port: number) {
+    if (inWorker) return;
     op_set_echo_server_port(port);
   }
 
@@ -148,6 +150,7 @@ class Yasumu {
    * @returns A function to remove the listener
    */
   public static onReady(listener: () => unknown) {
+    if (inWorker) return () => {};
     if (Yasumu.isReady()) {
       listener();
       return () => {};
@@ -165,6 +168,7 @@ class Yasumu {
    * @returns A function to remove the listener
    */
   public static onEvent(listener: (event: string) => unknown) {
+    if (inWorker) return () => {};
     listeners.add(listener);
 
     return () => {
