@@ -147,6 +147,7 @@ deno_core::extension!(
         "patches.ts",
         "utils.ts",
         "common.ts",
+        "yasumu-request.ts",
     ],
     state = |state| {
         state.put::<deno_runtime::ops::bootstrap::SnapshotOptions>(
