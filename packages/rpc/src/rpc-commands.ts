@@ -17,12 +17,18 @@ import type {
   ListEmailOptions,
   EmailData,
   PaginatedResult,
-  RestEntityExecutionResult,
-  ScriptableEntity,
   EnvironmentData,
   EnvironmentUpdateOptions,
   EnvironmentCreateOptions,
+  ExecutableScript,
+  ScriptExecutionResult,
+  RestScriptContext,
 } from '@yasumu/common';
+
+type ExecuteScriptCommand<Context> = RpcMutation<
+  [entity: ExecutableScript<Context>, terminateAfter?: boolean],
+  ScriptExecutionResult<Context>
+>;
 
 /**
  * The Yasumu RPC interface.
@@ -113,10 +119,7 @@ export interface YasumuRPC {
      * @param entity The entity to execute the script on.
      * @returns The result of the script execution.
      */
-    executeScript: RpcMutation<
-      [entity: ScriptableEntity],
-      RestEntityExecutionResult
-    >;
+    executeScript: ExecuteScriptCommand<RestScriptContext>;
   };
   /**
    * The entity groups commands.

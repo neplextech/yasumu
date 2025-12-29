@@ -2,11 +2,12 @@ import { Mutation, Query, Resolver } from '@yasumu/den';
 import { RestService } from './rest.service.ts';
 import { WorkspaceId } from '../common/decorators.ts';
 import type {
+  ExecutableScript,
   RestEntityCreateOptions,
   RestEntityData,
-  RestEntityExecutionResult,
   RestEntityUpdateOptions,
-  ScriptableEntity,
+  RestScriptContext,
+  ScriptExecutionResult,
 } from '@yasumu/common';
 import { YasumuRpcService } from '@yasumu/rpc';
 
@@ -71,13 +72,11 @@ export class RestResolver implements YasumuRpcService<'rest'> {
   }
 
   @Mutation()
-  public async executeScript(
+  public executeScript(
     @WorkspaceId() workspaceId: string,
-    entity: ScriptableEntity,
-  ): Promise<RestEntityExecutionResult> {
-    return (await {
-      workspaceId,
-      entity,
-    }) as unknown as RestEntityExecutionResult;
+    entity: ExecutableScript<RestScriptContext>,
+    terminateAfter = false,
+  ): Promise<ScriptExecutionResult<RestScriptContext>> {
+    return this.restService.executeScript(workspaceId, entity, terminateAfter);
   }
 }

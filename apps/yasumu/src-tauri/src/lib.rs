@@ -2,13 +2,17 @@ mod tanxium;
 
 use deno_runtime::deno_core::ModuleSpecifier;
 use serde_json::json;
-use std::sync::Mutex;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use tauri::{Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 
-struct YasumuInternalState {
-    ready: bool,
-    rpc_port: Option<u16>,
-    echo_server_port: Option<u16>,
+pub type VirtualModulesStore = Arc<Mutex<HashMap<String, String>>>;
+
+pub struct YasumuInternalState {
+    pub ready: bool,
+    pub rpc_port: Option<u16>,
+    pub echo_server_port: Option<u16>,
+    pub virtual_modules: VirtualModulesStore,
 }
 
 #[tauri::command]
@@ -74,6 +78,7 @@ pub fn run() {
             ready: false,
             rpc_port: None,
             echo_server_port: None,
+            virtual_modules: Arc::new(Mutex::new(HashMap::new())),
         }))
         .setup(move |app| {
             // Create the main window manually

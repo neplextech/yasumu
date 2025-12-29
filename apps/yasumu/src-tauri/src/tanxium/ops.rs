@@ -17,6 +17,30 @@ fn op_send_renderer_event(state: &mut OpState, #[string] event: &str) {
     app_handle.emit("tanxium-event", event).unwrap();
 }
 
+#[op2(fast)]
+fn op_register_virtual_module(state: &mut OpState, #[string] key: &str, #[string] code: &str) {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let guard = yasumu_state.lock().unwrap();
+    let mut virtual_modules = guard.virtual_modules.lock().unwrap();
+    virtual_modules.insert(key.to_string(), code.to_string());
+}
+
+#[op2(fast)]
+fn op_unregister_virtual_module(state: &mut OpState, #[string] key: &str) {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let guard = yasumu_state.lock().unwrap();
+    let mut virtual_modules = guard.virtual_modules.lock().unwrap();
+    virtual_modules.remove(key);
+}
+
 #[op2]
 #[string]
 fn op_get_resources_dir(state: &mut OpState) -> String {
@@ -112,6 +136,8 @@ deno_core::extension!(
         op_is_yasumu_ready,
         op_get_yasumu_version,
         op_set_echo_server_port,
+        op_register_virtual_module,
+        op_unregister_virtual_module,
     ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [

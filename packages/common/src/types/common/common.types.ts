@@ -1,17 +1,113 @@
-import type { HttpMethod } from '../rest/rest.constants.js';
+import type { EnvironmentData } from '../environment/environment.types.js';
+import type { YasumuScriptingLanguage } from './constants.js';
 
-/**
- * The script of the request.
- */
-export interface YasumuScript {
+export interface YasumuEmbeddedScript {
   /**
-   * The type of the script.
+   * The language of the script.
    */
-  type: 'beforeRequest' | 'afterRequest';
+  language: YasumuScriptingLanguage;
   /**
    * The code of the script.
    */
   code: string;
+}
+
+export interface CommonScriptRuntimeContext {
+  /**
+   * The current environment of the script runtime.
+   */
+  environment: EnvironmentData | null;
+}
+
+export interface ExecutableScript<Context = any> {
+  /**
+   * The id of the entity that this script belongs to.
+   */
+  entityId: string;
+  /**
+   * The target function to be executed.
+   */
+  invocationTarget: string;
+  /**
+   * The script to be executed.
+   */
+  script: YasumuEmbeddedScript;
+  /**
+   * The context data of the script.
+   */
+  context: Context;
+}
+
+/**
+ * The result of the script execution that was successful.
+ */
+export interface SuccessExecutionResult {
+  /**
+   * Whether the script execution was successful.
+   */
+  success: true;
+  /**
+   * The result of the script execution.
+   */
+  result: any;
+}
+
+/**
+ * The result of the script execution that was failed.
+ */
+export interface FailedExecutionResult {
+  /**
+   * Whether the script execution was failed.
+   */
+  success: false;
+  /**
+   * The error message of the script execution.
+   */
+  error: string;
+}
+
+/**
+ * The result of the script execution.
+ */
+export type ScriptExecutionResultOrError =
+  | SuccessExecutionResult
+  | FailedExecutionResult;
+
+/**
+ * Checks if the result is a successful script execution result.
+ */
+export function isSuccessExecutionResult(
+  result: unknown,
+): result is SuccessExecutionResult {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'success' in result &&
+    result.success === true
+  );
+}
+
+/**
+ * Checks if the result is a failed script execution result.
+ */
+export function isFailedExecutionResult(
+  result: unknown,
+): result is FailedExecutionResult {
+  return !isSuccessExecutionResult(result);
+}
+
+/**
+ * The result of the script execution.
+ */
+export interface ScriptExecutionResult<Context = any> {
+  /**
+   * The context data of the script execution.
+   */
+  context: Context;
+  /**
+   * The execution result of the script.
+   */
+  result: ScriptExecutionResultOrError;
 }
 
 /**
@@ -35,73 +131,36 @@ export interface TabularPair {
 /**
  * The custom metadata that can be associated with an entity.
  */
-export interface CustomMetadata {
+export interface CustomMetadata<T = any> {
   /**
    * The arbitrary data that can be associated with an entity.
    * This can be used to store arbitrary data that is not part of the schema.
    */
-  metadata: any;
+  metadata: T;
+}
+
+/**
+ * The common entity type
+ */
+export interface CommonEntity extends CustomMetadata {
+  /**
+   * The id of the entity.
+   */
+  id: string;
+  /**
+   * The created at timestamp.
+   */
+  createdAt: number;
+  /**
+   * The updated at timestamp.
+   */
+  updatedAt: number;
 }
 
 /**
  * The type of the entity.
  */
 export type EntityType = 'rest' | 'graphql' | 'websocket' | 'socketio' | 'sse';
-
-/**
- * The options for creating an entity group.
- */
-export interface EntityGroupCreateOptions {
-  /**
-   * The name of the entity group.
-   */
-  name: string;
-  /**
-   * The parent ID of the entity group.
-   */
-  parentId: string | null;
-  /**
-   * The type of the entity.
-   */
-  entityType: EntityType;
-}
-
-/**
- * The options for updating an entity group.
- */
-export interface EntityGroupUpdateOptions {
-  /**
-   * The name of the entity group.
-   */
-  name?: string;
-  /**
-   * The parent ID of the entity group.
-   */
-  parentId?: string | null;
-}
-
-export interface EntityGroupData {
-  /**
-   * The id of the entity group.
-   */
-  id: string;
-  /**
-   * The name of the entity group.
-   */
-  name: string;
-  /**
-   * The parent ID of the entity group.
-   */
-  parentId: string | null;
-  /**
-   * The type of the entity.
-   */
-  entityType: EntityType;
-  /**
-   * The entity owner ID.
-   */
-  entityOwnerId: string;
-}
 
 /**
  * The paginated list of items.
@@ -115,43 +174,4 @@ export interface PaginatedResult<T> {
    * The items in the list.
    */
   items: T[];
-}
-
-/**
- * The entity that can be scripted. This is typically used while executing a script.
- */
-export interface ScriptableEntity {
-  /**
-   * The entity type.
-   */
-  type: EntityType;
-  /**
-   * The id of the entity.
-   */
-  id: string;
-  /**
-   * The script target to invoke
-   */
-  target: 'onRequest' | 'onResponse';
-  /**
-   * The serialized data of the entity.
-   */
-  serializedData: {
-    /**
-     * The serialized request.
-     */
-    request: {
-      method: string;
-      url: string;
-      headers: Record<string, string>;
-    };
-    /**
-     * The serialized response.
-     */
-    response: {
-      status: number;
-      headers: Record<string, string>;
-      body: string;
-    } | null;
-  };
 }

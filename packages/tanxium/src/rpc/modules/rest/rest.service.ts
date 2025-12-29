@@ -3,12 +3,17 @@ import { TransactionalConnection } from '../common/transactional-connection.serv
 import { and, eq } from 'drizzle-orm';
 import { restEntities } from '@/database/schema.ts';
 import {
+  ExecutableScript,
   RestEntityCreateOptions,
   RestEntityUpdateOptions,
+  RestScriptContext,
+  ScriptExecutionResult,
 } from '@yasumu/common';
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
 import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
+import { ScriptRuntimeService } from '../script-runtime/script-runtime.service.ts';
+import { REST_SCRIPT_PRELOAD } from './rest-script-preload.ts';
 
 @Injectable()
 export class RestService {
@@ -16,6 +21,7 @@ export class RestService {
     private readonly connection: TransactionalConnection,
     private readonly entityGroupService: EntityGroupService,
     private readonly tanxiumService: TanxiumService,
+    private readonly scriptRuntimeService: ScriptRuntimeService,
   ) {}
 
   public async dispatchUpdate(workspaceId: string) {
@@ -117,6 +123,23 @@ export class RestService {
       entityType: 'rest',
       groupId,
     });
+
+    return result;
+  }
+
+  public async executeScript(
+    workspaceId: string,
+    entity: ExecutableScript<RestScriptContext>,
+    terminateAfter = false,
+  ): Promise<ScriptExecutionResult<RestScriptContext>> {
+    const result = await this.scriptRuntimeService.executeScript<
+      RestScriptContext,
+      ExecutableScript<RestScriptContext>
+    >(workspaceId, entity, REST_SCRIPT_PRELOAD);
+
+    if (terminateAfter) {
+      this.scriptRuntimeService.terminateWorker(workspaceId, entity.entityId);
+    }
 
     return result;
   }

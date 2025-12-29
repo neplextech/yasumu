@@ -1,9 +1,0 @@
-@smtp
-
-metadata {
-  id: "udlji8yaooo11ud8aetg3omr"
-  port: 0
-  username: null
-  password: null
-}
-

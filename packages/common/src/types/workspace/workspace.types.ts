@@ -1,13 +1,9 @@
-import type { CustomMetadata } from '../common/common.types.js';
+import type { CommonEntity, CustomMetadata } from '../common/common.types.js';
 
 /**
  * A partial workspace object.
  */
-export interface PartialWorkspace {
-  /**
-   * The ID of the workspace.
-   */
-  id: string;
+export interface PartialWorkspace extends CommonEntity {
   /**
    * The name of the workspace.
    */
@@ -25,11 +21,7 @@ export interface PartialWorkspace {
 /**
  * The data for a Yasumu workspace.
  */
-export interface WorkspaceData extends CustomMetadata {
-  /**
-   * The ID of the workspace.
-   */
-  id: string;
+export interface WorkspaceData extends CommonEntity {
   /**
    * The name of the workspace.
    */
@@ -38,14 +30,6 @@ export interface WorkspaceData extends CustomMetadata {
    * The version of the workspace.
    */
   version: number;
-  /**
-   * The date and time the workspace was created.
-   */
-  createdAt: number;
-  /**
-   * The date and time the workspace was last updated.
-   */
-  updatedAt: number;
   /**
    * The path of the workspace.
    */

@@ -4,7 +4,8 @@ import type {
   RestEntityCreateOptions,
   RestEntityData,
   RestEntityUpdateOptions,
-  RestEntityExecutionResult,
+  RestScriptContext,
+  YasumuEmbeddedScript,
 } from '@yasumu/common';
 
 export class RestModule {
@@ -50,7 +51,25 @@ export class RestModule {
     return data.map((data) => new RestEntity(this, data));
   }
 
-  public async executeById(id: string): Promise<RestEntityExecutionResult> {
-    throw new Error('Not implemented');
+  public async executeScript(
+    entityId: string,
+    script: YasumuEmbeddedScript,
+    context: RestScriptContext,
+  ) {
+    const isResponse = !!context.response;
+    const result =
+      await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
+        parameters: [
+          {
+            entityId,
+            script,
+            context,
+            invocationTarget: isResponse ? 'onResponse' : 'onRequest',
+          },
+          isResponse,
+        ],
+      });
+
+    return result;
   }
 }

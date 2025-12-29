@@ -1,6 +1,9 @@
+'use client';
+
 import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { cn } from '@yasumu/ui/lib/utils';
+import { Loader2, Send, X, Save } from 'lucide-react';
 import HttpMethodSelector from '../http-methods-selector';
 
 interface RequestUrlBarProps {
@@ -8,9 +11,10 @@ interface RequestUrlBarProps {
   url: string;
   onMethodChange: (method: string) => void;
   onUrlChange: (url: string) => void;
-  onUrlBlur: () => void;
   onSend: () => void;
+  onCancel: () => void;
   isSending?: boolean;
+  isSaving?: boolean;
 }
 
 export function RequestUrlBar({
@@ -18,25 +22,55 @@ export function RequestUrlBar({
   url,
   onMethodChange,
   onUrlChange,
-  onUrlBlur,
   onSend,
+  onCancel,
   isSending,
+  isSaving,
 }: RequestUrlBarProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isSending) {
+      e.preventDefault();
+      onSend();
+    }
+  };
+
   return (
-    <div className="flex gap-4">
-      <HttpMethodSelector
-        onChange={withErrorHandler(onMethodChange)}
-        value={method}
-      />
-      <Input
-        placeholder="Enter a URL"
-        value={url}
-        onChange={withErrorHandler((e) => onUrlChange(e.target.value))}
-        onBlur={onUrlBlur}
-      />
-      <Button onClick={withErrorHandler(onSend)} disabled={isSending}>
-        {isSending ? 'Sending...' : 'Send'}
-      </Button>
+    <div className="flex gap-2 items-center">
+      <HttpMethodSelector onChange={onMethodChange} value={method} />
+      <div className="flex-1 relative">
+        <Input
+          placeholder="Enter a URL (e.g., https://api.example.com/users)"
+          value={url}
+          onChange={(e) => onUrlChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="font-mono text-sm pr-8"
+          disabled={isSending}
+        />
+        {isSaving && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      {isSending ? (
+        <Button
+          onClick={onCancel}
+          variant="destructive"
+          className="min-w-[100px]"
+        >
+          <X className="h-4 w-4 mr-2" />
+          Cancel
+        </Button>
+      ) : (
+        <Button
+          onClick={onSend}
+          disabled={!url.trim()}
+          className="min-w-[100px]"
+        >
+          <Send className="h-4 w-4 mr-2" />
+          Send
+        </Button>
+      )}
     </div>
   );
 }

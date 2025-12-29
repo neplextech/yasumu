@@ -1,3 +1,4 @@
+use crate::YasumuInternalState;
 use crate::tanxium::module_loader::TypescriptModuleLoader;
 use crate::tanxium::node_services;
 use crate::tanxium::ops::tanxium_rt;
@@ -30,10 +31,10 @@ use deno_runtime::{BootstrapOptions, FeatureChecker};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use sys_traits::impls::RealSys;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_dialog::MessageDialogKind;
 
@@ -48,6 +49,7 @@ struct WorkerSharedState {
     app_handle: AppHandle,
     node_resolver: Arc<NodeResolver<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys>>,
     pkg_json_resolver: Arc<node_resolver::PackageJsonResolver<RealSys>>,
+    virtual_modules: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl WorkerSharedState {
@@ -65,6 +67,7 @@ impl WorkerSharedState {
             let worker_source_maps = Rc::new(RefCell::new(HashMap::new()));
             let worker_module_loader = Rc::new(TypescriptModuleLoader {
                 source_maps: worker_source_maps,
+                virtual_modules: Some(shared.virtual_modules.clone()),
             });
 
             let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
@@ -233,6 +236,7 @@ async fn initialize_worker(
         WorkerServiceOptions {
             module_loader: Rc::new(TypescriptModuleLoader {
                 source_maps: source_map_store,
+                virtual_modules: Some(shared_state.virtual_modules.clone()),
             }),
             permissions: permission_container,
             bundle_provider: Default::default(),
@@ -357,6 +361,12 @@ pub fn create_and_start_worker(
             let node_resolver =
                 node_services::create_node_resolver(npm_resolver, pkg_json_resolver.clone());
 
+            let virtual_modules = {
+                let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
+                let guard = yasumu_state.lock().unwrap();
+                guard.virtual_modules.clone()
+            };
+
             let shared_state = Arc::new(WorkerSharedState {
                 blob_store: Arc::new(BlobStore::default()),
                 broadcast_channel: InMemoryBroadcastChannel::default(),
@@ -366,6 +376,7 @@ pub fn create_and_start_worker(
                 app_handle: app_handle.clone(),
                 node_resolver,
                 pkg_json_resolver,
+                virtual_modules,
             });
 
             let mut retry_count = 0;
