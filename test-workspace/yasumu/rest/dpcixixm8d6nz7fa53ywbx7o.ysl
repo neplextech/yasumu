@@ -23,6 +23,7 @@ script {
   
   export function onResponse(req, res) {
     res.env.setVariable('SOURCE', res.json().meta.source)
+  res.env.setVariable('TIMESTAMP', res.json().timestamp)
   }
 }
 

@@ -16,6 +16,11 @@ variables [
     value: "tanxium-echo-server"
     enabled: true
   },
+  {
+    key: "TIMESTAMP"
+    value: "15235135315"
+    enabled: true
+  },
 ]
 
 secrets [

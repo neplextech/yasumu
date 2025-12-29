@@ -103,18 +103,25 @@ export function useRestEntity({
       setLocalData(serverData);
       pendingUpdates.current = {};
     }
-  }, [serverData, isFetched]);
+  }, [serverData, isFetched, entityId]);
 
   useEffect(() => {
     if (entityId) {
-      setLocalData(null);
       pendingUpdates.current = {};
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
       }
+      const cached = queryClient.getQueryData<RestEntityData>(queryKey);
+      if (cached) {
+        setLocalData(cached);
+      } else {
+        setLocalData(null);
+      }
+    } else {
+      setLocalData(null);
     }
-  }, [entityId]);
+  }, [entityId, queryClient, queryKey]);
 
   const flushSave = useCallback(async () => {
     if (!entityId || Object.keys(pendingUpdates.current).length === 0) return;
