@@ -1,11 +1,10 @@
 import { commonColumns, json } from '../../common/index.ts';
 import { KeyValuePair } from '@/common/types.ts';
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { cuid } from '../../common/index.ts';
 
 export const environments = sqliteTable('environments', {
   ...commonColumns(),
-  workspaceId: cuid('workspaceId').notNull(),
+  workspaceId: text('workspaceId').notNull(),
   name: text('name').notNull(),
   variables: json<KeyValuePair[]>('variables')
     .notNull()

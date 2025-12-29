@@ -1,9 +1,9 @@
 import { sqliteTable, int, text, integer } from 'drizzle-orm/sqlite-core';
-import { commonColumns, cuid } from '../../common/index.ts';
+import { commonColumns } from '../../common/index.ts';
 
 export const smtp = sqliteTable('smtp', {
   ...commonColumns(),
-  workspaceId: cuid('workspaceId').notNull(),
+  workspaceId: text('workspaceId').notNull(),
   port: int('port').notNull().default(0),
   username: text('username'),
   password: text('password'),
@@ -11,7 +11,7 @@ export const smtp = sqliteTable('smtp', {
 
 export const emails = sqliteTable('emails', {
   ...commonColumns(),
-  smtpId: cuid('smtpId').notNull(),
+  smtpId: text('smtpId').notNull(),
   from: text('from').notNull(),
   to: text('to').notNull(),
   subject: text('subject').notNull(),
