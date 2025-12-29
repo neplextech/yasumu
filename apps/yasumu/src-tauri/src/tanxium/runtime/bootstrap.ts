@@ -13,6 +13,13 @@ import {
 } from 'ext:core/ops';
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
+import {
+  YasumuRequest,
+  YasumuResponse,
+  YasumuHeaders,
+  YasumuURLSearchParams,
+  YasumuWorkspaceEnvironment,
+} from './yasumu-request.ts';
 
 let _resourceDir: string, _yasumuVersion: string;
 
@@ -196,14 +203,53 @@ class Yasumu {
   }
 }
 
-Object.defineProperty(globalThis, 'Yasumu', {
-  value: Yasumu,
-  writable: false,
-  enumerable: false,
-  configurable: false,
+Object.defineProperties(globalThis, {
+  Yasumu: {
+    value: Yasumu,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
+  ...(!inWorker && {
+    YasumuRequest: {
+      value: YasumuRequest,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    },
+    YasumuResponse: {
+      value: YasumuResponse,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    },
+    YasumuHeaders: {
+      value: YasumuHeaders,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    },
+    YasumuURLSearchParams: {
+      value: YasumuURLSearchParams,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    },
+    YasumuWorkspaceEnvironment: {
+      value: YasumuWorkspaceEnvironment,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    },
+  }),
 });
 
 type YasumuRuntime = typeof Yasumu;
+type YasumuRequestType = typeof YasumuRequest;
+type YasumuResponseType = typeof YasumuResponse;
+type YasumuHeadersType = typeof YasumuHeaders;
+type YasumuURLSearchParamsType = typeof YasumuURLSearchParams;
+type YasumuWorkspaceEnvironmentType = typeof YasumuWorkspaceEnvironment;
 
 declare global {
   // deno-lint-ignore no-explicit-any
@@ -213,6 +259,16 @@ declare global {
    */
   // deno-lint-ignore no-var
   export var Yasumu: YasumuRuntime;
+  // deno-lint-ignore no-var
+  export var YasumuRequest: YasumuRequestType;
+  // deno-lint-ignore no-var
+  export var YasumuResponse: YasumuResponseType;
+  // deno-lint-ignore no-var
+  export var YasumuHeaders: YasumuHeadersType;
+  // deno-lint-ignore no-var
+  export var YasumuURLSearchParams: YasumuURLSearchParamsType;
+  // deno-lint-ignore no-var
+  export var YasumuWorkspaceEnvironment: YasumuWorkspaceEnvironmentType;
   // deno-lint-ignore no-var
   export var __yasumu_renderer_event_listener: ((event: string) => void) | null;
 }

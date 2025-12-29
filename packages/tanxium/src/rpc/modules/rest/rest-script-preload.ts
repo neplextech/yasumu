@@ -51,13 +51,24 @@ self.onmessage = async (event) => {
       return;
     }
 
-    const result = await targetFn(context);
+    const env = new YasumuWorkspaceEnvironment(context.environment);
+    const req = new YasumuRequest(context, env);
+    const res = context.response ? YasumuResponse.fromContext(context, env) : null;
+    
+    const result = await targetFn(req, res);
+    
+    let updatedContext = req.toContext();
+    let mockResponse = null;
+
+    if (result instanceof YasumuResponse) {
+      mockResponse = result.toContextData();
+    }
     
     self.postMessage({
       type: 'execution-success',
       requestId,
-      context: result?.context ?? context,
-      result: result?.result,
+      context: updatedContext,
+      result: mockResponse,
     });
   } catch (error) {
     self.postMessage({

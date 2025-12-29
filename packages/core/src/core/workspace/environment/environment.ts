@@ -126,4 +126,12 @@ export class Environment {
       return match;
     });
   }
+
+  /**
+   * Converts this environment to a JSON object.
+   * @returns The JSON object.
+   */
+  public toJSON(): EnvironmentData {
+    return this.data;
+  }
 }
