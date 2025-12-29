@@ -56,7 +56,7 @@ impl WorkerSharedState {
     fn create_web_worker_callback(
         self: &Arc<Self>,
         stdio: Stdio,
-        is_parent_main_worker: bool,
+        _is_parent_main_worker: bool,
     ) -> Arc<CreateWebWorkerCb> {
         let shared = self.clone();
         Arc::new(move |args| {
@@ -73,14 +73,18 @@ impl WorkerSharedState {
             let permission_desc_parser: Arc<RuntimePermissionDescriptorParser<RealSys>> =
                 Arc::new(RuntimePermissionDescriptorParser::new(RealSys));
 
-            let permissions_container = if is_parent_main_worker {
-                args.parent_permissions.clone()
-            } else {
-                PermissionsContainer::new(
-                    permission_desc_parser.clone(),
-                    Permissions::none_with_prompt(),
-                )
-            };
+            // let permissions_container = if is_parent_main_worker {
+            //     args.parent_permissions.clone()
+            // } else {
+            //     PermissionsContainer::new(
+            //         permission_desc_parser.clone(),
+            //         Permissions::none_with_prompt(),
+            //     )
+            // };
+            let permissions_container = PermissionsContainer::new(
+                permission_desc_parser.clone(),
+                Permissions::none_with_prompt(),
+            )
 
             let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone(), false);
 
