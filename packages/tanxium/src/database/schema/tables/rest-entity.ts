@@ -57,7 +57,7 @@ export interface RequestBody {
 export const restEntities = sqliteTable('rest_entity', {
   ...commonColumns<RestEntityMetadata>(),
   name: text('name').notNull(),
-  workspaceId: cuid('workspaceId').notNull(),
+  workspaceId: text('workspaceId').notNull(),
   method: text('method').notNull(),
   url: text('url'),
   requestParameters: json<KeyValuePair[]>('requestParameters'),
@@ -65,11 +65,11 @@ export const restEntities = sqliteTable('rest_entity', {
   requestBody: json<RequestBody>('requestBody'),
   script: json<YasumuEmbeddedScript>('script'),
   testScript: json<YasumuEmbeddedScript>('testScript'),
-  groupId: cuid('groupId'),
+  groupId: text('groupId'),
 });
 
 export const restEntityDependencies = sqliteTable('rest_entity_dependency', {
   ...commonColumns(),
-  restEntityId: cuid('restEntityId').notNull(),
-  dependsOnId: cuid('dependsOnId').notNull(),
+  restEntityId: text('restEntityId').notNull(),
+  dependsOnId: text('dependsOnId').notNull(),
 });

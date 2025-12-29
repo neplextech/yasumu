@@ -6,7 +6,7 @@ import {
   TreeViewOptions,
 } from './types.ts';
 import { and, eq, isNull } from 'drizzle-orm';
-import { entityGroups } from '../../../database/schema.ts';
+import { entityGroups, restEntities } from '../../../database/schema.ts';
 import {
   NotFoundException,
   BadRequestException,
@@ -130,41 +130,63 @@ export class EntityGroupService {
   }
 
   public async listTree(options: TreeViewOptions) {
-    const { tableName, entityField, workspaceId, groupId, entityType } =
-      options;
+    // Returns a tree structure with folders (groups) and files (rest entities)
+    // Each item has a `type` field: 'folder' or 'file'
+    // Folders have a `children` array containing nested folders and files
+    const { workspaceId, entityType } = options;
     const db = this.connection.getConnection();
 
-    const groups = await db.query.entityGroups.findMany({
-      where: and(
-        eq(entityGroups.workspaceId, workspaceId),
-        eq(entityGroups.entityType, entityType),
-        groupId ? eq(entityGroups.id, groupId) : undefined,
-      ),
-    });
+    // Fetch all groups for this workspace and entity type
+    const groups = await db
+      .select()
+      .from(entityGroups)
+      .where(
+        and(
+          eq(entityGroups.workspaceId, workspaceId),
+          eq(entityGroups.entityType, entityType),
+        ),
+      );
 
-    const entities = await db.query[tableName].findMany({
-      where: eq(entityField, workspaceId),
-    });
+    // Fetch all rest entities for this workspace
+    const entities = await db
+      .select()
+      .from(restEntities)
+      .where(eq(restEntities.workspaceId, workspaceId));
 
-    const _mappedGroups = groups;
-    const mappedEntities = entities;
+    // Define tree item types for frontend consumption
+    type GroupTreeItem = (typeof groups)[number] & {
+      type: 'folder';
+      children: TreeItem[];
+    };
 
-    type MappedGroup = (typeof _mappedGroups)[number];
-    type MappedEntity = (typeof mappedEntities)[number];
-    type TreeItem = MappedEntity | (MappedGroup & { children: TreeItem[] });
+    type EntityTreeItem = (typeof entities)[number] & {
+      type: 'file';
+    };
 
-    const mappedGroups = _mappedGroups.map((group) => ({
+    type TreeItem = GroupTreeItem | EntityTreeItem;
+
+    // Map groups to include type and children array
+    const mappedGroups: GroupTreeItem[] = groups.map((group) => ({
       ...group,
+      type: 'folder' as const,
       children: [] as TreeItem[],
     }));
 
-    const groupMap = new Map<string, (typeof mappedGroups)[0]>();
+    // Map entities to include type
+    const mappedEntities: EntityTreeItem[] = entities.map((entity) => ({
+      ...entity,
+      type: 'file' as const,
+    }));
+
+    // Create a map for quick group lookup
+    const groupMap = new Map<string, GroupTreeItem>();
     for (const group of mappedGroups) {
       groupMap.set(group.id, group);
     }
 
     const root: TreeItem[] = [];
 
+    // Build group hierarchy (nested folders)
     for (const group of mappedGroups) {
       if (group.parentId && groupMap.has(group.parentId)) {
         groupMap.get(group.parentId)!.children.push(group);
@@ -173,6 +195,7 @@ export class EntityGroupService {
       }
     }
 
+    // Place entities in their respective groups or root
     for (const entity of mappedEntities) {
       if (entity.groupId && groupMap.has(entity.groupId)) {
         groupMap.get(entity.groupId)!.children.push(entity);
@@ -181,12 +204,20 @@ export class EntityGroupService {
       }
     }
 
-    const sortFn = (a: TreeItem, b: TreeItem) => a.name.localeCompare(b.name);
+    // Sort function: folders first, then alphabetically by name
+    const sortFn = (a: TreeItem, b: TreeItem) => {
+      // Folders come before files
+      if (a.type === 'folder' && b.type === 'file') return -1;
+      if (a.type === 'file' && b.type === 'folder') return 1;
+      // Same type: sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    };
 
+    // Recursively sort all levels of the tree
     const sortRecursive = (items: TreeItem[]) => {
       items.sort(sortFn);
       for (const item of items) {
-        if ('children' in item) {
+        if (item.type === 'folder') {
           sortRecursive(item.children);
         }
       }

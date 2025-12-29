@@ -24,8 +24,10 @@ export function RestFileTree() {
     refetch,
   } = useQuery({
     queryKey: ['restEntities'],
-    queryFn: () => workspace.rest.list(),
+    queryFn: () => workspace.rest.listTree(),
   });
+
+  console.log(restEntities, 'restEntities');
 
   const refetchRestEntities = useEffectEvent(() => {
     return refetch();
