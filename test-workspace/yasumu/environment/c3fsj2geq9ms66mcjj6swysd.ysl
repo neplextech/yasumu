@@ -11,6 +11,11 @@ variables [
     value: "https://echo.yasumu.local"
     enabled: true
   },
+  {
+    key: "SOURCE"
+    value: "tanxium-echo-server"
+    enabled: true
+  },
 ]
 
 secrets [

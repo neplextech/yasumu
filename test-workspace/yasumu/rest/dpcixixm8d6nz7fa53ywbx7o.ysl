@@ -18,11 +18,11 @@ dependencies []
 script {
   export function onRequest(req) {
     const userId = req.env.getSecret('USER_ID')
-    req.headers.set('x-user-id', userId ?? 'NONE')
+    req.headers.set('x-current-user-id', userId ?? 'NONE')
   }
   
   export function onResponse(req, res) {
-    console.log(res.json())
+    res.env.setVariable('SOURCE', res.json().meta.source)
   }
 }
 

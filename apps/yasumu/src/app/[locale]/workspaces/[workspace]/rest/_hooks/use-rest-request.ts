@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useActiveWorkspace,
   useYasumu,
@@ -60,6 +61,7 @@ export function useRestRequest({
   const controllerRef = useRef(new RestRequestController());
   const isCancelledRef = useRef(false);
   const { selectedEnvironment } = useEnvironmentStore();
+  const queryClient = useQueryClient();
 
   const appendScriptOutput = useCallback((message: string) => {
     setState((prev) => ({
@@ -225,6 +227,12 @@ export function useRestRequest({
                   variables: envData.variables,
                   secrets: envData.secrets,
                 });
+                await queryClient.invalidateQueries({
+                  queryKey: ['environments'],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: ['currentEnvironment'],
+                });
               }
             } else {
               appendScriptOutput(
@@ -258,6 +266,7 @@ export function useRestRequest({
       interpolate,
       appendScriptOutput,
       selectedEnvironment,
+      queryClient,
     ],
   );
 
