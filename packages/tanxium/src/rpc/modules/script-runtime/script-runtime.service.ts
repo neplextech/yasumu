@@ -10,20 +10,22 @@ import { ScriptWorkerManager } from '../../../workers/script-worker-manager.ts';
 export class ScriptRuntimeService {
   private readonly workerManager = new ScriptWorkerManager();
 
-  private makeKey(workspaceId: string, entityId: string) {
-    return `${workspaceId}/${entityId}.ts`;
+  private makeKey(workspaceId: string, entityId: string, timestamp: number) {
+    return `${workspaceId}/${entityId}.ts?ts=${timestamp}`;
   }
 
   public async executeScript<Context, Entity extends ExecutableScript<Context>>(
     workspaceId: string,
     entity: Entity,
     preload: string,
+    terminateAfter = true,
   ): Promise<ScriptExecutionResult<Context>> {
     if (entity.script.language !== YasumuScriptingLanguage.JavaScript) {
       throw new Error('Unsupported script language');
     }
 
-    const key = this.makeKey(workspaceId, entity.entityId);
+    const timestamp = Date.now();
+    const key = this.makeKey(workspaceId, entity.entityId, timestamp);
 
     Yasumu.registerVirtualModule(key, entity.script.code);
 
@@ -42,6 +44,10 @@ export class ScriptRuntimeService {
         entity.context,
       );
 
+      if (terminateAfter) {
+        worker.terminate();
+      }
+
       return {
         context: response.context,
         result: response.success
@@ -49,6 +55,8 @@ export class ScriptRuntimeService {
           : { success: false, error: response.error ?? 'Unknown error' },
       };
     } catch (error) {
+      worker.terminate();
+
       return {
         context: entity.context,
         result: {
@@ -57,11 +65,6 @@ export class ScriptRuntimeService {
         },
       };
     }
-  }
-
-  public terminateWorker(workspaceId: string, entityId: string): boolean {
-    const key = this.makeKey(workspaceId, entityId);
-    return this.workerManager.terminate(key);
   }
 
   public terminateAllWorkers() {

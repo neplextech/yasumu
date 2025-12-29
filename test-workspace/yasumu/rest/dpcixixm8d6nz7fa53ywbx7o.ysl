@@ -8,7 +8,7 @@ metadata {
 }
 
 request {
-  url: "https://echo.yasumu.local"
+  url: "{{API_URL}}"
   headers: []
   body: null
 }
@@ -17,11 +17,12 @@ dependencies []
 
 script {
   export function onRequest(req) {
-    req.headers.set('x-foo', 'bar')
+    const userId = req.env.getSecret('USER_ID')
+    req.headers.set('x-user-id', userId ?? 'NONE')
   }
   
   export function onResponse(req, res) {
-    console.log(req, res)
+    console.log(res.json())
   }
 }
 

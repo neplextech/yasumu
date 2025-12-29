@@ -3,21 +3,34 @@
   "entities": {
     "workspace": {
       "v753h51r3e10zzcg5rkel8mv": {
-        "hash": "2fff5cca00000084",
-        "lastSyncedAt": 1767029048480
+        "hash": "0c314a1400000084",
+        "lastSyncedAt": 1767030034948
       }
     },
     "rest": {
       "dpcixixm8d6nz7fa53ywbx7o": {
-        "hash": "653b9df800000162",
-        "lastSyncedAt": 1767029048483
+        "hash": "05b99e4300000195",
+        "lastSyncedAt": 1767030034952
       }
     },
-    "environment": {},
+    "environment": {
+      "c3fsj2geq9ms66mcjj6swysd": {
+        "hash": "0ddd0503000000fc",
+        "lastSyncedAt": 1767030034958
+      },
+      "vgsgyhybhiz8xp26f5a4sdpf": {
+        "hash": "6aef9b11000000fc",
+        "lastSyncedAt": 1767030034963
+      },
+      "c10t47a2kufpq46wt9oomc4d": {
+        "hash": "15a1908d000000ff",
+        "lastSyncedAt": 1767030034956
+      }
+    },
     "smtp": {
       "fyed9v8otb9a9vedyx8wy9f6": {
         "hash": "1d9112e500000062",
-        "lastSyncedAt": 1767029048485
+        "lastSyncedAt": 1767030034966
       }
     },
     "group": {}

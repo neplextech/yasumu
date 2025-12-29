@@ -70,7 +70,7 @@ export function useRestRequest({
 
   const execute = useCallback(
     async (
-      entity: RestEntityData,
+      _entity: RestEntityData,
       pathParams: Record<string, { value: string; enabled: boolean }>,
     ) => {
       if (!entityId) return;
@@ -83,22 +83,43 @@ export function useRestRequest({
         scriptOutput: [],
       });
 
+      const freshEntity = (await workspace.rest.get(entityId)) ?? _entity;
+      if (!freshEntity) {
+        setState((prev) => ({
+          ...prev,
+          phase: 'error',
+          error: 'Entity not found',
+        }));
+        return;
+      }
+
+      const entity = freshEntity.data;
+
+      const interpolateValue = (value: string) => interpolate(value);
+      const interpolatedUrl = interpolateValue(entity.url || '');
+      const interpolatedHeaders = Object.fromEntries(
+        (entity.requestHeaders || [])
+          .filter((h) => h.enabled && h.key)
+          .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
+      );
+      const interpolatedBody =
+        typeof entity.requestBody?.value === 'string'
+          ? interpolateValue(entity.requestBody.value)
+          : (entity.requestBody?.value ?? null);
+      const interpolatedParams = Object.fromEntries(
+        Object.entries(pathParams)
+          .filter(([, v]) => v.enabled)
+          .map(([k, v]) => [k, interpolateValue(v.value)]),
+      );
+
       let currentContext: RestScriptContext = {
         environment: selectedEnvironment?.toJSON() ?? null,
         request: {
-          url: entity.url || '',
+          url: interpolatedUrl,
           method: entity.method,
-          headers: Object.fromEntries(
-            (entity.requestHeaders || [])
-              .filter((h) => h.enabled && h.key)
-              .map((h) => [h.key, h.value]),
-          ),
-          body: entity.requestBody?.value ?? null,
-          parameters: Object.fromEntries(
-            Object.entries(pathParams)
-              .filter(([, v]) => v.enabled)
-              .map(([k, v]) => [k, v.value]),
-          ),
+          headers: interpolatedHeaders,
+          body: interpolatedBody,
+          parameters: interpolatedParams,
         },
         response: null,
       };
@@ -197,6 +218,14 @@ export function useRestRequest({
               appendScriptOutput(
                 '[Post-Response] Script completed successfully',
               );
+
+              if (selectedEnvironment && result.context.environment) {
+                const envData = result.context.environment;
+                await selectedEnvironment.update({
+                  variables: envData.variables,
+                  secrets: envData.secrets,
+                });
+              }
             } else {
               appendScriptOutput(
                 `[Post-Response] Script failed: ${result.result.error}`,
