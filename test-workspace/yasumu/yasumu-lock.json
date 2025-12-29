@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "entities": {
+    "workspace": {
+      "v753h51r3e10zzcg5rkel8mv": {
+        "hash": "2fff5cca00000084",
+        "lastSyncedAt": 1767029048480
+      }
+    },
+    "rest": {
+      "dpcixixm8d6nz7fa53ywbx7o": {
+        "hash": "653b9df800000162",
+        "lastSyncedAt": 1767029048483
+      }
+    },
+    "environment": {},
+    "smtp": {
+      "fyed9v8otb9a9vedyx8wy9f6": {
+        "hash": "1d9112e500000062",
+        "lastSyncedAt": 1767029048485
+      }
+    },
+    "group": {}
+  }
+}

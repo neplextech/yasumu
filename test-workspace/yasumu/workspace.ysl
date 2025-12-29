@@ -1,0 +1,12 @@
+@workspace
+
+metadata {
+  id: "v753h51r3e10zzcg5rkel8mv"
+  name: "test-workspace"
+  version: 0
+}
+
+snapshot 1767029048478
+
+groups {}
+

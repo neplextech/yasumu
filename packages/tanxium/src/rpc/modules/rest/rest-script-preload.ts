@@ -1,15 +1,17 @@
 import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from '../../../workers/common/worker-heartbeat.ts';
 
 export const REST_SCRIPT_PRELOAD = /* typescript */ `
+import { parentPort } from 'node:worker_threads';
+
 const HEARTBEAT_INTERVAL = ${SCRIPT_WORKER_HEARTBEAT_TIMEOUT};
 
-let heartbeatTimer = setInterval(() => {
-  self.postMessage({ type: 'heartbeat' });
+const heartbeatTimer = setInterval(() => {
+  parentPort.postMessage({ type: 'heartbeat' });
 }, HEARTBEAT_INTERVAL);
 
-if ('unref' in heartbeatTimer) {
+if (heartbeatTimer && typeof heartbeatTimer === 'object' && 'unref' in heartbeatTimer) {
   heartbeatTimer.unref();
-} else if (typeof Deno !== 'undefined') {
+} else {
   Deno.unrefTimer(heartbeatTimer);
 }
 
@@ -22,14 +24,12 @@ async function getModule(modulePath) {
   return moduleCache.get(modulePath);
 }
 
-self.postMessage({ type: 'ready' });
+parentPort.postMessage({ type: 'ready' });
 
-self.onmessage = async (event) => {
-  const message = event.data;
-  
+parentPort.on('message', async (message) => {
   if (message.type === 'terminate') {
     clearInterval(heartbeatTimer);
-    self.close();
+    process.exit(0);
     return;
   }
 
@@ -42,7 +42,7 @@ self.onmessage = async (event) => {
     const targetFn = mod[invocationTarget];
     
     if (typeof targetFn !== 'function') {
-      self.postMessage({
+      parentPort.postMessage({
         type: 'execution-error',
         requestId,
         context,
@@ -64,19 +64,19 @@ self.onmessage = async (event) => {
       mockResponse = result.toContextData();
     }
     
-    self.postMessage({
+    parentPort.postMessage({
       type: 'execution-success',
       requestId,
       context: updatedContext,
       result: mockResponse,
     });
   } catch (error) {
-    self.postMessage({
+    parentPort.postMessage({
       type: 'execution-error',
       requestId,
       context,
       error: error instanceof Error ? error.message : String(error),
     });
   }
-};
+});
 `;

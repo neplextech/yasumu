@@ -210,38 +210,36 @@ Object.defineProperties(globalThis, {
     enumerable: false,
     configurable: false,
   },
-  ...(!inWorker && {
-    YasumuRequest: {
-      value: YasumuRequest,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    },
-    YasumuResponse: {
-      value: YasumuResponse,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    },
-    YasumuHeaders: {
-      value: YasumuHeaders,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    },
-    YasumuURLSearchParams: {
-      value: YasumuURLSearchParams,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    },
-    YasumuWorkspaceEnvironment: {
-      value: YasumuWorkspaceEnvironment,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    },
-  }),
+  YasumuRequest: {
+    value: YasumuRequest,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
+  YasumuResponse: {
+    value: YasumuResponse,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
+  YasumuHeaders: {
+    value: YasumuHeaders,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
+  YasumuURLSearchParams: {
+    value: YasumuURLSearchParams,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
+  YasumuWorkspaceEnvironment: {
+    value: YasumuWorkspaceEnvironment,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
 });
 
 type YasumuRuntime = typeof Yasumu;

@@ -1,3 +1,4 @@
+import { Worker } from 'node:worker_threads';
 import {
   SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
   SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT,
@@ -27,7 +28,7 @@ export class ScriptWorker<Context = unknown> {
   >();
   private state: WorkerState = 'initializing';
   private lastHeartbeat = Date.now();
-  private heartbeatCheckId: number | null = null;
+  private heartbeatCheckId: ReturnType<typeof setTimeout> | null = null;
   private readyPromise: Promise<void>;
   private readyResolve!: () => void;
   private readyReject!: (error: Error) => void;
@@ -44,25 +45,19 @@ export class ScriptWorker<Context = unknown> {
       this.readyReject = reject;
     });
 
-    const url = URL.createObjectURL(
-      new Blob([options.source], { type: 'application/typescript' }),
-    );
-
-    this.worker = new Worker(url, {
-      type: 'module',
+    this.worker = new Worker(options.source, {
+      eval: true,
       name: options.key,
     });
 
-    this.worker.onmessage = this.handleMessage.bind(this);
-    this.worker.onerror = this.handleError.bind(this);
+    this.worker.on('message', this.handleMessage.bind(this));
+    this.worker.on('error', this.handleError.bind(this));
+    this.worker.on('exit', this.handleExit.bind(this));
 
-    URL.revokeObjectURL(url);
     this.startHeartbeatMonitor();
   }
 
-  private handleMessage(event: MessageEvent<WorkerOutboundMessage<Context>>) {
-    const message = event.data;
-
+  private handleMessage(message: WorkerOutboundMessage<Context>) {
     switch (message.type) {
       case 'heartbeat':
         this.lastHeartbeat = Date.now();
@@ -105,7 +100,7 @@ export class ScriptWorker<Context = unknown> {
     }
   }
 
-  private handleError(error: ErrorEvent) {
+  private handleError(error: Error) {
     if (this.state === 'initializing') {
       this.readyReject(
         new Error(`Worker initialization failed: ${error.message}`),
@@ -117,6 +112,20 @@ export class ScriptWorker<Context = unknown> {
       request.reject(new Error(`Worker error: ${error.message}`));
     }
     this.pendingRequests.clear();
+  }
+
+  private handleExit(code: number) {
+    if (this.state !== 'terminated') {
+      this.state = 'terminated';
+
+      for (const request of this.pendingRequests.values()) {
+        if (request.timeoutId) clearTimeout(request.timeoutId);
+        request.reject(new Error(`Worker exited with code ${code}`));
+      }
+      this.pendingRequests.clear();
+
+      this.options.onTerminate?.();
+    }
   }
 
   private startHeartbeatMonitor() {
@@ -134,13 +143,10 @@ export class ScriptWorker<Context = unknown> {
       this.heartbeatCheckId = setTimeout(
         check,
         SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
-      ) as unknown as number;
+      );
     };
 
-    this.heartbeatCheckId = setTimeout(
-      check,
-      SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
-    ) as unknown as number;
+    this.heartbeatCheckId = setTimeout(check, SCRIPT_WORKER_HEARTBEAT_TIMEOUT);
   }
 
   private terminateWithError(errorMessage: string) {
@@ -176,7 +182,7 @@ export class ScriptWorker<Context = unknown> {
           this.pendingRequests.delete(requestId);
           reject(new Error(`Execution timeout after ${timeout}ms`));
         }
-      }, timeout) as unknown as number;
+      }, timeout);
 
       const request: ScriptExecutionRequest<Context> = {
         requestId,
@@ -184,7 +190,7 @@ export class ScriptWorker<Context = unknown> {
         context,
         resolve,
         reject,
-        timeoutId,
+        timeoutId: timeoutId as unknown as number,
       };
 
       this.pendingRequests.set(requestId, request);

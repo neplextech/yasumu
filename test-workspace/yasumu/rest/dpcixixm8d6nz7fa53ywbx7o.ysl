@@ -1,0 +1,27 @@
+@rest
+
+metadata {
+  name: "Echo"
+  method: "GET"
+  id: "dpcixixm8d6nz7fa53ywbx7o"
+  groupId: null
+}
+
+request {
+  url: "https://echo.yasumu.local"
+  headers: []
+  body: null
+}
+
+dependencies []
+
+script {
+  export function onRequest(req) {
+    req.headers.set('x-foo', 'bar')
+  }
+  
+  export function onResponse(req, res) {
+    console.log(req, res)
+  }
+}
+

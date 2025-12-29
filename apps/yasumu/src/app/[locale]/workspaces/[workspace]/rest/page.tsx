@@ -11,6 +11,8 @@ import { RequestUrlBar } from './_components/request-editor/request-url-bar';
 import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
 import { RestResponsePanel } from './_components/response-panel';
 import RequestTabList from './_components/tabs';
+import { useAppLayout } from '@/components/providers/app-layout-provider';
+import { YasumuLayout } from '@/lib/constants/layout';
 import type {
   TabularPair,
   RestEntityRequestBody,
@@ -24,8 +26,12 @@ import {
 
 export default function RestPage() {
   const { entityId } = useRestContext();
-  const { data, isLoading, error, isSaving, updateField, updateFields, save } =
-    useRestEntity({ entityId });
+  const { layout } = useAppLayout();
+  const { data, isLoading, error, isSaving, updateField, save } = useRestEntity(
+    {
+      entityId,
+    },
+  );
   const { state: requestState, execute, cancel } = useRestRequest({ entityId });
 
   const [pathParams, setPathParams] = useState<
@@ -39,6 +45,8 @@ export default function RestPage() {
       requestState.phase === 'post-response-script',
     [requestState.phase],
   );
+
+  const isClassicLayout = layout === YasumuLayout.Classic;
 
   const handleMethodChange = useCallback(
     (method: string) => {
@@ -143,6 +151,34 @@ export default function RestPage() {
     );
   }
 
+  const requestEditor = (
+    <RestRequestTabs
+      key={entityId}
+      searchParams={data.searchParameters || []}
+      pathParams={pathParams}
+      headers={data.requestHeaders || []}
+      body={data.requestBody}
+      script={data.script}
+      testScript={data.testScript}
+      url={data.url || ''}
+      onSearchParamsChange={handleSearchParamsChange}
+      onPathParamsChange={handlePathParamsChange}
+      onHeadersChange={handleHeadersChange}
+      onBodyChange={handleBodyChange}
+      onScriptChange={handleScriptChange}
+      onTestScriptChange={handleTestScriptChange}
+    />
+  );
+
+  const responsePanel = (
+    <RestResponsePanel
+      phase={requestState.phase}
+      response={requestState.response}
+      error={requestState.error}
+      scriptOutput={requestState.scriptOutput}
+    />
+  );
+
   return (
     <main className="w-full h-full flex flex-col overflow-hidden">
       <div className="p-4 space-y-4 flex-shrink-0">
@@ -159,33 +195,16 @@ export default function RestPage() {
         />
       </div>
       <Separator />
-      <ResizablePanelGroup direction="vertical" className="flex-1 min-h-0">
+      <ResizablePanelGroup
+        direction={isClassicLayout ? 'vertical' : 'horizontal'}
+        className="flex-1 min-h-0"
+      >
         <ResizablePanel defaultSize={50} minSize={20}>
-          <RestRequestTabs
-            key={entityId}
-            searchParams={data.searchParameters || []}
-            pathParams={pathParams}
-            headers={data.requestHeaders || []}
-            body={data.requestBody}
-            script={data.script}
-            testScript={data.testScript}
-            url={data.url || ''}
-            onSearchParamsChange={handleSearchParamsChange}
-            onPathParamsChange={handlePathParamsChange}
-            onHeadersChange={handleHeadersChange}
-            onBodyChange={handleBodyChange}
-            onScriptChange={handleScriptChange}
-            onTestScriptChange={handleTestScriptChange}
-          />
+          {requestEditor}
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={20}>
-          <RestResponsePanel
-            phase={requestState.phase}
-            response={requestState.response}
-            error={requestState.error}
-            scriptOutput={requestState.scriptOutput}
-          />
+          {responsePanel}
         </ResizablePanel>
       </ResizablePanelGroup>
     </main>

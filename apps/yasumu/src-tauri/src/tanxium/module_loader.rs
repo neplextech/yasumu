@@ -24,6 +24,39 @@ const YASUMU_VIRTUAL_PREFIX: &str = "yasumu:virtual/";
 type SourceMapStore = Rc<RefCell<HashMap<String, Vec<u8>>>>;
 type VirtualModulesStore = Arc<Mutex<HashMap<String, String>>>;
 
+fn parse_data_url(specifier: &str) -> Option<(String, String, bool)> {
+    if !specifier.starts_with("data:") {
+        return None;
+    }
+
+    let rest = specifier.strip_prefix("data:")?;
+
+    if let Some(comma_pos) = rest.find(',') {
+        let metadata = &rest[..comma_pos];
+        let encoded_data = &rest[comma_pos + 1..];
+
+        let is_base64 = metadata.ends_with(";base64");
+        let mime_type = if is_base64 {
+            metadata.strip_suffix(";base64").unwrap_or(metadata)
+        } else {
+            metadata
+        };
+
+        let decoded = if is_base64 {
+            use base64::Engine;
+            let engine = base64::engine::general_purpose::STANDARD;
+            let bytes = engine.decode(encoded_data).ok()?;
+            String::from_utf8(bytes).ok()?
+        } else {
+            urlencoding::decode(encoded_data).ok()?.into_owned()
+        };
+
+        Some((mime_type.to_string(), decoded, is_base64))
+    } else {
+        None
+    }
+}
+
 pub struct TypescriptModuleLoader {
     pub source_maps: SourceMapStore,
     pub virtual_modules: Option<VirtualModulesStore>,
@@ -36,6 +69,12 @@ impl ModuleLoader for TypescriptModuleLoader {
         referrer: &str,
         _kind: ResolutionKind,
     ) -> Result<ModuleSpecifier, ModuleLoaderError> {
+        // handle data: URLs directly
+        if specifier.starts_with("data:") {
+            return ModuleSpecifier::parse(specifier)
+                .map_err(|e| ModuleLoaderError::type_error(e.to_string()));
+        }
+
         // handle yasumu: prefixed modules (including virtual modules)
         if specifier.starts_with(YASUMU_MODULE_PREFIX) {
             let resolved_specifier = format!("{}{}", YASUMU_INTERNAL_PREFIX, specifier);
@@ -75,9 +114,32 @@ impl ModuleLoader for TypescriptModuleLoader {
                 ));
 
             let (code, should_transpile, media_type, module_type) = if module_specifier.scheme()
-                == "file"
-                && !is_yasumu_internal
+                == "data"
             {
+                let specifier_str = module_specifier.to_string();
+                let (mime_type, decoded_code, _) =
+                    parse_data_url(&specifier_str).ok_or_else(|| {
+                        ModuleLoaderError::type_error(format!(
+                            "Invalid data URL: {}",
+                            specifier_str
+                        ))
+                    })?;
+
+                let (media_type, should_transpile) = if mime_type.contains("typescript") {
+                    (MediaType::TypeScript, true)
+                } else if mime_type.contains("javascript") {
+                    (MediaType::JavaScript, false)
+                } else {
+                    (MediaType::TypeScript, true)
+                };
+
+                (
+                    decoded_code,
+                    should_transpile,
+                    media_type,
+                    ModuleType::JavaScript,
+                )
+            } else if module_specifier.scheme() == "file" && !is_yasumu_internal {
                 let path = module_specifier.to_file_path().map_err(|_| {
                     ModuleLoaderError::type_error(
                         "There was an error converting the module specifier to a file path",
