@@ -11,10 +11,12 @@ import {
   NotFoundException,
   BadRequestException,
 } from '../common/exceptions/http.exception.ts';
+import { TanxiumService } from "../common/tanxium.service.ts";
+import { EntityGroupData } from "@yasumu/common";
 
 @Injectable()
 export class EntityGroupService {
-  public constructor(private readonly connection: TransactionalConnection) {}
+  public constructor(private readonly connection: TransactionalConnection, private readonly tanxiumService: TanxiumService) {}
 
   private async locateGroupWithCommonParent(
     name: string,
@@ -34,7 +36,14 @@ export class EntityGroupService {
     return result;
   }
 
+  private async dispatchUpdate(workspaceId: string) {
+    await this.tanxiumService.publishMessage('rest-entity-updated', {
+      workspaceId,
+    });
+  }
+
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
+    console.log('creating entity group', data);
     const db = this.connection.getConnection();
     const maybeExisting = await this.locateGroupWithCommonParent(
       data.name,
@@ -55,18 +64,14 @@ export class EntityGroupService {
         workspaceId,
       })
       .returning();
-
+      
+      await this.dispatchUpdate(workspaceId);
     return result;
   }
 
   public async get(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const result = await db.query.entityGroups.findFirst({
-      where: and(
-        eq(entityGroups.id, id),
-        eq(entityGroups.workspaceId, workspaceId),
-      ),
-    });
+    const [result] = await db.select().from(entityGroups).where(and(eq(entityGroups.id, id), eq(entityGroups.workspaceId, workspaceId))).limit(1);
 
     if (!result) return null;
 
@@ -96,7 +101,7 @@ export class EntityGroupService {
     workspaceId: string,
     id: string,
     data: EntityGroupUpdateOptions,
-  ) {
+  ): Promise<EntityGroupData> {
     if (!data.name && !data.parentId) {
       throw new BadRequestException('At least one field is required');
     }
@@ -114,19 +119,21 @@ export class EntityGroupService {
       .where(eq(entityGroups.id, id))
       .returning();
 
-    return updated;
+      await this.dispatchUpdate(workspaceId);
+
+    return updated as unknown as EntityGroupData;
   }
 
   public async delete(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const entityGroup = await this.getOrThrow(workspaceId, id);
+  await this.getOrThrow(workspaceId, id);
 
-    const [deleted] = await db
+    await db
       .delete(entityGroups)
       .where(eq(entityGroups.id, id))
       .returning();
 
-    return { success: deleted.id === entityGroup.id };
+    await this.dispatchUpdate(workspaceId);
   }
 
   public async listTree(options: TreeViewOptions) {

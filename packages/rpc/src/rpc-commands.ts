@@ -23,6 +23,7 @@ import type {
   ExecutableScript,
   ScriptExecutionResult,
   RestScriptContext,
+  EntityGroupUpdateOptions,
 } from '@yasumu/common';
 
 type ExecuteScriptCommand<Context> = RpcMutation<
@@ -130,6 +131,18 @@ export interface YasumuRPC {
      * @param data The data for the entity group.
      */
     create: RpcMutation<[data: EntityGroupCreateOptions], EntityGroupData>;
+
+    /**
+     * Entity group update command.
+     * @param id The ID of the entity group.
+     * @param data The data for the entity group.
+     */
+    update: RpcMutation<[id: string, data: Partial<EntityGroupUpdateOptions>], EntityGroupData>;
+    /**
+     * Entity group deletion command.
+     * @param id The ID of the entity group.
+     */
+    delete: RpcMutation<[id: string], void>;
   };
   emails: {
     /**

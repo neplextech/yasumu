@@ -2,9 +2,8 @@ import { Resolver, Mutation } from '@yasumu/den';
 import { EntityGroupService } from './entity-group.service.ts';
 import { WorkspaceId } from '../common/decorators.ts';
 import type { EntityGroupCreateOptions } from './types.ts';
-import { NotImplementedException } from '../common/exceptions/http.exception.ts';
 import { YasumuRpcService } from '@yasumu/rpc';
-import { EntityGroupData } from '@yasumu/common';
+import type { EntityGroupData, EntityGroupUpdateOptions } from '@yasumu/common';
 
 @Resolver('entityGroups')
 export class EntityGroupResolver implements YasumuRpcService<'entityGroups'> {
@@ -20,9 +19,21 @@ export class EntityGroupResolver implements YasumuRpcService<'entityGroups'> {
       data,
     )) as unknown as EntityGroupData;
   }
+  
+  @Mutation()
+  public update(
+    @WorkspaceId() workspaceId: string,
+    id: string,
+    data: EntityGroupUpdateOptions,
+  ): Promise<EntityGroupData> {
+    return this.entityGroupService.update(workspaceId, id, data);
+  }
 
   @Mutation()
-  public delete() {
-    throw new NotImplementedException('Not implemented');
+  public delete(
+    @WorkspaceId() workspaceId: string,
+    id: string,
+  ) {
+    return this.entityGroupService.delete(workspaceId, id);
   }
 }

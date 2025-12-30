@@ -33,6 +33,7 @@ export interface FileTreeItem {
   name: string;
   icon?: React.ComponentType;
   children?: FileTreeItem[];
+  type: 'folder' | 'file';
 }
 
 export function FileTreeSidebar({
@@ -48,8 +49,8 @@ export function FileTreeSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   fileTree: FileTreeItem[];
   onFileSelect?: (id: string) => void;
-  onFileCreate?: (name: string) => void;
-  onFolderCreate?: (name: string) => void;
+  onFileCreate?: (name: string, parentId?: string | null) => void;
+  onFolderCreate?: (name: string, parentId?: string | null) => void;
   onFileDelete?: (id: string) => void;
   onFolderDelete?: (id: string) => void;
   onFileRename?: (id: string, name: string) => void;
@@ -109,6 +110,7 @@ export function FileTreeSidebar({
 function MenuContent({
   type,
   name,
+  parentId,
   onDelete,
   onRename,
   onCreateFile,
@@ -116,10 +118,11 @@ function MenuContent({
 }: {
   type: 'file' | 'folder';
   name: string;
+  parentId?: string | null;
   onDelete?: () => void;
   onRename?: (name: string) => void;
-  onCreateFile?: (name: string) => void;
-  onCreateFolder?: (name: string) => void;
+  onCreateFile?: (name: string, parentId?: string | null) => void;
+  onCreateFolder?: (name: string, parentId?: string | null) => void;
 }) {
   const forFolder = type === 'folder';
   const [open, setOpen] = React.useState<'file' | 'folder' | 'rename' | null>(
@@ -182,7 +185,7 @@ function MenuContent({
         title="Add new folder"
         description="This will add a new folder"
         onSubmit={(name) => {
-          onCreateFolder?.(name);
+          onCreateFolder?.(name, parentId);
         }}
         open={open === 'folder'}
         onOpenChange={(isOpen) => {
@@ -194,7 +197,7 @@ function MenuContent({
         title="Add new file"
         description="This will add a new file"
         onSubmit={(name) => {
-          onCreateFile?.(name);
+          onCreateFile?.(name, parentId);
         }}
         open={open === 'file'}
         onOpenChange={(isOpen) => {
@@ -221,12 +224,12 @@ function Tree({
   onFolderDelete?: (id: string) => void;
   onFileRename?: (id: string, name: string) => void;
   onFolderRename?: (id: string, name: string) => void;
-  onCreateFile?: (name: string) => void;
-  onCreateFolder?: (name: string) => void;
+  onCreateFile?: (name: string, parentId?: string | null) => void;
+  onCreateFolder?: (name: string, parentId?: string | null) => void;
 }) {
   const { name, children } = item;
 
-  if (!children?.length) {
+  if (item.type === 'file') {
     const Icon = item.icon;
 
     return (
@@ -246,8 +249,6 @@ function Tree({
           name={name}
           onDelete={() => onFileDelete?.(item.id)}
           onRename={(newName) => onFileRename?.(item.id, newName)}
-          onCreateFile={onCreateFile}
-          onCreateFolder={onCreateFolder}
         />
       </ContextMenu>
     );
@@ -272,6 +273,7 @@ function Tree({
           <MenuContent
             type="folder"
             name={name}
+            parentId={item.id}
             onDelete={() => onFolderDelete?.(item.id)}
             onRename={(newName) => onFolderRename?.(item.id, newName)}
             onCreateFile={onCreateFile}
@@ -280,10 +282,11 @@ function Tree({
         </ContextMenu>
         <CollapsibleContent>
           <SidebarMenuSub className="px-1 py-0">
-            {children.map((subItem) => (
+            {children?.map((subItem) => (
               <Tree
                 key={subItem.id}
                 item={subItem}
+                onFileSelect={onFileSelect}
                 onFileDelete={onFileDelete}
                 onFolderDelete={onFolderDelete}
                 onFileRename={onFileRename}

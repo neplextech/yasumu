@@ -3,10 +3,12 @@ import { RestEntity } from './rest.entity.js';
 import type {
   EntityGroupCreateOptions,
   EntityGroupData,
+  EntityGroupUpdateOptions,
   RestEntityCreateOptions,
   RestEntityData,
   RestEntityUpdateOptions,
   RestScriptContext,
+  RestTreeItem,
   YasumuEmbeddedScript,
 } from '@yasumu/common';
 
@@ -53,12 +55,13 @@ export class RestModule {
     return data.map((data) => new RestEntity(this, data));
   }
 
-  public async listTree(): Promise<RestEntity[]> {
+  public async listTree(): Promise<RestTreeItem[]> {
     const data = await this.workspace.manager.yasumu.rpc.rest.listTree.$query({
       parameters: [],
     });
 
-    return data.map((data) => new RestEntity(this, data));
+    // The backend returns a tree structure with folders and files
+    return data as unknown as RestTreeItem[];
   }
 
   public async createEntityGroup(data: EntityGroupCreateOptions): Promise<EntityGroupData> {
@@ -67,6 +70,20 @@ export class RestModule {
     });
 
     return result;
+  }
+
+  public async updateEntityGroup(id: string, data: EntityGroupUpdateOptions): Promise<EntityGroupData> {
+    const result = await this.workspace.manager.yasumu.rpc.entityGroups.update.$mutate({
+      parameters: [id, data],
+    });
+
+    return result;
+  }
+
+  public async deleteEntityGroup(id: string): Promise<void> {
+    await this.workspace.manager.yasumu.rpc.entityGroups.delete.$mutate({
+      parameters: [id],
+    });
   }
 
   public async executeScript(

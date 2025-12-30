@@ -11,6 +11,7 @@ import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { useRestContext } from '../_providers/rest-context';
 import { resolveHttpMethodIcon } from './http-methods';
+import type { RestTreeItem } from '@yasumu/common';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();
@@ -27,21 +28,34 @@ export function RestFileTree() {
     queryFn: () => workspace.rest.listTree(),
   });
 
-  console.log(restEntities, 'restEntities');
-
   const refetchRestEntities = useEffectEvent(() => {
     return refetch();
   });
 
+  // Recursively map tree items to FileTreeItem structure
+  const mapTreeToFileTree = (items: RestTreeItem[]): FileTreeItem[] => {
+    return items.map((item): FileTreeItem => {
+      if (item.type === 'folder') {
+        return {
+          id: item.id,
+          name: item.name ?? 'New Folder',
+          type: 'folder',
+          children: mapTreeToFileTree(item.children ?? []),
+        };
+      }
+      // File (REST request)
+      return {
+        id: item.id,
+        name: item.name ?? 'New Request',
+        type: 'file',
+        icon: resolveHttpMethodIcon(item.method),
+      };
+    });
+  };
+
   useEffect(() => {
     if (restEntities) {
-      setFileTree(
-        restEntities.map((entity) => ({
-          name: entity.name ?? 'New Request',
-          id: entity.id,
-          icon: resolveHttpMethodIcon(entity.method),
-        })),
-      );
+      setFileTree(mapTreeToFileTree(restEntities));
     }
   }, [restEntities]);
 
@@ -69,33 +83,33 @@ export function RestFileTree() {
       onFileSelect={(id: string) => {
         setEntityId(id);
       }}
-      onFileCreate={withErrorHandler(async (name: string) => {
+      onFileCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
         await workspace.rest.create({
           name,
           method: 'GET',
           url: null,
+          groupId: parentId,
           metadata: {},
         });
       })}
-      onFolderCreate={withErrorHandler(async () => {
-        // Todo: Implement sub folder creation using parent id
-        withErrorHandler(async (name: string) => {
-          await workspace.rest.createEntityGroup({
-            name,
-          });
+      onFolderCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
+        await workspace.rest.createEntityGroup({
+          name,
+          parentId: parentId ?? null,
+          entityType: 'rest',
         });
       })}
       onFileDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.delete(id);
       })}
-      onFolderDelete={withErrorHandler(async () => {
-        throw new Error('Folder deletion is not supported yet');
+      onFolderDelete={withErrorHandler(async (id: string) => {
+        await workspace.rest.deleteEntityGroup(id);
       })}
       onFileRename={withErrorHandler(async (id: string, name: string) => {
         await workspace.rest.update(id, { name });
       })}
-      onFolderRename={withErrorHandler(async () => {
-        throw new Error('Folder renaming is not supported yet');
+      onFolderRename={withErrorHandler(async (id: string, name: string) => {
+        await workspace.rest.updateEntityGroup(id, { name });
       })}
     />
   );
