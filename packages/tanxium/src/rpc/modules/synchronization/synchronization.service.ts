@@ -28,9 +28,12 @@ import {
   workspaces,
 } from '@/database/schema.ts';
 import { and, eq } from 'drizzle-orm';
+import { KeyedMutex } from '@/common/mutex.ts';
 
 @Injectable()
 export class SynchronizationService implements OnModuleInit {
+  private readonly workspaceMutex = new KeyedMutex();
+
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly yslService: YslService,
@@ -162,25 +165,31 @@ export class SynchronizationService implements OnModuleInit {
   }
 
   public async loadFromFileSystem(workspaceId: string) {
-    const workspace = await this.findWorkspace(workspaceId);
+    return await this.workspaceMutex.runExclusive(workspaceId, async () => {
+      const workspace = await this.findWorkspace(workspaceId);
 
-    // skip if the workspace does not exist
-    if (!workspace) return;
+      if (!workspace) return;
 
-    if (isDefaultWorkspacePath(workspace.path)) return;
+      if (isDefaultWorkspacePath(workspace.path)) return;
 
-    await this.loadWorkspaceFromFs(workspace);
-    await this.loadRestEntitiesFromFs(workspace);
-    await this.loadEnvironmentsFromFs(workspace);
-    await this.loadSmtpFromFs(workspace);
+      await this.loadWorkspaceFromFs(workspace);
+      await this.loadRestEntitiesFromFs(workspace);
+      await this.loadEnvironmentsFromFs(workspace);
+      await this.loadSmtpFromFs(workspace);
+    });
   }
 
   private async discoverWorkspace(
     workspacePath: string,
     onComplete: (workspace: WorkspaceData | null) => Promise<void>,
   ) {
-    const workspace = await this.createWorkspaceFromFs(workspacePath);
-    return onComplete(workspace);
+    return await this.workspaceMutex.runExclusive(
+      `discover:${workspacePath}`,
+      async () => {
+        const workspace = await this.createWorkspaceFromFs(workspacePath);
+        return onComplete(workspace);
+      },
+    );
   }
 
   private async createWorkspaceFromFs(
@@ -990,36 +999,36 @@ export class SynchronizationService implements OnModuleInit {
   }
 
   public async synchronizeWorkspace(workspaceId: string) {
-    const workspace = await this.findWorkspace(workspaceId);
+    return await this.workspaceMutex.runExclusive(workspaceId, async () => {
+      const workspace = await this.findWorkspace(workspaceId);
 
-    if (!workspace) return;
-    // do not attempt to synchronize the workspace if it is the default workspace
-    // as default workspace is virtual and acts as a scratchpad for the user
-    // and is not meant to be synchronized with the file system
-    if (isDefaultWorkspacePath(workspace.path)) return;
+      if (!workspace) return;
 
-    await this.pushWorkspaceToFs(workspace);
+      if (isDefaultWorkspacePath(workspace.path)) return;
 
-    const restEntitiesList = await this.restService.list(workspaceId);
-    const restEntityIds = new Set(restEntitiesList.map((e) => e.id));
+      await this.pushWorkspaceToFs(workspace);
 
-    for (const entity of restEntitiesList) {
-      await this.pushRestEntityToFs(workspace, entity);
-    }
+      const restEntitiesList = await this.restService.list(workspaceId);
+      const restEntityIds = new Set(restEntitiesList.map((e) => e.id));
 
-    await this.cleanupDeletedFiles(workspace, 'rest', restEntityIds);
+      for (const entity of restEntitiesList) {
+        await this.pushRestEntityToFs(workspace, entity);
+      }
 
-    const envList = await this.environmentsService.list(workspaceId);
-    const envIds = new Set(envList.map((e) => e.id));
+      await this.cleanupDeletedFiles(workspace, 'rest', restEntityIds);
 
-    for (const env of envList) {
-      await this.pushEnvironmentToFs(workspace, env);
-    }
+      const envList = await this.environmentsService.list(workspaceId);
+      const envIds = new Set(envList.map((e) => e.id));
 
-    await this.cleanupDeletedFiles(workspace, 'environment', envIds);
+      for (const env of envList) {
+        await this.pushEnvironmentToFs(workspace, env);
+      }
 
-    const smtpConfig = await this.emailService.getSmtp(workspaceId);
-    await this.pushSmtpToFs(workspace, smtpConfig);
+      await this.cleanupDeletedFiles(workspace, 'environment', envIds);
+
+      const smtpConfig = await this.emailService.getSmtp(workspaceId);
+      await this.pushSmtpToFs(workspace, smtpConfig);
+    });
   }
 
   private async cleanupDeletedFiles(
