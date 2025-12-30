@@ -9,30 +9,50 @@ import { ScriptWorkerManager } from '../../../workers/script-worker-manager.ts';
 @Injectable()
 export class ScriptRuntimeService {
   private readonly workerManager = new ScriptWorkerManager();
+  private readonly workerTimestamps = new Map<string, number>();
 
-  private makeKey(workspaceId: string, entityId: string) {
-    return `${workspaceId}/${entityId}.ts`;
+  private makeBaseKey(workspaceId: string, entityId: string) {
+    return `${workspaceId}/${entityId}`;
+  }
+
+  private makeModuleKey(baseKey: string, timestamp: number) {
+    return `${baseKey}.ts?ts=${timestamp}`;
   }
 
   public async executeScript<Context, Entity extends ExecutableScript<Context>>(
     workspaceId: string,
     entity: Entity,
     preload: string,
+    terminateAfter = true,
   ): Promise<ScriptExecutionResult<Context>> {
     if (entity.script.language !== YasumuScriptingLanguage.JavaScript) {
       throw new Error('Unsupported script language');
     }
 
-    const key = this.makeKey(workspaceId, entity.entityId);
+    const baseKey = this.makeBaseKey(workspaceId, entity.entityId);
+    const isNewWorker = !this.workerManager.has(baseKey);
 
-    Yasumu.registerVirtualModule(key, entity.script.code);
+    if (isNewWorker) {
+      this.workerTimestamps.set(baseKey, Date.now());
+    }
+
+    const timestamp = this.workerTimestamps.get(baseKey)!;
+    const moduleKey = this.makeModuleKey(baseKey, timestamp);
+
+    console.log({ moduleKey, terminateAfter });
+
+    Yasumu.registerVirtualModule(moduleKey, entity.script.code);
 
     const worker = this.workerManager.getOrCreate<Context>({
-      key,
+      key: baseKey,
       source: preload,
-      moduleKey: key,
+      moduleKey,
       onTerminate: () => {
-        Yasumu.unregisterVirtualModule(key);
+        console.log(
+          `Terminating script worker for ${baseKey}/${worker.moduleKey}/${moduleKey}`,
+        );
+        Yasumu.unregisterVirtualModule(moduleKey);
+        this.workerTimestamps.delete(baseKey);
       },
     });
 
@@ -42,6 +62,10 @@ export class ScriptRuntimeService {
         entity.context,
       );
 
+      if (terminateAfter) {
+        worker.terminate();
+      }
+
       return {
         context: response.context,
         result: response.success
@@ -49,6 +73,8 @@ export class ScriptRuntimeService {
           : { success: false, error: response.error ?? 'Unknown error' },
       };
     } catch (error) {
+      worker.terminate();
+
       return {
         context: entity.context,
         result: {
@@ -57,11 +83,6 @@ export class ScriptRuntimeService {
         },
       };
     }
-  }
-
-  public terminateWorker(workspaceId: string, entityId: string): boolean {
-    const key = this.makeKey(workspaceId, entityId);
-    return this.workerManager.terminate(key);
   }
 
   public terminateAllWorkers() {

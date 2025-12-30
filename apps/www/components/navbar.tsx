@@ -46,6 +46,12 @@ const Navbar: React.FC = () => {
             >
               Changelog
             </Link>
+            <Link
+              href="/sponsor"
+              className={`text-sm font-medium transition-colors duration-200 ${isActive('/sponsor') ? 'text-white' : 'text-text-secondary hover:text-white'}`}
+            >
+              Sponsor
+            </Link>
             <a
               href="https://github.com/neplextech/yasumu"
               target="_blank"
@@ -90,6 +96,13 @@ const Navbar: React.FC = () => {
               className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-md"
             >
               Changelog
+            </Link>
+            <Link
+              href="/sponsor"
+              onClick={() => setIsMenuOpen(false)}
+              className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-md"
+            >
+              Sponsor
             </Link>
             <a
               href="https://docs.yasumu.dev"

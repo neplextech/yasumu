@@ -5,7 +5,9 @@ description: Understanding the architecture that powers Yasumu.
 
 # Architecture
 
-Yasumu is built on a hybrid architecture that combines web technologies with native performance. This page explains how Yasumu is structured.
+Yasumu is built on a hybrid architecture that combines web
+technologies with native performance. This page explains how Yasumu is
+structured.
 
 ## Overview
 
@@ -13,15 +15,15 @@ Yasumu consists of three main layers:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   Frontend (Next.js)                 │
-│              React UI, State Management              │
+│                   Frontend (Next.js)                │
+│              React UI, State Management             │
 ├─────────────────────────────────────────────────────┤
-│                  Tauri Shell (Rust)                  │
-│        Window Management, IPC, Native Bridge         │
+│                  Tauri Shell (Rust)                 │
+│        Window Management, IPC, Native Bridge        │
 ├─────────────────────────────────────────────────────┤
-│            Custom JavaScript Runtime                 │
+│            Custom JavaScript Runtime                │
 │     Deno-based runtime with Drizzle + Hono          │
-│       HTTP Requests, Database, Business Logic        │
+│       HTTP Requests, Database, Business Logic       │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -36,17 +38,19 @@ The frontend is built with **Next.js** and React, providing:
 
 ### Key Technologies
 
-| Technology | Purpose |
-| :--- | :--- |
-| Next.js | React framework with static export |
-| React | UI component library |
-| TypeScript | Type-safe development |
-| Tailwind CSS | Utility-first styling |
-| Radix UI | Accessible component primitives |
+| Technology   | Purpose                            |
+| :----------- | :--------------------------------- |
+| Next.js      | React framework with static export |
+| React        | UI component library               |
+| TypeScript   | Type-safe development              |
+| Tailwind CSS | Utility-first styling              |
+| Radix UI     | Accessible component primitives    |
 
 ### Static Export
 
-Yasumu uses Next.js static export (`output: 'export'`) to generate static HTML, CSS, and JavaScript files that are bundled with the Tauri application:
+Yasumu uses Next.js static export (`output: 'export'`) to generate
+static HTML, CSS, and JavaScript files that are bundled with the Tauri
+application:
 
 ```typescript
 const nextConfig = {
@@ -66,35 +70,34 @@ The **Tauri** layer (written in Rust) serves as the desktop shell:
 
 ### Capabilities System
 
-Tauri uses a capabilities system to control what the application can access:
+Tauri uses a capabilities system to control what the application can
+access:
 
 ```json
 {
   "identifier": "main-capability",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "http:default",
-    "fs:default"
-  ]
+  "permissions": ["core:default", "http:default", "fs:default"]
 }
 ```
 
 ## Custom JavaScript Runtime (Tanxium)
 
-The actual backend logic runs in a **custom JavaScript runtime** called Tanxium, which is built on Deno:
+The actual backend logic runs in a **custom JavaScript runtime**
+called Tanxium, which is built on Deno:
 
 ### Core Components
 
-| Component | Purpose |
-| :--- | :--- |
-| **Deno Runtime** | JavaScript/TypeScript execution |
-| **Hono** | HTTP framework for internal servers (Echo server, etc.) |
-| **Drizzle ORM** | Database operations and persistence |
+| Component        | Purpose                                                 |
+| :--------------- | :------------------------------------------------------ |
+| **Deno Runtime** | JavaScript/TypeScript execution                         |
+| **Hono**         | HTTP framework for internal servers (Echo server, etc.) |
+| **Drizzle ORM**  | Database operations and persistence                     |
 
 ### Why a Custom Runtime?
 
-- **TypeScript Native** — First-class TypeScript support without compilation
+- **TypeScript Native** — First-class TypeScript support without
+  compilation
 - **Web-Standard APIs** — Uses familiar APIs like `fetch`
 - **Secure by Default** — Explicit permission model
 - **Embedded** — Runs within the Tauri application
@@ -144,7 +147,8 @@ The JavaScript runtime handles:
 
 ## The `.ysl` Format
 
-Yasumu Schema Language (YSL) is a custom format for storing API definitions:
+Yasumu Schema Language (YSL) is a custom format for storing API
+definitions:
 
 ### Design Goals
 
@@ -170,7 +174,8 @@ yasumu/
 └── yasumu-lock.json
 ```
 
-The human-readable names are stored inside the files in the `metadata` block.
+The human-readable names are stored inside the files in the `metadata`
+block.
 
 ## Package Structure
 
@@ -196,7 +201,9 @@ yasumu/
 
 ### Native HTTP
 
-HTTP requests are made through the JavaScript runtime using modern fetch APIs, providing:
+HTTP requests are made through the JavaScript runtime using modern
+fetch APIs, providing:
+
 - Connection management
 - HTTP/2 support where available
 - Efficient TLS handling
@@ -219,6 +226,7 @@ HTTP requests are made through the JavaScript runtime using modern fetch APIs, p
 ### Runtime Permissions
 
 The JavaScript runtime operates with controlled permissions:
+
 - Network access for HTTP requests
 - File system access for workspace operations
 - Database access for persistence
@@ -228,11 +236,13 @@ The JavaScript runtime operates with controlled permissions:
 ### Planned Plugin System
 
 Future releases will include a plugin API for:
+
 - Custom protocols
 - Authentication providers
 - Response formatters
 - Import/export formats
 
 <Callout type="info" title="Plugin Development">
-  The plugin system is currently under development. Check the GitHub repository for updates on the plugin API specification.
+  The plugin system is currently under development. Check the GitHub
+  repository for updates on the plugin API specification.
 </Callout>

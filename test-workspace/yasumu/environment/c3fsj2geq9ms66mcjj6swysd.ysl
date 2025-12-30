@@ -1,0 +1,33 @@
+@environment
+
+metadata {
+  id: "c3fsj2geq9ms66mcjj6swysd"
+  name: "Nightly"
+}
+
+variables [
+  {
+    key: "API_URL"
+    value: "https://echo.yasumu.local"
+    enabled: true
+  },
+  {
+    key: "SOURCE"
+    value: "tanxium-echo-server"
+    enabled: true
+  },
+  {
+    key: "TIMESTAMP"
+    value: "2025-12-30T04:51:37.050Z"
+    enabled: true
+  },
+]
+
+secrets [
+  {
+    key: "USER_ID"
+    value: ""
+    enabled: true
+  },
+]
+

@@ -1,0 +1,31 @@
+@rest
+
+metadata {
+  name: "Get Rauchg's GitHub Profile"
+  method: "GET"
+  id: "kldumi915p45we6c24off0gd"
+  groupId: null
+}
+
+request {
+  url: "https://api.github.com/users/rauchg"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  export async function onResponse(req, res) {
+    const body = res.json()
+  
+    await Yasumu.ui.showNotification({
+      title: 'GitHub Profile Fetched',
+      message: `${body.name} has ${body.followers.toLocaleString()} followers count.`,
+      variant: 'info',
+    });
+  }
+}
+

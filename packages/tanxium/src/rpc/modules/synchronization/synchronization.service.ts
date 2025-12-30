@@ -28,9 +28,12 @@ import {
   workspaces,
 } from '@/database/schema.ts';
 import { and, eq } from 'drizzle-orm';
+import { KeyedMutex } from '@/common/mutex.ts';
 
 @Injectable()
 export class SynchronizationService implements OnModuleInit {
+  private readonly workspaceMutex = new KeyedMutex();
+
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly yslService: YslService,
@@ -162,25 +165,31 @@ export class SynchronizationService implements OnModuleInit {
   }
 
   public async loadFromFileSystem(workspaceId: string) {
-    const workspace = await this.findWorkspace(workspaceId);
+    return await this.workspaceMutex.runExclusive(workspaceId, async () => {
+      const workspace = await this.findWorkspace(workspaceId);
 
-    // skip if the workspace does not exist
-    if (!workspace) return;
+      if (!workspace) return;
 
-    if (isDefaultWorkspacePath(workspace.path)) return;
+      if (isDefaultWorkspacePath(workspace.path)) return;
 
-    await this.loadWorkspaceFromFs(workspace);
-    await this.loadRestEntitiesFromFs(workspace);
-    await this.loadEnvironmentsFromFs(workspace);
-    await this.loadSmtpFromFs(workspace);
+      await this.loadWorkspaceFromFs(workspace);
+      await this.loadRestEntitiesFromFs(workspace);
+      await this.loadEnvironmentsFromFs(workspace);
+      await this.loadSmtpFromFs(workspace);
+    });
   }
 
   private async discoverWorkspace(
     workspacePath: string,
     onComplete: (workspace: WorkspaceData | null) => Promise<void>,
   ) {
-    const workspace = await this.createWorkspaceFromFs(workspacePath);
-    return onComplete(workspace);
+    return await this.workspaceMutex.runExclusive(
+      `discover:${workspacePath}`,
+      async () => {
+        const workspace = await this.createWorkspaceFromFs(workspacePath);
+        return onComplete(workspace);
+      },
+    );
   }
 
   private async createWorkspaceFromFs(
@@ -253,14 +262,18 @@ export class SynchronizationService implements OnModuleInit {
         url: request.url,
         groupId: metadata.groupId,
         requestHeaders: request.headers,
+        requestParameters: request.parameters,
+        searchParameters: request.searchParameters,
         requestBody: request.body
           ? {
               type: request.body.type as
-                | 'text'
                 | 'json'
+                | 'text'
+                | 'binary'
                 | 'form-data'
-                | 'urlencoded',
+                | 'x-www-form-urlencoded',
               value: request.body.content ?? '',
+              metadata: {},
             }
           : null,
         script: script
@@ -525,14 +538,18 @@ export class SynchronizationService implements OnModuleInit {
       url: request.url,
       groupId: metadata.groupId,
       requestHeaders: request.headers,
+      requestParameters: request.parameters,
+      searchParameters: request.searchParameters,
       requestBody: request.body
         ? {
             type: request.body.type as
-              | 'text'
               | 'json'
+              | 'text'
+              | 'binary'
               | 'form-data'
-              | 'urlencoded',
+              | 'x-www-form-urlencoded',
             value: request.body.content ?? '',
+            metadata: {},
           }
         : null,
       script: script ? { language: 'javascript' as const, code: script } : null,
@@ -749,6 +766,13 @@ export class SynchronizationService implements OnModuleInit {
     url: string | null;
     groupId: string | null;
     requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
+    requestParameters:
+      | { key: string; value: string; enabled: boolean }[]
+      | null;
+    searchParameters: { key: string; value: string; enabled: boolean }[] | null;
+    requestBody: { type: string; value: unknown } | null;
+    script: { code: string } | null;
+    testScript: { code: string } | null;
   }): string {
     return JSON.stringify({
       id: entity.id,
@@ -757,6 +781,11 @@ export class SynchronizationService implements OnModuleInit {
       url: entity.url,
       groupId: entity.groupId,
       headers: entity.requestHeaders ?? [],
+      parameters: entity.requestParameters ?? [],
+      searchParameters: entity.searchParameters ?? [],
+      body: entity.requestBody,
+      script: entity.script,
+      testScript: entity.testScript,
     });
   }
 
@@ -834,7 +863,13 @@ export class SynchronizationService implements OnModuleInit {
       url: string | null;
       groupId: string | null;
       requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
-      requestBody: { type: string; value: string } | null;
+      requestParameters:
+        | { key: string; value: string; enabled: boolean }[]
+        | null;
+      searchParameters:
+        | { key: string; value: string; enabled: boolean }[]
+        | null;
+      requestBody: { type: string; value: unknown } | null;
       script: { code: string } | null;
       testScript: { code: string } | null;
     },
@@ -853,10 +888,27 @@ export class SynchronizationService implements OnModuleInit {
           body: entity.requestBody
             ? {
                 type: entity.requestBody.type,
-                content: entity.requestBody.value,
+                content:
+                  typeof entity.requestBody.value === 'string'
+                    ? entity.requestBody.value
+                    : JSON.stringify(entity.requestBody.value),
               }
             : null,
-          headers: entity.requestHeaders ?? [],
+          headers: (entity.requestHeaders ?? []).map((h) => ({
+            key: h.key ?? '',
+            value: h.value ?? '',
+            enabled: h.enabled,
+          })),
+          parameters: (entity.requestParameters ?? []).map((p) => ({
+            key: p.key ?? '',
+            value: p.value ?? '',
+            enabled: p.enabled,
+          })),
+          searchParameters: (entity.searchParameters ?? []).map((s) => ({
+            key: s.key ?? '',
+            value: s.value ?? '',
+            enabled: s.enabled,
+          })),
           url: entity.url,
         },
         script: entity.script?.code ?? null,
@@ -891,7 +943,11 @@ export class SynchronizationService implements OnModuleInit {
           id: env.id,
           name: env.name,
         },
-        variables: env.variables,
+        variables: env.variables.map((v) => ({
+          key: v.key,
+          value: v.value ?? '',
+          enabled: v.enabled,
+        })),
         secrets: env.secrets.map((s) => ({
           key: s.key,
           value: '',
@@ -943,29 +999,62 @@ export class SynchronizationService implements OnModuleInit {
   }
 
   public async synchronizeWorkspace(workspaceId: string) {
-    const workspace = await this.findWorkspace(workspaceId);
+    return await this.workspaceMutex.runExclusive(workspaceId, async () => {
+      const workspace = await this.findWorkspace(workspaceId);
 
-    if (!workspace) return;
-    // do not attempt to synchronize the workspace if it is the default workspace
-    // as default workspace is virtual and acts as a scratchpad for the user
-    // and is not meant to be synchronized with the file system
-    if (isDefaultWorkspacePath(workspace.path)) return;
+      if (!workspace) return;
 
-    await this.pushWorkspaceToFs(workspace);
+      if (isDefaultWorkspacePath(workspace.path)) return;
 
-    const restEntitiesList = await this.restService.list(workspaceId);
+      await this.pushWorkspaceToFs(workspace);
 
-    for (const entity of restEntitiesList) {
-      await this.pushRestEntityToFs(workspace, entity);
+      const restEntitiesList = await this.restService.list(workspaceId);
+      const restEntityIds = new Set(restEntitiesList.map((e) => e.id));
+
+      for (const entity of restEntitiesList) {
+        await this.pushRestEntityToFs(workspace, entity);
+      }
+
+      await this.cleanupDeletedFiles(workspace, 'rest', restEntityIds);
+
+      const envList = await this.environmentsService.list(workspaceId);
+      const envIds = new Set(envList.map((e) => e.id));
+
+      for (const env of envList) {
+        await this.pushEnvironmentToFs(workspace, env);
+      }
+
+      await this.cleanupDeletedFiles(workspace, 'environment', envIds);
+
+      const smtpConfig = await this.emailService.getSmtp(workspaceId);
+      await this.pushSmtpToFs(workspace, smtpConfig);
+    });
+  }
+
+  private async cleanupDeletedFiles(
+    workspace: WorkspaceData,
+    entityType: 'rest' | 'environment',
+    existingIds: Set<string>,
+  ) {
+    const dir = this.getPath(workspace, entityType);
+    const files = await this.listYslFiles(dir);
+
+    for (const filePath of files) {
+      const fileName = filePath.split('/').pop() ?? '';
+      const entityId = fileName.replace('.ysl', '');
+
+      if (!existingIds.has(entityId)) {
+        try {
+          await Deno.remove(filePath);
+        } catch {
+          // ignore removal errors
+        }
+        await this.lockFileService.removeEntry(
+          workspace.path,
+          entityType,
+          entityId,
+        );
+      }
     }
-
-    const envList = await this.environmentsService.list(workspaceId);
-
-    for (const env of envList) {
-      await this.pushEnvironmentToFs(workspace, env);
-    }
-
-    const smtpConfig = await this.emailService.getSmtp(workspaceId);
-    await this.pushSmtpToFs(workspace, smtpConfig);
   }
 }

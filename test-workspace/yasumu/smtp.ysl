@@ -1,0 +1,9 @@
+@smtp
+
+metadata {
+  id: "fyed9v8otb9a9vedyx8wy9f6"
+  port: 50611
+  username: ""
+  password: null
+}
+

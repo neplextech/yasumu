@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import {
   RestEntityData,
@@ -69,7 +69,7 @@ export function useRestEntity({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
-  const queryKey = ['rest-entity', entityId];
+  const queryKey = useMemo(() => ['rest-entity', entityId], [entityId]);
 
   const {
     data: serverData,
@@ -103,18 +103,25 @@ export function useRestEntity({
       setLocalData(serverData);
       pendingUpdates.current = {};
     }
-  }, [serverData, isFetched]);
+  }, [serverData, isFetched, entityId]);
 
   useEffect(() => {
-    if (entityId) {
-      setLocalData(null);
-      pendingUpdates.current = {};
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
+    pendingUpdates.current = {};
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
     }
-  }, [entityId]);
+    if (!entityId) {
+      setLocalData(null);
+      return;
+    }
+    const cached = queryClient.getQueryData<RestEntityData>(queryKey);
+    if (cached) {
+      setLocalData(cached);
+    }
+    // Note: Don't set localData to null here - let the query fetch handle it
+    // This prevents flickering when switching entities
+  }, [entityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flushSave = useCallback(async () => {
     if (!entityId || Object.keys(pendingUpdates.current).length === 0) return;

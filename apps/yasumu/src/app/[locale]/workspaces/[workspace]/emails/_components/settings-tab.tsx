@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SettingsForm from './settings-form';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { toast } from '@yasumu/ui/components/sonner';
 import { useQuery } from '@tanstack/react-query';
+import LoadingScreen from '@/components/visuals/loading-screen';
 
 export default function SettingsTab() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [port, setPort] = useState<number>(0);
+  const [port, setPort] = useState<number>();
   const workspace = useActiveWorkspace();
   const {
     data: activeSmtpPort,
@@ -32,11 +33,15 @@ export default function SettingsTab() {
     await refetchSmtpPort();
   };
 
+  if (isLoadingSmtpPort) {
+    return <LoadingScreen message="Loading SMTP server configuration..." />;
+  }
+
   return (
     <SettingsForm
       username={username}
       password={password}
-      port={port}
+      port={port ?? activeSmtpPort ?? 0}
       activePort={activeSmtpPort ?? undefined}
       onUsernameChange={setUsername}
       onPasswordChange={setPassword}

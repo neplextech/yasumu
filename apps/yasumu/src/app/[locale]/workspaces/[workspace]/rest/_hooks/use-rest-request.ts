@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useActiveWorkspace,
   useYasumu,
@@ -60,6 +61,7 @@ export function useRestRequest({
   const controllerRef = useRef(new RestRequestController());
   const isCancelledRef = useRef(false);
   const { selectedEnvironment } = useEnvironmentStore();
+  const queryClient = useQueryClient();
 
   const appendScriptOutput = useCallback((message: string) => {
     setState((prev) => ({
@@ -70,7 +72,7 @@ export function useRestRequest({
 
   const execute = useCallback(
     async (
-      entity: RestEntityData,
+      _entity: RestEntityData,
       pathParams: Record<string, { value: string; enabled: boolean }>,
     ) => {
       if (!entityId) return;
@@ -83,25 +85,48 @@ export function useRestRequest({
         scriptOutput: [],
       });
 
+      const freshEntity = (await workspace.rest.get(entityId)) ?? _entity;
+      if (!freshEntity) {
+        setState((prev) => ({
+          ...prev,
+          phase: 'error',
+          error: 'Entity not found',
+        }));
+        return;
+      }
+
+      const entity = freshEntity.data;
+
+      const interpolateValue = (value: string) => interpolate(value);
+      const interpolatedUrl = interpolateValue(entity.url || '');
+      const interpolatedHeaders = Object.fromEntries(
+        (entity.requestHeaders || [])
+          .filter((h) => h.enabled && h.key)
+          .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
+      );
+      const interpolatedBody =
+        typeof entity.requestBody?.value === 'string'
+          ? interpolateValue(entity.requestBody.value)
+          : (entity.requestBody?.value ?? null);
+      const interpolatedParams = Object.fromEntries(
+        Object.entries(pathParams)
+          .filter(([, v]) => v.enabled)
+          .map(([k, v]) => [k, interpolateValue(v.value)]),
+      );
+
       let currentContext: RestScriptContext = {
         environment: selectedEnvironment?.toJSON() ?? null,
         request: {
-          url: entity.url || '',
+          url: interpolatedUrl,
           method: entity.method,
-          headers: Object.fromEntries(
-            (entity.requestHeaders || [])
-              .filter((h) => h.enabled && h.key)
-              .map((h) => [h.key, h.value]),
-          ),
-          body: entity.requestBody?.value ?? null,
-          parameters: Object.fromEntries(
-            Object.entries(pathParams)
-              .filter(([, v]) => v.enabled)
-              .map(([k, v]) => [k, v.value]),
-          ),
+          headers: interpolatedHeaders,
+          body: interpolatedBody,
+          parameters: interpolatedParams,
         },
         response: null,
       };
+
+      let mockResponse: RestResponse | null = null;
 
       try {
         if (entity.script?.code?.trim()) {
@@ -113,11 +138,37 @@ export function useRestRequest({
               entityId,
               entity.script,
               currentContext,
+              false,
             );
 
             if (result.result.success) {
               currentContext = result.context;
               appendScriptOutput('[Pre-Request] Script completed successfully');
+
+              if (result.result.result) {
+                const mockData = result.result.result as {
+                  status: number;
+                  statusText: string;
+                  headers: Record<string, string>;
+                  body: unknown;
+                };
+                const bodyStr =
+                  typeof mockData.body === 'string'
+                    ? mockData.body
+                    : JSON.stringify(mockData.body);
+                mockResponse = {
+                  status: mockData.status,
+                  statusText: mockData.statusText,
+                  headers: mockData.headers,
+                  cookies: [],
+                  body: bodyStr,
+                  time: 0,
+                  size: new Blob([bodyStr]).size,
+                };
+                appendScriptOutput(
+                  '[Pre-Request] Mock response returned, skipping HTTP request',
+                );
+              }
             } else {
               appendScriptOutput(
                 `[Pre-Request] Script failed: ${result.result.error}`,
@@ -135,43 +186,50 @@ export function useRestRequest({
           return;
         }
 
-        setState((prev) => ({ ...prev, phase: 'sending' }));
+        let response: RestResponse;
 
-        const modifiedEntity: RestEntityData = {
-          ...entity,
-          url: currentContext.request.url,
-          method: currentContext.request.method,
-          requestHeaders: Object.entries(currentContext.request.headers).map(
-            ([key, value]) => ({ key, value, enabled: true }),
-          ),
-          requestBody: currentContext.request.body
-            ? { ...entity.requestBody!, value: currentContext.request.body }
-            : entity.requestBody,
-        };
+        if (mockResponse) {
+          response = mockResponse;
+          setState((prev) => ({ ...prev, response }));
+        } else {
+          setState((prev) => ({ ...prev, phase: 'sending' }));
 
-        const outcome = await controllerRef.current.execute({
-          entity: modifiedEntity,
-          pathParams,
-          echoServerPort,
-          interpolate,
-        });
+          const modifiedEntity: RestEntityData = {
+            ...entity,
+            url: currentContext.request.url,
+            method: currentContext.request.method,
+            requestHeaders: Object.entries(currentContext.request.headers).map(
+              ([key, value]) => ({ key, value, enabled: true }),
+            ),
+            requestBody: currentContext.request.body
+              ? { ...entity.requestBody!, value: currentContext.request.body }
+              : entity.requestBody,
+          };
 
-        if (isCancelledRef.current) {
-          setState((prev) => ({ ...prev, phase: 'cancelled' }));
-          return;
+          const outcome = await controllerRef.current.execute({
+            entity: modifiedEntity,
+            pathParams,
+            echoServerPort,
+            interpolate,
+          });
+
+          if (isCancelledRef.current) {
+            setState((prev) => ({ ...prev, phase: 'cancelled' }));
+            return;
+          }
+
+          if (outcome.error) {
+            setState((prev) => ({
+              ...prev,
+              phase: 'error',
+              error: outcome.error,
+            }));
+            return;
+          }
+
+          response = outcome.response!;
+          setState((prev) => ({ ...prev, response }));
         }
-
-        if (outcome.error) {
-          setState((prev) => ({
-            ...prev,
-            phase: 'error',
-            error: outcome.error,
-          }));
-          return;
-        }
-
-        const response = outcome.response!;
-        setState((prev) => ({ ...prev, response }));
 
         if (entity.script?.code?.trim()) {
           setState((prev) => ({ ...prev, phase: 'post-response-script' }));
@@ -191,12 +249,27 @@ export function useRestRequest({
               entityId,
               entity.script,
               responseContext,
+              true,
             );
 
             if (result.result.success) {
               appendScriptOutput(
                 '[Post-Response] Script completed successfully',
               );
+
+              if (selectedEnvironment && result.context.environment) {
+                const envData = result.context.environment;
+                await selectedEnvironment.update({
+                  variables: envData.variables,
+                  secrets: envData.secrets,
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: ['environments'],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: ['currentEnvironment'],
+                });
+              }
             } else {
               appendScriptOutput(
                 `[Post-Response] Script failed: ${result.result.error}`,
@@ -229,6 +302,7 @@ export function useRestRequest({
       interpolate,
       appendScriptOutput,
       selectedEnvironment,
+      queryClient,
     ],
   );
 

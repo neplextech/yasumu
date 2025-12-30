@@ -2,8 +2,7 @@
 
 import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
-import { cn } from '@yasumu/ui/lib/utils';
-import { Loader2, Send, X, Save } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import HttpMethodSelector from '../http-methods-selector';
 
 interface RequestUrlBarProps {
@@ -58,7 +57,6 @@ export function RequestUrlBar({
           variant="destructive"
           className="min-w-[100px]"
         >
-          <X className="h-4 w-4 mr-2" />
           Cancel
         </Button>
       ) : (
@@ -67,7 +65,6 @@ export function RequestUrlBar({
           disabled={!url.trim()}
           className="min-w-[100px]"
         >
-          <Send className="h-4 w-4 mr-2" />
           Send
         </Button>
       )}

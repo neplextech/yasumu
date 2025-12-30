@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Mail,
   ExternalLink,
+  Code,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -141,6 +142,12 @@ export default function HomePage() {
             icon={<Server className="w-5 h-5" />}
             title="Environments"
             description="Manage variables and secrets across different contexts."
+          />
+          <Card
+            href="/docs/scripting"
+            icon={<Code className="w-5 h-5" />}
+            title="Scripting"
+            description="Pre-request and post-response scripting with JavaScript."
           />
           <Card
             href="/docs/smtp-server"

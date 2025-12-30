@@ -12,7 +12,7 @@ const transport = createTransport({
 await transport.sendMail({
   from: 'test@example.com',
   to: 'test@example.com',
-  subject: 'Welcome to Yasumu Again - Your Account is Ready!',
+  subject: 'Welcome to Yasumu - Your Account is Ready!',
   text: "Hi there!\n\nWelcome to Yasumu! We're excited to have you on board.\n\nYour account has been successfully created and is ready to use. You can now start building and testing your APIs with our powerful development tools.\n\nHere are some quick links to get you started:\n- Dashboard: https://yasumu.dev/dashboard\n- Documentation: https://docs.yasumu.dev\n- Community: https://discord.gg/yasumu\n\nIf you have any questions or need assistance, don't hesitate to reach out to our support team at support@yasumu.dev.\n\nHappy coding!\n\nThe Yasumu Team",
   html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0f172a;">

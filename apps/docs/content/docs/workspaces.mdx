@@ -99,6 +99,16 @@ Workspaces are designed to be committed alongside your source code:
   Commit the entire `yasumu` folder to version control. The `.ysl` format is designed to be human-readable and produce clean diffs.
 </Callout>
 
+## Default Workspace
+
+Yasumu includes a built-in **Default Workspace** that serves as a scratchpad for quick experiments and testing. This workspace:
+
+- **Cannot be removed** — It's always available as a fallback workspace
+- **Cannot be synchronized** — Unlike regular workspaces, it's not backed by the file system
+- **Ideal for quick tests** — Use it when you don't need persistence or version control
+
+The Default Workspace is perfect for one-off API calls or experimenting before committing to a project-specific workspace.
+
 ## Multiple Workspaces
 
 You can have multiple Yasumu workspaces:
@@ -106,6 +116,10 @@ You can have multiple Yasumu workspaces:
 - **Per-project workspaces** — Each project has its own `yasumu` folder
 - **Shared workspaces** — A central workspace for cross-project APIs
 - **Team workspaces** — Shared via Git for team collaboration
+
+Switch between workspaces using the workspace menu in the sidebar:
+
+![Switching Workspaces](/switching-workspaces.png)
 
 ## Importing & Exporting
 
