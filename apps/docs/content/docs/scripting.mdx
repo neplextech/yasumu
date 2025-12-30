@@ -22,6 +22,8 @@ functions:
 
 Scripts are written in the **Scripts** tab of the request editor:
 
+![Scripts Tab](/scripts.png)
+
 ```javascript
 export function onRequest(req) {
   // Modify the request before sending
@@ -327,6 +329,12 @@ export function onRequest(req) {
   console.log('Deno version:', Deno.version.deno);
 }
 ```
+
+<Callout type="warn" title="Permission System">
+  Yasumu runs scripts in a sandboxed environment. When a script attempts to perform dangerous operations (like file system access), you'll be prompted to grant permission:
+
+  ![Permission Prompt](/dangerous-script-asks-for-permission-prompt.png)
+</Callout>
 
 #### Example of some of the available Deno APIs
 
