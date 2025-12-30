@@ -1,10 +1,10 @@
 @rest
 
 metadata {
-  name: "Dangerous Script"
+  name: "Group Child"
   method: "GET"
-  id: "q2w7t7cvfkj5rhk3luznp967"
-  groupId: null
+  id: "w1fhq4io8dnfflk8a52m7hxt"
+  groupId: "lytdlv0a0ivxhj5lsgvu0ktn"
 }
 
 request {
@@ -16,8 +16,4 @@ request {
 }
 
 dependencies []
-
-script {
-  await Deno.remove('example.txt')
-}
 

@@ -14,6 +14,16 @@ import {
   ContextMenuTrigger,
 } from '@yasumu/ui/components/context-menu';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@yasumu/ui/components/alert-dialog';
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -125,9 +135,9 @@ function MenuContent({
   onCreateFolder?: (name: string, parentId?: string | null) => void;
 }) {
   const forFolder = type === 'folder';
-  const [open, setOpen] = React.useState<'file' | 'folder' | 'rename' | null>(
-    null,
-  );
+  const [open, setOpen] = React.useState<
+    'file' | 'folder' | 'rename' | 'delete' | null
+  >(null);
 
   return (
     <React.Fragment>
@@ -162,10 +172,40 @@ function MenuContent({
         >
           Rename
         </ContextMenuItem>
-        <ContextMenuItem inset variant="destructive" onClick={onDelete}>
+        <ContextMenuItem
+          inset
+          variant="destructive"
+          onClick={() => setOpen('delete')}
+        >
           Delete
         </ContextMenuItem>
       </ContextMenuContent>
+
+      <AlertDialog
+        open={open === 'delete'}
+        onOpenChange={(isOpen) => setOpen(isOpen ? 'delete' : null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {type}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{name}"? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete?.();
+                setOpen(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CreateInputDialog
         title="Rename"

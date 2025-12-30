@@ -19,13 +19,13 @@ dependencies []
 
 script {
   export async function onResponse(req, res) {
-    const body = res.json()
-  
-    await Yasumu.ui.showNotification({
-      title: 'GitHub Profile Fetched',
-      message: `${body.name} has ${body.followers.toLocaleString()} followers count.`,
-      variant: 'info',
-    });
-  }
+      const body = res.json()
+    
+      await Yasumu.ui.showNotification({
+        title: 'GitHub Profile Fetched',
+        message: `${body.name} has ${body.followers.toLocaleString()} followers count.`,
+        variant: 'info',
+      });
+    }
 }
 

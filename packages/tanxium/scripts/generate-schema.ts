@@ -12,14 +12,28 @@ let output = `${HEADER}\n`;
 
 // export all tables
 output += '/* Tables */\n';
-for await (const file of Deno.readDir(TABLES_DIR)) {
-  output += `export * from './schema/tables/${file.name}';\n`;
+{
+  const files: string[] = [];
+  for await (const file of Deno.readDir(TABLES_DIR)) {
+    files.push(file.name);
+  }
+  files.sort((a, b) => a.localeCompare(b));
+  for (const name of files) {
+    output += `export * from './schema/tables/${name}';\n`;
+  }
 }
 
 // export all relations
 output += '\n/* Relations */\n';
-for await (const file of Deno.readDir(RELATIONS_DIR)) {
-  output += `export * from './schema/relations/${file.name}';\n`;
+{
+  const files: string[] = [];
+  for await (const file of Deno.readDir(RELATIONS_DIR)) {
+    files.push(file.name);
+  }
+  files.sort((a, b) => a.localeCompare(b));
+  for (const name of files) {
+    output += `export * from './schema/relations/${name}';\n`;
+  }
 }
 
 await Deno.writeTextFile(OUTPUT_DIR, output);

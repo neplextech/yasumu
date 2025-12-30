@@ -6,12 +6,15 @@ import {
   RestEntityRequestBody,
   YasumuEmbeddedScript,
 } from '@yasumu/common';
-import { entityGroups } from "./entity-group.ts";
+import { entityGroups } from './entity-group.ts';
+import { workspaces } from './workspaces.ts';
 
 export const restEntities = sqliteTable('rest_entity', {
   ...commonColumns<RestEntityMetadata>(),
   name: text('name').notNull(),
-  workspaceId: text('workspaceId').notNull(),
+  workspaceId: text('workspaceId')
+    .notNull()
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
   method: text('method').notNull(),
   url: text('url'),
   requestParameters: json<KeyValuePair[]>('requestParameters').$default(
@@ -22,11 +25,17 @@ export const restEntities = sqliteTable('rest_entity', {
   requestBody: json<RestEntityRequestBody>('requestBody'),
   script: json<YasumuEmbeddedScript>('script'),
   testScript: json<YasumuEmbeddedScript>('testScript'),
-  groupId: text('groupId').references(() => entityGroups.id, { onDelete: 'cascade' }),
+  groupId: text('groupId').references(() => entityGroups.id, {
+    onDelete: 'cascade',
+  }),
 });
 
 export const restEntityDependencies = sqliteTable('rest_entity_dependency', {
   ...commonColumns(),
-  restEntityId: text('restEntityId').notNull(),
-  dependsOnId: text('dependsOnId').notNull(),
+  restEntityId: text('restEntityId')
+    .notNull()
+    .references(() => restEntities.id, { onDelete: 'cascade' }),
+  dependsOnId: text('dependsOnId')
+    .notNull()
+    .references(() => restEntities.id, { onDelete: 'cascade' }),
 });

@@ -1,5 +1,11 @@
-import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { commonColumns, cuid, timestamp } from '../../common/index.ts';
+import {
+  AnySQLiteColumn,
+  int,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core';
+import { commonColumns, timestamp } from '../../common/index.ts';
+import { environments } from './environments.ts';
 
 export interface WorkspaceMetadata {
   /**
@@ -14,5 +20,8 @@ export const workspaces = sqliteTable('workspaces', {
   version: int('version').notNull().default(0),
   path: text('path').notNull(),
   lastOpenedAt: timestamp('lastOpenedAt'),
-  activeEnvironmentId: cuid('activeEnvironmentId'),
+  activeEnvironmentId: text('activeEnvironmentId').references(
+    (): AnySQLiteColumn => environments.id,
+    { onDelete: 'set null' },
+  ),
 });

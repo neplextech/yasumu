@@ -1,12 +1,12 @@
 @workspace
 
 metadata {
-  id: "i99kqik6efcgqiqlmogg1hfn"
+  id: "v753h51r3e10zzcg5rkel8mv"
   name: "test-workspace"
   version: 0
 }
 
-snapshot 1767095283310
+snapshot 1767099242123
 
 groups {}
 
