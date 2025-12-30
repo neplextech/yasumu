@@ -126,11 +126,35 @@ pub fn invoke_renderer_event_callback(event: &str) {
     }
 }
 
+#[op2(fast)]
+fn op_is_yasumu_dev_mode() -> bool {
+    tauri::is_dev()
+}
+
+#[op2]
+#[string]
+fn op_get_app_data_dir(state: &mut OpState) -> String {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let path = app_handle.path().app_data_dir().unwrap();
+    let path_str = path.as_path().to_str();
+
+    if path_str.is_none() {
+        eprintln!("Failed to get app data directory");
+        return "".to_string();
+    }
+
+    path_str.unwrap().to_string()
+}
+
 deno_core::extension!(
     tanxium_rt,
     ops = [
         op_send_renderer_event,
         op_get_resources_dir,
+        op_get_app_data_dir,
         op_set_rpc_port,
         op_generate_cuid,
         op_is_yasumu_ready,
@@ -138,6 +162,7 @@ deno_core::extension!(
         op_set_echo_server_port,
         op_register_virtual_module,
         op_unregister_virtual_module,
+        op_is_yasumu_dev_mode,
     ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [

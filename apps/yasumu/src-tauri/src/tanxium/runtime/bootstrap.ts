@@ -3,6 +3,7 @@ import './patches.ts';
 import { YasumuUI } from './ui.ts';
 import {
   op_get_resources_dir,
+  op_get_app_data_dir,
   op_set_rpc_port,
   op_generate_cuid,
   op_is_yasumu_ready,
@@ -10,6 +11,7 @@ import {
   op_set_echo_server_port,
   op_register_virtual_module,
   op_unregister_virtual_module,
+  op_is_yasumu_dev_mode,
 } from 'ext:core/ops';
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
@@ -21,7 +23,9 @@ import {
   YasumuWorkspaceEnvironment,
 } from './yasumu-request.ts';
 
-let _resourceDir: string, _yasumuVersion: string;
+let _resourceDir: string, _yasumuVersion: string, _appDataDir: string;
+
+const __yasumuIsDevMode = op_is_yasumu_dev_mode();
 
 const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
@@ -58,6 +62,14 @@ class Yasumu {
   public static unregisterVirtualModule(name: string) {
     if (inWorker) return;
     op_unregister_virtual_module(name);
+  }
+
+  /**
+   * Check if the Yasumu runtime is running in dev mode
+   * @returns True if the Yasumu runtime is running in dev mode, false otherwise
+   */
+  public static get isDevMode() {
+    return __yasumuIsDevMode;
   }
 
   /**
@@ -111,6 +123,18 @@ class Yasumu {
     }
 
     return _resourceDir;
+  }
+
+  /**
+   * Get the app data directory (platform-specific)
+   * @returns The app data directory
+   */
+  public static getAppDataDir() {
+    if (!_appDataDir) {
+      _appDataDir = Yasumu.stripVerbatimPath(op_get_app_data_dir());
+    }
+
+    return _appDataDir;
   }
   /**
    * Get the server entrypoint

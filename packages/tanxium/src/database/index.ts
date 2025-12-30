@@ -1,8 +1,24 @@
 import { drizzle } from './sqlite/index.ts';
 import * as schema from './schema.ts';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
-export const db = drizzle('file:yasumu.db', { schema });
+function getDatabasePath(): string {
+  if (Yasumu.isDevMode) {
+    return 'file:yasumu.db';
+  }
+
+  const appDataDir = Yasumu.getAppDataDir();
+
+  if (!existsSync(appDataDir)) {
+    mkdirSync(appDataDir, { recursive: true });
+  }
+
+  return `file:${join(appDataDir, 'yasumu.db')}`;
+}
+
+export const db = drizzle(getDatabasePath(), { schema });
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
