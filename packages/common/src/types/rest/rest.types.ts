@@ -200,3 +200,34 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
    */
   dependencies?: string[];
 }
+
+/**
+ * A folder in the REST entity tree.
+ */
+export interface RestTreeFolder {
+  id: string;
+  name: string;
+  type: 'folder';
+  parentId: string | null;
+  workspaceId: string;
+  entityType: string;
+  children: RestTreeItem[];
+}
+
+/**
+ * A file (REST request) in the REST entity tree.
+ */
+export interface RestTreeFile {
+  id: string;
+  name: string | null;
+  type: 'file';
+  method: HttpMethod;
+  url: string | null;
+  groupId: string | null;
+  workspaceId: string;
+}
+
+/**
+ * An item in the REST entity tree (either a folder or a file).
+ */
+export type RestTreeItem = RestTreeFolder | RestTreeFile;

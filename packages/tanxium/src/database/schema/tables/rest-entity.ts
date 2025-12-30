@@ -6,6 +6,7 @@ import {
   RestEntityRequestBody,
   YasumuEmbeddedScript,
 } from '@yasumu/common';
+import { entityGroups } from "./entity-group.ts";
 
 export const restEntities = sqliteTable('rest_entity', {
   ...commonColumns<RestEntityMetadata>(),
@@ -21,7 +22,7 @@ export const restEntities = sqliteTable('rest_entity', {
   requestBody: json<RestEntityRequestBody>('requestBody'),
   script: json<YasumuEmbeddedScript>('script'),
   testScript: json<YasumuEmbeddedScript>('testScript'),
-  groupId: text('groupId'),
+  groupId: text('groupId').references(() => entityGroups.id, { onDelete: 'cascade' }),
 });
 
 export const restEntityDependencies = sqliteTable('rest_entity_dependency', {

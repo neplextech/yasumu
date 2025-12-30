@@ -1,6 +1,6 @@
 import { Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { restEntities } from '@/database/schema.ts';
 import {
   ExecutableScript,
@@ -37,6 +37,17 @@ export class RestService {
       .select()
       .from(restEntities)
       .where(eq(restEntities.workspaceId, workspaceId));
+
+    return result;
+  }
+
+  public async listNoGroups(workspaceId: string) {
+    const db = this.connection.getConnection();
+
+    const result = await db
+      .select()
+      .from(restEntities)
+      .where(and(eq(restEntities.workspaceId, workspaceId), isNull(restEntities.groupId)));
 
     return result;
   }
@@ -115,16 +126,11 @@ export class RestService {
     await this.dispatchUpdate(workspaceId);
   }
 
-  public async listTree(workspaceId: string, groupId?: string) {
-    const result = await this.entityGroupService.listTree({
+  public listTree(workspaceId: string) {
+    return this.entityGroupService.listTree({
       workspaceId,
-      entityField: restEntities.workspaceId,
-      tableName: 'restEntities',
       entityType: 'rest',
-      groupId,
     });
-
-    return result;
   }
 
   public async executeScript(
