@@ -43,7 +43,6 @@ export class EntityGroupService {
   }
 
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
-    console.log('creating entity group', data);
     const db = this.connection.getConnection();
     const maybeExisting = await this.locateGroupWithCommonParent(
       data.name,
