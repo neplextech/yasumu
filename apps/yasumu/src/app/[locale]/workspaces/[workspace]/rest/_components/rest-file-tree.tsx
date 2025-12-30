@@ -83,22 +83,26 @@ export function RestFileTree() {
       onFileSelect={(id: string) => {
         setEntityId(id);
       }}
-      onFileCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
-        await workspace.rest.create({
-          name,
-          method: 'GET',
-          url: null,
-          groupId: parentId,
-          metadata: {},
-        });
-      })}
-      onFolderCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
-        await workspace.rest.createEntityGroup({
-          name,
-          parentId: parentId ?? null,
-          entityType: 'rest',
-        });
-      })}
+      onFileCreate={withErrorHandler(
+        async (name: string, parentId?: string | null) => {
+          await workspace.rest.create({
+            name,
+            method: 'GET',
+            url: null,
+            groupId: parentId,
+            metadata: {},
+          });
+        },
+      )}
+      onFolderCreate={withErrorHandler(
+        async (name: string, parentId?: string | null) => {
+          await workspace.rest.createEntityGroup({
+            name,
+            parentId: parentId ?? null,
+            entityType: 'rest',
+          });
+        },
+      )}
       onFileDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.delete(id);
       })}

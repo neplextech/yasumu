@@ -137,7 +137,10 @@ export interface YasumuRPC {
      * @param id The ID of the entity group.
      * @param data The data for the entity group.
      */
-    update: RpcMutation<[id: string, data: Partial<EntityGroupUpdateOptions>], EntityGroupData>;
+    update: RpcMutation<
+      [id: string, data: Partial<EntityGroupUpdateOptions>],
+      EntityGroupData
+    >;
     /**
      * Entity group deletion command.
      * @param id The ID of the entity group.

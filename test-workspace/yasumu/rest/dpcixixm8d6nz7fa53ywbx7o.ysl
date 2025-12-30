@@ -1,7 +1,7 @@
 @rest
 
 metadata {
-  name: "Echo"
+  name: "Echo server"
   method: "GET"
   id: "dpcixixm8d6nz7fa53ywbx7o"
   groupId: null

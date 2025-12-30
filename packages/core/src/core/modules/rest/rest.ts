@@ -64,18 +64,25 @@ export class RestModule {
     return data as unknown as RestTreeItem[];
   }
 
-  public async createEntityGroup(data: EntityGroupCreateOptions): Promise<EntityGroupData> {
-    const result = await this.workspace.manager.yasumu.rpc.entityGroups.create.$mutate({
-      parameters: [data],
-    });
+  public async createEntityGroup(
+    data: EntityGroupCreateOptions,
+  ): Promise<EntityGroupData> {
+    const result =
+      await this.workspace.manager.yasumu.rpc.entityGroups.create.$mutate({
+        parameters: [data],
+      });
 
     return result;
   }
 
-  public async updateEntityGroup(id: string, data: EntityGroupUpdateOptions): Promise<EntityGroupData> {
-    const result = await this.workspace.manager.yasumu.rpc.entityGroups.update.$mutate({
-      parameters: [id, data],
-    });
+  public async updateEntityGroup(
+    id: string,
+    data: EntityGroupUpdateOptions,
+  ): Promise<EntityGroupData> {
+    const result =
+      await this.workspace.manager.yasumu.rpc.entityGroups.update.$mutate({
+        parameters: [id, data],
+      });
 
     return result;
   }

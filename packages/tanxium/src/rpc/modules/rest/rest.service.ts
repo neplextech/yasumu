@@ -47,7 +47,12 @@ export class RestService {
     const result = await db
       .select()
       .from(restEntities)
-      .where(and(eq(restEntities.workspaceId, workspaceId), isNull(restEntities.groupId)));
+      .where(
+        and(
+          eq(restEntities.workspaceId, workspaceId),
+          isNull(restEntities.groupId),
+        ),
+      );
 
     return result;
   }

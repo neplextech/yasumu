@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "CSV"
+  method: "GET"
+  id: "gapu18kkiuuvymwjxgjw98rl"
+  groupId: "w10lye9m7dsomdwoj9zooyf4"
+}
+
+request {
+  url: "https://sample-files.com/downloads/data/csv/basic-data.csv"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

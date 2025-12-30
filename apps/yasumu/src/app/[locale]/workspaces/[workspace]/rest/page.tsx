@@ -176,6 +176,7 @@ export default function RestPage() {
       response={requestState.response}
       error={requestState.error}
       scriptOutput={requestState.scriptOutput}
+      blobUrl={requestState.blobUrl}
     />
   );
 

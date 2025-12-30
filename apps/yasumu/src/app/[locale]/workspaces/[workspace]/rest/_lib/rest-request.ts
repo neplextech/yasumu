@@ -6,6 +6,8 @@ import type {
 } from '@yasumu/common';
 
 const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
+export const MAX_BINARY_BODY_SIZE = 10 * 1024 * 1024; // 10MB threshold for binary
+export const MAX_TEXT_BODY_SIZE = 1 * 1024 * 1024; // 1MB threshold for text
 
 export interface RestRequestOptions {
   entity: RestEntityData;
@@ -15,14 +17,19 @@ export interface RestRequestOptions {
   signal?: AbortSignal;
 }
 
+export type ResponseBodyType = 'text' | 'binary';
+
 export interface RestResponse {
   status: number;
   statusText: string;
   time: number;
   headers: Record<string, string>;
   cookies: string[];
-  body: string;
+  textBody: string | null;
+  binaryBody: ArrayBuffer | null;
+  bodyType: ResponseBodyType;
   size: number;
+  bodyTruncated: boolean;
 }
 
 export interface RestRequestResult {
@@ -36,6 +43,18 @@ export interface RestRequestError {
 }
 
 export type RestRequestOutcome = RestRequestResult | RestRequestError;
+
+function isTextContentType(contentType: string): boolean {
+  const ct = contentType.toLowerCase();
+  if (ct.startsWith('text/')) return true;
+  if (ct.includes('json')) return true;
+  if (ct.includes('xml')) return true;
+  if (ct.includes('javascript')) return true;
+  if (ct.includes('css')) return true;
+  if (ct.includes('html')) return true;
+  if (ct.includes('csv')) return true;
+  return false;
+}
 
 function buildRequestBody(
   body: RestEntityRequestBody | null,
@@ -196,14 +215,39 @@ export async function executeRestRequest(
     });
     const elapsed = performance.now() - start;
 
-    const responseBody = await response.text();
     const responseHeaders = Object.fromEntries(response.headers.entries());
     const cookies = extractCookies(response.headers);
-
+    const contentType = response.headers.get('content-type') || '';
     const contentLength = response.headers.get('content-length');
-    const size = contentLength
-      ? parseInt(contentLength, 10)
-      : new Blob([responseBody]).size;
+    const declaredSize = contentLength ? parseInt(contentLength, 10) : 0;
+
+    const isText = isTextContentType(contentType);
+    const maxSize = isText ? MAX_TEXT_BODY_SIZE : MAX_BINARY_BODY_SIZE;
+
+    let textBody: string | null = null;
+    let binaryBody: ArrayBuffer | null = null;
+    let bodyTruncated = false;
+    let actualSize = declaredSize;
+
+    if (declaredSize > maxSize) {
+      bodyTruncated = true;
+    } else if (isText) {
+      const text = await response.text();
+      actualSize = new Blob([text]).size;
+      if (actualSize > MAX_TEXT_BODY_SIZE) {
+        bodyTruncated = true;
+      } else {
+        textBody = text;
+      }
+    } else {
+      const buffer = await response.arrayBuffer();
+      actualSize = buffer.byteLength;
+      if (actualSize > MAX_BINARY_BODY_SIZE) {
+        bodyTruncated = true;
+      } else {
+        binaryBody = buffer;
+      }
+    }
 
     return {
       response: {
@@ -212,8 +256,11 @@ export async function executeRestRequest(
         time: elapsed,
         headers: responseHeaders,
         cookies,
-        body: responseBody,
-        size,
+        textBody,
+        binaryBody,
+        bodyType: isText ? 'text' : 'binary',
+        size: actualSize,
+        bodyTruncated,
       },
       error: null,
     };

@@ -1,0 +1,23 @@
+@rest
+
+metadata {
+  name: "Video"
+  method: "GET"
+  id: "q1366s8o0qq4733bntujskfl"
+  groupId: "w10lye9m7dsomdwoj9zooyf4"
+}
+
+request {
+  url: "https://i.imgur.com/QkRv3nP.mp4"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  
+}
+

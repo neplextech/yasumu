@@ -19,7 +19,7 @@ export class EntityGroupResolver implements YasumuRpcService<'entityGroups'> {
       data,
     )) as unknown as EntityGroupData;
   }
-  
+
   @Mutation()
   public update(
     @WorkspaceId() workspaceId: string,
@@ -30,10 +30,7 @@ export class EntityGroupResolver implements YasumuRpcService<'entityGroups'> {
   }
 
   @Mutation()
-  public delete(
-    @WorkspaceId() workspaceId: string,
-    id: string,
-  ) {
+  public delete(@WorkspaceId() workspaceId: string, id: string) {
     return this.entityGroupService.delete(workspaceId, id);
   }
 }

@@ -11,12 +11,15 @@ import {
   NotFoundException,
   BadRequestException,
 } from '../common/exceptions/http.exception.ts';
-import { TanxiumService } from "../common/tanxium.service.ts";
-import { EntityGroupData } from "@yasumu/common";
+import { TanxiumService } from '../common/tanxium.service.ts';
+import { EntityGroupData } from '@yasumu/common';
 
 @Injectable()
 export class EntityGroupService {
-  public constructor(private readonly connection: TransactionalConnection, private readonly tanxiumService: TanxiumService) {}
+  public constructor(
+    private readonly connection: TransactionalConnection,
+    private readonly tanxiumService: TanxiumService,
+  ) {}
 
   private async locateGroupWithCommonParent(
     name: string,
@@ -63,14 +66,20 @@ export class EntityGroupService {
         workspaceId,
       })
       .returning();
-      
-      await this.dispatchUpdate(workspaceId);
+
+    await this.dispatchUpdate(workspaceId);
     return result;
   }
 
   public async get(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const [result] = await db.select().from(entityGroups).where(and(eq(entityGroups.id, id), eq(entityGroups.workspaceId, workspaceId))).limit(1);
+    const [result] = await db
+      .select()
+      .from(entityGroups)
+      .where(
+        and(eq(entityGroups.id, id), eq(entityGroups.workspaceId, workspaceId)),
+      )
+      .limit(1);
 
     if (!result) return null;
 
@@ -118,19 +127,16 @@ export class EntityGroupService {
       .where(eq(entityGroups.id, id))
       .returning();
 
-      await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId);
 
     return updated as unknown as EntityGroupData;
   }
 
   public async delete(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-  await this.getOrThrow(workspaceId, id);
+    await this.getOrThrow(workspaceId, id);
 
-    await db
-      .delete(entityGroups)
-      .where(eq(entityGroups.id, id))
-      .returning();
+    await db.delete(entityGroups).where(eq(entityGroups.id, id)).returning();
 
     await this.dispatchUpdate(workspaceId);
   }

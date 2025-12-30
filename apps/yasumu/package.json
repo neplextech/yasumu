@@ -39,9 +39,11 @@
     "next-intl": "^4.4.0",
     "next-themes": "^0.4.6",
     "nuqs": "^2.8.6",
+    "pdfjs-dist": "5.4.296",
     "react": "catalog:react",
     "react-dom": "catalog:react",
     "react-icons": "^5.5.0",
+    "react-pdf": "^10.2.0",
     "set-cookie-parser": "^2.7.2",
     "shadcn": "^3.5.0",
     "zustand": "^5.0.9"

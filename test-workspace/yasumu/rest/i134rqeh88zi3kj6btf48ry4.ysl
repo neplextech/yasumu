@@ -1,0 +1,25 @@
+@rest
+
+metadata {
+  name: "Image"
+  method: "GET"
+  id: "i134rqeh88zi3kj6btf48ry4"
+  groupId: "w10lye9m7dsomdwoj9zooyf4"
+}
+
+request {
+  url: "https://cdn.discordapp.com/embed/avatars/0.png"
+  headers: []
+  parameters: []
+  searchParameters: [
+    {
+      key: ""
+      value: ""
+      enabled: true
+    },
+  ]
+  body: null
+}
+
+dependencies []
+

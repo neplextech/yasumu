@@ -1,14 +1,14 @@
 @rest
 
 metadata {
-  name: "Group Child"
+  name: "HTML"
   method: "GET"
-  id: "w1fhq4io8dnfflk8a52m7hxt"
-  groupId: "lytdlv0a0ivxhj5lsgvu0ktn"
+  id: "yzenbg630ziahejre7u550pa"
+  groupId: "w10lye9m7dsomdwoj9zooyf4"
 }
 
 request {
-  url: "{{API_URL}}"
+  url: "https://example.com"
   headers: []
   parameters: []
   searchParameters: []

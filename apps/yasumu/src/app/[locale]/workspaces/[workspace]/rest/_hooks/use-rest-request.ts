@@ -13,6 +13,12 @@ import {
   type RestRequestOutcome,
 } from '../_lib/rest-request';
 import type { RestEntityData, RestScriptContext } from '@yasumu/common';
+import {
+  getContentType,
+  categorizeContent,
+  createBlobUrlFromBuffer,
+  createBlobUrlFromText,
+} from '@/components/responses/viewers';
 
 export type RequestPhase =
   | 'idle'
@@ -28,6 +34,7 @@ export interface RequestState {
   response: RestResponse | null;
   error: string | null;
   scriptOutput: string[];
+  blobUrl: string | null;
 }
 
 interface UseRestRequestOptions {
@@ -49,7 +56,30 @@ const INITIAL_STATE: RequestState = {
   response: null,
   error: null,
   scriptOutput: [],
+  blobUrl: null,
 };
+
+function createResponseBlobUrl(response: RestResponse): string | null {
+  const contentType = getContentType(response.headers);
+  const category = categorizeContent(contentType);
+
+  const needsBlobUrl =
+    !response.bodyTruncated &&
+    (category === 'image' ||
+      category === 'video' ||
+      category === 'audio' ||
+      category === 'pdf');
+
+  if (!needsBlobUrl) return null;
+
+  if (response.binaryBody) {
+    return createBlobUrlFromBuffer(response.binaryBody, contentType);
+  }
+  if (response.textBody) {
+    return createBlobUrlFromText(response.textBody, contentType);
+  }
+  return null;
+}
 
 export function useRestRequest({
   entityId,
@@ -78,11 +108,17 @@ export function useRestRequest({
       if (!entityId) return;
 
       isCancelledRef.current = false;
-      setState({
-        phase: 'idle',
-        response: null,
-        error: null,
-        scriptOutput: [],
+      setState((prev) => {
+        if (prev.blobUrl) {
+          URL.revokeObjectURL(prev.blobUrl);
+        }
+        return {
+          phase: 'idle',
+          response: null,
+          error: null,
+          scriptOutput: [],
+          blobUrl: null,
+        };
       });
 
       const freshEntity = (await workspace.rest.get(entityId)) ?? _entity;
@@ -161,9 +197,12 @@ export function useRestRequest({
                   statusText: mockData.statusText,
                   headers: mockData.headers,
                   cookies: [],
-                  body: bodyStr,
+                  textBody: bodyStr,
+                  binaryBody: null,
+                  bodyType: 'text',
                   time: 0,
                   size: new Blob([bodyStr]).size,
+                  bodyTruncated: false,
                 };
                 appendScriptOutput(
                   '[Pre-Request] Mock response returned, skipping HTTP request',
@@ -190,7 +229,8 @@ export function useRestRequest({
 
         if (mockResponse) {
           response = mockResponse;
-          setState((prev) => ({ ...prev, response }));
+          const blobUrl = createResponseBlobUrl(response);
+          setState((prev) => ({ ...prev, response, blobUrl }));
         } else {
           setState((prev) => ({ ...prev, phase: 'sending' }));
 
@@ -228,19 +268,29 @@ export function useRestRequest({
           }
 
           response = outcome.response!;
-          setState((prev) => ({ ...prev, response }));
+          const blobUrl = createResponseBlobUrl(response);
+          setState((prev) => ({ ...prev, response, blobUrl }));
         }
 
         if (entity.script?.code?.trim()) {
+          const canSendBodyToScript =
+            !response.bodyTruncated && response.bodyType === 'text';
+
           setState((prev) => ({ ...prev, phase: 'post-response-script' }));
           appendScriptOutput('[Post-Response] Executing onResponse...');
+
+          if (!canSendBodyToScript) {
+            appendScriptOutput(
+              '[Post-Response] Response body not available to script (binary or too large)',
+            );
+          }
 
           const responseContext: RestScriptContext = {
             ...currentContext,
             response: {
               status: response.status,
               headers: response.headers,
-              body: response.body,
+              body: canSendBodyToScript ? (response.textBody ?? '') : null,
             },
           };
 
