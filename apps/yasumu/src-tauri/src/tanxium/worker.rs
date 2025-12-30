@@ -84,7 +84,7 @@ impl WorkerSharedState {
             let permissions_container = PermissionsContainer::new(
                 permission_desc_parser.clone(),
                 Permissions::none_with_prompt(),
-            )
+            );
 
             let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone(), false);
 

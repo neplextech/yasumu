@@ -135,7 +135,12 @@ export class RestService {
     const result = await this.scriptRuntimeService.executeScript<
       RestScriptContext,
       ExecutableScript<RestScriptContext>
-    >(workspaceId, entity, REST_SCRIPT_PRELOAD, terminateAfter);
+    >(
+      workspaceId,
+      entity,
+      REST_SCRIPT_PRELOAD,
+      terminateAfter || entity.invocationTarget === 'onResponse',
+    );
 
     return result;
   }

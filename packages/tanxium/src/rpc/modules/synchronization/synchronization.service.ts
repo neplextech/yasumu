@@ -1001,18 +1001,51 @@ export class SynchronizationService implements OnModuleInit {
     await this.pushWorkspaceToFs(workspace);
 
     const restEntitiesList = await this.restService.list(workspaceId);
+    const restEntityIds = new Set(restEntitiesList.map((e) => e.id));
 
     for (const entity of restEntitiesList) {
       await this.pushRestEntityToFs(workspace, entity);
     }
 
+    await this.cleanupDeletedFiles(workspace, 'rest', restEntityIds);
+
     const envList = await this.environmentsService.list(workspaceId);
+    const envIds = new Set(envList.map((e) => e.id));
 
     for (const env of envList) {
       await this.pushEnvironmentToFs(workspace, env);
     }
 
+    await this.cleanupDeletedFiles(workspace, 'environment', envIds);
+
     const smtpConfig = await this.emailService.getSmtp(workspaceId);
     await this.pushSmtpToFs(workspace, smtpConfig);
+  }
+
+  private async cleanupDeletedFiles(
+    workspace: WorkspaceData,
+    entityType: 'rest' | 'environment',
+    existingIds: Set<string>,
+  ) {
+    const dir = this.getPath(workspace, entityType);
+    const files = await this.listYslFiles(dir);
+
+    for (const filePath of files) {
+      const fileName = filePath.split('/').pop() ?? '';
+      const entityId = fileName.replace('.ysl', '');
+
+      if (!existingIds.has(entityId)) {
+        try {
+          await Deno.remove(filePath);
+        } catch {
+          // ignore removal errors
+        }
+        await this.lockFileService.removeEntry(
+          workspace.path,
+          entityType,
+          entityId,
+        );
+      }
+    }
   }
 }

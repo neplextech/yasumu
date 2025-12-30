@@ -55,8 +55,8 @@ export class RestModule {
     entityId: string,
     script: YasumuEmbeddedScript,
     context: RestScriptContext,
+    terminateAfter = false,
   ) {
-    const isResponse = !!context.response;
     const result =
       await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
         parameters: [
@@ -64,9 +64,9 @@ export class RestModule {
             entityId,
             script,
             context,
-            invocationTarget: isResponse ? 'onResponse' : 'onRequest',
+            invocationTarget: !!context.response ? 'onResponse' : 'onRequest',
           },
-          isResponse,
+          terminateAfter,
         ],
       });
 

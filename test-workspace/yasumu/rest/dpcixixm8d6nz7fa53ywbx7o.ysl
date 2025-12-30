@@ -36,8 +36,10 @@ request {
 dependencies []
 
 script {
+  let reqId
+  
   export async function onRequest(req) {
-    const reqId = Yasumu.cuid()
+    reqId = Yasumu.cuid()
     const userId = req.env.getSecret('USER_ID')
     req.headers.set('x-current-user-id', userId ?? 'NONE')
     req.headers.set('x-request-id', reqId)
@@ -48,7 +50,7 @@ script {
     res.env.setVariable('TIMESTAMP', res.json().meta.timestamp)
   
     await Yasumu.ui.showNotification({
-      title: 'Info for You',
+      title: `Info for request ${reqId}`,
       message: 'Your request has been processed!',
       variant: 'info',
     });

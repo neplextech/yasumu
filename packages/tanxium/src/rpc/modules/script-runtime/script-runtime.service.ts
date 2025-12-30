@@ -9,9 +9,14 @@ import { ScriptWorkerManager } from '../../../workers/script-worker-manager.ts';
 @Injectable()
 export class ScriptRuntimeService {
   private readonly workerManager = new ScriptWorkerManager();
+  private readonly workerTimestamps = new Map<string, number>();
 
-  private makeKey(workspaceId: string, entityId: string, timestamp: number) {
-    return `${workspaceId}/${entityId}.ts?ts=${timestamp}`;
+  private makeBaseKey(workspaceId: string, entityId: string) {
+    return `${workspaceId}/${entityId}`;
+  }
+
+  private makeModuleKey(baseKey: string, timestamp: number) {
+    return `${baseKey}.ts?ts=${timestamp}`;
   }
 
   public async executeScript<Context, Entity extends ExecutableScript<Context>>(
@@ -24,17 +29,30 @@ export class ScriptRuntimeService {
       throw new Error('Unsupported script language');
     }
 
-    const timestamp = Date.now();
-    const key = this.makeKey(workspaceId, entity.entityId, timestamp);
+    const baseKey = this.makeBaseKey(workspaceId, entity.entityId);
+    const isNewWorker = !this.workerManager.has(baseKey);
 
-    Yasumu.registerVirtualModule(key, entity.script.code);
+    if (isNewWorker) {
+      this.workerTimestamps.set(baseKey, Date.now());
+    }
+
+    const timestamp = this.workerTimestamps.get(baseKey)!;
+    const moduleKey = this.makeModuleKey(baseKey, timestamp);
+
+    console.log({ moduleKey, terminateAfter });
+
+    Yasumu.registerVirtualModule(moduleKey, entity.script.code);
 
     const worker = this.workerManager.getOrCreate<Context>({
-      key,
+      key: baseKey,
       source: preload,
-      moduleKey: key,
+      moduleKey,
       onTerminate: () => {
-        Yasumu.unregisterVirtualModule(key);
+        console.log(
+          `Terminating script worker for ${baseKey}/${worker.moduleKey}/${moduleKey}`,
+        );
+        Yasumu.unregisterVirtualModule(moduleKey);
+        this.workerTimestamps.delete(baseKey);
       },
     });
 
