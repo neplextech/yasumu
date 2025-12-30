@@ -113,14 +113,14 @@ export default function Home() {
             <FeatureCard
               icon={<MdCode />}
               color="orange"
-              title="Code Generation"
-              description="Instantly generate client code for Fetch, Axios, cURL, etc. from your requests."
+              title="Scripting"
+              description="Write scripts to automate your workflows. Use the built-in script editor to write scripts for your requests."
             />
             <FeatureCard
               icon={<MdFolderOpen />}
               color="pink"
-              title="Organized Workspaces"
-              description="Group your requests into folders and workspaces. Share workspaces with configuration files."
+              title="Git-Friendly Workspaces"
+              description="Yasumu workspaces are git-friendly. Commit and share your workspaces with your team easily."
             />
             <FeatureCard
               icon={<MdPublic />}

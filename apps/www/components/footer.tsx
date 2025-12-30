@@ -56,6 +56,12 @@ export default function Footer() {
             >
               Changelog
             </Link>
+            <Link
+              href="/sponsor"
+              className="text-gray-500 hover:text-white transition-colors"
+            >
+              Sponsor
+            </Link>
           </div>
 
           <div className="flex flex-col gap-3">
