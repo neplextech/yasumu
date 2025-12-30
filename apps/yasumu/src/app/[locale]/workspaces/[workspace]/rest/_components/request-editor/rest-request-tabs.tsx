@@ -271,7 +271,7 @@ export function onRequest(req) {
   // Modify request headers, body, etc.
   // req.headers.set('X-Custom', 'value');
   // Return a response object to show fake response data
-  // return new YasumuResponse(200, { body: 'Hello, world!' });
+  // return new YasumuResponse('Hello, world!', { status: 200 });
 }
 
 export function onResponse(req, res) {

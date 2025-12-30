@@ -1,0 +1,23 @@
+@rest
+
+metadata {
+  name: "Dangerous Script"
+  method: "GET"
+  id: "q2w7t7cvfkj5rhk3luznp967"
+  groupId: null
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  await Deno.remove('example.txt')
+}
+

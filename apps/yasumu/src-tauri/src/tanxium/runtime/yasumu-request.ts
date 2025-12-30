@@ -32,6 +32,7 @@ interface RestRequestContextData {
 
 interface RestResponseContextData {
   status: number;
+  statusText: string;
   headers: Record<string, string>;
   body: unknown;
 }
@@ -542,6 +543,7 @@ export class YasumuResponse {
   toContextData(): RestResponseContextData {
     return {
       status: this._status,
+      statusText: this._statusText,
       headers: this._headers.toObject(),
       body: this._body,
     };

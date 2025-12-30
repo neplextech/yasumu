@@ -126,6 +126,8 @@ export function useRestRequest({
         response: null,
       };
 
+      let mockResponse: RestResponse | null = null;
+
       try {
         if (entity.script?.code?.trim()) {
           setState((prev) => ({ ...prev, phase: 'pre-request-script' }));
@@ -142,6 +144,31 @@ export function useRestRequest({
             if (result.result.success) {
               currentContext = result.context;
               appendScriptOutput('[Pre-Request] Script completed successfully');
+
+              if (result.result.result) {
+                const mockData = result.result.result as {
+                  status: number;
+                  statusText: string;
+                  headers: Record<string, string>;
+                  body: unknown;
+                };
+                const bodyStr =
+                  typeof mockData.body === 'string'
+                    ? mockData.body
+                    : JSON.stringify(mockData.body);
+                mockResponse = {
+                  status: mockData.status,
+                  statusText: mockData.statusText,
+                  headers: mockData.headers,
+                  cookies: [],
+                  body: bodyStr,
+                  time: 0,
+                  size: new Blob([bodyStr]).size,
+                };
+                appendScriptOutput(
+                  '[Pre-Request] Mock response returned, skipping HTTP request',
+                );
+              }
             } else {
               appendScriptOutput(
                 `[Pre-Request] Script failed: ${result.result.error}`,
@@ -159,43 +186,50 @@ export function useRestRequest({
           return;
         }
 
-        setState((prev) => ({ ...prev, phase: 'sending' }));
+        let response: RestResponse;
 
-        const modifiedEntity: RestEntityData = {
-          ...entity,
-          url: currentContext.request.url,
-          method: currentContext.request.method,
-          requestHeaders: Object.entries(currentContext.request.headers).map(
-            ([key, value]) => ({ key, value, enabled: true }),
-          ),
-          requestBody: currentContext.request.body
-            ? { ...entity.requestBody!, value: currentContext.request.body }
-            : entity.requestBody,
-        };
+        if (mockResponse) {
+          response = mockResponse;
+          setState((prev) => ({ ...prev, response }));
+        } else {
+          setState((prev) => ({ ...prev, phase: 'sending' }));
 
-        const outcome = await controllerRef.current.execute({
-          entity: modifiedEntity,
-          pathParams,
-          echoServerPort,
-          interpolate,
-        });
+          const modifiedEntity: RestEntityData = {
+            ...entity,
+            url: currentContext.request.url,
+            method: currentContext.request.method,
+            requestHeaders: Object.entries(currentContext.request.headers).map(
+              ([key, value]) => ({ key, value, enabled: true }),
+            ),
+            requestBody: currentContext.request.body
+              ? { ...entity.requestBody!, value: currentContext.request.body }
+              : entity.requestBody,
+          };
 
-        if (isCancelledRef.current) {
-          setState((prev) => ({ ...prev, phase: 'cancelled' }));
-          return;
+          const outcome = await controllerRef.current.execute({
+            entity: modifiedEntity,
+            pathParams,
+            echoServerPort,
+            interpolate,
+          });
+
+          if (isCancelledRef.current) {
+            setState((prev) => ({ ...prev, phase: 'cancelled' }));
+            return;
+          }
+
+          if (outcome.error) {
+            setState((prev) => ({
+              ...prev,
+              phase: 'error',
+              error: outcome.error,
+            }));
+            return;
+          }
+
+          response = outcome.response!;
+          setState((prev) => ({ ...prev, response }));
         }
-
-        if (outcome.error) {
-          setState((prev) => ({
-            ...prev,
-            phase: 'error',
-            error: outcome.error,
-          }));
-          return;
-        }
-
-        const response = outcome.response!;
-        setState((prev) => ({ ...prev, response }));
 
         if (entity.script?.code?.trim()) {
           setState((prev) => ({ ...prev, phase: 'post-response-script' }));

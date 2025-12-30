@@ -1,0 +1,27 @@
+@rest
+
+metadata {
+  name: "Fake response"
+  method: "GET"
+  id: "cmwulsxe1z3ade8hbjgcguvd"
+  groupId: null
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  export function onRequest() {
+    const res = new YasumuResponse('Hello World!', {status: 205, statusText: 'CUSTOM_STATUS'})
+    console.log(res)
+    return res
+  }
+}
+
