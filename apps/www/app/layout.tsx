@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import '@yasumu/ui/globals.css';
 import './styles.css';
 import Navbar from '../components/navbar';
@@ -72,6 +73,7 @@ export default function RootLayout({
           <main className="grow">{children}</main>
           <Footer />
         </div>
+        <Analytics />
       </body>
     </html>
   );

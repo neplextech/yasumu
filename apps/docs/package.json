@@ -11,6 +11,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@vercel/analytics": "catalog:react",
     "fumadocs-core": "16.3.2",
     "fumadocs-mdx": "14.2.2",
     "fumadocs-ui": "16.3.2",
@@ -25,10 +26,10 @@
     "@types/node": "catalog:build",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "catalog:react",
     "postcss": "^8.5.6",
     "tailwindcss": "catalog:tailwind",
-    "typescript": "catalog:build",
-    "eslint-config-next": "catalog:react",
-    "eslint": "^9.39.2"
+    "typescript": "catalog:build"
   }
 }
