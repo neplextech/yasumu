@@ -1,0 +1,274 @@
+---
+title: Command Line Interface
+description:
+  Execute and manage your Yasumu workspaces from the terminal using
+  the CLI.
+---
+
+# Command Line Interface
+
+The Yasumu CLI allows you to execute and manage your API workspaces
+directly from the terminal. This is useful for automation, CI/CD
+pipelines, and running requests without opening the desktop
+application.
+
+<Callout type="info" title="YSL File Execution">
+  The CLI reads and executes `.ysl` (Yasumu Schema Language) files
+  directly from your workspace, making it perfect for headless
+  environments and automated testing.
+</Callout>
+
+## Installation
+
+```bash
+npm install -g yasumu
+# or
+pnpm add -g yasumu
+# or
+yarn global add yasumu
+```
+
+## Commands
+
+### `yasumu info`
+
+Display information about the current Yasumu workspace.
+
+```bash
+yasumu info [options]
+```
+
+| Option              | Description                                                  |
+| :------------------ | :----------------------------------------------------------- |
+| `-p, --path <path>` | Path to the workspace directory (default: current directory) |
+| `--json`            | Output as JSON                                               |
+
+**Example output:**
+
+```
+┌─ Yasumu Workspace
+│
+├─ Name:    my-api-project
+├─ ID:      abc123xyz
+├─ Version: 1
+├─ Path:    /path/to/project/yasumu
+│
+├─ Statistics
+│  ├─ REST Entities: 5
+│  ├─ Environments:  2
+│  └─ Groups:        1
+│
+├─ REST Entities
+│  ├─ GET    Get Users <script/>
+│  │        https://api.example.com/users
+│  ├─ POST   Create User
+│  │        https://api.example.com/users
+│  └─ DELETE Delete User
+│           https://api.example.com/users/{{id}}
+│
+├─ Environments
+│  ├─ Production (3 vars, 2 secrets)
+│  └─ Development (3 vars, 1 secrets)
+│
+└─────────────────────────
+```
+
+### `yasumu rest list`
+
+List all REST entities in the workspace.
+
+```bash
+yasumu rest list [options]
+```
+
+| Option              | Description                     |
+| :------------------ | :------------------------------ |
+| `-p, --path <path>` | Path to the workspace directory |
+| `--json`            | Output as JSON                  |
+
+### `yasumu rest run`
+
+Execute REST entities using `fetch()`.
+
+```bash
+yasumu rest run [target] [options]
+```
+
+| Argument | Description                                          |
+| :------- | :--------------------------------------------------- |
+| `target` | Entity name or ID to run (optional if using `--all`) |
+
+| Option                    | Description                        |
+| :------------------------ | :--------------------------------- |
+| `-p, --path <path>`       | Path to the workspace directory    |
+| `-a, --all`               | Run all REST entities              |
+| `--no-script`             | Skip pre/post request scripts      |
+| `-e, --env <environment>` | Environment name or ID to use      |
+| `-v, --verbose`           | Show detailed response information |
+| `--json`                  | Output results as JSON             |
+
+**Examples:**
+
+```bash
+# Run a single entity by name
+yasumu rest run "Get User"
+
+# Run by ID
+yasumu rest run abc123xyz
+
+# Run all entities with an environment
+yasumu rest run --all -e Production
+
+# Run with verbose output
+yasumu rest run "Get User" -e Production -v
+
+# Skip scripts during execution
+yasumu rest run "Get User" --no-script
+```
+
+## Environment Variables & Secrets
+
+Yasumu environments support both **variables** and **secrets**.
+Variables are stored in `.ysl` files and are safe to commit. Secrets
+are sensitive values that should not be committed to version control.
+
+### Secret Injection
+
+Since secrets are not stored in `.ysl` files (they appear as empty
+strings), the CLI provides a mechanism to inject secret values from
+system environment variables.
+
+<Callout type="warn" title="Security">
+  Never commit actual secret values to your repository. Use the
+  `YASUMU_ENV_` prefix pattern to inject secrets at runtime.
+</Callout>
+
+**Convention:** `YASUMU_ENV_<SECRET_KEY>` maps to the secret
+`<SECRET_KEY>` in your environment.
+
+**Example:**
+
+If your environment has a secret named `ACCESS_TOKEN`:
+
+```bash
+export YASUMU_ENV_ACCESS_TOKEN="your-secret-token"
+yasumu rest run "Protected Endpoint" -e Production
+```
+
+The `{{ACCESS_TOKEN}}` placeholder in your request will be replaced
+with the value from `YASUMU_ENV_ACCESS_TOKEN`.
+
+### CI/CD Integration
+
+This pattern integrates seamlessly with CI/CD systems:
+
+```yaml
+# GitHub Actions
+name: API Tests
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      YASUMU_ENV_API_KEY: ${{ secrets.API_KEY }}
+      YASUMU_ENV_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install -g yasumu
+      - run: yasumu rest run --all -e Production --json
+```
+
+## Variable Substitution
+
+The CLI supports variable substitution using the `{{VARIABLE_NAME}}`
+syntax:
+
+```
+https://api.example.com/users/{{USER_ID}}?token={{ACCESS_TOKEN}}
+```
+
+Variables are resolved from:
+
+1. **Environment variables** — From the selected environment's
+   `variables` block
+2. **Environment secrets** — From `YASUMU_ENV_*` system environment
+   variables
+
+## Script Execution
+
+The CLI supports executing pre-request (`onRequest`) and post-response
+(`onResponse`) scripts defined in your `.ysl` files.
+
+### How Scripts Work
+
+Scripts are executed using Node.js's `vm` module in a sandboxed
+environment:
+
+- **`onRequest(req)`** - Runs before the HTTP request. Can modify
+  headers, URL, and body.
+- **`onResponse(req, res)`** - Runs after receiving the response. Can
+  access response data.
+
+### Mock Responses
+
+Scripts can return a `YasumuResponse` to skip the actual HTTP request
+entirely:
+
+```javascript
+export function onRequest(req) {
+  return new YasumuResponse('{"mocked": true}', {
+    status: 200,
+    statusText: 'OK',
+  });
+}
+```
+
+When a mock response is returned, the CLI will display `[mocked]` in
+the output.
+
+### Available Globals
+
+| Global                     | Description              |
+| :------------------------- | :----------------------- |
+| `Yasumu.cuid()`            | Generate a unique ID     |
+| `YasumuResponse`           | Create mock responses    |
+| `console`                  | Standard console methods |
+| `fetch`                    | HTTP client              |
+| `req.env.getVariable(key)` | Get environment variable |
+| `req.env.getSecret(key)`   | Get secret value         |
+
+### TypeScript Support
+
+Scripts can include TypeScript syntax (interfaces, type annotations).
+The CLI automatically strips TypeScript-specific syntax before
+execution.
+
+<Callout type="info" title="Compatibility Note">
+  Some advanced TypeScript features may not be fully supported. For
+  complex scripts, consider using plain JavaScript.
+</Callout>
+
+## Exit Codes
+
+| Code | Meaning                                                       |
+| :--: | :------------------------------------------------------------ |
+| `0`  | Success — all requests passed                                 |
+| `1`  | Failure — one or more requests failed, or workspace not found |
+
+## JSON Output
+
+All commands support `--json` for machine-readable output, useful for
+scripting and CI/CD pipelines:
+
+```bash
+yasumu rest run --all -e Production --json > results.json
+```
+
+The JSON output includes:
+
+- Request metadata (id, name, method, url)
+- Response status and timing
+- Headers and body (when available)
+- Error messages (on failure)

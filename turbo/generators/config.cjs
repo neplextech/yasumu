@@ -1,6 +1,8 @@
-import type { PlopTypes } from '@turbo/gen';
 
-export default function generator(plop: PlopTypes.NodePlopAPI): void {
+/**
+ * @param {import('@turbo/gen').PlopTypes.NodePlopAPI} plop 
+ */
+module.exports = function generator(plop) {
   const destination = plop.getDestBasePath();
 
   plop.setGenerator('bootstrap', {
@@ -27,4 +29,4 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
       },
     ],
   });
-}
+};

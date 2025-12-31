@@ -332,6 +332,31 @@ importers:
         specifier: catalog:build
         version: 5.9.3
 
+  packages/cli:
+    dependencies:
+      '@yasumu/schema':
+        specifier: workspace:*
+        version: link:../schema
+      commander:
+        specifier: ^14.0.2
+        version: 14.0.2
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
+    devDependencies:
+      '@types/node':
+        specifier: catalog:build
+        version: 24.10.1
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      typescript:
+        specifier: catalog:build
+        version: 5.9.3
+
   packages/common:
     devDependencies:
       '@yasumu/shared':
@@ -3763,10 +3788,6 @@ packages:
   commander@11.1.0:
     resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
     engines: {node: '>=16'}
-
-  commander@14.0.1:
-    resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
-    engines: {node: '>=20'}
 
   commander@14.0.2:
     resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
@@ -10324,7 +10345,7 @@ snapshots:
 
   '@types/mailparser@3.4.6':
     dependencies:
-      '@types/node': 20.19.23
+      '@types/node': 24.10.1
       iconv-lite: 0.6.3
 
   '@types/mdast@4.0.4':
@@ -10376,7 +10397,7 @@ snapshots:
 
   '@types/smtp-server@3.5.12':
     dependencies:
-      '@types/node': 20.19.23
+      '@types/node': 24.10.1
       '@types/nodemailer': 7.0.4
     transitivePeerDependencies:
       - aws-crt
@@ -11007,8 +11028,6 @@ snapshots:
   commander@10.0.1: {}
 
   commander@11.1.0: {}
-
-  commander@14.0.1: {}
 
   commander@14.0.2: {}
 
@@ -14534,7 +14553,7 @@ snapshots:
       '@dotenvx/dotenvx': 1.51.0
       '@modelcontextprotocol/sdk': 1.20.2
       browserslist: 4.26.3
-      commander: 14.0.1
+      commander: 14.0.2
       cosmiconfig: 9.0.0(typescript@5.9.3)
       dedent: 1.7.0
       deepmerge: 4.3.1

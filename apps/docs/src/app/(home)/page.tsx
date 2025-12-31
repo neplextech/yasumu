@@ -12,6 +12,7 @@ import {
   Mail,
   ExternalLink,
   Code,
+  Terminal,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -160,6 +161,12 @@ export default function HomePage() {
             icon={<Server className="w-5 h-5" />}
             title="Echo Server"
             description="Built-in HTTP server for testing and debugging requests."
+          />
+          <Card
+            href="/docs/cli"
+            icon={<Terminal className="w-5 h-5" />}
+            title="Command Line Interface"
+            description="Execute YSL files from the terminal for CI/CD and automation."
           />
           <Card
             href="/docs/architecture"

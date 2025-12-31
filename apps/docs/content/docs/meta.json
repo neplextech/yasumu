@@ -12,6 +12,7 @@
     "smtp-server",
     "echo-server",
     "themes",
+    "cli",
     "---Reference---",
     "architecture"
   ]
