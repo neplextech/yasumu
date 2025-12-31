@@ -1,11 +1,10 @@
 'use client';
 
-import React from 'react';
-import useSWR from 'swr';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { BackgroundGrid } from '../../components/background-grid';
-import { MdAddCircle, MdBuild, MdInfo, MdLabel } from 'react-icons/md';
+import { MdAddCircle, MdBuild, MdLabel } from 'react-icons/md';
 
 interface Release {
   id: number;
@@ -16,7 +15,15 @@ interface Release {
   html_url: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+interface CachedData {
+  releases: Release[];
+  timestamp: number;
+}
+
+const GITHUB_API_URL =
+  'https://api.github.com/repos/neplextech/yasumu/releases';
+const CACHE_KEY = 'yasumu_changelog_releases';
+const CACHE_DURATION = 1000 * 60 * 15; // 15 minutes
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -26,13 +33,72 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export default function Changelog() {
-  const { data, error, isLoading } = useSWR<Release[]>(
-    'https://api.github.com/repos/neplextech/yasumu/releases',
-    fetcher,
-  );
+function useChangelogReleases() {
+  const [releases, setReleases] = useState<Release[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const releases = Array.isArray(data) ? data : null;
+  useEffect(() => {
+    async function fetchReleases() {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed: CachedData = (() => {
+            try {
+              return JSON.parse(cached);
+            } catch {
+              return null;
+            }
+          })();
+          if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION) {
+            setReleases(parsed.releases);
+            setLoading(false);
+            return;
+          }
+        }
+
+        const response = await fetch(GITHUB_API_URL, {
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 403) {
+            throw new Error(
+              'GitHub API rate limit exceeded. Please try again later.',
+            );
+          }
+          throw new Error(`Failed to fetch releases: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const releaseData: Release[] = Array.isArray(data) ? data : [];
+
+        const cacheData: CachedData = {
+          releases: releaseData,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+
+        setReleases(releaseData);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch releases',
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchReleases();
+  }, []);
+
+  return { releases, loading, error };
+}
+
+export default function Changelog() {
+  const { releases, loading: isLoading, error } = useChangelogReleases();
 
   return (
     <div className="animate-fade-in pt-32 pb-20">

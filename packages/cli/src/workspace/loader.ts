@@ -159,4 +159,3 @@ export class WorkspaceLoader {
 export function resolveWorkspacePath(givenPath?: string): string {
   return givenPath ? path.resolve(givenPath) : process.cwd();
 }
-

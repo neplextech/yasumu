@@ -11,6 +11,7 @@ interface GitHubAsset {
   name: string;
   browser_download_url: string;
   size: number;
+  digest: string;
 }
 
 interface CachedData {
@@ -25,6 +26,7 @@ export interface DownloadAsset extends GitHubAsset {
   arch: Architecture;
   label: string;
   note: string;
+  sha256: string;
 }
 
 export interface DownloadAssets {
@@ -74,15 +76,24 @@ function categorizeAssets(
     linux: [],
   };
 
+  const extractSha256 = (digest: string) => {
+    if (digest?.startsWith('sha256:')) {
+      return digest.slice(7);
+    }
+    return digest || '';
+  };
+
   for (const asset of assets) {
     const name = asset.name.toLowerCase();
     const arch = detectArchitecture(asset.name);
     const archNote = getArchLabel(arch);
+    const sha256 = extractSha256(asset.digest);
 
     if (name.endsWith('.dmg')) {
       result.macOS.push({
         ...asset,
         arch,
+        sha256,
         label: `DMG Installer (.dmg)`,
         note: archNote || 'macOS',
       });
@@ -90,6 +101,7 @@ function categorizeAssets(
       result.windows.push({
         ...asset,
         arch,
+        sha256,
         label: `Installer (.exe)`,
         note: archNote || '64-bit',
       });
@@ -97,6 +109,7 @@ function categorizeAssets(
       result.windows.push({
         ...asset,
         arch,
+        sha256,
         label: `MSI Installer (.msi)`,
         note: archNote || '64-bit',
       });
@@ -104,6 +117,7 @@ function categorizeAssets(
       result.linux.push({
         ...asset,
         arch,
+        sha256,
         label: `Debian (.deb)`,
         note: archNote
           ? `${archNote} — Ubuntu, Debian`
@@ -113,6 +127,7 @@ function categorizeAssets(
       result.linux.push({
         ...asset,
         arch,
+        sha256,
         label: `AppImage`,
         note: archNote ? `${archNote} — Universal` : 'Universal',
       });
@@ -120,6 +135,7 @@ function categorizeAssets(
       result.linux.push({
         ...asset,
         arch,
+        sha256,
         label: `RPM (.rpm)`,
         note: archNote ? `${archNote} — Fedora, RHEL` : 'Fedora, RHEL, etc.',
       });

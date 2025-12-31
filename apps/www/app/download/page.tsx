@@ -10,13 +10,17 @@ import { Button } from '@yasumu/ui/components/button';
 
 function DownloadSkeleton() {
   return (
-    <div className="bg-surface-dark border border-white/10 rounded-xl p-8 flex flex-col animate-pulse">
-      <div className="w-16 h-16 bg-white/5 rounded-2xl mb-6" />
-      <div className="h-8 w-32 bg-white/5 rounded mb-2" />
-      <div className="h-4 w-48 bg-white/5 rounded mb-8" />
-      <div className="flex flex-col gap-3 mt-auto">
-        <div className="h-16 bg-white/5 rounded-lg" />
-        <div className="h-16 bg-white/5 rounded-lg" />
+    <div className="bg-surface-dark border border-white/10 rounded-xl p-6 flex flex-col animate-pulse">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-12 h-12 bg-white/5 rounded-xl shrink-0" />
+        <div className="flex-1">
+          <div className="h-5 w-20 bg-white/5 rounded mb-1.5" />
+          <div className="h-3 w-32 bg-white/5 rounded" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="h-14 bg-white/5 rounded-lg" />
+        <div className="h-14 bg-white/5 rounded-lg" />
       </div>
     </div>
   );
@@ -98,7 +102,7 @@ export default function Download() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {loading ? (
             <>
               <DownloadSkeleton />
@@ -116,6 +120,7 @@ export default function Download() {
                 options={assets.macOS.map((asset) => ({
                   label: asset.label,
                   note: asset.note,
+                  size: asset.size,
                   url: asset.browser_download_url,
                 }))}
               />
@@ -127,6 +132,7 @@ export default function Download() {
                 options={assets.windows.map((asset) => ({
                   label: asset.label,
                   note: asset.note,
+                  size: asset.size,
                   url: asset.browser_download_url,
                 }))}
               />
@@ -138,6 +144,7 @@ export default function Download() {
                 options={assets.linux.map((asset) => ({
                   label: asset.label,
                   note: asset.note,
+                  size: asset.size,
                   url: asset.browser_download_url,
                 }))}
               />
@@ -145,38 +152,43 @@ export default function Download() {
           )}
         </div>
 
-        <div className="mt-20 max-w-4xl mx-auto bg-black/30 border border-white/5 rounded-xl p-8">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Latest Release{assets?.tagName && ` — ${assets.tagName}`}
-          </h3>
-          <p className="text-sm text-text-secondary mb-6">
-            Downloads are always from the latest stable release. You can also
-            view{' '}
-            <a
-              href="https://github.com/neplextech/yasumu/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              all releases on GitHub
-            </a>{' '}
-            to access previous versions or checksums.
-          </p>
-          <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-xs text-gray-400 overflow-x-auto">
-            <div className="mb-2">
-              <span className="text-green-400">✓</span>{' '}
-              <span className="text-blue-400">Latest stable release</span>
-            </div>
-            <div className="mb-2">
-              <span className="text-green-400">✓</span>{' '}
-              <span className="text-blue-400">Automatic updates included</span>
-            </div>
-            <div>
-              <span className="text-green-400">✓</span>{' '}
-              <span className="text-blue-400">Digitally signed binaries</span>
+        {hasAnyAssets && assets && (
+          <div className="mt-20 max-w-4xl mx-auto bg-black/30 border border-white/5 rounded-xl p-8">
+            <h3 className="text-lg font-semibold text-white mb-4">
+              SHA256 Checksums{assets.tagName && ` — ${assets.tagName}`}
+            </h3>
+            <p className="text-sm text-text-secondary mb-6">
+              Verify your download by comparing the checksum below. You can also
+              view{' '}
+              <a
+                href="https://github.com/neplextech/yasumu/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                all releases on GitHub
+              </a>{' '}
+              for previous versions.
+            </p>
+            <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-xs text-gray-400 overflow-x-auto space-y-1.5">
+              {[...assets.macOS, ...assets.windows, ...assets.linux].map(
+                (asset) => (
+                  <div key={asset.name} className="flex gap-2">
+                    <span className="text-gray-500 shrink-0">
+                      {asset.sha256}
+                    </span>
+                    <a
+                      href={asset.browser_download_url}
+                      className="text-gray-300 hover:text-blue-400 transition-colors"
+                    >
+                      {asset.name}
+                    </a>
+                  </div>
+                ),
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
