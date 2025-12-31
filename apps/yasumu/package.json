@@ -43,6 +43,7 @@
     "next-themes": "^0.4.6",
     "nuqs": "^2.8.6",
     "pdfjs-dist": "5.4.296",
+    "posthog-js": "^1.311.0",
     "react": "catalog:react",
     "react-dom": "catalog:react",
     "react-hotkeys-hook": "^5.2.1",

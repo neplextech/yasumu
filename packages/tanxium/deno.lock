@@ -1441,7 +1441,7 @@
         ]
       },
       "npm:@yasumu/rpc@0.0.0": {},
-      "npm:@yasumu/schema@0.0.1": {}
+      "npm:@yasumu/schema@0.0.2": {}
     }
   }
 }
