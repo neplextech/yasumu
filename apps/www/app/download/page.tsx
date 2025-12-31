@@ -1,10 +1,12 @@
 'use client';
 
 import { BackgroundGrid } from '../../components/background-grid';
-import { FaApple, FaWindows } from 'react-icons/fa6';
+import { FaApple, FaBoxArchive, FaTerminal, FaWindows } from 'react-icons/fa6';
 import { VscTerminalLinux } from 'react-icons/vsc';
 import { DownloadCard } from './download-card';
 import { useGitHubReleases } from './use-github-releases';
+import { BsGithub } from 'react-icons/bs';
+import { Button } from '@yasumu/ui/components/button';
 
 function DownloadSkeleton() {
   return (
@@ -23,7 +25,9 @@ function DownloadSkeleton() {
 function ErrorState() {
   return (
     <div className="col-span-full flex flex-col items-center justify-center py-16 px-8 bg-surface-dark border border-white/10 rounded-xl">
-      <div className="text-6xl mb-6 opacity-50">📦</div>
+      <div className="text-6xl mb-6 opacity-50">
+        <FaBoxArchive />
+      </div>
       <h3 className="text-xl font-semibold text-white mb-2">
         No downloadable content found
       </h3>
@@ -31,14 +35,36 @@ function ErrorState() {
         We couldn&apos;t fetch the latest releases from GitHub. This might be
         due to rate limiting or network issues.
       </p>
-      <a
-        href="https://github.com/neplextech/yasumu#building-from-source"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium"
-      >
-        Build from source →
-      </a>
+      <div className="flex gap-8">
+        <Button
+          asChild
+          variant="outline"
+          className="h-12 px-8 text-base font-medium rounded-lg text-gray-300 border-white/20 bg-white/5 hover:bg-white/10 hover:text-white hover:border-white/30 backdrop-blur-sm"
+        >
+          <a
+            href="https://github.com/neplextech/yasumu/releases/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <BsGithub className="size-4" />
+            Check Latest Release
+          </a>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          className="h-12 px-8 text-base font-medium rounded-lg text-gray-300 border-white/20 bg-white/5 hover:bg-white/10 hover:text-white hover:border-white/30 backdrop-blur-sm"
+        >
+          <a
+            href="https://github.com/neplextech/yasumu"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FaTerminal className="size-4 mr-2" />
+            Build from source
+          </a>
+        </Button>
+      </div>
     </div>
   );
 }
