@@ -1,3 +1,3 @@
-# `@yasumu/common`
+# `@yasumu/rpc`
 
-Yasumu common module
+Yasumu rpc types
