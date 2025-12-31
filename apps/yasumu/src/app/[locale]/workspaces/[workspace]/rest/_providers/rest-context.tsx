@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 interface RestContextData {
   entityId: string | null;
@@ -11,28 +11,9 @@ interface RestContextData {
 
 const RestContext = createContext<RestContextData | null>(null);
 
-const HISTORY_KEY = 'yasumu:rest:history';
-
 export function RestContextProvider({ children }: React.PropsWithChildren) {
   const [entityId, _setEntityId] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
-
-  // Load history from local storage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(HISTORY_KEY);
-      if (stored) {
-        setHistory(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error('Failed to load history', e);
-    }
-  }, []);
-
-  // Save history to local storage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  }, [history]);
 
   const addToHistory = (id: string) => {
     setHistory((prev) => {
