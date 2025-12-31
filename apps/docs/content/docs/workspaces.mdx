@@ -5,11 +5,17 @@ description: Understanding Yasumu workspaces and project organization.
 
 # Workspaces
 
-A **workspace** in Yasumu is the core organizational unit for your API development workflow. It's a directory-based structure that lives alongside your source code, designed for collaboration and version control.
+A **workspace** in Yasumu is the core organizational unit for your API
+development workflow. It's a directory-based structure that lives
+alongside your source code, designed for collaboration and version
+control.
 
 ## How Workspaces Work
 
-When you open Yasumu on a project directory, it creates a `yasumu` folder containing all your API definitions. This folder stores everything in human-readable `.ysl` files that can be committed to version control.
+When you open Yasumu on a project directory, it creates a `yasumu`
+folder containing all your API definitions. This folder stores
+everything in human-readable `.ysl` files that can be committed to
+version control.
 
 ```
 my-project/
@@ -29,7 +35,9 @@ my-project/
 
 ## File Naming Convention
 
-Yasumu uses unique IDs for file names (e.g., `wmz1pu98ovohr1k44dbldpjt.ysl`). The human-readable names are stored inside the files in the `metadata` block. This approach:
+Yasumu uses unique IDs for file names (e.g.,
+`wmz1pu98ovohr1k44dbldpjt.ysl`). The human-readable names are stored
+inside the files in the `metadata` block. This approach:
 
 - Avoids file name conflicts
 - Prevents issues with special characters
@@ -55,13 +63,13 @@ groups {}
 
 ### Configuration Fields
 
-| Field | Description |
-| :--- | :--- |
-| `id` | Unique identifier for the workspace |
-| `name` | Display name for the workspace |
-| `version` | Workspace schema version |
-| `snapshot` | Timestamp of last modification |
-| `groups` | Request grouping configuration |
+| Field      | Description                         |
+| :--------- | :---------------------------------- |
+| `id`       | Unique identifier for the workspace |
+| `name`     | Display name for the workspace      |
+| `version`  | Workspace schema version            |
+| `snapshot` | Timestamp of last modification      |
+| `groups`   | Request grouping configuration      |
 
 ## Lock File
 
@@ -81,6 +89,7 @@ The `yasumu-lock.json` file tracks all entities in the workspace:
 ```
 
 Each entity entry contains:
+
 - `hash` — Content hash for change detection
 - `lastSyncedAt` — Timestamp of last synchronization
 
@@ -90,30 +99,40 @@ Workspaces are designed to be committed alongside your source code:
 
 ### Benefits of Version Control
 
-- **Collaboration** — Team members can pull and see updated API definitions immediately
+- **Collaboration** — Team members can pull and see updated API
+  definitions immediately
 - **History** — Track changes to API configurations over time
-- **Code Review** — Diff-friendly text files make reviewing changes straightforward
-- **Branching** — Test different API configurations on feature branches
+- **Code Review** — Diff-friendly text files make reviewing changes
+  straightforward
+- **Branching** — Test different API configurations on feature
+  branches
 
 <Callout type="info" title="Commit Everything">
-  Commit the entire `yasumu` folder to version control. The `.ysl` format is designed to be human-readable and produce clean diffs.
+  Commit the entire `yasumu` folder to version control. The `.ysl`
+  format is designed to be human-readable and produce clean diffs.
 </Callout>
 
 ## Default Workspace
 
-Yasumu includes a built-in **Default Workspace** that serves as a scratchpad for quick experiments and testing. This workspace:
+Yasumu includes a built-in **Default Workspace** that serves as a
+scratchpad for quick experiments and testing. This workspace:
 
-- **Cannot be removed** — It's always available as a fallback workspace
-- **Cannot be synchronized** — Unlike regular workspaces, it's not backed by the file system
-- **Ideal for quick tests** — Use it when you don't need persistence or version control
+- **Cannot be removed** — It's always available as a fallback
+  workspace
+- **Cannot be synchronized** — Unlike regular workspaces, it's not
+  backed by the file system
+- **Ideal for quick tests** — Use it when you don't need persistence
+  or version control
 
-The Default Workspace is perfect for one-off API calls or experimenting before committing to a project-specific workspace.
+The Default Workspace is perfect for one-off API calls or
+experimenting before committing to a project-specific workspace.
 
 ## Multiple Workspaces
 
 You can have multiple Yasumu workspaces:
 
-- **Per-project workspaces** — Each project has its own `yasumu` folder
+- **Per-project workspaces** — Each project has its own `yasumu`
+  folder
 - **Shared workspaces** — A central workspace for cross-project APIs
 - **Team workspaces** — Shared via Git for team collaboration
 
@@ -123,15 +142,20 @@ Switch between workspaces using the workspace menu in the sidebar:
 
 ## Importing & Exporting
 
-Yasumu supports importing from other API clients:
+Yasumu **_currently does not support_** importing from other API
+clients, but we plan to add support for the following formats in the
+future:
 
-- **Postman Collections** (planned)
-- **Insomnia Exports** (planned)
-- **OpenAPI/Swagger** (planned)
+- **Postman Collections**
+- **Insomnia Exports**
+- **OpenAPI/Swagger**
 
 ## Best Practices
 
-1. **Commit your workspace** — Include the entire `yasumu` folder in version control
-2. **Use environments** — Separate configurations for dev, staging, and production
+1. **Commit your workspace** — Include the entire `yasumu` folder in
+   version control
+2. **Use environments** — Separate configurations for dev, staging,
+   and production
 3. **Use variables** — Avoid hardcoding URLs and credentials
-4. **Keep secrets secure** — Secret values are stored empty in `.ysl` files, actual values are kept locally
+4. **Keep secrets secure** — Secret values are stored empty in `.ysl`
+   files, actual values are kept locally

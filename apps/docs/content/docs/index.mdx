@@ -5,7 +5,7 @@ description: A modern, free, and open-source API laboratory for designing, testi
 
 # Welcome to Yasumu
 
-**Yasumu** is a modern, free, and open-source API laboratory for designing, testing, and debugging API workflows. Built with performance, developer productivity, and long-term extensibility in mind — without vendor lock-in.
+**Yasumu** is a modern, free, and open-source API laboratory for designing, testing, and debugging API workflows. Built for developer productivity, speed, and freedom — without vendor lock-in.
 
 <Callout type="warn" title="Beta Software">
   Yasumu is actively under development. You may encounter unfinished features, bugs, or inconsistent behavior as we rapidly prototype and iterate. We welcome your feedback and contributions!
@@ -15,26 +15,49 @@ description: A modern, free, and open-source API laboratory for designing, testi
 
 Unlike traditional API clients that store data in hidden databases or require cloud accounts, Yasumu operates like an **IDE for your APIs**. Your configurations live directly in your project folder, making collaboration and version control seamless.
 
+It feels like the tools you already know, but with the flexibility to handle complex, experimental workflows directly in your file system.
+
 ### Key Features
 
-- **🌐 Multi-Protocol Testing** — Unified interface for REST, GraphQL, WebSocket, and more.
-- **💾 Git-Friendly Storage** — Configurations stored as `.ysl` files for seamless version control.
-- **⚡ Native Performance** — Powered by Rust (Tauri) and a custom JavaScript runtime.
-- **📜 Pre/Post Scripting** — Modify requests and process responses with JavaScript.
-- **🎨 Modern UI** — Built with Next.js for a responsive developer experience.
-- **🔓 Open Source** — No artificial feature limitations or mandatory cloud dependencies.
+- **💾 Git-Native Workflows** — Save collections as human-readable `.ysl` files. Version control your API tests alongside your code — no more syncing conflicts.
+- **⚡ Native Performance** — Engineered with Rust and Tauri for a lightweight footprint and instant startup times.
+- **🤖 Deno-Powered Scripting** — Write pre-request and automation scripts using a built-in, secure TypeScript/JavaScript runtime.
+- **🌐 Universal Protocol Support** — A unified interface for REST, SMTP, and (soon) WebSockets and GraphQL.
+- **🎨 Customizable Themes** — Choose from a variety of built-in color themes to personalize your workspace.
+- **🔓 Truly Open Source** — No paywalls, no "pro" features hidden behind cloud subscriptions, and no mandatory login.
 
 ## Protocol Support
 
+Yasumu is evolving to become a protocol-agnostic powerhouse.
+
 | Protocol | Status | Notes |
 | :--- | :---: | :--- |
-| **REST API** | ✅ Ready | Full support for HTTP/HTTPS requests |
-| **Catch-all SMTP** | ✅ Ready | Local email server for testing |
-| **GraphQL** | 🚧 Soon | Planned |
-| **WebSocket** | 🚧 Soon | Planned |
-| **Server-Sent Events** | 🚧 Soon | Planned |
-| **Socket.IO** | 🚧 Soon | Planned |
-| **Plugins API** | 🚧 Soon | Planned |
+| **REST API** | ✅ Ready | Full HTTP/HTTPS request support |
+| **Catch-all SMTP** | ✅ Ready | Integrated local email server for testing |
+| **GraphQL** | 🚧 Soon | In development |
+| **WebSocket** | 🚧 Soon | In development |
+| **Server-Sent Events** | 🚧 Soon | In development |
+| **Socket.IO** | 🚧 Soon | In development |
+| **Plugins API** | 🚧 Soon | In development |
+
+## Concepts & Workflow
+
+Yasumu acts as an **IDE for your API interactions**. Unlike tools that hide data in proprietary databases or cloud silos, Yasumu lives in your repo.
+
+### Project-Based Workspaces
+
+When you initialize Yasumu in a project, it creates a `yasumu` directory. Your definitions, tests, and workflows are stored here using the **Yasumu Schema Language (.ysl)** — a custom format designed for readability and clean git diffs.
+
+### Collaboration via Git
+
+- **Commit & Push:** Treat your API collections as code.
+- **Review:** `.ysl` files are text-based, making Pull Request reviews easy.
+- **Sync:** Teammates simply pull the branch to get the latest API workflows.
+- **Secure:** Sensitive secrets are managed via local environment variables, never committed to version control.
+
+### Hybrid Runtime
+
+The core system runs on **Tauri (Rust)** for OS-level operations, while logic and scripting utilize a custom embedded `deno_runtime`, giving you a modern TypeScript environment for automation.
 
 ## Quick Start
 
@@ -51,16 +74,16 @@ Yasumu is built on a modern, performant stack:
 
 - **Frontend:** Next.js with React
 - **Desktop Shell:** Tauri (Rust)
-- **Backend Runtime:** Custom JavaScript runtime (Deno-based) with Drizzle ORM and Hono
+- **Scripting Engine:** Embedded `deno_runtime`
 - **Platforms:** Windows, Linux, macOS
 
 ## Project Philosophy
 
-- **Open-source by default** — The entire codebase is available on GitHub.
-- **No vendor lock-in** — Your data belongs to you, stored in readable files.
-- **No artificial paywalls** — All features are free to use.
-- **Developer-first design** — Built by developers, for developers.
-- **Long-term maintainability** — Designed for stability and extensibility.
+- **Open Source by Default** — Transparency builds trust. The entire codebase is available on GitHub.
+- **Zero Vendor Lock-in** — Your data belongs to you, stored in readable files on your disk.
+- **Developer Experience First** — Fast, beautiful, and keyboard-friendly.
+- **No Artificial Paywalls** — All features are free to use.
+- **Sustainability** — Built for long-term maintainability over hype.
 
 ## License
 

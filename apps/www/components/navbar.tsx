@@ -61,6 +61,15 @@ const Navbar: React.FC = () => {
               GitHub
               <MdOpenInNew className="text-[16px]" />
             </a>
+            <a
+              href="https://discord.yasumu.dev"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-medium text-text-secondary hover:text-white transition-colors duration-200 flex items-center gap-1"
+            >
+              Discord
+              <MdOpenInNew className="text-[16px]" />
+            </a>
           </div>
 
           {/* CTA Button */}

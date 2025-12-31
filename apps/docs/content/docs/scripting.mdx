@@ -7,8 +7,14 @@ description: Pre-request and post-response scripting in Yasumu.
 
 Yasumu provides a powerful scripting system that allows you to modify
 requests before they're sent and process responses after they're
-received. Scripts are written in JavaScript and have access to
-request, response, and environment data.
+received. Scripts are written in `JavaScript` or `TypeScript` and have
+access to request, response, and environment data.
+
+<Callout type="tip" title="Scripting Language">
+  Yasumu supports both `JavaScript` and `TypeScript` syntax for
+  scripting out-of-the-box. The editor also provides type definitions
+  and autocomplete for the request and response objects.
+</Callout>
 
 ## Overview
 
@@ -333,7 +339,8 @@ export function onRequest(req) {
 <Callout type="warn" title="Permission System">
   Yasumu runs scripts in a sandboxed environment. When a script attempts to perform dangerous operations (like file system access), you'll be prompted to grant permission:
 
-  ![Permission Prompt](/dangerous-script-asks-for-permission-prompt.png)
+![Permission Prompt](/dangerous-script-asks-for-permission-prompt.png)
+
 </Callout>
 
 #### Example of some of the available Deno APIs

@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa6';
 import { GiDumpling } from 'react-icons/gi';
 import { MdCode, MdBugReport, MdTranslate } from 'react-icons/md';
+import Nepal from 'components/nepal-flag';
 
 interface SponsorOption {
   name: string;
@@ -100,9 +101,17 @@ export default function Sponsor() {
             >
               100% free and open source
             </Link>{' '}
-            project maintained by a small team of developers from Nepal. Your
-            support helps us maintain and improve the project, add new features,
-            and keep it accessible to everyone.
+            project maintained by a small team of developers from{' '}
+            <Link
+              href="https://wikipedia.org/wiki/Nepal"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-white hover:text-white/80 font-bold hover:underline"
+            >
+              Nepal <Nepal className="size-4" />
+            </Link>
+            . Your support helps us maintain and improve the project, add new
+            features, and keep it accessible to everyone.
           </p>
         </div>
 

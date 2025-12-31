@@ -35,6 +35,14 @@ export default function Footer() {
           <div className="flex flex-col gap-3">
             <h4 className="font-medium text-white">Project</h4>
             <a
+              href="https://discord.yasumu.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-white transition-colors"
+            >
+              Discord
+            </a>
+            <a
               href="https://github.com/neplextech/yasumu"
               target="_blank"
               rel="noopener noreferrer"
