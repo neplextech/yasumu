@@ -407,11 +407,11 @@ export class YasumuRequest {
     return this._env;
   }
 
-  json(): unknown {
+  json<T = unknown>(): T {
     if (typeof this._body === 'string') {
-      return JSON.parse(this._body);
+      return JSON.parse(this._body) as T;
     }
-    return this._body;
+    return this._body as T;
   }
 
   text(): string {
@@ -514,11 +514,11 @@ export class YasumuResponse {
     return this._env;
   }
 
-  json(): unknown {
+  json<T = unknown>(): T {
     if (typeof this._body === 'string') {
-      return JSON.parse(this._body);
+      return JSON.parse(this._body) as T;
     }
-    return this._body;
+    return this._body as T;
   }
 
   text(): string {

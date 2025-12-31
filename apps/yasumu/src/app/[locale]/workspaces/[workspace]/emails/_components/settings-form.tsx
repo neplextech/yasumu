@@ -5,8 +5,7 @@ import { Label } from '@yasumu/ui/components/label';
 import { Button } from '@yasumu/ui/components/button';
 import { toast } from '@yasumu/ui/components/sonner';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { Copy, Check } from 'lucide-react';
-import { useState } from 'react';
+import CodeBlock from '@/components/visuals/code-block/code-block';
 
 interface SettingsFormProps {
   username: string;
@@ -32,6 +31,7 @@ await transport.sendMail({
   to: 'recipient@example.com',
   subject: 'Hello from Yasumu',
   text: 'Hello World!',
+  html: '<p>Hello World!</p>',
 });`;
 }
 
@@ -45,20 +45,12 @@ export default function SettingsForm({
   onSave,
   activePort,
 }: SettingsFormProps) {
-  const [copied, setCopied] = useState(false);
   const snippet = getNodemailerSnippet(activePort ?? 25);
-
-  const handleCopySnippet = async () => {
-    await navigator.clipboard.writeText(snippet);
-    setCopied(true);
-    toast.success('Code copied to clipboard');
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="p-8">
       <div className="flex gap-8">
-        <div className="flex-1 max-w-xl">
+        <div className="flex-1 max-w-xl border rounded-lg p-4">
           <h3 className="text-2xl font-bold mb-2">SMTP Server Configuration</h3>
           <p className="text-sm text-muted-foreground mb-8">
             Configure your local SMTP server settings. This is a catch-all
@@ -140,30 +132,13 @@ export default function SettingsForm({
         </div>
 
         <div className="flex-1 max-w-lg">
-          <div className="rounded-lg border bg-zinc-950 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900">
-              <span className="text-xs font-medium text-zinc-400">
-                Nodemailer Example
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-zinc-400 hover:text-zinc-100"
-                onClick={handleCopySnippet}
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            <pre className="p-4 text-sm overflow-x-auto">
-              <code className="text-zinc-100 font-mono text-xs leading-relaxed whitespace-pre">
-                {snippet}
-              </code>
-            </pre>
-          </div>
+          <CodeBlock
+            language="typescript"
+            title="nodemailer-example.ts"
+            iconClassName="text-blue-500 bg-white"
+          >
+            {snippet}
+          </CodeBlock>
           <p className="text-xs text-muted-foreground mt-3">
             Use this snippet to send test emails to Yasumu&apos;s SMTP server.
           </p>

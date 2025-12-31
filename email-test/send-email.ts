@@ -2,11 +2,7 @@ import { createTransport } from 'nodemailer';
 
 const transport = createTransport({
   host: 'localhost',
-  port: 51935,
-  auth: {
-    user: 'test@example.com',
-    pass: 'test',
-  },
+  port: 50611,
 });
 
 await transport.sendMail({

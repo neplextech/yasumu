@@ -192,3 +192,7 @@
     display: none;
   }
 }
+
+.shiki {
+  background-color: var(--background) !important;
+}

@@ -1,16 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@yasumu/ui/components/tabs';
-import { Textarea } from '@yasumu/ui/components/textarea';
+import { TextEditor, type TypeDefinition } from '@/components/editors';
 import { Input } from '@yasumu/ui/components/input';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { Button } from '@yasumu/ui/components/button';
 import {
   Table,
   TableBody,
@@ -19,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from '@yasumu/ui/components/table';
-import { Trash } from 'lucide-react';
 import KeyValueTable, {
   type KeyValuePair,
 } from '@/components/tables/key-value-table';
@@ -31,6 +29,8 @@ import type {
   YasumuEmbeddedScript,
 } from '@yasumu/common';
 import { YasumuScriptingLanguage } from '@yasumu/common';
+import { REQUEST_SCRIPT_PLACEHOLDER, TEST_SCRIPT_PLACEHOLDER } from './common';
+import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
 
 interface RestRequestTabsProps {
   searchParams: TabularPair[];
@@ -251,8 +251,8 @@ export function RestRequestTabs({
         </TabsContent>
 
         <TabsContent value="scripts" className="h-full mt-0">
-          <div className="flex flex-col gap-2 h-full">
-            <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 h-full min-h-0">
+            <div className="flex items-center justify-between flex-shrink-0">
               <span className="text-sm text-muted-foreground font-medium">
                 Request Scripts
               </span>
@@ -260,33 +260,32 @@ export function RestRequestTabs({
                 onRequest(req) · onResponse(req, res)
               </span>
             </div>
-            <Textarea
+            <TextEditor
               value={script?.code || ''}
-              onChange={(e) => handleScriptCodeChange(e.target.value)}
-              placeholder={`// Request lifecycle scripts
-// Export onRequest to modify request before sending
-// Export onResponse to process response after receiving
-
-export function onRequest(req) {
-  // Modify request headers, body, etc.
-  // req.headers.set('X-Custom', 'value');
-  // Return a response object to show fake response data
-  // return new YasumuResponse('Hello, world!', { status: 200 });
-}
-
-export function onResponse(req, res) {
-  // Process response data
-  // console.log(res.status);
-}`}
-              className="flex-1 resize-none font-mono text-sm bg-muted/30 border-muted-foreground/20 p-4 min-h-[300px]"
-              spellCheck={false}
+              onChange={handleScriptCodeChange}
+              typeDefinitions={YASUMU_TYPE_DEFINITIONS}
+              placeholder={
+                <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
+                  <h1 className="font-bold underline">
+                    Edit to hide this example placeholder
+                  </h1>
+                  <h1>Export onRequest to modify request before sending</h1>
+                  <h1>
+                    Export onResponse to process response after receiving export
+                  </h1>
+                  <h1>Example:</h1>
+                  <pre className="font-mono text-sm whitespace-pre-wrap mt-4">
+                    {REQUEST_SCRIPT_PLACEHOLDER}
+                  </pre>
+                </div>
+              }
             />
           </div>
         </TabsContent>
 
         <TabsContent value="tests" className="h-full mt-0">
-          <div className="flex flex-col gap-2 h-full">
-            <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 h-full min-h-0">
+            <div className="flex items-center justify-between flex-shrink-0">
               <span className="text-sm text-muted-foreground font-medium">
                 Test Assertions
               </span>
@@ -294,24 +293,12 @@ export function onResponse(req, res) {
                 test(name, fn)
               </span>
             </div>
-            <Textarea
+            <TextEditor
               value={testScript?.code || ''}
-              onChange={(e) => handleTestScriptCodeChange(e.target.value)}
-              disabled // TODO: Implement test assertions
-              placeholder={`// Test assertions
-// Write tests to validate response data
-
-test('status should be 200', (ctx) => {
-  expect(ctx.response.status).toBe(200);
-});
-
-test('should return user data', (ctx) => {
-  const body = JSON.parse(ctx.response.body);
-  expect(body.id).toBeDefined();
-  expect(body.name).toBeString();
-});`}
-              className="flex-1 resize-none font-mono text-sm bg-muted/30 border-muted-foreground/20 p-4 min-h-[300px]"
-              spellCheck={false}
+              onChange={handleTestScriptCodeChange}
+              typeDefinitions={YASUMU_TYPE_DEFINITIONS}
+              readOnly
+              placeholder={TEST_SCRIPT_PLACEHOLDER}
             />
           </div>
         </TabsContent>

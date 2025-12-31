@@ -12,7 +12,7 @@ import {
   op_register_virtual_module,
   op_unregister_virtual_module,
   op_is_yasumu_dev_mode,
-} from 'ext:core/ops';
+} from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
 import {

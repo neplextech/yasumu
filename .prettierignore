@@ -33,3 +33,5 @@ drizzle
 builtin-themes.ts
 
 i18n.d.ts
+
+yasumu-typedef.ts

@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { YasumuCommand } from './commands';
+import { type YasumuCommand } from './commands';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 export type SubDialogType = 'theme-picker' | null;
 
@@ -56,17 +57,9 @@ export function CommandPaletteProvider({
     setActiveSubDialog(null);
   }, []);
 
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        toggle();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [toggle]);
+  useHotkeys(['mod+k', 'mod+shift+k', 'mod+shift+p', 'mod+p'], () => {
+    toggle();
+  });
 
   const value = React.useMemo(
     () => ({

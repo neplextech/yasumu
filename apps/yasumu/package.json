@@ -10,17 +10,19 @@
     "url": "https://github.com/neplextech/yasumu.git"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "pnpm generate-typedef && next dev --turbopack",
+    "build": "pnpm generate-typedef && next build --turbopack",
     "bundle": "pnpm --filter=tanxium run build",
     "start": "next start",
     "lint": "eslint",
     "tauri": "tauri",
     "shadcn": "shadcn",
     "cargo": "cd src-tauri && cargo",
-    "generate-icons": "node scripts/generate-icon.ts"
+    "generate-icons": "node scripts/generate-icon.ts",
+    "generate-typedef": "node --experimental-strip-types scripts/generate-typedef.ts"
   },
   "dependencies": {
+    "@monaco-editor/react": "4.8.0-rc.3",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-query-devtools": "^5.91.1",
     "@tauri-apps/api": "^2",
@@ -33,6 +35,7 @@
     "@yasumu/core": "workspace:*",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
+    "hast-util-to-jsx-runtime": "^2.3.6",
     "hono": "^4.10.4",
     "lucide-react": "^0.475.0",
     "next": "catalog:react",
@@ -42,10 +45,12 @@
     "pdfjs-dist": "5.4.296",
     "react": "catalog:react",
     "react-dom": "catalog:react",
+    "react-hotkeys-hook": "^5.2.1",
     "react-icons": "^5.5.0",
     "react-pdf": "^10.2.0",
     "set-cookie-parser": "^2.7.2",
     "shadcn": "^3.5.0",
+    "shiki": "^3.20.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

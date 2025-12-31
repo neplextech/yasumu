@@ -1,13 +1,20 @@
 'use client';
 
 import type React from 'react';
+import type { HotkeyCallback } from 'react-hotkeys-hook';
+
+export interface CommandShortcut {
+  hotkey: string;
+  mac: string[];
+  other: string[];
+}
 
 export interface YasumuCommand {
   id: string;
   name: string;
   description?: string;
   icon?: React.ReactNode;
-  shortcut?: string;
+  shortcut?: CommandShortcut;
   keywords?: string[];
   category?: string;
   execute: () => void | Promise<void>;
@@ -30,4 +37,18 @@ export function getCategoryPriority(categoryId?: string): number {
   if (!categoryId) return 999;
   const category = CommandCategories.find((c) => c.id === categoryId);
   return category?.priority ?? 999;
+}
+
+export function createShortcutMatcher(
+  shortcut: CommandShortcut,
+): (...args: Parameters<HotkeyCallback>) => boolean {
+  return (_, { hotkey }) => hotkey.toString() === shortcut.hotkey;
+}
+
+export function formatShortcutDisplay(
+  shortcut: CommandShortcut,
+  isMac: boolean,
+): string {
+  const keys = isMac ? shortcut.mac : shortcut.other;
+  return keys.join('+');
 }

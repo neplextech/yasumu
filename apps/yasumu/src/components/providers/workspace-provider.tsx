@@ -197,23 +197,6 @@ export default function WorkspaceProvider({
   useEffect(() => {
     const ac = new AbortController();
     void initializeYasumuEnvironment();
-
-    // if the user presses Ctrl+S or Cmd+S, synchronize the workspace
-    document.addEventListener(
-      'keyup',
-      async (event) => {
-        if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
-          event.preventDefault();
-          event.stopPropagation();
-          await runSynchronization();
-        }
-      },
-      { signal: ac.signal },
-    );
-
-    return () => {
-      ac.abort();
-    };
   }, []);
 
   if (!client || !port || !yasumu) {

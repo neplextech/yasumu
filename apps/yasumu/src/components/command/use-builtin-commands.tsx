@@ -12,12 +12,15 @@ import {
   Lock,
   Settings,
   Home,
+  Save,
 } from 'lucide-react';
 import type { YasumuCommand } from './commands';
 import { useCommandPalette, useRegisterCommands } from './command-context';
 import { useYasumu } from '@/components/providers/workspace-provider';
 import { open } from '@tauri-apps/plugin-dialog';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { toast } from '@yasumu/ui/components/sonner';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 export function useBuiltinCommands() {
   const router = useRouter();
@@ -142,11 +145,40 @@ export function useBuiltinCommands() {
         },
       },
       {
+        id: 'save-workspace',
+        name: 'Save Workspace',
+        description: 'Save the current workspace',
+        icon: <Save className="size-4" />,
+        keywords: ['save', 'workspace', 'project', 'collection'],
+        category: 'workspace',
+        shortcut: {
+          hotkey: 'mod+s',
+          mac: ['⌘', 'S'],
+          other: ['Ctrl', 'S'],
+        },
+        execute: () => {
+          setIsOpen(false);
+          const workspace = yasumu.workspaces.getActiveWorkspace();
+          if (!workspace) return;
+
+          withErrorHandler(async () => {
+            const savingToast = toast.loading('Saving workspace...');
+            await workspace.synchronize();
+            toast.dismiss(savingToast);
+            toast.success('Workspace saved successfully!');
+          })();
+        },
+      },
+      {
         id: 'reload-window',
         name: 'Reload Window',
         description: 'Reload the application window',
         icon: <RefreshCw className="size-4" />,
-        shortcut: '⌘R',
+        shortcut: {
+          hotkey: 'mod+r',
+          mac: ['⌘', 'R'],
+          other: ['Ctrl', 'R'],
+        },
         keywords: ['reload', 'refresh', 'restart'],
         category: 'general',
         execute: () => {
@@ -156,10 +188,27 @@ export function useBuiltinCommands() {
     ];
   }, [router, openSubDialog, handleOpenWorkspace, setIsOpen]);
 
+  useHotkeys('mod+s', () => {
+    const workspace = yasumu.workspaces.getActiveWorkspace();
+    if (!workspace) return;
+
+    withErrorHandler(async () => {
+      const savingToast = toast.loading('Saving workspace...');
+      await workspace.synchronize();
+      toast.dismiss(savingToast);
+      toast.success('Workspace saved successfully!');
+    })();
+  });
+
+  useHotkeys('mod+r', () => {
+    window.location.reload();
+  });
+
   useRegisterCommands(commands);
 }
 
 export function BuiltinCommandsRegistrar() {
   useBuiltinCommands();
+
   return null;
 }

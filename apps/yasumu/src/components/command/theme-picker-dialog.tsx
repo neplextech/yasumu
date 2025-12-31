@@ -6,13 +6,20 @@ import { useCustomTheme } from '@/components/providers/custom-theme-provider';
 import { YasumuThemes } from '@/lib/constants/themes';
 import type { YasumuThemeConfig } from '@/lib/types/theme';
 import {
-  CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from '@yasumu/ui/components/command';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@yasumu/ui/components/dialog';
 import { Check, Moon, Palette, Sun, Monitor } from 'lucide-react';
 import { useCommandPalette } from './command-context';
 
@@ -34,39 +41,9 @@ export function ThemePickerDialog() {
   const [originalCustomTheme, setOriginalCustomTheme] = React.useState<
     string | null
   >(null);
-  const [previewedTheme, setPreviewedTheme] = React.useState<string | null>(
-    null,
-  );
+  const [confirmed, setConfirmed] = React.useState(false);
 
   const isOpen = activeSubDialog === 'theme-picker';
-
-  React.useEffect(() => {
-    if (isOpen) {
-      setOriginalTheme(currentNextTheme ?? 'system');
-      setOriginalCustomTheme(activeCustomTheme);
-      setPreviewedTheme(null);
-    }
-  }, [isOpen, currentNextTheme, activeCustomTheme]);
-
-  const handleClose = React.useCallback(
-    (open: boolean) => {
-      if (!open) {
-        if (originalTheme && !previewedTheme) {
-          setTheme(originalTheme);
-          setActiveCustomTheme(originalCustomTheme);
-        }
-        closeSubDialog();
-      }
-    },
-    [
-      originalTheme,
-      originalCustomTheme,
-      previewedTheme,
-      setTheme,
-      setActiveCustomTheme,
-      closeSubDialog,
-    ],
-  );
 
   const allThemeOptions = React.useMemo((): ThemeOption[] => {
     const defaultThemes: ThemeOption[] = Object.entries(YasumuThemes).map(
@@ -89,7 +66,45 @@ export function ThemePickerDialog() {
     return [...defaultThemes, ...customThemeOptions];
   }, [allThemes]);
 
-  const handlePreview = React.useCallback(
+  const themeOptionsMap = React.useMemo(() => {
+    const map = new Map<string, ThemeOption>();
+    for (const option of allThemeOptions) {
+      const value = option.isDefault
+        ? `${option.name} ${option.id}`
+        : `${option.name} ${option.id} ${option.type}`;
+      map.set(value, option);
+    }
+    return map;
+  }, [allThemeOptions]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setOriginalTheme(currentNextTheme ?? 'system');
+      setOriginalCustomTheme(activeCustomTheme);
+      setConfirmed(false);
+    }
+  }, [isOpen, currentNextTheme, activeCustomTheme]);
+
+  const revertTheme = React.useCallback(() => {
+    if (originalTheme) {
+      setTheme(originalTheme);
+      setActiveCustomTheme(originalCustomTheme);
+    }
+  }, [originalTheme, originalCustomTheme, setTheme, setActiveCustomTheme]);
+
+  const handleClose = React.useCallback(
+    (open: boolean) => {
+      if (!open) {
+        if (!confirmed) {
+          revertTheme();
+        }
+        closeSubDialog();
+      }
+    },
+    [confirmed, revertTheme, closeSubDialog],
+  );
+
+  const applyTheme = React.useCallback(
     (option: ThemeOption) => {
       if (option.isDefault) {
         setActiveCustomTheme(null);
@@ -102,14 +117,24 @@ export function ThemePickerDialog() {
     [setTheme, setActiveCustomTheme],
   );
 
+  const handleValueChange = React.useCallback(
+    (value: string) => {
+      const option = themeOptionsMap.get(value);
+      if (option) {
+        applyTheme(option);
+      }
+    },
+    [themeOptionsMap, applyTheme],
+  );
+
   const handleSelect = React.useCallback(
     (option: ThemeOption) => {
-      handlePreview(option);
-      setPreviewedTheme(option.id);
+      applyTheme(option);
+      setConfirmed(true);
       closeSubDialog();
       setIsOpen(false);
     },
-    [handlePreview, closeSubDialog, setIsOpen],
+    [applyTheme, closeSubDialog, setIsOpen],
   );
 
   const getIcon = (option: ThemeOption) => {
@@ -121,12 +146,16 @@ export function ThemePickerDialog() {
     return <Palette className="size-4" />;
   };
 
-  const isSelected = (option: ThemeOption) => {
-    if (option.isDefault) {
-      return currentNextTheme === option.id && !activeCustomTheme;
-    }
-    return activeCustomTheme === option.id;
-  };
+  const isSelected = React.useCallback(
+    (option: ThemeOption) => {
+      if (!originalTheme) return false;
+      if (option.isDefault) {
+        return originalTheme === option.id && !originalCustomTheme;
+      }
+      return originalCustomTheme === option.id;
+    },
+    [originalTheme, originalCustomTheme],
+  );
 
   const defaultThemes = allThemeOptions.filter((t) => t.isDefault);
   const darkThemes = allThemeOptions.filter(
@@ -137,70 +166,78 @@ export function ThemePickerDialog() {
   );
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={handleClose}>
-      <CommandInput placeholder="Search themes..." />
-      <CommandList>
-        <CommandEmpty>No themes found.</CommandEmpty>
-        <CommandGroup heading="Default">
-          {defaultThemes.map((option) => (
-            <CommandItem
-              key={option.id}
-              value={`${option.name} ${option.id}`}
-              onSelect={() => handleSelect(option)}
-              onMouseEnter={() => handlePreview(option)}
-              className="flex items-center gap-2"
-            >
-              {getIcon(option)}
-              <span className="flex-1">{option.name}</span>
-              {isSelected(option) && <Check className="size-4" />}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        {darkThemes.length > 0 && (
-          <CommandGroup heading="Dark Themes">
-            {darkThemes.map((option) => (
-              <CommandItem
-                key={option.id}
-                value={`${option.name} ${option.id} dark`}
-                onSelect={() => handleSelect(option)}
-                onMouseEnter={() => handlePreview(option)}
-                className="flex items-center gap-2"
-              >
-                {getIcon(option)}
-                <div className="flex flex-col flex-1">
-                  <span>{option.name}</span>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {option.id}
-                  </span>
-                </div>
-                {isSelected(option) && <Check className="size-4" />}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-        {lightThemes.length > 0 && (
-          <CommandGroup heading="Light Themes">
-            {lightThemes.map((option) => (
-              <CommandItem
-                key={option.id}
-                value={`${option.name} ${option.id} light`}
-                onSelect={() => handleSelect(option)}
-                onMouseEnter={() => handlePreview(option)}
-                className="flex items-center gap-2"
-              >
-                {getIcon(option)}
-                <div className="flex flex-col flex-1">
-                  <span>{option.name}</span>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {option.id}
-                  </span>
-                </div>
-                {isSelected(option) && <Check className="size-4" />}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-      </CommandList>
-    </CommandDialog>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogHeader className="sr-only">
+        <DialogTitle>Theme Picker</DialogTitle>
+        <DialogDescription>Select a theme for Yasumu</DialogDescription>
+      </DialogHeader>
+      <DialogContent className="overflow-hidden p-0" showCloseButton={false}>
+        <Command
+          className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+          onValueChange={handleValueChange}
+        >
+          <CommandInput placeholder="Search themes..." />
+          <CommandList>
+            <CommandEmpty>No themes found.</CommandEmpty>
+            <CommandGroup heading="Default">
+              {defaultThemes.map((option) => (
+                <CommandItem
+                  key={option.id}
+                  value={`${option.name} ${option.id}`}
+                  onSelect={() => handleSelect(option)}
+                  className="flex items-center gap-2"
+                >
+                  {getIcon(option)}
+                  <span className="flex-1">{option.name}</span>
+                  {isSelected(option) && <Check className="size-4" />}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            {darkThemes.length > 0 && (
+              <CommandGroup heading="Dark Themes">
+                {darkThemes.map((option) => (
+                  <CommandItem
+                    key={option.id}
+                    value={`${option.name} ${option.id} dark`}
+                    onSelect={() => handleSelect(option)}
+                    className="flex items-center gap-2"
+                  >
+                    {getIcon(option)}
+                    <div className="flex flex-col flex-1">
+                      <span>{option.name}</span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {option.id}
+                      </span>
+                    </div>
+                    {isSelected(option) && <Check className="size-4" />}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {lightThemes.length > 0 && (
+              <CommandGroup heading="Light Themes">
+                {lightThemes.map((option) => (
+                  <CommandItem
+                    key={option.id}
+                    value={`${option.name} ${option.id} light`}
+                    onSelect={() => handleSelect(option)}
+                    className="flex items-center gap-2"
+                  >
+                    {getIcon(option)}
+                    <div className="flex flex-col flex-1">
+                      <span>{option.name}</span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {option.id}
+                      </span>
+                    </div>
+                    {isSelected(option) && <Check className="size-4" />}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </DialogContent>
+    </Dialog>
   );
 }

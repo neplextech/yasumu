@@ -11,12 +11,18 @@ import {
   CommandShortcut,
 } from '@yasumu/ui/components/command';
 import { useCommandPalette } from './command-context';
-import { CommandCategories, getCategoryPriority } from './commands';
+import {
+  CommandCategories,
+  formatShortcutDisplay,
+  getCategoryPriority,
+} from './commands';
 import { ThemePickerDialog } from './theme-picker-dialog';
 import { BuiltinCommandsRegistrar } from './use-builtin-commands';
+import { usePlatform } from '@/hooks/use-platform';
 
 export function CommandPalette() {
   const { isOpen, setIsOpen, commands, activeSubDialog } = useCommandPalette();
+  const { isMac } = usePlatform();
 
   const groupedCommands = React.useMemo(() => {
     const groups: Record<string, typeof commands> = {};
@@ -81,7 +87,9 @@ export function CommandPalette() {
                     )}
                   </div>
                   {command.shortcut && (
-                    <CommandShortcut>{command.shortcut}</CommandShortcut>
+                    <CommandShortcut>
+                      {formatShortcutDisplay(command.shortcut, isMac)}
+                    </CommandShortcut>
                   )}
                 </CommandItem>
               ))}

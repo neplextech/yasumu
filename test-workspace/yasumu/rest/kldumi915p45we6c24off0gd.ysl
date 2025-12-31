@@ -18,14 +18,21 @@ request {
 dependencies []
 
 script {
-  export async function onResponse(req, res) {
-      const body = res.json()
-    
-      await Yasumu.ui.showNotification({
-        title: 'GitHub Profile Fetched',
-        message: `${body.name} has ${body.followers.toLocaleString()} followers count.`,
-        variant: 'info',
-      });
-    }
+  interface IGithubUser {
+    followers: number;
+    name: string;
+  }
+  
+  export async function onResponse(req: YasumuRequest, res: YasumuResponse) {
+    const body = res.json<IGithubUser>();
+  
+    await Yasumu.ui.showNotification({
+      title: 'GitHub Profile Fetched',
+      message: `${body.name} has ${body.followers.toLocaleString()} followers count on github.`,
+      variant: 'info',
+    });
+  
+    res.env.setVariable('FOLLOWER_COUNT', body.followers.toString())
+  }
 }
 
