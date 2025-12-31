@@ -1,0 +1,213 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+const GITHUB_API_URL =
+  'https://api.github.com/repos/neplextech/yasumu/releases/latest';
+const CACHE_KEY = 'yasumu_github_releases';
+const CACHE_DURATION = 1000 * 60 * 15; // 15 minutes
+
+interface GitHubAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+
+interface CachedData {
+  assets: GitHubAsset[];
+  timestamp: number;
+  tag_name: string;
+}
+
+type Architecture = 'x64' | 'arm64' | 'x86' | 'universal' | 'unknown';
+
+export interface DownloadAsset extends GitHubAsset {
+  arch: Architecture;
+  label: string;
+  note: string;
+}
+
+export interface DownloadAssets {
+  macOS: DownloadAsset[];
+  windows: DownloadAsset[];
+  linux: DownloadAsset[];
+  tagName: string;
+}
+
+const ARCH_PATTERNS: { pattern: RegExp; arch: Architecture }[] = [
+  { pattern: /universal/i, arch: 'universal' },
+  { pattern: /aarch64|arm64/i, arch: 'arm64' },
+  { pattern: /x86_64|x64|amd64/i, arch: 'x64' },
+  { pattern: /i[36]86|x86(?!_64)/i, arch: 'x86' },
+];
+
+function detectArchitecture(filename: string): Architecture {
+  for (const { pattern, arch } of ARCH_PATTERNS) {
+    if (pattern.test(filename)) {
+      return arch;
+    }
+  }
+  return 'unknown';
+}
+
+function getArchLabel(arch: Architecture): string {
+  switch (arch) {
+    case 'universal':
+      return 'Intel & Apple Silicon';
+    case 'arm64':
+      return 'ARM64 (Apple Silicon, etc.)';
+    case 'x64':
+      return '64-bit (x86_64)';
+    case 'x86':
+      return '32-bit (x86)';
+    default:
+      return '';
+  }
+}
+
+function categorizeAssets(
+  assets: GitHubAsset[],
+): Omit<DownloadAssets, 'tagName'> {
+  const result: Omit<DownloadAssets, 'tagName'> = {
+    macOS: [],
+    windows: [],
+    linux: [],
+  };
+
+  for (const asset of assets) {
+    const name = asset.name.toLowerCase();
+    const arch = detectArchitecture(asset.name);
+    const archNote = getArchLabel(arch);
+
+    if (name.endsWith('.dmg')) {
+      result.macOS.push({
+        ...asset,
+        arch,
+        label: `DMG Installer (.dmg)`,
+        note: archNote || 'macOS',
+      });
+    } else if (name.endsWith('.exe') && !name.includes('nsis')) {
+      result.windows.push({
+        ...asset,
+        arch,
+        label: `Installer (.exe)`,
+        note: archNote || '64-bit',
+      });
+    } else if (name.endsWith('.msi')) {
+      result.windows.push({
+        ...asset,
+        arch,
+        label: `MSI Installer (.msi)`,
+        note: archNote || '64-bit',
+      });
+    } else if (name.endsWith('.deb')) {
+      result.linux.push({
+        ...asset,
+        arch,
+        label: `Debian (.deb)`,
+        note: archNote
+          ? `${archNote} — Ubuntu, Debian`
+          : 'Ubuntu, Debian, etc.',
+      });
+    } else if (name.endsWith('.appimage')) {
+      result.linux.push({
+        ...asset,
+        arch,
+        label: `AppImage`,
+        note: archNote ? `${archNote} — Universal` : 'Universal',
+      });
+    } else if (name.endsWith('.rpm')) {
+      result.linux.push({
+        ...asset,
+        arch,
+        label: `RPM (.rpm)`,
+        note: archNote ? `${archNote} — Fedora, RHEL` : 'Fedora, RHEL, etc.',
+      });
+    }
+  }
+
+  const sortByArch = (a: DownloadAsset, b: DownloadAsset) => {
+    const order: Architecture[] = [
+      'universal',
+      'x64',
+      'arm64',
+      'x86',
+      'unknown',
+    ];
+    return order.indexOf(a.arch) - order.indexOf(b.arch);
+  };
+
+  result.macOS.sort(sortByArch);
+  result.windows.sort(sortByArch);
+  result.linux.sort(sortByArch);
+
+  return result;
+}
+
+export function useGitHubReleases() {
+  const [assets, setAssets] = useState<DownloadAssets | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchReleases() {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed: CachedData = (() => {
+            try {
+              return JSON.parse(cached);
+            } catch {
+              return null;
+            }
+          })();
+          if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION) {
+            const categorized = categorizeAssets(parsed.assets);
+            setAssets({ ...categorized, tagName: parsed.tag_name });
+            setLoading(false);
+            return;
+          }
+        }
+
+        const response = await fetch(GITHUB_API_URL, {
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 403) {
+            throw new Error(
+              'GitHub API rate limit exceeded. Please try again later.',
+            );
+          }
+          throw new Error(`Failed to fetch releases: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const releaseAssets: GitHubAsset[] = data.assets || [];
+        const tagName: string = data.tag_name || '';
+
+        const cacheData: CachedData = {
+          assets: releaseAssets,
+          timestamp: Date.now(),
+          tag_name: tagName,
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+
+        const categorized = categorizeAssets(releaseAssets);
+        setAssets({ ...categorized, tagName });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch releases',
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchReleases();
+  }, []);
+
+  return { assets, loading, error };
+}

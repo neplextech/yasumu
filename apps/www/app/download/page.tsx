@@ -1,47 +1,61 @@
+'use client';
+
 import { BackgroundGrid } from '../../components/background-grid';
 import { FaApple, FaWindows } from 'react-icons/fa6';
 import { VscTerminalLinux } from 'react-icons/vsc';
 import { DownloadCard } from './download-card';
+import { useGitHubReleases } from './use-github-releases';
 
-const downloadLinks = {
-  macOS: {
-    intel: {
-      url: 'https://github.com/neplextech/yasumu/releases/latest/download/yasumu_universal.dmg',
-      filename: 'yasumu_universal.dmg',
-    },
-    appleSilicon: {
-      url: 'https://github.com/neplextech/yasumu/releases/latest/download/yasumu_universal.dmg',
-      filename: 'yasumu_universal.dmg',
-    },
-  },
-  Windows: {
-    installer: {
-      url: 'https://github.com/neplextech/yasumu/releases/latest/download/yasumu-setup.exe',
-      filename: 'yasumu-setup.exe',
-    },
-    msi: {
-      url: 'https://github.com/neplextech/yasumu/releases/latest/download/yasumu-setup.msi',
-      filename: 'yasumu-setup.msi',
-    },
-  },
-  Linux: {
-    debian: {
-      url: 'https://github.com/neplextech/yasumu/releases/latest/download/yasumu_amd64.deb',
-      filename: 'yasumu_amd64.deb',
-    },
-    appimage: {
-      url: 'https://github.com/neplextech/yasumu/releases/latest/download/yasumu_amd64.AppImage',
-      filename: 'yasumu_amd64.AppImage',
-    },
-  },
-};
+function DownloadSkeleton() {
+  return (
+    <div className="bg-surface-dark border border-white/10 rounded-xl p-8 flex flex-col animate-pulse">
+      <div className="w-16 h-16 bg-white/5 rounded-2xl mb-6" />
+      <div className="h-8 w-32 bg-white/5 rounded mb-2" />
+      <div className="h-4 w-48 bg-white/5 rounded mb-8" />
+      <div className="flex flex-col gap-3 mt-auto">
+        <div className="h-16 bg-white/5 rounded-lg" />
+        <div className="h-16 bg-white/5 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+function ErrorState() {
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center py-16 px-8 bg-surface-dark border border-white/10 rounded-xl">
+      <div className="text-6xl mb-6 opacity-50">📦</div>
+      <h3 className="text-xl font-semibold text-white mb-2">
+        No downloadable content found
+      </h3>
+      <p className="text-text-secondary text-center max-w-md mb-6">
+        We couldn&apos;t fetch the latest releases from GitHub. This might be
+        due to rate limiting or network issues.
+      </p>
+      <a
+        href="https://github.com/neplextech/yasumu#building-from-source"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium"
+      >
+        Build from source →
+      </a>
+    </div>
+  );
+}
 
 export default function Download() {
+  const { assets, loading, error } = useGitHubReleases();
+
+  const hasAnyAssets =
+    assets &&
+    (assets.macOS.length > 0 ||
+      assets.windows.length > 0 ||
+      assets.linux.length > 0);
+
   return (
     <div className="animate-fade-in pt-32 pb-20">
       <BackgroundGrid />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-20">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm cursor-default">
             <span className="text-xs font-mono font-medium text-gray-400">
@@ -58,65 +72,56 @@ export default function Download() {
           </p>
         </div>
 
-        {/* OS Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {/* macOS */}
-          <DownloadCard
-            os="macOS"
-            icon={<FaApple />}
-            description="Requires macOS 11.0 or later."
-            options={[
-              {
-                label: 'Universal (.dmg)',
-                note: 'Intel & Apple Silicon',
-                url: downloadLinks.macOS.intel.url,
-              },
-            ]}
-          />
+          {loading ? (
+            <>
+              <DownloadSkeleton />
+              <DownloadSkeleton />
+              <DownloadSkeleton />
+            </>
+          ) : error || !hasAnyAssets ? (
+            <ErrorState />
+          ) : (
+            <>
+              <DownloadCard
+                os="macOS"
+                icon={<FaApple />}
+                description="Requires macOS 11.0 or later."
+                options={assets.macOS.map((asset) => ({
+                  label: asset.label,
+                  note: asset.note,
+                  url: asset.browser_download_url,
+                }))}
+              />
 
-          {/* Windows */}
-          <DownloadCard
-            os="Windows"
-            icon={<FaWindows />}
-            description="Requires Windows 10 or later."
-            options={[
-              {
-                label: 'Installer (.exe)',
-                note: '64-bit',
-                url: downloadLinks.Windows.installer.url,
-              },
-              {
-                label: 'MSI (.msi)',
-                note: '64-bit',
-                url: downloadLinks.Windows.msi.url,
-              },
-            ]}
-          />
+              <DownloadCard
+                os="Windows"
+                icon={<FaWindows />}
+                description="Requires Windows 10 or later."
+                options={assets.windows.map((asset) => ({
+                  label: asset.label,
+                  note: asset.note,
+                  url: asset.browser_download_url,
+                }))}
+              />
 
-          {/* Linux */}
-          <DownloadCard
-            os="Linux"
-            icon={<VscTerminalLinux />}
-            description="Works on most major distributions."
-            options={[
-              {
-                label: 'Debian (.deb)',
-                note: 'Ubuntu, Debian, etc.',
-                url: downloadLinks.Linux.debian.url,
-              },
-              {
-                label: 'AppImage',
-                note: 'Universal',
-                url: downloadLinks.Linux.appimage.url,
-              },
-            ]}
-          />
+              <DownloadCard
+                os="Linux"
+                icon={<VscTerminalLinux />}
+                description="Works on most major distributions."
+                options={assets.linux.map((asset) => ({
+                  label: asset.label,
+                  note: asset.note,
+                  url: asset.browser_download_url,
+                }))}
+              />
+            </>
+          )}
         </div>
 
-        {/* Release Info */}
         <div className="mt-20 max-w-4xl mx-auto bg-black/30 border border-white/5 rounded-xl p-8">
           <h3 className="text-lg font-semibold text-white mb-4">
-            Latest Release
+            Latest Release{assets?.tagName && ` — ${assets.tagName}`}
           </h3>
           <p className="text-sm text-text-secondary mb-6">
             Downloads are always from the latest stable release. You can also
