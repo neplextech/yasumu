@@ -6,3 +6,4 @@ dist/
 target/
 *.db
 *.kv*
+themes/output

@@ -1,13 +1,21 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Monitor, Moon, Sun, Palette } from 'lucide-react';
 
-export const YasumuThemes = {
+export interface BaseTheme {
+  name: string;
+  value: string;
+  icon: LucideIcon;
+  isCustom?: boolean;
+}
+
+export const YasumuThemes: Record<string, BaseTheme> = {
   light: {
-    name: 'Light',
+    name: 'Default Light',
     value: 'light',
     icon: Sun,
   },
   dark: {
-    name: 'Dark',
+    name: 'Default Dark',
     value: 'dark',
     icon: Moon,
   },
@@ -16,4 +24,8 @@ export const YasumuThemes = {
     value: 'system',
     icon: Monitor,
   },
-} as const;
+};
+
+export function getCustomThemeIcon(): LucideIcon {
+  return Palette;
+}

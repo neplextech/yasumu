@@ -29,3 +29,7 @@ turbo-lint.log
 turbo/generators/templates/**/*.hbs
 
 drizzle
+
+builtin-themes.ts
+
+i18n.d.ts
