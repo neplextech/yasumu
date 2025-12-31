@@ -12,12 +12,14 @@ export default function CodeBlock({
   className,
   iconClassName,
   title,
+  hideShell = false,
 }: {
   children: string;
   language: BundledLanguage;
   className?: string;
   iconClassName?: string;
   title?: string;
+  hideShell?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -29,27 +31,29 @@ export default function CodeBlock({
 
   return (
     <div className="rounded-lg border bg-background overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
-        <span className="text-xs font-medium text-muted-foreground inline-flex items-center gap-2">
-          <LanguageIcon
-            className={cn('size-4 rounded-[4px]', iconClassName)}
-            language={language}
-          />{' '}
-          {title || 'Code'}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-          onClick={handleCopySnippet}
-        >
-          {copied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
+      {!hideShell && (
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
+          <span className="text-xs font-medium text-muted-foreground inline-flex items-center gap-2">
+            <LanguageIcon
+              className={cn('size-4 rounded-[4px]', iconClassName)}
+              language={language}
+            />{' '}
+            {title || 'Code'}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={handleCopySnippet}
+          >
+            {copied ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      )}
       <HighlightedCodeBlock language="typescript" className={className}>
         {children}
       </HighlightedCodeBlock>

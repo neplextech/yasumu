@@ -94,56 +94,32 @@ export function RestResponsePanel({
         onValueChange={(v) => setActiveTab(v as 'response' | 'preview')}
         className="flex flex-col flex-1 min-h-0"
       >
-        <div className="px-1 border-b flex-shrink-0">
-          <TabsList className="bg-transparent h-10 w-full justify-start gap-2 p-0 rounded-none">
-            <TabsTrigger
-              value="response"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-            >
-              Response
-            </TabsTrigger>
-            <TabsTrigger
-              value="preview"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-            >
-              Preview
-            </TabsTrigger>
+        <div className="px-1 flex-shrink-0 border-b">
+          <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
+            <TabsTrigger value="response">Response</TabsTrigger>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="response" className="flex-1 min-h-0 m-0 p-0">
-          <Tabs defaultValue="body" className="flex flex-col h-full">
-            <div className="px-1 border-b flex-shrink-0">
-              <TabsList className="bg-transparent h-9 w-full justify-start gap-1 p-0 rounded-none">
-                <TabsTrigger
-                  value="body"
-                  className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-md px-3 h-7 text-xs"
-                >
-                  Body
-                </TabsTrigger>
-                <TabsTrigger
-                  value="headers"
-                  className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-md px-3 h-7 text-xs"
-                >
+        <TabsContent value="response" className="flex-1 min-h-0">
+          <Tabs defaultValue="body">
+            <div className="px-1 flex-shrink-0 border-b">
+              <TabsList className="bg-transparent w-full justify-start gap-1">
+                <TabsTrigger value="body">Body</TabsTrigger>
+                <TabsTrigger value="headers">
                   Headers
                   <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
                     {headersCount}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger
-                  value="cookies"
-                  className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-md px-3 h-7 text-xs"
-                >
+                <TabsTrigger value="cookies">
                   Cookies
                   <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
                     {cookiesCount}
                   </span>
                 </TabsTrigger>
                 {scriptOutput.length > 0 && (
-                  <TabsTrigger
-                    value="console"
-                    className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-md px-3 h-7 text-xs"
-                  >
+                  <TabsTrigger value="console">
                     Console
                     <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
                       {scriptOutput.length}
@@ -152,30 +128,30 @@ export function RestResponsePanel({
                 )}
               </TabsList>
             </div>
-            <TabsContent value="body" className="flex-1 min-h-0 m-0 p-0">
+            <TabsContent value="body" className="flex-1 min-h-0">
               <BodyView response={response} />
             </TabsContent>
             <TabsContent
               value="headers"
-              className="flex-1 min-h-0 m-0 overflow-auto"
+              className="flex-1 min-h-0 overflow-auto"
             >
               <HeadersView headers={response.headers} />
             </TabsContent>
             <TabsContent
               value="cookies"
-              className="flex-1 min-h-0 m-0 overflow-auto"
+              className="flex-1 min-h-0 overflow-auto"
             >
               <CookiesView cookies={response.cookies} />
             </TabsContent>
             {scriptOutput.length > 0 && (
-              <TabsContent value="console" className="flex-1 min-h-0 m-0">
+              <TabsContent value="console" className="flex-1 min-h-0">
                 <ConsoleView output={scriptOutput} />
               </TabsContent>
             )}
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="preview" className="flex-1 min-h-0 m-0 p-0">
+        <TabsContent value="preview" className="flex-1 min-h-0">
           <PreviewView response={response} blobUrl={blobUrl} />
         </TabsContent>
       </Tabs>

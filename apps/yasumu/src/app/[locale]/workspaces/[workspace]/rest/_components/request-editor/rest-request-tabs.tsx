@@ -110,43 +110,13 @@ export function RestRequestTabs({
       className="flex-1 flex flex-col h-full min-h-0"
     >
       <div className="px-1 border-b flex-shrink-0">
-        <TabsList className="bg-transparent h-10 w-full justify-start gap-2 p-0 rounded-none">
-          <TabsTrigger
-            value="parameters"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Parameters
-          </TabsTrigger>
-          <TabsTrigger
-            value="headers"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Headers
-          </TabsTrigger>
-          <TabsTrigger
-            value="auth"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Auth
-          </TabsTrigger>
-          <TabsTrigger
-            value="body"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Body
-          </TabsTrigger>
-          <TabsTrigger
-            value="scripts"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Scripts
-          </TabsTrigger>
-          <TabsTrigger
-            value="tests"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
-          >
-            Tests
-          </TabsTrigger>
+        <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
+          <TabsTrigger value="parameters">Parameters</TabsTrigger>
+          <TabsTrigger value="headers">Headers</TabsTrigger>
+          <TabsTrigger value="auth">Auth</TabsTrigger>
+          <TabsTrigger value="body">Body</TabsTrigger>
+          <TabsTrigger value="scripts">Scripts</TabsTrigger>
+          <TabsTrigger value="tests">Tests</TabsTrigger>
         </TabsList>
       </div>
 

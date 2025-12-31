@@ -11,4 +11,3 @@ export function MonacoPreloader() {
 
   return null;
 }
-

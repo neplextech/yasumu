@@ -1,32 +1,69 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import { Button } from '@yasumu/ui/components/button';
+import { Check, Copy } from 'lucide-react';
+import type { BundledLanguage } from 'shiki/bundle/web';
 import type { RestResponse } from '../../_lib/rest-request';
 import { getContentType } from '@/components/responses/viewers';
 import { formatBytes } from './utils';
+import HighlightedCodeBlock from '@/components/visuals/code-block/highlighted-code-block';
 
 interface BodyViewProps {
   response: RestResponse;
 }
 
+function getLanguageFromContentType(contentType: string): BundledLanguage {
+  const ct = contentType.toLowerCase();
+
+  if (ct.includes('application/json') || ct.includes('+json')) return 'json';
+  if (ct.includes('xml') || ct.includes('+xml')) return 'xml';
+  if (ct.includes('javascript')) return 'javascript';
+  if (ct.includes('typescript')) return 'typescript';
+  if (ct.includes('text/html')) return 'html';
+  if (ct.includes('text/css')) return 'css';
+  if (ct.includes('text/markdown')) return 'markdown';
+  if (ct.includes('yaml') || ct.includes('yml')) return 'yaml';
+  if (ct.includes('graphql')) return 'graphql';
+
+  return 'text';
+}
+
 export function BodyView({ response }: BodyViewProps) {
-  const formatted = useMemo(() => {
+  const [copied, setCopied] = useState(false);
+
+  const { formatted, language } = useMemo(() => {
     if (response.bodyType !== 'text' || !response.textBody) {
-      return null;
+      return { formatted: null, language: 'text' as BundledLanguage };
     }
 
     const contentType = getContentType(response.headers);
-    if (contentType.includes('application/json')) {
+    const lang = getLanguageFromContentType(contentType);
+
+    if (
+      contentType.includes('application/json') ||
+      contentType.includes('+json')
+    ) {
       try {
-        return JSON.stringify(JSON.parse(response.textBody), null, 2);
+        return {
+          formatted: JSON.stringify(JSON.parse(response.textBody), null, 2),
+          language: lang,
+        };
       } catch {
-        return response.textBody;
+        return { formatted: response.textBody, language: lang };
       }
     }
 
-    return response.textBody;
+    return { formatted: response.textBody, language: lang };
   }, [response]);
+
+  const handleCopy = async () => {
+    if (!formatted) return;
+    await navigator.clipboard.writeText(formatted);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (response.bodyTruncated) {
     const maxSize = response.bodyType === 'text' ? '5 MB' : '50 MB';
@@ -58,10 +95,20 @@ export function BodyView({ response }: BodyViewProps) {
   }
 
   return (
-    <ScrollArea className="h-full">
-      <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all">
-        <code>{formatted}</code>
-      </pre>
-    </ScrollArea>
+    <div className="relative h-full">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-4 z-10 h-7 w-7 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm"
+        onClick={handleCopy}
+      >
+        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      </Button>
+      <ScrollArea className="h-full">
+        <HighlightedCodeBlock language={language} className="break-all">
+          {formatted}
+        </HighlightedCodeBlock>
+      </ScrollArea>
+    </div>
   );
 }
