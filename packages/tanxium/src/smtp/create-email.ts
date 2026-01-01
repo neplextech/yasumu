@@ -22,17 +22,6 @@ export async function createEmail(
   const mailHtml = email.html || '(No Body)';
   const mailText = email.text || '(No Body)';
 
-  console.log(email);
-  console.log({
-    from: mailFrom,
-    to: mailTo,
-    subject: mailSubject,
-    html: mailHtml,
-    text: mailText,
-    cc: mailCc,
-    smtpId,
-  });
-
   // missing required fields
   if (!mailFrom || !mailTo) return;
 
