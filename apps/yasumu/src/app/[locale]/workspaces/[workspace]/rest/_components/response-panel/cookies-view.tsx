@@ -1,5 +1,7 @@
 'use client';
 
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+
 interface CookiesViewProps {
   cookies: string[];
 }
@@ -12,15 +14,17 @@ export function CookiesView({ cookies }: CookiesViewProps) {
   }
 
   return (
-    <div className="p-4 space-y-2">
-      {cookies.map((cookie, i) => (
-        <pre
-          key={i}
-          className="text-sm font-mono bg-muted/50 p-2 rounded break-all whitespace-pre-wrap"
-        >
-          {cookie}
-        </pre>
-      ))}
-    </div>
+    <ScrollArea className="h-full">
+      <div className="p-4 space-y-2">
+        {cookies.map((cookie, i) => (
+          <pre
+            key={i}
+            className="text-sm font-mono bg-muted/50 p-2 rounded break-all whitespace-pre-wrap"
+          >
+            {cookie}
+          </pre>
+        ))}
+      </div>
+    </ScrollArea>
   );
 }
