@@ -22,7 +22,8 @@ import {
   AlertDialogTitle,
 } from '@yasumu/ui/components/alert-dialog';
 import { Progress } from '@yasumu/ui/components/progress';
-import { Loader2 } from 'lucide-react';
+import { Copy, Loader2 } from 'lucide-react';
+import { Button } from '@yasumu/ui/components/button';
 
 type UpdatePhase = 'idle' | 'downloading' | 'installing' | 'complete' | 'error';
 
@@ -108,9 +109,28 @@ export function UpdateDialog({
               )}
 
               {phase === 'error' && (
-                <p className="text-destructive">
-                  Failed to update: {error ?? 'Unknown error occurred'}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-destructive font-medium">
+                    Failed to update
+                  </p>
+                  <div className="rounded-md bg-destructive/10 p-3 text-xs font-mono max-h-32 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap break-all text-destructive">
+                      {error ?? 'Unknown error occurred'}
+                    </pre>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      navigator.clipboard.writeText(error ?? 'Unknown error');
+                      toast.success('Error copied to clipboard');
+                    }}
+                  >
+                    <Copy className="h-3 w-3 mr-2" />
+                    Copy Error
+                  </Button>
+                </div>
               )}
 
               {update.body && phase === 'idle' && (
@@ -216,21 +236,22 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
     setPhase('downloading');
     setError(null);
     downloadedRef.current = 0;
+    let contentLength = 0;
 
     try {
       await update.downloadAndInstall((event) => {
         switch (event.event) {
           case 'Started':
+            contentLength = event.data.contentLength ?? 0;
             setProgress({
               downloaded: 0,
-              total: event.data.contentLength ?? 0,
+              total: contentLength,
               percentage: 0,
             });
             break;
           case 'Progress':
             downloadedRef.current += event.data.chunkLength;
-            const total =
-              progress.total || downloadedRef.current + event.data.chunkLength;
+            const total = contentLength || downloadedRef.current;
             const percentage = Math.min(
               Math.round((downloadedRef.current / total) * 100),
               100,
@@ -252,18 +273,26 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await relaunch();
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : err
-            ? String(err)
-            : 'Unknown error occurred';
+    } catch (err: unknown) {
+      let message: string;
+      if (err instanceof Error) {
+        message = `[Error] ${err.name}: ${err.message}`;
+      } else if (typeof err === 'string') {
+        message = `[String] ${err}`;
+      } else if (err && typeof err === 'object') {
+        try {
+          message = `[Object] ${JSON.stringify(err, null, 2)}`;
+        } catch {
+          message = `[Object] ${String(err)}`;
+        }
+      } else {
+        message = `[${typeof err}] ${String(err)}`;
+      }
       setError(message);
       setPhase('error');
-      toast.error(`Update failed: ${message}`);
+      toast.error('Update failed');
     }
-  }, [update, progress.total]);
+  }, [update]);
 
   useEffect(() => {
     void checkForUpdates();
