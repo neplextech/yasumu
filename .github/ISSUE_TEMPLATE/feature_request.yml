@@ -1,0 +1,88 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Yasumu
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please fill out the form below to help us understand your request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: A clear and concise description of what the problem is. E.g., "I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see.
+      placeholder: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: What other approaches have you thought about?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature Area
+      description: Which area of Yasumu does this feature relate to?
+      options:
+        - REST API Client
+        - GraphQL Client
+        - SMTP/Email Testing
+        - WebSocket Client
+        - Environments
+        - Scripting
+        - Workspace Management
+        - UI/UX
+        - CLI
+        - Performance
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Nice to have
+        - Important
+        - Critical for my workflow
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe a specific use case where this feature would be helpful.
+      placeholder: Explain how you would use this feature in your workflow.
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups / Examples
+      description: If applicable, add mockups, sketches, or examples from other tools.
+      placeholder: Drag and drop images here or paste URLs
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context or information about the feature request.
+
