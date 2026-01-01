@@ -8,10 +8,12 @@ export default function HighlightedCodeBlock({
   children,
   language,
   className,
+  enableScroll = false,
 }: {
   children: string;
   language: BundledLanguage;
   className?: string;
+  enableScroll?: boolean;
 }) {
   const [nodes, setNodes] = useState<React.ReactNode>(null);
 
@@ -19,9 +21,11 @@ export default function HighlightedCodeBlock({
     void highlight(children, language).then(setNodes).catch(console.error);
   }, [children, language]);
 
+  const scrollClass = enableScroll ? 'overflow-auto' : '';
+
   if (!nodes)
     return (
-      <pre className={cn('p-4 text-sm overflow-x-auto', className)}>
+      <pre className={cn('p-4 text-sm', scrollClass, className)}>
         <code className="text-foreground font-mono text-xs leading-relaxed whitespace-pre">
           {children}
         </code>
@@ -29,6 +33,6 @@ export default function HighlightedCodeBlock({
     );
 
   return (
-    <div className={cn('p-4 text-sm overflow-x-auto', className)}>{nodes}</div>
+    <div className={cn('p-4 text-sm', scrollClass, className)}>{nodes}</div>
   );
 }

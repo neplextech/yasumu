@@ -131,16 +131,10 @@ export function RestResponsePanel({
             <TabsContent value="body" className="flex-1 min-h-0">
               <BodyView response={response} />
             </TabsContent>
-            <TabsContent
-              value="headers"
-              className="flex-1 min-h-0 overflow-auto"
-            >
+            <TabsContent value="headers" className="flex-1 min-h-0">
               <HeadersView headers={response.headers} />
             </TabsContent>
-            <TabsContent
-              value="cookies"
-              className="flex-1 min-h-0 overflow-auto"
-            >
+            <TabsContent value="cookies" className="flex-1 min-h-0">
               <CookiesView cookies={response.cookies} />
             </TabsContent>
             {scriptOutput.length > 0 && (
