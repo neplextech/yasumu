@@ -254,7 +254,11 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
       await relaunch();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Unknown error occurred';
+        err instanceof Error
+          ? err.message
+          : err
+            ? String(err)
+            : 'Unknown error occurred';
       setError(message);
       setPhase('error');
       toast.error(`Update failed: ${message}`);

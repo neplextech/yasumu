@@ -24,17 +24,23 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "resources/"
-    ],
-    "createUpdaterArtifacts": true
+    "resources": ["resources/"],
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
   },
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc3QjhEMEY5NkI2RDQ3RjEKUldUeFIyMXIrZEM0ZHhlZTIreVl5RTFHeTJJUzRvZU1CemhBL28zZTIzdkNrRzZzRS9TL2dDbXQK",
       "endpoints": [
         "https://github.com/neplextech/yasumu/releases/latest/download/latest.json"
-      ]
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
