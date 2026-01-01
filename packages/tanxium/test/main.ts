@@ -1,12 +1,30 @@
 import './yasumu-patch.ts';
 import { startServer } from '../src/index.ts';
+import { join } from 'node:path';
+import type { YasumuRpcContext } from '@yasumu/rpc';
 
 const { rpcServer } = await startServer();
 
 const result = await rpcServer.execute({
-  action: 'workspaces.list',
+  action: 'workspaces.create',
   type: 'query',
-  payload: [{ take: 10 }],
+  payload: [
+    {
+      name: 'test-workspace',
+      metadata: {
+        path: join(Deno.cwd(), '..', '..', 'test-workspace'),
+      },
+    },
+  ],
 });
 
-console.log(result);
+await rpcServer.execute(
+  {
+    action: 'synchronization.synchronize',
+    type: 'mutation',
+    payload: [],
+  },
+  {
+    workspaceId: result.id,
+  } satisfies YasumuRpcContext,
+);

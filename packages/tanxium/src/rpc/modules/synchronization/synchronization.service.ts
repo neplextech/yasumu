@@ -4,7 +4,7 @@ import { YslService } from './ysl.service.ts';
 import { WorkspaceSchema } from './schema/workspace.schema.ts';
 import { YasumuAnnotations } from './schema/constants.ts';
 import { WorkspaceData } from '@yasumu/common';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { existsSync } from 'node:fs';
 import { RestService } from '../rest/rest.service.ts';
 import { EntityGroupService } from '../entity-group/entity-group.service.ts';
@@ -217,8 +217,9 @@ export class SynchronizationService implements OnModuleInit {
       .returning();
 
     const groupEntries = Object.entries(parsed.blocks.groups);
+    const sortedGroups = this.topologicalSortGroups(groupEntries);
 
-    for (const [groupId, groupData] of groupEntries) {
+    for (const [groupId, groupData] of sortedGroups) {
       await db.insert(entityGroups).values({
         id: groupId,
         name: groupData.name,
@@ -247,6 +248,9 @@ export class SynchronizationService implements OnModuleInit {
     const files = await this.listYslFiles(restDir);
     const db = this.connection.getConnection();
 
+    const existingGroups = await this.entityGroupService.findAll(workspace.id);
+    const validGroupIds = new Set(existingGroups.map((g) => g.id));
+
     for (const filePath of files) {
       const fileContent = await this.readYslFile(filePath);
       if (!fileContent) continue;
@@ -254,13 +258,18 @@ export class SynchronizationService implements OnModuleInit {
       const parsed = this.yslService.deserialize(RestSchema, fileContent);
       const { metadata, request, script, test } = parsed.blocks;
 
+      const groupId =
+        metadata.groupId && validGroupIds.has(metadata.groupId)
+          ? metadata.groupId
+          : null;
+
       await db.insert(restEntities).values({
         id: metadata.id,
         workspaceId: workspace.id,
         name: metadata.name,
         method: metadata.method,
         url: request.url,
-        groupId: metadata.groupId,
+        groupId,
         requestHeaders: request.headers,
         requestParameters: request.parameters,
         searchParameters: request.searchParameters,
@@ -415,7 +424,10 @@ export class SynchronizationService implements OnModuleInit {
     const existingGroupIds = new Set(existingGroups.map((g) => g.id));
     const parsedGroupIds = new Set(Object.keys(parsed.blocks.groups));
 
-    for (const [groupId, groupData] of Object.entries(parsed.blocks.groups)) {
+    const groupEntries = Object.entries(parsed.blocks.groups);
+    const sortedGroups = this.topologicalSortGroups(groupEntries);
+
+    for (const [groupId, groupData] of sortedGroups) {
       if (existingGroupIds.has(groupId)) {
         await db
           .update(entityGroups)
@@ -452,6 +464,9 @@ export class SynchronizationService implements OnModuleInit {
     const existingEntities = await this.restService.list(workspace.id);
     const existingIds = new Set(existingEntities.map((e) => e.id));
     const processedIds = new Set<string>();
+
+    const existingGroups = await this.entityGroupService.findAll(workspace.id);
+    const validGroupIds = new Set(existingGroups.map((g) => g.id));
 
     for (const filePath of files) {
       const fileContent = await this.readYslFile(filePath);
@@ -491,6 +506,7 @@ export class SynchronizationService implements OnModuleInit {
           workspace.id,
           parsed,
           existingIds.has(entityId),
+          validGroupIds,
         );
       }
 
@@ -528,15 +544,21 @@ export class SynchronizationService implements OnModuleInit {
     workspaceId: string,
     parsed: Infer<typeof RestSchema>,
     exists: boolean,
+    validGroupIds: Set<string>,
   ) {
     const db = this.connection.getConnection();
     const { metadata, request, script, test } = parsed.blocks;
+
+    const groupId =
+      metadata.groupId && validGroupIds.has(metadata.groupId)
+        ? metadata.groupId
+        : null;
 
     const data = {
       name: metadata.name,
       method: metadata.method,
       url: request.url,
-      groupId: metadata.groupId,
+      groupId,
       requestHeaders: request.headers,
       requestParameters: request.parameters,
       searchParameters: request.searchParameters,
@@ -750,6 +772,34 @@ export class SynchronizationService implements OnModuleInit {
       .where(
         and(eq(smtp.workspaceId, workspaceId), eq(smtp.id, existingSmtp.id)),
       );
+  }
+
+  private topologicalSortGroups<
+    T extends { parentId: string | null | undefined },
+  >(entries: [string, T][]): [string, T][] {
+    const sorted: [string, T][] = [];
+    const visited = new Set<string>();
+    const idSet = new Set(entries.map(([id]) => id));
+
+    const visit = (id: string, data: T) => {
+      if (visited.has(id)) return;
+      visited.add(id);
+
+      if (data.parentId && idSet.has(data.parentId)) {
+        const parent = entries.find(([pid]) => pid === data.parentId);
+        if (parent) {
+          visit(parent[0], parent[1]);
+        }
+      }
+
+      sorted.push([id, data]);
+    };
+
+    for (const [id, data] of entries) {
+      visit(id, data);
+    }
+
+    return sorted;
   }
 
   private serializeWorkspaceContent(workspace: WorkspaceData): string {
@@ -1040,7 +1090,7 @@ export class SynchronizationService implements OnModuleInit {
     const files = await this.listYslFiles(dir);
 
     for (const filePath of files) {
-      const fileName = filePath.split('/').pop() ?? '';
+      const fileName = basename(filePath);
       const entityId = fileName.replace('.ysl', '');
 
       if (!existingIds.has(entityId)) {

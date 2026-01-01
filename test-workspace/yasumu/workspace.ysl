@@ -6,7 +6,15 @@ metadata {
   version: 0
 }
 
-snapshot 1767178401173
+snapshot 1767284400688
 
-groups {}
+groups {
+  a2961yjsxeggev70ge1utvyu: {
+    id: "a2961yjsxeggev70ge1utvyu"
+    name: "Media Test"
+    entity: rest
+    parentId: null
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+}
 

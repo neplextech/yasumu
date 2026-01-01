@@ -27,16 +27,20 @@ export class EntityGroupService {
     parentId: string | null,
   ) {
     const db = this.connection.getConnection();
-    const result = await db.query.entityGroups.findFirst({
-      where: and(
-        eq(entityGroups.name, name),
-        eq(entityGroups.workspaceId, workspaceId),
-        parentId
-          ? eq(entityGroups.parentId, parentId)
-          : isNull(entityGroups.parentId),
-      ),
-    });
-    return result;
+    const [result] = await db
+      .select()
+      .from(entityGroups)
+      .where(
+        and(
+          eq(entityGroups.name, name),
+          eq(entityGroups.workspaceId, workspaceId),
+          parentId
+            ? eq(entityGroups.parentId, parentId)
+            : isNull(entityGroups.parentId),
+        ),
+      )
+      .limit(1);
+    return result ?? null;
   }
 
   private async dispatchUpdate(workspaceId: string) {
@@ -98,9 +102,10 @@ export class EntityGroupService {
 
   public async findAll(workspaceId: string) {
     const db = this.connection.getConnection();
-    const result = await db.query.entityGroups.findMany({
-      where: eq(entityGroups.workspaceId, workspaceId),
-    });
+    const result = await db
+      .select()
+      .from(entityGroups)
+      .where(eq(entityGroups.workspaceId, workspaceId));
 
     return result;
   }

@@ -11,7 +11,7 @@ description:
 designing, testing, and debugging API workflows. Built for developer
 productivity, speed, and freedom — without vendor lock-in.
 
-<Callout type="warn" title="Beta Software">
+<Callout type="info" title="Beta Software">
   Yasumu is actively under development. You may encounter unfinished
   features, bugs, or inconsistent behavior as we rapidly prototype and
   iterate. We welcome your feedback and contributions!
@@ -27,37 +27,33 @@ collaboration and version control seamless.
 It feels like the tools you already know, but with the flexibility to
 handle complex, experimental workflows directly in your file system.
 
-### Key Features
+### What Makes It Different
 
-- **💾 Git-Native Workflows** — Save collections as human-readable
-  `.ysl` files. Version control your API tests alongside your code —
-  no more syncing conflicts.
-- **⚡ Native Performance** — Engineered with Rust and Tauri for a
-  lightweight footprint and instant startup times.
-- **🤖 Deno-Powered Scripting** — Write pre-request and automation
-  scripts using a built-in, secure TypeScript/JavaScript runtime.
-- **🌐 Universal Protocol Support** — A unified interface for REST,
-  SMTP, and (soon) WebSockets and GraphQL.
-- **🎨 Customizable Themes** — Choose from a variety of built-in color
-  themes to personalize your workspace.
-- **💻 Command Line Interface** — Execute `.ysl` files directly from
-  the terminal for automation and CI/CD workflows.
-- **🔓 Truly Open Source** — No paywalls, no "pro" features hidden
-  behind cloud subscriptions, and no mandatory login.
+Everything lives in your project folder as plain `.ysl` files. Commit
+them, diff them, review them in PRs—your API collections are just
+another part of your codebase.
+
+The app runs on Tauri with an embedded custom JavaScript runtime
+powered by Deno. This handles everything from request execution to
+scripting—write your pre-request logic in TypeScript without
+external tooling. You can also run `.ysl` files directly from the terminal
+for CI/CD integration.
+
+No account required. No cloud sync. No paid tiers.
 
 ## Protocol Support
 
 Yasumu is evolving to become a protocol-agnostic powerhouse.
 
-| Protocol               |  Status  | Notes                                     |
-| :--------------------- | :------: | :---------------------------------------- |
-| **REST API**           | ✅ Ready | Full HTTP/HTTPS request support           |
-| **Catch-all SMTP**     | ✅ Ready | Integrated local email server for testing |
-| **GraphQL**            | 🚧 Soon  | In development                            |
-| **WebSocket**          | 🚧 Soon  | In development                            |
-| **Server-Sent Events** | 🚧 Soon  | In development                            |
-| **Socket.IO**          | 🚧 Soon  | In development                            |
-| **Plugins API**        | 🚧 Soon  | In development                            |
+| Protocol               | Status | Notes                                     |
+| :--------------------- | :----: | :---------------------------------------- |
+| **REST API**           |   ✓    | Full HTTP/HTTPS request support           |
+| **Catch-all SMTP**     |   ✓    | Integrated local email server for testing |
+| **GraphQL**            |   —    | In development                            |
+| **WebSocket**          |   —    | In development                            |
+| **Server-Sent Events** |   —    | In development                            |
+| **Socket.IO**          |   —    | In development                            |
+| **Plugins API**        |   —    | In development                            |
 
 ## Concepts & Workflow
 
@@ -82,11 +78,11 @@ for readability and clean git diffs.
 - **Secure:** Sensitive secrets are managed via local environment
   variables, never committed to version control.
 
-### Hybrid Runtime
+### Runtime Architecture
 
-The core system runs on **Tauri (Rust)** for OS-level operations,
-while logic and scripting utilize a custom embedded `deno_runtime`,
-giving you a modern TypeScript environment for automation.
+Tauri provides the desktop shell and OS-level operations. The
+backend—request execution, scripting, and core logic—runs on an
+embedded custom JavaScript runtime built on `deno_runtime`.
 
 ## Quick Start
 
@@ -100,11 +96,9 @@ giving you a modern TypeScript environment for automation.
 
 ## Tech Stack
 
-Yasumu is built on a modern, performant stack:
-
 - **Frontend:** Next.js with React
-- **Desktop Shell:** Tauri (Rust)
-- **Scripting Engine:** Embedded `deno_runtime`
+- **Desktop Shell:** Tauri
+- **Backend Runtime:** Embedded custom JS runtime powered by Deno
 - **Platforms:** Windows, Linux, macOS
 
 ## Project Philosophy
