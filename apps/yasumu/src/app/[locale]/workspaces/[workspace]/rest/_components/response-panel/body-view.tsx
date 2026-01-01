@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button } from '@yasumu/ui/components/button';
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Check, Copy } from 'lucide-react';
 import type { BundledLanguage } from 'shiki/bundle/web';
 import type { RestResponse } from '../../_lib/rest-request';
@@ -26,7 +27,7 @@ function getLanguageFromContentType(contentType: string): BundledLanguage {
   if (ct.includes('yaml') || ct.includes('yml')) return 'yaml';
   if (ct.includes('graphql')) return 'graphql';
 
-  return 'text';
+  return 'md';
 }
 
 export function BodyView({ response }: BodyViewProps) {
@@ -103,13 +104,11 @@ export function BodyView({ response }: BodyViewProps) {
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </Button>
-      <HighlightedCodeBlock
-        language={language}
-        className="break-all"
-        enableScroll={true}
-      >
-        {formatted}
-      </HighlightedCodeBlock>
+      <ScrollArea className="h-full">
+        <HighlightedCodeBlock language={language} className="break-all">
+          {formatted ?? ''}
+        </HighlightedCodeBlock>
+      </ScrollArea>
     </div>
   );
 }

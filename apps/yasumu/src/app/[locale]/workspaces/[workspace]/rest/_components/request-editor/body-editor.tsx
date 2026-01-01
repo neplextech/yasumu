@@ -13,6 +13,7 @@ import KeyValueTable, {
 import FormDataTable, {
   FormDataPair,
 } from '@/components/tables/form-data-table';
+import { TextEditor } from '@/components/editors/text-editor';
 import { ChangeEvent, useEffect, useState } from 'react';
 import useDebounced from '@/hooks/use-debounced';
 import { FileText, File as FileIcon } from 'lucide-react';
@@ -97,6 +98,11 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
     debouncedOnChange(newVal);
   };
 
+  const handleJsonChange = (value: string) => {
+    setLocalData(value);
+    debouncedOnChange(value);
+  };
+
   const handleFormDataChange = (pairs: FormDataPair[]) => {
     setLocalData(pairs);
     debouncedOnChange(pairs);
@@ -144,12 +150,12 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
 
       <div className="flex-1 min-h-0 relative overflow-y-auto border rounded-md bg-muted/5">
         {currentType === 'json' && (
-          <Textarea
-            placeholder="Enter JSON body..."
+          <TextEditor
             value={typeof localData === 'string' ? localData : ''}
-            onChange={handleTextChange}
-            className="font-mono h-full resize-none border-0 focus-visible:ring-0 p-4"
-            spellCheck={false}
+            onChange={handleJsonChange}
+            language="json"
+            placeholder="Enter JSON body..."
+            className="h-full border-0 rounded-none"
           />
         )}
 

@@ -102,7 +102,7 @@ export function RestResponsePanel({
         </div>
 
         <TabsContent value="response" className="flex-1 min-h-0">
-          <Tabs defaultValue="body">
+          <Tabs defaultValue="body" className="flex flex-col h-full">
             <div className="px-1 flex-shrink-0 border-b">
               <TabsList className="bg-transparent w-full justify-start gap-1">
                 <TabsTrigger value="body">Body</TabsTrigger>

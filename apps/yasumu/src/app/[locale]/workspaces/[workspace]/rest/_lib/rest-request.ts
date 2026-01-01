@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/plugin-http';
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import type {
   RestEntityData,
   RestEntityRequestBody,
@@ -189,7 +189,10 @@ export async function executeRestRequest(
   }
 
   try {
-    const headers = new Headers({ 'user-agent': 'Yasumu/1.0' });
+    const headers = new Headers({
+      'user-agent': 'Yasumu/1.0',
+      origin: 'http://localhost',
+    });
 
     for (const header of entity.requestHeaders || []) {
       if (header.enabled && header.key) {
@@ -207,7 +210,7 @@ export async function executeRestRequest(
     );
 
     const start = performance.now();
-    const response = await fetch(url, {
+    const response = await tauriFetch(url, {
       method: entity.method,
       headers,
       body,
