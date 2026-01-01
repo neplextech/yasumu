@@ -8,7 +8,7 @@ export default function HighlightedCodeBlock({
   children,
   language,
   className,
-  enableScroll = true,
+  enableScroll = false,
 }: {
   children: string;
   language: BundledLanguage;
@@ -21,7 +21,7 @@ export default function HighlightedCodeBlock({
     void highlight(children, language).then(setNodes).catch(console.error);
   }, [children, language]);
 
-  const scrollClass = enableScroll ? 'overflow-x-auto' : '';
+  const scrollClass = enableScroll ? 'overflow-auto' : '';
 
   if (!nodes)
     return (
