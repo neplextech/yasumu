@@ -1,0 +1,79 @@
+---
+title: Analytics & Privacy
+description:
+  Learn how Yasumu collects anonymous usage data and how to opt out.
+---
+
+# Analytics & Privacy
+
+Yasumu collects anonymous usage analytics to help improve the
+application. This page explains what data is collected, how it's used,
+and how you can opt out.
+
+## Why We Collect Analytics
+
+Analytics help the Yasumu team:
+
+- **Identify issues** — Understand which features are causing problems
+  or confusion
+- **Prioritize development** — Focus on features that users actually
+  use
+- **Improve user experience** — Make data-driven decisions about UI/UX
+  improvements
+- **Track stability** — Monitor crash rates and performance across
+  different platforms
+
+## What We Collect
+
+Yasumu uses [PostHog](https://posthog.com) for analytics. The data
+collected is **anonymous** and includes:
+
+- **Feature usage** — Which features are used and how often
+- **Navigation patterns** — How users move through the application
+- **Performance metrics** — Load times and responsiveness
+- **Error events** — When something goes wrong (without personal
+  details)
+- **Platform information** — Operating system and app version
+
+### What We Don't Collect
+
+Yasumu **never** collects:
+
+- Personal information (name, email, etc.)
+- Request or response contents
+- API keys, tokens, or credentials
+- File contents from your workspace
+- Environment variable values
+- Any data that could identify you or your projects
+
+## Opting Out
+
+Analytics are enabled by default, but you can easily opt out:
+
+1. Open **Settings** from the sidebar
+2. Find the **Privacy** section
+3. Toggle off **Usage Analytics**
+4. Restart Yasumu for changes to take effect
+
+Once disabled, no analytics data will be collected or sent.
+
+## Data Handling
+
+- Analytics data is processed by PostHog's infrastructure
+- Data is retained according to PostHog's data retention policies
+- No data is sold to third parties
+- Yasumu is open source — you can verify exactly what data is
+  collected by reviewing the source code
+
+## Open Source Transparency
+
+Yasumu is fully open source. You can review the analytics
+implementation yourself:
+
+- [Instrumentation setup](https://github.com/neplextech/yasumu) — See
+  exactly how PostHog is initialized
+- [Analytics flag](https://github.com/neplextech/yasumu) — See how the
+  opt-out preference is stored and checked
+
+If you have concerns about privacy or data collection, feel free to
+open an issue on GitHub.

@@ -228,12 +228,12 @@ function SettingsDropdown({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             {/* @ts-ignore */}
-            {/* <Link href="/en/settings">
+            <Link href="/en/settings">
               <DropdownMenuItem>
                 <Settings />
                 Settings
               </DropdownMenuItem>
-            </Link> */}
+            </Link>
             <SidebarThemeSelector />
             <SidebarLayoutStyleSelector />
             <KeyboardShortcutsDialog />
