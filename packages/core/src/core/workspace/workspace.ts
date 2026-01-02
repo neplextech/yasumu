@@ -3,6 +3,7 @@ import { WorkspaceManager } from '../manager/workspace-manager.js';
 import { EmailModule } from '../modules/email/email.js';
 import { RestModule } from '../modules/rest/rest.js';
 import type { WorkspaceData } from '@yasumu/common';
+import { ExternalWorkspaceProvider } from './external-workspace-provider.js';
 
 /**
  * Represents a Yasumu workspace.
@@ -24,7 +25,10 @@ export class Workspace {
    * The email module for the workspace.
    */
   public readonly emails = new EmailModule(this);
-
+  /**
+   * The external workspace provider for the workspace.
+   */
+  public readonly external = new ExternalWorkspaceProvider(this);
   /**
    * Creates a new workspace.
    * @param manager The manager that owns this workspace.

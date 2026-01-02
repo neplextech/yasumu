@@ -21,18 +21,21 @@ import { useQuery } from '@tanstack/react-query';
 import { DEFAULT_WORKSPACE_PATH } from '@yasumu/tanxium/src/rpc/common/constants';
 import { Loader2 } from 'lucide-react';
 // import { FaJava } from 'react-icons/fa';
-// import {
-//   SiGo,
-//   SiInsomnia,
-//   SiJavascript,
-//   SiOpenapiinitiative,
-//   SiPostman,
-//   SiPython,
-//   SiTypescript,
-// } from 'react-icons/si';
+import {
+  //   SiGo,
+  //   SiInsomnia,
+  //   SiJavascript,
+  //   SiOpenapiinitiative,
+  SiPostman,
+  //   SiPython,
+  //   SiTypescript,
+} from 'react-icons/si';
+import { useState } from 'react';
+import PostmanImportDialog from '../dialogs/postman-import-dialog';
 
 export function AppMenu() {
   const { yasumu } = useYasumu();
+  const [postmanImportDialog, setPostmanImportDialog] = useState(false);
 
   const { data: recentWorkspaces, isLoading } = useQuery({
     queryKey: ['recent-workspaces'],
@@ -72,84 +75,95 @@ export function AppMenu() {
       window.location.reload();
     });
 
+  const onImportFromPostman = () => {
+    setPostmanImportDialog(true);
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[#272a37] text-sidebar-primary-foreground">
-            <YasumuLogo className="size-4" />
-          </div>
-        </SidebarMenuButton>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Workspace</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={handleOpenWorkspace}>
-            New Workspace
-          </DropdownMenuItem>
-          {/* <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Import Workspace</DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem>
-                  <YasumuLogo />
-                  Standalone Format
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <SiPostman className="fill-[#ff6c37]" />
-                  Import from Postman
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+    <>
+      <PostmanImportDialog
+        open={postmanImportDialog}
+        onOpenChange={(open) => {
+          setPostmanImportDialog(open);
+
+          if (!open) {
+            window.location.reload();
+          }
+        }}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[#272a37] text-sidebar-primary-foreground">
+              <YasumuLogo className="size-4" />
+            </div>
+          </SidebarMenuButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>Workspace</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={handleOpenWorkspace}>
+              New Workspace
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Import Workspace</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={onImportFromPostman}>
+                    <SiPostman className="fill-[#ff6c37]" />
+                    Import from Postman
+                  </DropdownMenuItem>
+                  {/* <DropdownMenuItem>
                   <SiInsomnia className="fill-[#5849be]" />
                   Import from Insomnia
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <SiOpenapiinitiative className="fill-[#94c83d]" />
                   Import from OpenAPI
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+            {/* <DropdownMenuItem>Rename Workspace</DropdownMenuItem> */}
+          </DropdownMenuGroup>
+          {/* <DropdownMenuSeparator /> */}
+          <DropdownMenuItem onClick={handleOpenWorkspace}>
+            Open Workspace
+          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>Open Recent</DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="min-w-[200px]">
+                {isLoading ? (
+                  <DropdownMenuItem disabled>
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                    Loading...
+                  </DropdownMenuItem>
+                ) : !recentWorkspaces?.length ? (
+                  <DropdownMenuItem disabled>No recent data!</DropdownMenuItem>
+                ) : (
+                  recentWorkspaces.map((workspace) => (
+                    <DropdownMenuItem
+                      key={workspace.id}
+                      onClick={handleOpenRecentWorkspace(workspace.id)}
+                      className="flex flex-col items-start gap-0.5"
+                    >
+                      <span className="font-medium">{workspace.name}</span>
+                      <span className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
+                        {workspace.path === DEFAULT_WORKSPACE_PATH
+                          ? 'Default Workspace'
+                          : workspace.path}
+                      </span>
+                    </DropdownMenuItem>
+                  ))
+                )}
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
-          </DropdownMenuSub> */}
-          {/* <DropdownMenuItem>Rename Workspace</DropdownMenuItem> */}
-        </DropdownMenuGroup>
-        {/* <DropdownMenuSeparator /> */}
-        <DropdownMenuItem onClick={handleOpenWorkspace}>
-          Open Workspace
-        </DropdownMenuItem>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>Open Recent</DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent className="min-w-[200px]">
-              {isLoading ? (
-                <DropdownMenuItem disabled>
-                  <Loader2 className="size-4 animate-spin mr-2" />
-                  Loading...
-                </DropdownMenuItem>
-              ) : !recentWorkspaces?.length ? (
-                <DropdownMenuItem disabled>No recent data!</DropdownMenuItem>
-              ) : (
-                recentWorkspaces.map((workspace) => (
-                  <DropdownMenuItem
-                    key={workspace.id}
-                    onClick={handleOpenRecentWorkspace(workspace.id)}
-                    className="flex flex-col items-start gap-0.5"
-                  >
-                    <span className="font-medium">{workspace.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
-                      {workspace.path === DEFAULT_WORKSPACE_PATH
-                        ? 'Default Workspace'
-                        : workspace.path}
-                    </span>
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-        {/* <DropdownMenuSeparator /> */}
-        {/* <DropdownMenuItem>Duplicate Workspace</DropdownMenuItem> */}
-        {/* <DropdownMenuSub>
+          </DropdownMenuSub>
+          {/* <DropdownMenuSeparator /> */}
+          {/* <DropdownMenuItem>Duplicate Workspace</DropdownMenuItem> */}
+          {/* <DropdownMenuSub>
           <DropdownMenuSubTrigger>Export Workspace</DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent>
@@ -172,7 +186,7 @@ export function AppMenu() {
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub> */}
-        {/* <DropdownMenuSub>
+          {/* <DropdownMenuSub>
           <DropdownMenuSubTrigger>Generate</DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent>
@@ -218,9 +232,9 @@ export function AppMenu() {
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub> */}
-        <DropdownMenuSeparator />
-        {/* <DropdownMenuItem>Auto Save</DropdownMenuItem> */}
-        {/* <DropdownMenuSub>
+          <DropdownMenuSeparator />
+          {/* <DropdownMenuItem>Auto Save</DropdownMenuItem> */}
+          {/* <DropdownMenuSub>
           <DropdownMenuSubTrigger>Tasks</DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent>
@@ -259,7 +273,8 @@ export function AppMenu() {
         </DropdownMenuSub>
         <DropdownMenuItem>Manage Dependencies</DropdownMenuItem>
         <DropdownMenuItem>View Documentation</DropdownMenuItem> */}
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

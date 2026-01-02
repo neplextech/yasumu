@@ -7,6 +7,7 @@ import { SynchronizationModule } from './synchronization/synchronization.module.
 import { ScriptRuntimeModule } from './script-runtime/script-runtime.module.ts';
 import { EnvironmentModule } from './environment/environment.module.ts';
 import { EmailModule } from './email/email.module.ts';
+import { ExternalWorkspaceModule } from './external-workspace/external-workspace.module.ts';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EmailModule } from './email/email.module.ts';
     ScriptRuntimeModule,
     EnvironmentModule,
     EmailModule,
+    ExternalWorkspaceModule,
   ],
 })
 export class AppModule {}

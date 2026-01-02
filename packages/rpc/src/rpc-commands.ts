@@ -24,6 +24,8 @@ import type {
   ScriptExecutionResult,
   RestScriptContext,
   EntityGroupUpdateOptions,
+  ExternalWorkspaceImportOptions,
+  ExternalWorkspaceExportOptions,
 } from '@yasumu/common';
 
 type ExecuteScriptCommand<Context> = RpcMutation<
@@ -226,6 +228,19 @@ export interface YasumuRPC {
      * @param id The ID of the environment to delete.
      */
     delete: RpcMutation<[id: string], void>;
+  };
+  /**
+   * The external workspace commands.
+   */
+  externalWorkspace: {
+    /**
+     * Import a workspace command.
+     */
+    import: RpcMutation<[options: ExternalWorkspaceImportOptions], boolean>;
+    /**
+     * Export a workspace command.
+     */
+    export: RpcMutation<[options: ExternalWorkspaceExportOptions], string>;
   };
 }
 
