@@ -8,12 +8,14 @@ interface HighlightedCodeBlockProps {
   children: string;
   language: BundledLanguage;
   className?: string;
+  codeClassName?: string;
 }
 
 export default function HighlightedCodeBlock({
   children,
   language,
   className,
+  codeClassName,
 }: HighlightedCodeBlockProps) {
   const [nodes, setNodes] = useState<React.ReactNode>(null);
 
@@ -24,7 +26,12 @@ export default function HighlightedCodeBlock({
   if (!nodes) {
     return (
       <pre className={cn('p-4 text-sm', className)}>
-        <code className="text-foreground font-mono text-xs leading-relaxed whitespace-pre">
+        <code
+          className={cn(
+            'text-foreground font-mono text-xs leading-relaxed whitespace-pre',
+            codeClassName,
+          )}
+        >
           {children}
         </code>
       </pre>

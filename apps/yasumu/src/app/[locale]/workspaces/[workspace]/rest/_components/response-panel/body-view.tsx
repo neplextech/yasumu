@@ -105,7 +105,11 @@ export function BodyView({ response }: BodyViewProps) {
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </Button>
       <ScrollArea className="h-full">
-        <HighlightedCodeBlock language={language} className="break-all">
+        <HighlightedCodeBlock
+          language={language}
+          className="break-all"
+          codeClassName="break-all"
+        >
           {formatted ?? ''}
         </HighlightedCodeBlock>
       </ScrollArea>

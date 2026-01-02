@@ -196,3 +196,8 @@
 .shiki {
   background-color: var(--background) !important;
 }
+
+code > span {
+  word-break: break-all !important;
+  white-space: pre-wrap !important;
+}
