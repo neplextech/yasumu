@@ -1,0 +1,42 @@
+---
+title: Import from Postman
+description: Migrate your Postman collections to Yasumu.
+---
+
+# Import from Postman
+
+Yasumu supports importing Postman collections, allowing you to migrate
+your existing API definitions quickly.
+
+<Callout type="info" title="Important Note">
+  You need to create/open a Yasumu Workspace first before importing
+  from Postman. Workspaces are just directories that Yasumu uses to
+  store its entities. See [Workspaces](/docs/workspaces) for more
+  information.
+</Callout>
+
+## How to Import
+
+1. Click on **Workspace** in the sidebar menu
+2. Select **Import Workspace** → **Import from Postman**
+
+![Import from Postman Menu](/import-from-postman-menu.png)
+
+3. In the import dialog, either:
+   - **Drop a file** — Drag and drop your Postman collection JSON file
+   - **Browse** — Click to select a file from your system
+   - **Paste JSON** — Paste the collection JSON content directly
+
+![Import from Postman Dialog](/import-from-postman-dialog.png)
+
+4. Click **Import** to complete the migration
+
+## Supported Formats
+
+Yasumu accepts Postman Collection v2.1 JSON exports. To export from
+Postman:
+
+1. Right-click on a collection in Postman
+2. Select **Export**
+3. Choose **Collection v2.1** format
+4. Save the JSON file
