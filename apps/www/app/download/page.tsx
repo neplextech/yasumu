@@ -1,12 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { BackgroundGrid } from '../../components/background-grid';
 import { FaApple, FaBoxArchive, FaTerminal, FaWindows } from 'react-icons/fa6';
 import { VscTerminalLinux } from 'react-icons/vsc';
 import { DownloadCard } from './download-card';
-import { useGitHubReleases } from './use-github-releases';
+import {
+  useGitHubReleases,
+  type ReleaseChannel,
+  type DownloadAssets,
+} from './use-github-releases';
 import { BsGithub } from 'react-icons/bs';
 import { Button } from '@yasumu/ui/components/button';
+import clsx from 'clsx';
 
 function DownloadSkeleton() {
   return (
@@ -73,23 +79,183 @@ function ErrorState() {
   );
 }
 
-export default function Download() {
-  const { assets, loading, error } = useGitHubReleases();
+interface ChannelTabProps {
+  channel: ReleaseChannel;
+  activeChannel: ReleaseChannel;
+  onClick: () => void;
+  tagName?: string;
+  disabled?: boolean;
+}
 
-  const hasAnyAssets =
-    assets &&
-    (assets.macOS.length > 0 ||
-      assets.windows.length > 0 ||
-      assets.linux.length > 0);
+function ChannelTab({
+  channel,
+  activeChannel,
+  onClick,
+  tagName,
+  disabled,
+}: ChannelTabProps) {
+  const isActive = channel === activeChannel;
+  const isStable = channel === 'stable';
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        'relative px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 cursor-pointer',
+        'flex items-center gap-2',
+        isActive
+          ? 'bg-white/10 text-white border border-white/20'
+          : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent',
+        disabled && 'opacity-50 cursor-not-allowed',
+      )}
+    >
+      <span className="capitalize">{channel}</span>
+      {tagName && isStable && (
+        <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400">
+          {tagName}
+        </span>
+      )}
+    </button>
+  );
+}
+
+interface DownloadSectionProps {
+  assets: DownloadAssets;
+}
+
+function DownloadSection({ assets }: DownloadSectionProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <DownloadCard
+        os="macOS"
+        icon={<FaApple />}
+        description="Requires macOS 11.0 or later."
+        options={assets.macOS.map((asset) => ({
+          label: asset.label,
+          note: asset.note,
+          size: asset.size,
+          url: asset.browser_download_url,
+        }))}
+      />
+
+      <DownloadCard
+        os="Windows"
+        icon={<FaWindows />}
+        description="Requires Windows 10 or later."
+        options={assets.windows.map((asset) => ({
+          label: asset.label,
+          note: asset.note,
+          size: asset.size,
+          url: asset.browser_download_url,
+        }))}
+      />
+
+      <DownloadCard
+        os="Linux"
+        icon={<VscTerminalLinux />}
+        description="Works on most major distributions."
+        options={assets.linux.map((asset) => ({
+          label: asset.label,
+          note: asset.note,
+          size: asset.size,
+          url: asset.browser_download_url,
+        }))}
+      />
+    </div>
+  );
+}
+
+interface ChecksumSectionProps {
+  assets: DownloadAssets;
+}
+
+function ChecksumSection({ assets }: ChecksumSectionProps) {
+  const allAssets = [...assets.macOS, ...assets.windows, ...assets.linux];
+
+  if (allAssets.length === 0) return null;
+
+  return (
+    <div className="mt-20 max-w-4xl mx-auto bg-black/30 border border-white/5 rounded-xl p-8">
+      <h3 className="text-lg font-semibold text-white mb-4">
+        SHA256 Checksums{assets.tagName && ` — ${assets.tagName}`}
+      </h3>
+      <p className="text-sm text-text-secondary mb-6">
+        Verify your download by comparing the checksum below. You can also view{' '}
+        <a
+          href="https://github.com/neplextech/yasumu/releases"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 underline"
+        >
+          all releases on GitHub
+        </a>{' '}
+        for previous versions.
+      </p>
+      <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-xs text-gray-400 overflow-x-auto space-y-1.5">
+        {allAssets.map((asset) => (
+          <div key={asset.name} className="flex gap-2">
+            <span className="text-gray-500 shrink-0">{asset.sha256}</span>
+            <a
+              href={asset.browser_download_url}
+              className="text-gray-300 hover:text-blue-400 transition-colors"
+            >
+              {asset.name}
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function Download() {
+  const { releases, loading, error } = useGitHubReleases();
+  const [activeChannel, setActiveChannel] = useState<ReleaseChannel>('stable');
+
+  const hasStable = releases.stable !== null;
+  const hasCanary = releases.canary !== null;
+  const hasAnyReleases = hasStable || hasCanary;
+
+  const effectiveChannel: ReleaseChannel =
+    activeChannel === 'stable' && !hasStable && hasCanary
+      ? 'canary'
+      : activeChannel === 'canary' && !hasCanary && hasStable
+        ? 'stable'
+        : activeChannel;
+
+  const currentAssets = releases[effectiveChannel];
+
+  const hasCurrentAssets =
+    currentAssets &&
+    (currentAssets.macOS.length > 0 ||
+      currentAssets.windows.length > 0 ||
+      currentAssets.linux.length > 0);
 
   return (
     <div className="animate-fade-in pt-32 pb-20">
       <BackgroundGrid />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm cursor-default">
-            <span className="text-xs font-mono font-medium text-gray-400">
-              Public Beta
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div
+            className={clsx(
+              'inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-8 backdrop-blur-sm cursor-default',
+              effectiveChannel === 'canary'
+                ? 'bg-amber-500/10 border-amber-500/20'
+                : 'bg-white/5 border-white/10',
+            )}
+          >
+            <span
+              className={clsx(
+                'text-xs font-mono font-medium',
+                effectiveChannel === 'canary'
+                  ? 'text-amber-400'
+                  : 'text-gray-400',
+              )}
+            >
+              {effectiveChannel === 'canary' && releases.canary?.tagName
+                ? releases.canary.tagName
+                : 'Public Beta'}
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-white">
@@ -102,92 +268,55 @@ export default function Download() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {loading ? (
-            <>
-              <DownloadSkeleton />
-              <DownloadSkeleton />
-              <DownloadSkeleton />
-            </>
-          ) : error || !hasAnyAssets ? (
-            <ErrorState />
-          ) : (
-            <>
-              <DownloadCard
-                os="macOS"
-                icon={<FaApple />}
-                description="Requires macOS 11.0 or later."
-                options={assets.macOS.map((asset) => ({
-                  label: asset.label,
-                  note: asset.note,
-                  size: asset.size,
-                  url: asset.browser_download_url,
-                }))}
+        {!loading && hasAnyReleases && (
+          <div className="flex justify-center mb-12">
+            <div className="inline-flex items-center gap-2 p-1.5 rounded-xl bg-black/40 border border-white/10 backdrop-blur-sm">
+              <ChannelTab
+                channel="stable"
+                activeChannel={effectiveChannel}
+                onClick={() => setActiveChannel('stable')}
+                tagName={releases.stable?.tagName}
+                disabled={!hasStable}
               />
-
-              <DownloadCard
-                os="Windows"
-                icon={<FaWindows />}
-                description="Requires Windows 10 or later."
-                options={assets.windows.map((asset) => ({
-                  label: asset.label,
-                  note: asset.note,
-                  size: asset.size,
-                  url: asset.browser_download_url,
-                }))}
+              <ChannelTab
+                channel="canary"
+                activeChannel={effectiveChannel}
+                onClick={() => setActiveChannel('canary')}
+                tagName={releases.canary?.tagName}
+                disabled={!hasCanary}
               />
-
-              <DownloadCard
-                os="Linux"
-                icon={<VscTerminalLinux />}
-                description="Works on most major distributions."
-                options={assets.linux.map((asset) => ({
-                  label: asset.label,
-                  note: asset.note,
-                  size: asset.size,
-                  url: asset.browser_download_url,
-                }))}
-              />
-            </>
-          )}
-        </div>
-
-        {hasAnyAssets && assets && (
-          <div className="mt-20 max-w-4xl mx-auto bg-black/30 border border-white/5 rounded-xl p-8">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              SHA256 Checksums{assets.tagName && ` — ${assets.tagName}`}
-            </h3>
-            <p className="text-sm text-text-secondary mb-6">
-              Verify your download by comparing the checksum below. You can also
-              view{' '}
-              <a
-                href="https://github.com/neplextech/yasumu/releases"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                all releases on GitHub
-              </a>{' '}
-              for previous versions.
-            </p>
-            <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-xs text-gray-400 overflow-x-auto space-y-1.5">
-              {[...assets.macOS, ...assets.windows, ...assets.linux].map(
-                (asset) => (
-                  <div key={asset.name} className="flex gap-2">
-                    <span className="text-gray-500 shrink-0">
-                      {asset.sha256}
-                    </span>
-                    <a
-                      href={asset.browser_download_url}
-                      className="text-gray-300 hover:text-blue-400 transition-colors"
-                    >
-                      {asset.name}
-                    </a>
-                  </div>
-                ),
-              )}
             </div>
           </div>
+        )}
+
+        {effectiveChannel === 'canary' && hasCanary && (
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-sm text-amber-200/90">
+              <strong className="font-semibold text-amber-400">
+                Canary builds
+              </strong>{' '}
+              are experimental and may contain bugs or incomplete features.
+              These builds are updated frequently and are intended for testing
+              new functionality.
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <DownloadSkeleton />
+            <DownloadSkeleton />
+            <DownloadSkeleton />
+          </div>
+        ) : error || !hasCurrentAssets ? (
+          <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto">
+            <ErrorState />
+          </div>
+        ) : (
+          <>
+            <DownloadSection assets={currentAssets} />
+            <ChecksumSection assets={currentAssets} />
+          </>
         )}
       </div>
     </div>

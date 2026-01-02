@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 
-const GITHUB_API_URL =
-  'https://api.github.com/repos/neplextech/yasumu/releases/latest';
-const CACHE_KEY = 'yasumu_github_releases';
-const CACHE_DURATION = 1000 * 60 * 15; // 15 minutes
+const GITHUB_RELEASES_URL =
+  'https://api.github.com/repos/neplextech/yasumu/releases';
+const CACHE_KEY = 'yasumu_github_releases_v2';
+const CACHE_DURATION = 1000 * 60 * 15;
 
 interface GitHubAsset {
   name: string;
@@ -14,10 +14,16 @@ interface GitHubAsset {
   digest: string;
 }
 
-interface CachedData {
-  assets: GitHubAsset[];
-  timestamp: number;
+interface GitHubRelease {
   tag_name: string;
+  assets: GitHubAsset[];
+  prerelease: boolean;
+  draft: boolean;
+}
+
+interface CachedData {
+  releases: GitHubRelease[];
+  timestamp: number;
 }
 
 type Architecture = 'x64' | 'arm64' | 'x86' | 'universal' | 'unknown';
@@ -34,6 +40,13 @@ export interface DownloadAssets {
   windows: DownloadAsset[];
   linux: DownloadAsset[];
   tagName: string;
+}
+
+export type ReleaseChannel = 'stable' | 'canary';
+
+export interface ChannelReleases {
+  stable: DownloadAssets | null;
+  canary: DownloadAssets | null;
 }
 
 const ARCH_PATTERNS: { pattern: RegExp; arch: Architecture }[] = [
@@ -65,6 +78,10 @@ function getArchLabel(arch: Architecture): string {
     default:
       return '';
   }
+}
+
+function isCanaryRelease(tagName: string): boolean {
+  return tagName.toLowerCase().includes('canary');
 }
 
 function categorizeAssets(
@@ -160,8 +177,44 @@ function categorizeAssets(
   return result;
 }
 
+function processReleases(releases: GitHubRelease[]): ChannelReleases {
+  const result: ChannelReleases = {
+    stable: null,
+    canary: null,
+  };
+
+  for (const release of releases) {
+    if (release.draft) continue;
+
+    const isCanary = isCanaryRelease(release.tag_name);
+    const channel = isCanary ? 'canary' : 'stable';
+
+    if (result[channel] === null) {
+      const categorized = categorizeAssets(release.assets);
+      const hasAssets =
+        categorized.macOS.length > 0 ||
+        categorized.windows.length > 0 ||
+        categorized.linux.length > 0;
+
+      if (hasAssets) {
+        result[channel] = {
+          ...categorized,
+          tagName: release.tag_name,
+        };
+      }
+    }
+
+    if (result.stable && result.canary) break;
+  }
+
+  return result;
+}
+
 export function useGitHubReleases() {
-  const [assets, setAssets] = useState<DownloadAssets | null>(null);
+  const [releases, setReleases] = useState<ChannelReleases>({
+    stable: null,
+    canary: null,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -178,14 +231,13 @@ export function useGitHubReleases() {
             }
           })();
           if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION) {
-            const categorized = categorizeAssets(parsed.assets);
-            setAssets({ ...categorized, tagName: parsed.tag_name });
+            setReleases(processReleases(parsed.releases));
             setLoading(false);
             return;
           }
         }
 
-        const response = await fetch(GITHUB_API_URL, {
+        const response = await fetch(`${GITHUB_RELEASES_URL}?per_page=20`, {
           headers: {
             Accept: 'application/vnd.github.v3+json',
           },
@@ -200,19 +252,15 @@ export function useGitHubReleases() {
           throw new Error(`Failed to fetch releases: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        const releaseAssets: GitHubAsset[] = data.assets || [];
-        const tagName: string = data.tag_name || '';
+        const data: GitHubRelease[] = await response.json();
 
         const cacheData: CachedData = {
-          assets: releaseAssets,
+          releases: data,
           timestamp: Date.now(),
-          tag_name: tagName,
         };
         localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
 
-        const categorized = categorizeAssets(releaseAssets);
-        setAssets({ ...categorized, tagName });
+        setReleases(processReleases(data));
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to fetch releases',
@@ -225,5 +273,5 @@ export function useGitHubReleases() {
     fetchReleases();
   }, []);
 
-  return { assets, loading, error };
+  return { releases, loading, error };
 }

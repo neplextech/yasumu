@@ -42,6 +42,7 @@ export function useTanxiumEvent() {
                 title: string;
                 message: string;
                 variant?: 'default' | 'success' | 'warning' | 'info' | 'error';
+                link?: string;
               };
 
               switch (notificationData.variant) {

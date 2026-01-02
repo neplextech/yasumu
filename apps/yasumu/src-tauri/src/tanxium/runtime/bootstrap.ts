@@ -136,6 +136,7 @@ class Yasumu {
 
     return _appDataDir;
   }
+
   /**
    * Get the server entrypoint
    * @returns The server entrypoint
@@ -143,6 +144,7 @@ class Yasumu {
   public static getServerEntrypoint() {
     return join(Yasumu.getResourcesDir(), 'yasumu-scripts', 'yasumu-server');
   }
+
   /**
    * Check if the Yasumu runtime is ready
    * @returns True if the Yasumu runtime is ready, false otherwise
@@ -150,6 +152,7 @@ class Yasumu {
   public static isReady() {
     return op_is_yasumu_ready();
   }
+
   /**
    * Set the RPC port
    * @param port The port to set
@@ -186,6 +189,7 @@ class Yasumu {
       readyListeners.delete(listener);
     };
   }
+
   /**
    * Register a listener for events from the renderer
    * @param listener The listener to register

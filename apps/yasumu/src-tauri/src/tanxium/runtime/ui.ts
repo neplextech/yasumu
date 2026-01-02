@@ -13,6 +13,10 @@ export interface CreateYasumuNotification {
    * The variant of the notification
    */
   variant?: 'default' | 'success' | 'warning' | 'info' | 'error';
+  /**
+   * The link to open when the notification is clicked
+   */
+  link?: string;
 }
 
 /**
