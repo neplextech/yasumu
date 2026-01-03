@@ -1,12 +1,20 @@
 @workspace
 
 metadata {
-  id: "i99kqik6efcgqiqlmogg1hfn"
+  id: "v753h51r3e10zzcg5rkel8mv"
   name: "test-workspace"
   version: 0
 }
 
-snapshot 1767428706819
+snapshot 1767455457548
 
-groups {}
+groups {
+  a2961yjsxeggev70ge1utvyu: {
+    id: "a2961yjsxeggev70ge1utvyu"
+    name: "Media Test"
+    entity: rest
+    parentId: null
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+}
 
