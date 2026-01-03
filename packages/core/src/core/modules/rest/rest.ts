@@ -4,6 +4,7 @@ import type {
   EntityGroupCreateOptions,
   EntityGroupData,
   EntityGroupUpdateOptions,
+  EntityHistoryData,
   RestEntityCreateOptions,
   RestEntityData,
   RestEntityUpdateOptions,
@@ -113,5 +114,28 @@ export class RestModule {
       });
 
     return result;
+  }
+
+  public async listHistory(): Promise<EntityHistoryData[]> {
+    const data = await this.workspace.manager.yasumu.rpc.entityHistory.list.$query({
+      parameters: [{ entityType: 'rest'
+       }],
+    });
+
+    return data;
+  }
+
+  public async upsertHistory(entityId: string): Promise<EntityHistoryData> {
+    const data = await this.workspace.manager.yasumu.rpc.entityHistory.upsert.$mutate({
+      parameters: [{ entityId, entityType: 'rest' }],
+    });
+
+    return data;
+  }
+
+  public async deleteHistory(entityId: string): Promise<void> {
+    await this.workspace.manager.yasumu.rpc.entityHistory.deleteByEntityId.$mutate({
+      parameters: [entityId],
+    });
   }
 }

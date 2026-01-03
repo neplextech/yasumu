@@ -3,6 +3,7 @@
 
 /* Tables */
 export * from './schema/tables/entity-group.ts';
+export * from './schema/tables/entity-history.ts';
 export * from './schema/tables/environments.ts';
 export * from './schema/tables/rest-entity.ts';
 export * from './schema/tables/smtp.ts';
@@ -10,6 +11,7 @@ export * from './schema/tables/workspaces.ts';
 
 /* Relations */
 export * from './schema/relations/entity-group.ts';
+export * from './schema/relations/entity-history.ts';
 export * from './schema/relations/environments.ts';
 export * from './schema/relations/rest-entity.ts';
 export * from './schema/relations/smtp.ts';

@@ -17,7 +17,7 @@ export function RestFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
-  const { setEntityId } = useRestContext();
+  const { setEntityId, removeFromHistory } = useRestContext();
 
   const {
     data: restEntities,
@@ -80,9 +80,10 @@ export function RestFileTree() {
       fileTree={fileTree}
       className="font-sans w-full"
       collapsible="none"
-      onFileSelect={(id: string) => {
+      onFileSelect={withErrorHandler(async (id: string) => {
         setEntityId(id);
-      }}
+        await workspace.rest.upsertHistory(id);
+      })}
       onFileCreate={withErrorHandler(
         async (name: string, parentId?: string | null) => {
           await workspace.rest.create({
@@ -105,6 +106,7 @@ export function RestFileTree() {
       )}
       onFileDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.delete(id);
+        removeFromHistory(id);
       })}
       onFolderDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.deleteEntityGroup(id);

@@ -26,6 +26,9 @@ import type {
   EntityGroupUpdateOptions,
   ExternalWorkspaceImportOptions,
   ExternalWorkspaceExportOptions,
+  EntityHistoryData,
+  EntityHistoryCreateOptions,
+  EntityHistoryListOptions,
 } from '@yasumu/common';
 
 type ExecuteScriptCommand<Context> = RpcMutation<
@@ -241,6 +244,41 @@ export interface YasumuRPC {
      * Export a workspace command.
      */
     export: RpcMutation<[options: ExternalWorkspaceExportOptions], string>;
+  };
+  /**
+   * The entity history commands.
+   */
+  entityHistory: {
+    /**
+     * Record or update an entity history entry.
+     * @param data The data for the history entry.
+     */
+    upsert: RpcMutation<[data: EntityHistoryCreateOptions], EntityHistoryData>;
+    /**
+     * Get a history entry by ID.
+     * @param id The ID of the history entry.
+     */
+    get: RpcQuery<[id: string], EntityHistoryData | null>;
+    /**
+     * List history entries for the workspace.
+     * @param options The listing options.
+     */
+    list: RpcQuery<[options?: EntityHistoryListOptions], EntityHistoryData[]>;
+    /**
+     * Delete a history entry by ID.
+     * @param id The ID of the history entry.
+     */
+    delete: RpcMutation<[id: string], void>;
+    /**
+     * Delete a history entry by entity ID.
+     * @param entityId The ID of the entity.
+     */
+    deleteByEntityId: RpcMutation<[entityId: string], void>;
+    /**
+     * Clear all history for the workspace.
+     * @param entityType Optional entity type to filter by.
+     */
+    clear: RpcMutation<[entityType?: string], void>;
   };
 }
 
