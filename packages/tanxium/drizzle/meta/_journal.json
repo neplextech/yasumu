@@ -8,6 +8,13 @@
       "when": 1767098500206,
       "tag": "0000_real_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1767428627559,
+      "tag": "0001_rare_pride",
+      "breakpoints": true
     }
   ]
 }
