@@ -14,6 +14,7 @@ async function runMigrations() {
     await migrate(db, {
       migrationsFolder,
     });
+    console.log('Migrations completed');
   } catch (error) {
     const err = Error.isError(error) ? error.stack : null;
     throw new Error(`Database migration failed:\n\n${err || error}`, {
