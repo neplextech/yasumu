@@ -4,7 +4,7 @@ metadata {
   name: "Get Rauchg's GitHub Profile"
   method: "GET"
   id: "kldumi915p45we6c24off0gd"
-  groupId: null
+  groupId: "mv2z3sr80ai1cv2axxap3juq"
 }
 
 request {

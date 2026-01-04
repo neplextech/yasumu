@@ -4,7 +4,7 @@ metadata {
   name: "Echo server"
   method: "POST"
   id: "dpcixixm8d6nz7fa53ywbx7o"
-  groupId: null
+  groupId: "mv2z3sr80ai1cv2axxap3juq"
 }
 
 request {

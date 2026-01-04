@@ -12,6 +12,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import UpdaterProvider from './updater-provider';
 import { CustomThemeProvider } from './custom-theme-provider';
 import { CommandPaletteProvider, CommandPalette } from '../command';
+import { DisableContextMenu } from './disable-context-menu';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
@@ -25,24 +26,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <CustomThemeProvider>
-        <NextIntlClientProvider locale="en" timeZone="UTC">
-          <NuqsAdapter>
-            <UpdaterProvider>
-              <QueryClientProvider>
-                <AppLayoutProvider>
-                  <CommandPaletteProvider>
-                    <WorkspaceProvider>
-                      <CommandPalette />
-                      <PermissionPromptProvider>
-                        {children}
-                      </PermissionPromptProvider>
-                    </WorkspaceProvider>
-                  </CommandPaletteProvider>
-                </AppLayoutProvider>
-              </QueryClientProvider>
-            </UpdaterProvider>
-          </NuqsAdapter>
-        </NextIntlClientProvider>
+        <DisableContextMenu>
+          <NextIntlClientProvider locale="en" timeZone="UTC">
+            <NuqsAdapter>
+              <UpdaterProvider>
+                <QueryClientProvider>
+                  <AppLayoutProvider>
+                    <CommandPaletteProvider>
+                      <WorkspaceProvider>
+                        <CommandPalette />
+                        <PermissionPromptProvider>
+                          {children}
+                        </PermissionPromptProvider>
+                      </WorkspaceProvider>
+                    </CommandPaletteProvider>
+                  </AppLayoutProvider>
+                </QueryClientProvider>
+              </UpdaterProvider>
+            </NuqsAdapter>
+          </NextIntlClientProvider>
+        </DisableContextMenu>
       </CustomThemeProvider>
     </NextThemesProvider>
   );

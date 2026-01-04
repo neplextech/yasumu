@@ -4,7 +4,7 @@ metadata {
   name: "Fake response"
   method: "GET"
   id: "cmwulsxe1z3ade8hbjgcguvd"
-  groupId: null
+  groupId: "mv2z3sr80ai1cv2axxap3juq"
 }
 
 request {
