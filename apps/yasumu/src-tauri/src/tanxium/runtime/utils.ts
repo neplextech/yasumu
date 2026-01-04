@@ -1,5 +1,13 @@
 import { op_send_renderer_event } from 'ext:core/ops';
 import { createBufferedQueue } from './common.ts';
+import { isMainThread } from 'node:worker_threads';
+
+export const isWorkerEnvironment = () =>
+  !isMainThread ||
+  // @ts-ignore types
+  (typeof WorkerGlobalScope !== 'undefined' &&
+    // @ts-ignore types
+    self instanceof WorkerGlobalScope);
 
 export interface RendererEvent {
   type: 'message' | 'console' | 'show-notification';

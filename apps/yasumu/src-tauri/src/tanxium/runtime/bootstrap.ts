@@ -16,7 +16,7 @@ import {
   op_unregister_all_virtual_modules,
 } from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 import { join } from 'node:path';
-import { rendererEventQueue } from './utils.ts';
+import { rendererEventQueue, isWorkerEnvironment } from './utils.ts';
 import {
   YasumuRequest,
   YasumuResponse,
@@ -32,9 +32,6 @@ const __yasumuIsDevMode = op_is_yasumu_dev_mode();
 const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
 const YASUMU_INTERNAL_ON_EVENT_CALLBACK = '~yasumu__on__Event__Callback';
-const inWorker =
-  // @ts-ignore types
-  typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
 
 class Yasumu {
   /**
@@ -53,7 +50,7 @@ class Yasumu {
    * @param code The code of the module to register
    */
   public static registerVirtualModule(name: string, code: string) {
-    if (inWorker) return;
+    if (isWorkerEnvironment()) return;
     op_register_virtual_module(name, code);
   }
 
@@ -62,7 +59,7 @@ class Yasumu {
    * @param name The name of the module to unregister
    */
   public static unregisterVirtualModule(name: string) {
-    if (inWorker) return;
+    if (isWorkerEnvironment()) return;
     op_unregister_virtual_module(name);
   }
 
@@ -70,7 +67,7 @@ class Yasumu {
    * Unregister all virtual modules.
    */
   public static unregisterAllVirtualModules() {
-    if (inWorker) return;
+    if (isWorkerEnvironment()) return;
     op_unregister_all_virtual_modules();
   }
 
@@ -168,7 +165,7 @@ class Yasumu {
    * @param port The port to set
    */
   public static setRpcPort(port: number) {
-    if (inWorker) return;
+    if (isWorkerEnvironment()) return;
     op_set_rpc_port(port);
   }
 
@@ -185,7 +182,7 @@ class Yasumu {
    * @param port The port to set
    */
   public static setEchoServerPort(port: number) {
-    if (inWorker) return;
+    if (isWorkerEnvironment()) return;
     op_set_echo_server_port(port);
   }
 
@@ -195,7 +192,7 @@ class Yasumu {
    * @returns A function to remove the listener
    */
   public static onReady(listener: () => unknown) {
-    if (inWorker) return () => {};
+    if (isWorkerEnvironment()) return () => {};
     if (Yasumu.isReady()) {
       listener();
       return () => {};
@@ -214,7 +211,7 @@ class Yasumu {
    * @returns A function to remove the listener
    */
   public static onEvent(listener: (event: string) => unknown) {
-    if (inWorker) return () => {};
+    if (isWorkerEnvironment()) return () => {};
     listeners.add(listener);
 
     return () => {

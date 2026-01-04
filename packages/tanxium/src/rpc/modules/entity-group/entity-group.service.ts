@@ -6,7 +6,11 @@ import {
   TreeViewOptions,
 } from './types.ts';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
-import { entityGroups, entityHistory, restEntities } from '../../../database/schema.ts';
+import {
+  entityGroups,
+  entityHistory,
+  restEntities,
+} from '../../../database/schema.ts';
 import {
   NotFoundException,
   BadRequestException,
@@ -88,25 +92,25 @@ export class EntityGroupService {
     if (!result) return null;
 
     const childGroups = await db
-    .select()
-    .from(entityGroups)
-    .where(
-      and(
-        eq(entityGroups.parentId, id),
-        eq(entityGroups.workspaceId, workspaceId),
-      ),
-    );
+      .select()
+      .from(entityGroups)
+      .where(
+        and(
+          eq(entityGroups.parentId, id),
+          eq(entityGroups.workspaceId, workspaceId),
+        ),
+      );
 
-  // Fetch rest entities that belong to this group
-  const entities = await db
-    .select()
-    .from(restEntities)
-    .where(
-      and(
-        eq(restEntities.groupId, id),
-        eq(restEntities.workspaceId, workspaceId),
-      ),
-    );
+    // Fetch rest entities that belong to this group
+    const entities = await db
+      .select()
+      .from(restEntities)
+      .where(
+        and(
+          eq(restEntities.groupId, id),
+          eq(restEntities.workspaceId, workspaceId),
+        ),
+      );
 
     return {
       ...result,

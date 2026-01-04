@@ -12,6 +12,15 @@ export interface IConflictResolver {
 @Injectable()
 export class ConflictResolver implements IConflictResolver {
   public resolve(_state: SyncEntityState): Promise<ConflictResolution> {
-    return Promise.resolve({ keepLocal: true });
+    const shouldKeepLocal = Yasumu.ui.showConfirmationDialogSync({
+      title: 'Conflict Resolution',
+      message:
+        'The workspace has been modified by another user. Would you like to keep the local version or use their version?',
+      yesLabel: 'Keep Local',
+      noLabel: 'Keep Remote',
+      cancelLabel: 'Cancel',
+    });
+
+    return Promise.resolve({ keepLocal: shouldKeepLocal });
   }
 }

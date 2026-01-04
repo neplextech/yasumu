@@ -7,6 +7,9 @@ use deno_core::op2;
 use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::MessageDialogButtons;
+use tauri_plugin_dialog::MessageDialogKind;
 
 #[op2(fast)]
 fn op_send_renderer_event(state: &mut OpState, #[string] event: &str) {
@@ -172,6 +175,35 @@ fn op_get_app_data_dir(state: &mut OpState) -> String {
     path_str.unwrap().to_string()
 }
 
+#[op2(fast)]
+fn op_show_confirmation_dialog_sync(
+    state: &mut OpState,
+    #[string] title: &str,
+    #[string] message: &str,
+    #[string] yes_label: &str,
+    #[string] no_label: &str,
+    #[string] cancel_label: &str,
+) -> bool {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+
+    let result = app_handle
+        .dialog()
+        .message(message)
+        .kind(MessageDialogKind::Info)
+        .title(title)
+        .buttons(MessageDialogButtons::YesNoCancelCustom(
+            yes_label.to_string(),
+            no_label.to_string(),
+            cancel_label.to_string(),
+        ))
+        .blocking_show();
+
+    result
+}
+
 deno_core::extension!(
     tanxium_rt,
     ops = [
@@ -188,6 +220,7 @@ deno_core::extension!(
         op_is_yasumu_dev_mode,
         op_get_rpc_port,
         op_unregister_all_virtual_modules,
+        op_show_confirmation_dialog_sync,
     ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [

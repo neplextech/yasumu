@@ -15,6 +15,13 @@ declare module 'ext:core/ops' {
   export function op_unregister_all_virtual_modules(): void;
   export function op_is_yasumu_dev_mode(): boolean;
   export function op_get_rpc_port(): number | null;
+  export function op_show_confirmation_dialog_sync(
+    title: string,
+    message: string,
+    yes_label: string,
+    no_label: string,
+    cancel_label: string,
+  ): boolean;
 }
 
 declare module 'ext:deno_console/01_console.js' {
