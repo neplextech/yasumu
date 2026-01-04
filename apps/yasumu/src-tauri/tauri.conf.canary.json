@@ -24,7 +24,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["resources/"],
+    "resources": [
+      "resources/"
+    ],
     "createUpdaterArtifacts": true,
     "windows": {
       "nsis": {
@@ -34,7 +36,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc3QjhEMEY5NkI2RDQ3RjEKUldUeFIyMXIrZEM0ZHhlZTIreVl5RTFHeTJJUzRvZU1CemhBL28zZTIzdkNrRzZzRS9TL2dDbXQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwRTUxQkIxMDk3MDQ2OTQKUldTVVJuQUpzUnZsa09lYlVtQlhzQjdLTHVVY3AvMy9UMFJpamNTYnZBSGN6bU9yQUNZQkgzRzgK",
       "endpoints": [
         "https://github.com/neplextech/yasumu/releases/latest/download/latest.json"
       ],
