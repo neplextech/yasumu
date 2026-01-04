@@ -1,71 +1,68 @@
 import { HttpMethod } from '@yasumu/core';
 
-export function GetMethodIcon({ short }: { short?: boolean }) {
-  return <span className="font-mono font-bold text-green-500">GET</span>;
-}
-
-export function PostMethodIcon({ short }: { short?: boolean }) {
-  return <span className="font-mono font-bold text-blue-500">POST</span>;
-}
-
-export function PatchMethodIcon({ short }: { short?: boolean }) {
-  return <span className="font-mono font-bold text-yellow-500">PATCH</span>;
-}
-
-export function PutMethodIcon({ short }: { short?: boolean }) {
-  return <span className="font-mono font-bold text-pink-500">PUT</span>;
-}
-
-export function DeleteMethodIcon({ short }: { short?: boolean }) {
-  return (
-    <span className="font-mono font-bold text-red-500">
-      {short ? 'DEL' : 'DELETE'}
-    </span>
-  );
-}
-
-export function OptionsMethodIcon({ short }: { short?: boolean }) {
-  return (
-    <span className="font-mono font-bold text-purple-500">
-      {short ? 'OPT' : 'OPTIONS'}
-    </span>
-  );
-}
-
-export function HeadMethodIcon({ short }: { short?: boolean }) {
-  return <span className="font-mono font-bold text-gray-500">HEAD</span>;
-}
+const HTTP_METHOD_COLORS: Record<string, string> = {
+  GET: 'text-green-500',
+  POST: 'text-blue-500',
+  PUT: 'text-yellow-500',
+  DELETE: 'text-red-500',
+  PATCH: 'text-pink-500',
+  OPTIONS: 'text-purple-500',
+  HEAD: 'text-teal-500',
+};
 
 export function HttpMethodIcon({
   method,
+  short,
 }: {
   method: HttpMethod | (string & {});
+  short?: boolean;
 }) {
-  switch (method) {
-    case 'GET':
-      return <GetMethodIcon />;
-    case 'POST':
-      return <PostMethodIcon />;
-    case 'PUT':
-      return <PutMethodIcon />;
-    case 'DELETE':
-      return <DeleteMethodIcon />;
-    case 'PATCH':
-      return <PatchMethodIcon />;
-    case 'OPTIONS':
-      return <OptionsMethodIcon />;
-    case 'HEAD':
-      return <HeadMethodIcon />;
-    default:
-      const methodName = method.toUpperCase();
-      return (
-        <span className="font-mono font-bold text-gray-500">
-          {methodName.length > 4 ? methodName.slice(0, 4) : methodName}
-        </span>
-      );
+  const methodName = method.toUpperCase();
+  const colorClass = HTTP_METHOD_COLORS[methodName] ?? 'text-muted-foreground';
+
+  let displayName = methodName;
+  if (short) {
+    if (methodName === 'DELETE') displayName = 'DEL';
+    else if (methodName === 'OPTIONS') displayName = 'OPT';
+    else if (methodName.length > 4) displayName = methodName.slice(0, 4);
   }
+
+  return (
+    <span className={`font-mono font-bold ${colorClass}`}>{displayName}</span>
+  );
 }
 
-export function resolveHttpMethodIcon(method: HttpMethod | (string & {})) {
-  return () => <HttpMethodIcon method={method} />;
+export function GetMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="GET" short={short} />;
+}
+
+export function PostMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="POST" short={short} />;
+}
+
+export function PatchMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="PATCH" short={short} />;
+}
+
+export function PutMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="PUT" short={short} />;
+}
+
+export function DeleteMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="DELETE" short={short} />;
+}
+
+export function OptionsMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="OPTIONS" short={short} />;
+}
+
+export function HeadMethodIcon({ short }: { short?: boolean }) {
+  return <HttpMethodIcon method="HEAD" short={short} />;
+}
+
+export function resolveHttpMethodIcon(
+  method: HttpMethod | (string & {}),
+  { short }: { short?: boolean },
+) {
+  return () => <HttpMethodIcon method={method} short={short} />;
 }

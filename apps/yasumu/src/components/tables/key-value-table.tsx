@@ -11,10 +11,7 @@ import {
 } from '@yasumu/ui/components/table';
 import { Trash, Plus } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
-import {
-  InteropableInput,
-  useVariablePopover,
-} from '@/components/inputs';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
 
 export interface KeyValuePair {
   key: string;

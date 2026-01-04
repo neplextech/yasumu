@@ -10,6 +10,7 @@ import {
 import { TextEditor, type TypeDefinition } from '@/components/editors';
 import { Input } from '@yasumu/ui/components/input';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import {
   Table,
   TableBody,
@@ -80,6 +81,7 @@ export function RestRequestTabs({
   onScriptChange,
   onTestScriptChange,
 }: RestRequestTabsProps) {
+  const { renderVariablePopover } = useVariablePopover();
   const pathParamKeys = useMemo(() => extractPathParamKeys(url), [url]);
   const hasPathParams = pathParamKeys.length > 0;
 
@@ -174,17 +176,13 @@ export function RestRequestTabs({
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
+                          <InteropableInput
                             value={param.value}
-                            onChange={(e) =>
-                              handlePathParamChange(
-                                key,
-                                'value',
-                                e.target.value,
-                              )
+                            onChange={(val) =>
+                              handlePathParamChange(key, 'value', val)
                             }
+                            onVariableClick={renderVariablePopover}
                             placeholder="Enter value"
-                            className="font-mono text-sm"
                           />
                         </TableCell>
                       </TableRow>

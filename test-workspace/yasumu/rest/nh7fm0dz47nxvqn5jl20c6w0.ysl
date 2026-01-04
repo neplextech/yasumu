@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Patch Request"
+  method: "PATCH"
+  id: "nh7fm0dz47nxvqn5jl20c6w0"
+  groupId: "kk0dm5udl71o00kykt03ftxa"
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

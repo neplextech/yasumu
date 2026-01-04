@@ -161,7 +161,11 @@ function buildUrl(
 
   try {
     const urlObj = new URL(url);
-    urlObj.pathname = replacePathParams(urlObj.pathname, pathParams, interpolate);
+    urlObj.pathname = replacePathParams(
+      urlObj.pathname,
+      pathParams,
+      interpolate,
+    );
     for (const param of searchParams) {
       if (param.enabled && param.key) {
         urlObj.searchParams.append(
@@ -177,7 +181,11 @@ function buildUrl(
     if (pathStart !== -1) {
       const authority = url.slice(0, url.indexOf(withoutProtocol) + pathStart);
       const pathPortion = withoutProtocol.slice(pathStart);
-      const replacedPath = replacePathParams(pathPortion, pathParams, interpolate);
+      const replacedPath = replacePathParams(
+        pathPortion,
+        pathParams,
+        interpolate,
+      );
       url = authority + replacedPath;
     }
     return url;

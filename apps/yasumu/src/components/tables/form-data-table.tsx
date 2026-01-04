@@ -19,10 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@yasumu/ui/components/select';
-import {
-  InteropableInput,
-  useVariablePopover,
-} from '@/components/inputs';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
 
 export interface FormDataPair {
   key: string;

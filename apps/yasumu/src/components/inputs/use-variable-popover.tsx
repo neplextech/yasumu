@@ -10,4 +10,3 @@ export function useVariablePopover() {
 
   return { renderVariablePopover };
 }
-

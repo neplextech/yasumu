@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Get Request"
+  method: "GET"
+  id: "pkbls56ds3g3vjth5bi5gez1"
+  groupId: "kk0dm5udl71o00kykt03ftxa"
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

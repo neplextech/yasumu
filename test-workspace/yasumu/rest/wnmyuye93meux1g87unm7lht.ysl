@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Options Request"
+  method: "OPTIONS"
+  id: "wnmyuye93meux1g87unm7lht"
+  groupId: "kk0dm5udl71o00kykt03ftxa"
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

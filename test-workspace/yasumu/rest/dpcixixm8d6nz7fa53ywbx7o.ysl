@@ -24,7 +24,7 @@ request {
   parameters: [
     {
       key: "path"
-      value: "432432"
+      value: "users"
       enabled: true
     },
   ]

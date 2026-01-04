@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Delete Request"
+  method: "DELETE"
+  id: "s14lasv027kf1p4w1btszxct"
+  groupId: "kk0dm5udl71o00kykt03ftxa"
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

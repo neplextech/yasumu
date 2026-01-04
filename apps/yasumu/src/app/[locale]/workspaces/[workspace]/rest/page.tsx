@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Separator } from '@yasumu/ui/components/separator';
 import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
 import LoadingScreen from '@/components/visuals/loading-screen';
@@ -25,6 +25,21 @@ import {
   ResizablePanelGroup,
 } from '@yasumu/ui/components/resizable';
 
+function tabularPairsToRecord(
+  pairs: TabularPair[] | undefined,
+): Record<string, { value: string; enabled: boolean }> {
+  if (!pairs) return {};
+  return pairs.reduce(
+    (acc, pair) => {
+      if (pair.key) {
+        acc[pair.key] = { value: pair.value, enabled: pair.enabled };
+      }
+      return acc;
+    },
+    {} as Record<string, { value: string; enabled: boolean }>,
+  );
+}
+
 export default function RestPage() {
   const { entityId } = useRestContext();
   const { layout } = useAppLayout();
@@ -39,6 +54,14 @@ export default function RestPage() {
   const [pathParams, setPathParams] = useState<
     Record<string, { value: string; enabled: boolean }>
   >({});
+
+  useEffect(() => {
+    if (data?.requestParameters) {
+      setPathParams(tabularPairsToRecord(data.requestParameters));
+    } else {
+      setPathParams({});
+    }
+  }, [entityId, data?.requestParameters]);
 
   const isRequestActive = useMemo(
     () =>

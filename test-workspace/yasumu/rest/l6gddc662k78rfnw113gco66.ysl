@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Post Request"
+  method: "POST"
+  id: "l6gddc662k78rfnw113gco66"
+  groupId: "kk0dm5udl71o00kykt03ftxa"
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

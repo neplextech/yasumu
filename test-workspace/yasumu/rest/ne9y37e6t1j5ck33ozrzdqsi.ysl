@@ -1,0 +1,19 @@
+@rest
+
+metadata {
+  name: "Put Request"
+  method: "PUT"
+  id: "ne9y37e6t1j5ck33ozrzdqsi"
+  groupId: "kk0dm5udl71o00kykt03ftxa"
+}
+
+request {
+  url: "{{API_URL}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+

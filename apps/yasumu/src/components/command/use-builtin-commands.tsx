@@ -13,6 +13,8 @@ import {
   Settings,
   Home,
   Save,
+  RotateCcw,
+  LogOut,
 } from 'lucide-react';
 import type { YasumuCommand } from './commands';
 import { useCommandPalette, useRegisterCommands } from './command-context';
@@ -21,6 +23,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { toast } from '@yasumu/ui/components/sonner';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { relaunch, exit } from '@tauri-apps/plugin-process';
 
 export function useBuiltinCommands() {
   const router = useRouter();
@@ -185,24 +188,58 @@ export function useBuiltinCommands() {
           window.location.reload();
         },
       },
+      {
+        id: 'relaunch-application',
+        name: 'Relaunch Application',
+        description: 'Relaunch the application',
+        icon: <RotateCcw className="size-4" />,
+        keywords: ['relaunch', 'restart', 'reload'],
+        category: 'general',
+        execute: () => {
+          withErrorHandler(async () => {
+            await relaunch();
+          })();
+        },
+      },
+      {
+        id: 'exit-application',
+        name: 'Exit Application',
+        description: 'Exit the application',
+        icon: <LogOut className="size-4" />,
+        keywords: ['exit', 'quit', 'close'],
+        category: 'general',
+        execute: () => {
+          withErrorHandler(async () => {
+            await exit();
+          })();
+        },
+      },
     ];
   }, [router, openSubDialog, handleOpenWorkspace, setIsOpen]);
 
-  useHotkeys('mod+s', () => {
-    const workspace = yasumu.workspaces.getActiveWorkspace();
-    if (!workspace) return;
+  useHotkeys(
+    'mod+s',
+    () => {
+      const workspace = yasumu.workspaces.getActiveWorkspace();
+      if (!workspace) return;
 
-    withErrorHandler(async () => {
-      const savingToast = toast.loading('Saving workspace...');
-      await workspace.synchronize();
-      toast.dismiss(savingToast);
-      toast.success('Workspace saved successfully!');
-    })();
-  });
+      withErrorHandler(async () => {
+        const savingToast = toast.loading('Saving workspace...');
+        await workspace.synchronize();
+        toast.dismiss(savingToast);
+        toast.success('Workspace saved successfully!');
+      })();
+    },
+    { preventDefault: true },
+  );
 
-  useHotkeys('mod+r', () => {
-    window.location.reload();
-  });
+  useHotkeys(
+    'mod+r',
+    () => {
+      window.location.reload();
+    },
+    { preventDefault: true },
+  );
 
   useRegisterCommands(commands);
 }

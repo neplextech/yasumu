@@ -57,9 +57,13 @@ export function CommandPaletteProvider({
     setActiveSubDialog(null);
   }, []);
 
-  useHotkeys(['mod+k', 'mod+shift+k', 'mod+shift+p', 'mod+p'], () => {
-    toggle();
-  });
+  useHotkeys(
+    ['mod+k', 'mod+shift+k', 'mod+shift+p', 'mod+p'],
+    () => {
+      toggle();
+    },
+    { preventDefault: true },
+  );
 
   const value = React.useMemo(
     () => ({
