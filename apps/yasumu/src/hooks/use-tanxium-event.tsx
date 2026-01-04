@@ -1,9 +1,10 @@
 'use client';
-import { event, app } from '@tauri-apps/api';
+import { event } from '@tauri-apps/api';
 import { useEffect } from 'react';
 import { toast } from '@yasumu/ui/components/sonner';
 import { invoke } from '@tauri-apps/api/core';
 import { EmailData, SubscriptionEventPayload } from '@yasumu/core';
+import { useConsoleStore } from '@/stores/console-store';
 
 export interface TanxiumEvent<T = unknown> {
   type: 'console' | 'show-notification' | 'message';
@@ -11,6 +12,8 @@ export interface TanxiumEvent<T = unknown> {
 }
 
 export function useTanxiumEvent() {
+  const addLog = useConsoleStore((state) => state.addLog);
+
   useEffect(() => {
     (globalThis as any).emitEvent = (e: any) => {
       invoke('tanxium_send_event', { data: JSON.stringify(e) });
@@ -23,17 +26,19 @@ export function useTanxiumEvent() {
           case 'console':
             {
               const _data = data.payload as { msg: string; level: number };
-              const levelToConsoleMap = {
+              const levelToConsoleMap: Record<
+                number,
+                'log' | 'info' | 'warn' | 'error'
+              > = {
                 0: 'log',
                 2: 'info',
                 3: 'warn',
                 4: 'error',
               };
+              const level = levelToConsoleMap[_data.level] || 'log';
 
-              // @ts-ignore
-              (console[levelToConsoleMap[_data.level]] || console.log)(
-                _data.msg,
-              );
+              (console[level] || console.log)(_data.msg);
+              addLog({ level, message: _data.msg });
             }
             break;
           case 'show-notification':
@@ -107,5 +112,5 @@ export function useTanxiumEvent() {
     return () => {
       remove.then((remove) => remove());
     };
-  }, []);
+  }, [addLog]);
 }

@@ -6,6 +6,7 @@ import LayoutGroup from '@/components/layout/layout-group';
 import { SidebarProvider } from '@yasumu/ui/components/sidebar';
 import { AppSidebar } from '@/components/sidebars/app-sidebar';
 import { TitleBar } from '@/components/layout/title-bar';
+import { StatusBar } from '@/components/layout/status-bar/index';
 
 const poppins = Poppins({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
@@ -42,6 +43,7 @@ export default async function RootLayout({
               </SidebarProvider>
             </LayoutGroup>
           </div>
+          <StatusBar />
         </Providers>
       </body>
     </html>
