@@ -54,6 +54,7 @@ script {
   }
   
   export async function onResponse(req: YasumuRequest, res: YasumuResponse) {
+    console.log(res.json())
     res.env.setVariable('SOURCE', res.json<any>().meta.source)
     res.env.setVariable('TIMESTAMP', res.json<any>().meta.timestamp)
   

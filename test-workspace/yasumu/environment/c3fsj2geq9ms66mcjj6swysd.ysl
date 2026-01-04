@@ -18,12 +18,12 @@ variables [
   },
   {
     key: "TIMESTAMP"
-    value: "2026-01-04T10:30:26.144Z"
+    value: "2026-01-04T13:10:46.324Z"
     enabled: true
   },
   {
     key: "FOLLOWER_COUNT"
-    value: "16336"
+    value: "16337"
     enabled: true
   },
 ]

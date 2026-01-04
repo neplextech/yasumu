@@ -253,7 +253,8 @@ This is useful for:
 ## Console Output
 
 Use `console.log()` in your scripts to output debug information. The
-output appears in the **Console** tab of the response panel.
+output appears inside the **Console** section on the status bar, which
+is available at the bottom right side of the screen.
 
 ```javascript
 export function onRequest(req) {
@@ -266,6 +267,10 @@ export function onResponse(req, res) {
   console.log('Response Body:', res.json());
 }
 ```
+
+#### Example of console
+
+![Console Output](/view-console-logs.png)
 
 ## Runtime APIs
 

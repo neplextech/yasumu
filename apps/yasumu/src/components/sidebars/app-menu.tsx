@@ -32,10 +32,12 @@ import {
 } from 'react-icons/si';
 import { useState } from 'react';
 import PostmanImportDialog from '../dialogs/postman-import-dialog';
+import { useRouter } from 'next/navigation';
 
 export function AppMenu() {
   const { yasumu } = useYasumu();
   const [postmanImportDialog, setPostmanImportDialog] = useState(false);
+  const router = useRouter();
 
   const { data: recentWorkspaces, isLoading } = useQuery({
     queryKey: ['recent-workspaces'],
@@ -78,6 +80,14 @@ export function AppMenu() {
   const onImportFromPostman = () => {
     setPostmanImportDialog(true);
   };
+
+  const handleCloseCurrentWorkspace = withErrorHandler(async () => {
+    const activeWorkspace = yasumu.workspaces.getActiveWorkspace();
+    if (!activeWorkspace) return;
+    router.replace('/');
+    await yasumu.workspaces.close(activeWorkspace);
+    window.location.reload();
+  });
 
   return (
     <>
@@ -161,6 +171,9 @@ export function AppMenu() {
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
+          <DropdownMenuItem onClick={handleCloseCurrentWorkspace}>
+            Close Current Workspace
+          </DropdownMenuItem>
           {/* <DropdownMenuSeparator /> */}
           {/* <DropdownMenuItem>Duplicate Workspace</DropdownMenuItem> */}
           {/* <DropdownMenuSub>

@@ -27,7 +27,7 @@ export function StatusBar() {
     staleTime: 10000,
   });
 
-  const shouldShow = pathname !== '/';
+  const shouldShow = !!workspace && pathname !== '/';
 
   if (!shouldShow) return null;
 

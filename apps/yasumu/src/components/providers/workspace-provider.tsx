@@ -78,6 +78,23 @@ export function useActiveWorkspace(strict: boolean = true): Workspace | null {
   return workspace;
 }
 
+export function ActiveWorkspaceGuard({
+  children,
+  fallback,
+}: React.PropsWithChildren<{
+  fallback?: React.ReactNode;
+}>) {
+  const { currentWorkspaceId } = useYasumu();
+
+  if (!currentWorkspaceId) {
+    return (
+      fallback ?? <LoadingScreen fullScreen message="No workspace found" />
+    );
+  }
+
+  return children;
+}
+
 export default function WorkspaceProvider({
   children,
 }: React.PropsWithChildren) {
@@ -218,19 +235,7 @@ export default function WorkspaceProvider({
     exit(1);
   };
 
-  const runSynchronization = useEffectEvent(
-    withErrorHandler(async () => {
-      const workspace = yasumu?.workspaces.getActiveWorkspace();
-      if (!workspace) return;
-
-      await workspace.synchronize();
-
-      toast.success('Workspace synchronized successfully!');
-    }),
-  );
-
   useEffect(() => {
-    const ac = new AbortController();
     void initializeYasumuEnvironment();
   }, []);
 
