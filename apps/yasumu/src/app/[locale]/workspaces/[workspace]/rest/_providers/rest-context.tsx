@@ -1,6 +1,16 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useState,
+} from 'react';
+import {
+  useActiveWorkspace,
+  useYasumu,
+} from '@/components/providers/workspace-provider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface RestContextData {
   entityId: string | null;
@@ -13,62 +23,99 @@ interface RestContextData {
 const RestContext = createContext<RestContextData | null>(null);
 
 export function RestContextProvider({ children }: React.PropsWithChildren) {
+  const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
+  const queryClient = useQueryClient();
   const [entityId, _setEntityId] = useState<string | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-  // Load history from backend on mount
+  // Fetch history using React Query
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    refetch,
+  } = useQuery({
+    queryKey: ['entityHistory', workspace.id],
+    queryFn: () => workspace.rest.listHistory(),
+  });
+
+  // Extract entity IDs from history data
+  const history = historyData
+    ? [...new Set(historyData.map((item) => item.entityId))]
+    : [];
+
+  // Set initial active entity when history loads
   useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        setIsLoadingHistory(true);
-        const historyData = await workspace.rest.listHistory();
-        const entityIds = [
-          ...new Set(historyData.map((item) => item.entityId)),
-        ];
-        setHistory(entityIds);
+    if (historyData && historyData.length > 0 && entityId === null) {
+      // Set the most recent entity as active (first in the list since it's sorted by updatedAt DESC)
+      _setEntityId(historyData[0].entityId);
+    }
+  }, [historyData, entityId]);
 
-        // Set the most recent entity as active (last in the array after reverse)
-        if (entityIds.length > 0) {
-          _setEntityId(entityIds[entityIds.length - 1]);
-        }
-      } catch (error) {
-        console.error('Failed to load history:', error);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
+  // Refetch handler for event subscription
+  const refetchHistory = useEffectEvent(() => {
+    return refetch();
+  });
 
-    loadHistory();
-  }, [workspace]);
+  // Subscribe to entity history update events
+  useEffect(() => {
+    const controller = new AbortController();
 
-  const addToHistory = async (id: string) => {
-    // Optimistically update local state
-    setHistory((prev) => {
-      if (prev.includes(id)) {
-        return [...prev.filter((item) => item !== id), id];
-      }
-      return [...prev, id];
+    yasumu.events.on('onEntityHistoryUpdate', refetchHistory, {
+      signal: controller.signal,
     });
 
-    // Sync with backend
+    return () => {
+      controller.abort();
+    };
+  }, [yasumu.events, refetchHistory]);
+
+  const addToHistory = async (id: string) => {
+    // If already in history, just switch tabs - don't reorder
+    if (history.includes(id)) {
+      return;
+    }
+
+    // Optimistically add new entry to cache (at the end to maintain tab order)
+    queryClient.setQueryData(
+      ['entityHistory', workspace.id],
+      (old: typeof historyData) => {
+        if (!old) return old;
+        return [
+          ...old,
+          {
+            id: `temp-${id}`,
+            entityId: id,
+            entityType: 'rest' as const,
+            workspaceId: workspace.id,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          },
+        ];
+      },
+    );
+
+    // Sync with backend (this will trigger refetch via event)
     await workspace.rest.upsertHistory(id);
   };
 
   const removeFromHistory = async (id: string) => {
-    // Optimistically update local state
-    setHistory((prev) => {
-      const newHistory = prev.filter((item) => item !== id);
-      if (id === entityId) {
-        const nextId =
-          newHistory.length > 0 ? newHistory[newHistory.length - 1] : null;
-        _setEntityId(nextId);
-      }
-      return newHistory;
-    });
+    // Optimistically update cache
+    queryClient.setQueryData(
+      ['entityHistory', workspace.id],
+      (old: typeof historyData) => {
+        if (!old) return old;
+        return old.filter((item) => item.entityId !== id);
+      },
+    );
 
-    // Sync with backend
+    // If we removed the active entity, switch to the next one
+    if (id === entityId) {
+      const remaining = history.filter((item) => item !== id);
+      const nextId = remaining.length > 0 ? remaining[0] : null;
+      _setEntityId(nextId);
+    }
+
+    // Sync with backend (this will trigger refetch via event)
     await workspace.rest.deleteHistory(id);
   };
 

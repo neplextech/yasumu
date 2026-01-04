@@ -7,10 +7,20 @@ import type {
 import { and, desc, eq } from 'drizzle-orm';
 import { entityHistory } from '../../../database/schema.ts';
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
+import { TanxiumService } from '../common/tanxium.service.ts';
 
 @Injectable()
 export class EntityHistoryService {
-  public constructor(private readonly connection: TransactionalConnection) {}
+  public constructor(
+    private readonly connection: TransactionalConnection,
+    private readonly tanxiumService: TanxiumService,
+  ) {}
+
+  private async dispatchHistoryUpdate(workspaceId: string) {
+    await this.tanxiumService.publishMessage('entity-history-updated', {
+      workspaceId,
+    });
+  }
 
   /**
    * Create or update a history entry for an entity.
@@ -56,6 +66,7 @@ export class EntityHistoryService {
       })
       .returning();
 
+    await this.dispatchHistoryUpdate(workspaceId);
     return result;
   }
 
@@ -129,6 +140,7 @@ export class EntityHistoryService {
     await this.getOrThrow(workspaceId, id);
 
     await db.delete(entityHistory).where(eq(entityHistory.id, id));
+    await this.dispatchHistoryUpdate(workspaceId);
   }
 
   /**
@@ -145,6 +157,7 @@ export class EntityHistoryService {
           eq(entityHistory.entityId, entityId),
         ),
       );
+    await this.dispatchHistoryUpdate(workspaceId);
   }
 
   /**
@@ -165,5 +178,6 @@ export class EntityHistoryService {
     }
 
     await db.delete(entityHistory).where(and(...conditions));
+    await this.dispatchHistoryUpdate(workspaceId);
   }
 }

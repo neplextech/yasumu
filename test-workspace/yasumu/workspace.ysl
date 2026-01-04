@@ -1,34 +1,12 @@
 @workspace
 
 metadata {
-  id: "v753h51r3e10zzcg5rkel8mv"
+  id: "i99kqik6efcgqiqlmogg1hfn"
   name: "test-workspace"
   version: 0
 }
 
-snapshot 1767532328591
+snapshot 1767535183231
 
-groups {
-  w10lye9m7dsomdwoj9zooyf4: {
-    id: "w10lye9m7dsomdwoj9zooyf4"
-    name: "Media Test"
-    entity: rest
-    parentId: null
-    workspaceId: "v753h51r3e10zzcg5rkel8mv"
-  }
-  kk0dm5udl71o00kykt03ftxa: {
-    id: "kk0dm5udl71o00kykt03ftxa"
-    name: "Echo"
-    entity: rest
-    parentId: null
-    workspaceId: "v753h51r3e10zzcg5rkel8mv"
-  }
-  mv2z3sr80ai1cv2axxap3juq: {
-    id: "mv2z3sr80ai1cv2axxap3juq"
-    name: "Random"
-    entity: rest
-    parentId: null
-    workspaceId: "v753h51r3e10zzcg5rkel8mv"
-  }
-}
+groups {}
 

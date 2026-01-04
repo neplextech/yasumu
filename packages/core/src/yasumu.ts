@@ -111,6 +111,12 @@ export class Yasumu {
           this.events.emit('onRestEntityUpdate', activeWorkspace);
         }
         break;
+      case 'entity-history-updated':
+        {
+          if (activeWorkspace?.id !== payload.data.workspaceId) return;
+          this.events.emit('onEntityHistoryUpdate', activeWorkspace);
+        }
+        break;
       default:
         return void (event satisfies never);
     }
