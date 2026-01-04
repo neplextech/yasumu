@@ -98,7 +98,10 @@ export class EntityHistoryService {
    * List all history entries for a workspace, optionally filtered by entity type.
    * Returns entries sorted by most recently accessed first.
    */
-  public async list(workspaceId: string, options: EntityHistoryListOptions = {}) {
+  public async list(
+    workspaceId: string,
+    options: EntityHistoryListOptions = {},
+  ) {
     const db = this.connection.getConnection();
     const { entityType, limit = 50 } = options;
 
@@ -164,4 +167,3 @@ export class EntityHistoryService {
     await db.delete(entityHistory).where(and(...conditions));
   }
 }
-

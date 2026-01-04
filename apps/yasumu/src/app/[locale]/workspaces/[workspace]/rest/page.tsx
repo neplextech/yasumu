@@ -13,6 +13,7 @@ import { RestResponsePanel } from './_components/response-panel';
 import RequestTabList from './_components/tabs';
 import { useAppLayout } from '@/components/providers/app-layout-provider';
 import { YasumuLayout } from '@/lib/constants/layout';
+import { useVariablePopover } from '@/components/inputs';
 import type {
   TabularPair,
   RestEntityRequestBody,
@@ -27,6 +28,7 @@ import {
 export default function RestPage() {
   const { entityId } = useRestContext();
   const { layout } = useAppLayout();
+  const { renderVariablePopover } = useVariablePopover();
   const { data, isLoading, error, isSaving, updateField, save } = useRestEntity(
     {
       entityId,
@@ -191,6 +193,7 @@ export default function RestPage() {
           onUrlChange={handleUrlChange}
           onSend={handleSend}
           onCancel={handleCancel}
+          onVariableClick={renderVariablePopover}
           isSending={isRequestActive}
           isSaving={isSaving}
         />

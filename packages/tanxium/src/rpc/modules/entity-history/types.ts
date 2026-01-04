@@ -4,4 +4,3 @@ export type {
   EntityHistoryCreateOptions,
   EntityHistoryListOptions,
 } from '@yasumu/common';
-

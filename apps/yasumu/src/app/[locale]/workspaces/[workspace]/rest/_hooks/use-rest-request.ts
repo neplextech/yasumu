@@ -174,7 +174,6 @@ export function useRestRequest({
               entityId,
               entity.script,
               currentContext,
-              false,
             );
 
             if (result.result.success) {
@@ -299,7 +298,6 @@ export function useRestRequest({
               entityId,
               entity.script,
               responseContext,
-              true,
             );
 
             if (result.result.success) {

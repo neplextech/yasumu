@@ -7,10 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@yasumu/ui/components/select';
-import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
 import { Button } from '@yasumu/ui/components/button';
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
 
 interface AuthEditorProps {
   headers: KeyValuePair[];
@@ -67,6 +67,7 @@ function BasicAuthEditor({
 }: {
   onChange: (value: string | null) => void;
 }) {
+  const { renderVariablePopover } = useVariablePopover();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -79,11 +80,21 @@ function BasicAuthEditor({
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <Label>Username</Label>
-        <Input onChange={(e) => setUsername(e.target.value)} />
+        <InteropableInput
+          value={username}
+          onChange={setUsername}
+          onVariableClick={renderVariablePopover}
+          placeholder="Enter username"
+        />
       </div>
       <div className="flex items-center gap-2">
         <Label>Password</Label>
-        <Input onChange={(e) => setPassword(e.target.value)} />
+        <InteropableInput
+          value={password}
+          onChange={setPassword}
+          onVariableClick={renderVariablePopover}
+          placeholder="Enter password"
+        />
       </div>
       <Button onClick={updateAuthHeader}>Update</Button>
     </div>
@@ -95,6 +106,7 @@ function BearerAuthEditor({
 }: {
   onChange: (value: string | null) => void;
 }) {
+  const { renderVariablePopover } = useVariablePopover();
   const [token, setToken] = useState('');
 
   const handleTokenChange = () => {
@@ -106,7 +118,12 @@ function BearerAuthEditor({
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <Label>Token</Label>
-        <Input onChange={(e) => setToken(e.target.value)} />
+        <InteropableInput
+          value={token}
+          onChange={setToken}
+          onVariableClick={renderVariablePopover}
+          placeholder="Enter bearer token"
+        />
       </div>
       <Button onClick={handleTokenChange}>Update</Button>
     </div>

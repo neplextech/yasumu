@@ -32,18 +32,26 @@ export default function EnvironmentPage() {
 
   const [
     { data: environmentsList, refetch, isError, isLoading },
-    { data: selectedEnvironmentData, isLoading: isLoadingSelectedEnvironment },
+    {
+      data: selectedEnvironmentData,
+      isLoading: isLoadingSelectedEnvironment,
+      refetch: refetchSelectedEnvironment,
+    },
   ] = useQueries({
     queries: [
       {
         queryKey: ['environments'],
         queryFn: () => workspace.environments.list(),
-        enabled: environments.length === 0,
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+        refetchOnMount: 'always' as const,
       },
       {
         queryKey: ['currentEnvironment'],
         queryFn: () => workspace.environments.getActiveEnvironment(),
-        enabled: !selectedEnvironment,
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+        refetchOnMount: 'always' as const,
       },
     ],
   });

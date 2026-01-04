@@ -51,8 +51,18 @@ interface RestRequestTabsProps {
 }
 
 function extractPathParamKeys(url: string): string[] {
-  const matches = url.matchAll(/:([a-zA-Z0-9_]+)/g);
-  return Array.from(new Set(Array.from(matches).map((m) => m[1])));
+  try {
+    const urlObj = new URL(url);
+    const pathMatches = urlObj.pathname.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g);
+    return Array.from(new Set(Array.from(pathMatches).map((m) => m[1])));
+  } catch {
+    const withoutProtocol = url.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+    const pathStart = withoutProtocol.indexOf('/');
+    if (pathStart === -1) return [];
+    const pathPortion = withoutProtocol.slice(pathStart);
+    const matches = pathPortion.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g);
+    return Array.from(new Set(Array.from(matches).map((m) => m[1])));
+  }
 }
 
 export function RestRequestTabs({

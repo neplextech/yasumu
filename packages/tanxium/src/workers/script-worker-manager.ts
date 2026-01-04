@@ -1,56 +1,35 @@
-import { ScriptWorker, ScriptWorkerOptions } from './script-worker.ts';
+import { ScriptWorker } from './script-worker.ts';
+import { getGlobalWorkerPreload } from './worker-preload.ts';
 
-export class ScriptWorkerManager {
-  private readonly workers = new Map<string, ScriptWorker<unknown>>();
+let globalWorker: ScriptWorker | null = null;
+let workerSource: string | null = null;
 
-  public getOrCreate<Context>(
-    options: ScriptWorkerOptions,
-  ): ScriptWorker<Context> {
-    const existing = this.workers.get(options.key);
-    if (existing && !existing.isTerminated()) {
-      return existing as ScriptWorker<Context>;
-    }
+function getWorkerSource(): string {
+  if (!workerSource) {
+    workerSource = getGlobalWorkerPreload();
+  }
+  return workerSource;
+}
 
-    const worker = new ScriptWorker<Context>({
-      ...options,
+export function getGlobalScriptWorker(): ScriptWorker {
+  if (!globalWorker || globalWorker.isTerminated()) {
+    globalWorker = new ScriptWorker({
+      source: getWorkerSource(),
       onTerminate: () => {
-        this.workers.delete(options.key);
-        options.onTerminate?.();
+        globalWorker = null;
       },
     });
-
-    this.workers.set(options.key, worker as ScriptWorker<unknown>);
-    return worker;
   }
+  return globalWorker;
+}
 
-  public get<Context>(key: string): ScriptWorker<Context> | undefined {
-    const worker = this.workers.get(key);
-    if (worker?.isTerminated()) {
-      this.workers.delete(key);
-      return undefined;
-    }
-    return worker as ScriptWorker<Context> | undefined;
+export function terminateGlobalScriptWorker(): void {
+  if (globalWorker) {
+    globalWorker.terminate();
+    globalWorker = null;
   }
+}
 
-  public terminate(key: string): boolean {
-    const worker = this.workers.get(key);
-    if (worker) {
-      worker.terminate();
-      this.workers.delete(key);
-      return true;
-    }
-    return false;
-  }
-
-  public terminateAll() {
-    for (const worker of this.workers.values()) {
-      worker.terminate();
-    }
-    this.workers.clear();
-  }
-
-  public has(key: string): boolean {
-    const worker = this.workers.get(key);
-    return worker !== undefined && !worker.isTerminated();
-  }
+export function isGlobalScriptWorkerActive(): boolean {
+  return globalWorker !== null && !globalWorker.isTerminated();
 }

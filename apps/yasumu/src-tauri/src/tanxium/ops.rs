@@ -41,6 +41,18 @@ fn op_unregister_virtual_module(state: &mut OpState, #[string] key: &str) {
     virtual_modules.remove(key);
 }
 
+#[op2(fast)]
+fn op_unregister_all_virtual_modules(state: &mut OpState) {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let guard = yasumu_state.lock().unwrap();
+    let mut virtual_modules = guard.virtual_modules.lock().unwrap();
+    virtual_modules.clear();
+}
+
 #[op2]
 #[string]
 fn op_get_resources_dir(state: &mut OpState) -> String {
@@ -73,6 +85,17 @@ fn op_set_rpc_port(state: &mut OpState, port: u16) {
     if yasumu_state.rpc_port.is_none() {
         yasumu_state.rpc_port = Some(port);
     }
+}
+
+#[op2]
+fn op_get_rpc_port(state: &mut OpState) -> Option<u16> {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let yasumu_state = state.lock().unwrap();
+    yasumu_state.rpc_port
 }
 
 #[op2(fast)]
@@ -163,6 +186,8 @@ deno_core::extension!(
         op_register_virtual_module,
         op_unregister_virtual_module,
         op_is_yasumu_dev_mode,
+        op_get_rpc_port,
+        op_unregister_all_virtual_modules,
     ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [

@@ -9,8 +9,9 @@ export interface WorkerReadyMessage {
 export interface WorkerExecuteMessage<Context = unknown> {
   type: 'execute';
   requestId: string;
-  module: string;
+  moduleKey: string;
   invocationTarget: string;
+  contextType: string;
   context: Context;
 }
 
@@ -45,6 +46,7 @@ export type WorkerOutboundMessage<Context = unknown> =
 export interface ScriptExecutionRequest<Context = unknown> {
   requestId: string;
   invocationTarget: string;
+  contextType: string;
   context: Context;
   resolve: (result: ScriptExecutionResponse<Context>) => void;
   reject: (error: Error) => void;

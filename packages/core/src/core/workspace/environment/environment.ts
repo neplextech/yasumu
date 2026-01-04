@@ -82,8 +82,8 @@ export class Environment {
     target: string,
   ): ['variable' | 'secret' | null, string] {
     if (!target) return [null, ''];
-    if (target.startsWith('variables.')) return ['variable', target.slice(8)];
-    if (target.startsWith('secrets.')) return ['secret', target.slice(7)];
+    if (target.startsWith('variables.')) return ['variable', target.slice(10)];
+    if (target.startsWith('secrets.')) return ['secret', target.slice(8)];
 
     return [null, target];
   }

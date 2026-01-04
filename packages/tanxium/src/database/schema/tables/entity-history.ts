@@ -1,7 +1,6 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { commonColumns } from "../../common/index.ts";
-import { workspaces } from "./workspaces.ts";
-
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { commonColumns } from '../../common/index.ts';
+import { workspaces } from './workspaces.ts';
 
 export const entityHistory = sqliteTable('entity_history', {
   ...commonColumns(),
@@ -9,7 +8,7 @@ export const entityHistory = sqliteTable('entity_history', {
     enum: ['rest', 'graphql', 'websocket', 'socketio', 'sse'] as const,
   }).notNull(),
   workspaceId: text('workspaceId')
-  .notNull()
-  .references(() => workspaces.id, { onDelete: 'cascade' }),
+    .notNull()
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
   entityId: text('entityId').notNull(),
 });

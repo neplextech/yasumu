@@ -98,7 +98,6 @@ export class RestModule {
     entityId: string,
     script: YasumuEmbeddedScript,
     context: RestScriptContext,
-    terminateAfter = false,
   ) {
     const result =
       await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
@@ -109,7 +108,6 @@ export class RestModule {
             context,
             invocationTarget: !!context.response ? 'onResponse' : 'onRequest',
           },
-          terminateAfter,
         ],
       });
 
@@ -117,25 +115,28 @@ export class RestModule {
   }
 
   public async listHistory(): Promise<EntityHistoryData[]> {
-    const data = await this.workspace.manager.yasumu.rpc.entityHistory.list.$query({
-      parameters: [{ entityType: 'rest'
-       }],
-    });
+    const data =
+      await this.workspace.manager.yasumu.rpc.entityHistory.list.$query({
+        parameters: [{ entityType: 'rest' }],
+      });
 
     return data;
   }
 
   public async upsertHistory(entityId: string): Promise<EntityHistoryData> {
-    const data = await this.workspace.manager.yasumu.rpc.entityHistory.upsert.$mutate({
-      parameters: [{ entityId, entityType: 'rest' }],
-    });
+    const data =
+      await this.workspace.manager.yasumu.rpc.entityHistory.upsert.$mutate({
+        parameters: [{ entityId, entityType: 'rest' }],
+      });
 
     return data;
   }
 
   public async deleteHistory(entityId: string): Promise<void> {
-    await this.workspace.manager.yasumu.rpc.entityHistory.deleteByEntityId.$mutate({
-      parameters: [entityId],
-    });
+    await this.workspace.manager.yasumu.rpc.entityHistory.deleteByEntityId.$mutate(
+      {
+        parameters: [entityId],
+      },
+    );
   }
 }

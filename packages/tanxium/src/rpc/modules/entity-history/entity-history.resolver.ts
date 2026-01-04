@@ -73,4 +73,3 @@ export class EntityHistoryResolver
     await this.entityHistoryService.clear(workspaceId, entityType);
   }
 }
-

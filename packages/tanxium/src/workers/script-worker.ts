@@ -10,45 +10,50 @@ import {
   SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
   SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT,
 } from './common/worker-heartbeat.ts';
+import { computeScriptHash, makeModuleKey } from './common/script-hash.ts';
 
 export interface ScriptWorkerOptions {
-  key: string;
   source: string;
-  moduleKey: string;
   onTerminate?: () => void;
 }
 
 const EXECUTION_TIMEOUT = 30_000;
 
-export class ScriptWorker<Context = unknown> {
-  private readonly worker: Worker;
+export class ScriptWorker {
+  private worker: Worker | null = null;
   private readonly pendingRequests = new Map<
     string,
-    ScriptExecutionRequest<Context>
+    ScriptExecutionRequest<unknown>
   >();
-  private state: WorkerState = 'initializing';
+  private state: WorkerState = 'terminated';
   private lastHeartbeat = Date.now();
   private heartbeatCheckId: ReturnType<typeof setTimeout> | null = null;
-  private readyPromise: Promise<void>;
-  private readyResolve!: () => void;
-  private readyReject!: (error: Error) => void;
+  private readyPromise: Promise<void> | null = null;
+  private readyResolve: (() => void) | null = null;
+  private readyReject: ((error: Error) => void) | null = null;
 
-  public readonly key: string;
-  public readonly moduleKey: string;
+  public constructor(private readonly options: ScriptWorkerOptions) {}
 
-  public constructor(private readonly options: ScriptWorkerOptions) {
-    this.key = options.key;
-    this.moduleKey = options.moduleKey;
+  public get id(): number | null {
+    return this.worker?.threadId ?? null;
+  }
+
+  private ensureWorker(): Promise<void> {
+    if (this.worker && this.state !== 'terminated') {
+      return this.readyPromise!;
+    }
+
+    this.state = 'initializing';
+    this.lastHeartbeat = Date.now();
 
     const { promise, resolve, reject } = Promise.withResolvers<void>();
-
     this.readyPromise = promise;
     this.readyResolve = resolve;
     this.readyReject = reject;
 
-    this.worker = new Worker(options.source, {
+    this.worker = new Worker(this.options.source, {
       eval: true,
-      name: options.key,
+      name: 'yasumu-script-worker',
     });
 
     this.worker.on('message', this.handleMessage.bind(this));
@@ -56,13 +61,11 @@ export class ScriptWorker<Context = unknown> {
     this.worker.on('exit', this.handleExit.bind(this));
 
     this.startHeartbeatMonitor();
+
+    return this.readyPromise;
   }
 
-  public get id(): number {
-    return this.worker.threadId;
-  }
-
-  private handleMessage(message: WorkerOutboundMessage<Context>) {
+  private handleMessage(message: WorkerOutboundMessage<unknown>) {
     switch (message.type) {
       case 'heartbeat':
         this.lastHeartbeat = Date.now();
@@ -70,7 +73,7 @@ export class ScriptWorker<Context = unknown> {
 
       case 'ready':
         this.state = 'ready';
-        this.readyResolve();
+        this.readyResolve?.();
         break;
 
       case 'execution-success': {
@@ -107,7 +110,7 @@ export class ScriptWorker<Context = unknown> {
 
   private handleError(error: Error) {
     if (this.state === 'initializing') {
-      this.readyReject(
+      this.readyReject?.(
         new Error(`Worker initialization failed: ${error.message}`),
       );
     }
@@ -129,13 +132,25 @@ export class ScriptWorker<Context = unknown> {
       }
       this.pendingRequests.clear();
 
+      this.cleanupWorker();
       this.options.onTerminate?.();
     }
   }
 
+  private cleanupWorker() {
+    if (this.heartbeatCheckId !== null) {
+      clearTimeout(this.heartbeatCheckId);
+      this.heartbeatCheckId = null;
+    }
+    this.worker = null;
+    this.readyPromise = null;
+    this.readyResolve = null;
+    this.readyReject = null;
+  }
+
   private startHeartbeatMonitor() {
     const check = () => {
-      if (this.state === 'terminated') return;
+      if (this.state === 'terminated' || !this.worker) return;
 
       const elapsed = Date.now() - this.lastHeartbeat;
       if (elapsed >= SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT) {
@@ -163,20 +178,27 @@ export class ScriptWorker<Context = unknown> {
     this.terminate();
   }
 
-  public waitForReady(): Promise<void> {
-    return this.readyPromise;
+  public registerModule(entityId: string, code: string): string {
+    const hash = computeScriptHash(code);
+    const moduleKey = makeModuleKey(entityId, hash);
+
+    Yasumu.registerVirtualModule(moduleKey, code);
+
+    return moduleKey;
   }
 
-  public async execute(
+  public async execute<Context>(
+    moduleKey: string,
     invocationTarget: string,
+    contextType: string,
     context: Context,
     timeout = EXECUTION_TIMEOUT,
   ): Promise<ScriptExecutionResponse<Context>> {
-    if (this.state === 'terminated') {
-      throw new Error('Worker has been terminated');
-    }
+    await this.ensureWorker();
 
-    await this.waitForReady();
+    if (!this.worker) {
+      throw new Error('Worker is not available');
+    }
 
     const requestId = crypto.randomUUID();
 
@@ -189,11 +211,12 @@ export class ScriptWorker<Context = unknown> {
         }
       }, timeout);
 
-      const request: ScriptExecutionRequest<Context> = {
+      const request: ScriptExecutionRequest<unknown> = {
         requestId,
         invocationTarget,
+        contextType,
         context,
-        resolve,
+        resolve: resolve as (result: ScriptExecutionResponse<unknown>) => void,
         reject,
         timeoutId: timeoutId as unknown as number,
       };
@@ -204,12 +227,13 @@ export class ScriptWorker<Context = unknown> {
       const message: WorkerInboundMessage<Context> = {
         type: 'execute',
         requestId,
-        module: `yasumu:virtual/${this.moduleKey}`,
+        moduleKey,
         invocationTarget,
+        contextType,
         context,
       };
 
-      this.worker.postMessage(message);
+      this.worker!.postMessage(message);
     });
   }
 
@@ -227,7 +251,11 @@ export class ScriptWorker<Context = unknown> {
     }
     this.pendingRequests.clear();
 
-    this.worker.terminate();
+    if (this.worker) {
+      this.worker.terminate();
+    }
+
+    this.cleanupWorker();
     this.options.onTerminate?.();
   }
 
@@ -237,5 +265,9 @@ export class ScriptWorker<Context = unknown> {
 
   public isTerminated(): boolean {
     return this.state === 'terminated';
+  }
+
+  public isReady(): boolean {
+    return this.state === 'ready' || this.state === 'executing';
   }
 }

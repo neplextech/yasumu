@@ -12,6 +12,8 @@ import {
   op_register_virtual_module,
   op_unregister_virtual_module,
   op_is_yasumu_dev_mode,
+  op_get_rpc_port,
+  op_unregister_all_virtual_modules,
 } from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 import { join } from 'node:path';
 import { rendererEventQueue } from './utils.ts';
@@ -62,6 +64,14 @@ class Yasumu {
   public static unregisterVirtualModule(name: string) {
     if (inWorker) return;
     op_unregister_virtual_module(name);
+  }
+
+  /**
+   * Unregister all virtual modules.
+   */
+  public static unregisterAllVirtualModules() {
+    if (inWorker) return;
+    op_unregister_all_virtual_modules();
   }
 
   /**
@@ -160,6 +170,14 @@ class Yasumu {
   public static setRpcPort(port: number) {
     if (inWorker) return;
     op_set_rpc_port(port);
+  }
+
+  /**
+   * Get the RPC port
+   * @returns The RPC port
+   */
+  public static getRpcPort() {
+    return op_get_rpc_port();
   }
 
   /**

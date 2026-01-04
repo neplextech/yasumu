@@ -122,6 +122,20 @@ function buildRequestBody(
   }
 }
 
+function replacePathParams(
+  pathname: string,
+  pathParams: Record<string, { value: string; enabled: boolean }>,
+  interpolate: (value: string) => string,
+): string {
+  return pathname.replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, (match, key) => {
+    const param = pathParams[key];
+    if (param?.enabled && param.value) {
+      return encodeURIComponent(interpolate(param.value));
+    }
+    return match;
+  });
+}
+
 function buildUrl(
   baseUrl: string,
   searchParams: TabularPair[],
@@ -145,16 +159,9 @@ function buildUrl(
     }
   }
 
-  url = url.replace(/:([a-zA-Z0-9_]+)/g, (match, key) => {
-    const param = pathParams[key];
-    if (param?.enabled && param.value) {
-      return encodeURIComponent(interpolate(param.value));
-    }
-    return match;
-  });
-
   try {
     const urlObj = new URL(url);
+    urlObj.pathname = replacePathParams(urlObj.pathname, pathParams, interpolate);
     for (const param of searchParams) {
       if (param.enabled && param.key) {
         urlObj.searchParams.append(
@@ -165,6 +172,14 @@ function buildUrl(
     }
     return urlObj.toString();
   } catch {
+    const withoutProtocol = url.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+    const pathStart = withoutProtocol.indexOf('/');
+    if (pathStart !== -1) {
+      const authority = url.slice(0, url.indexOf(withoutProtocol) + pathStart);
+      const pathPortion = withoutProtocol.slice(pathStart);
+      const replacedPath = replacePathParams(pathPortion, pathParams, interpolate);
+      url = authority + replacedPath;
+    }
     return url;
   }
 }

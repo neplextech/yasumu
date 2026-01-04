@@ -12,7 +12,9 @@ declare module 'ext:core/ops' {
   export function op_set_echo_server_port(port: number): void;
   export function op_register_virtual_module(key: string, code: string): void;
   export function op_unregister_virtual_module(key: string): void;
+  export function op_unregister_all_virtual_modules(): void;
   export function op_is_yasumu_dev_mode(): boolean;
+  export function op_get_rpc_port(): number | null;
 }
 
 declare module 'ext:deno_console/01_console.js' {

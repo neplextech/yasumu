@@ -1,9 +1,9 @@
 'use client';
 
 import { Button } from '@yasumu/ui/components/button';
-import { Input } from '@yasumu/ui/components/input';
 import { Loader2 } from 'lucide-react';
 import HttpMethodSelector from '../http-methods-selector';
+import { InteropableInput } from '@/components/inputs';
 
 interface RequestUrlBarProps {
   method: string;
@@ -12,6 +12,7 @@ interface RequestUrlBarProps {
   onUrlChange: (url: string) => void;
   onSend: () => void;
   onCancel: () => void;
+  onVariableClick?: (variableName: string) => React.ReactNode;
   isSending?: boolean;
   isSaving?: boolean;
 }
@@ -23,6 +24,7 @@ export function RequestUrlBar({
   onUrlChange,
   onSend,
   onCancel,
+  onVariableClick,
   isSending,
   isSaving,
 }: RequestUrlBarProps) {
@@ -37,12 +39,13 @@ export function RequestUrlBar({
     <div className="flex gap-2 items-center">
       <HttpMethodSelector onChange={onMethodChange} value={method} />
       <div className="flex-1 relative">
-        <Input
+        <InteropableInput
           placeholder="Enter a URL (e.g., https://api.example.com/users)"
           value={url}
-          onChange={(e) => onUrlChange(e.target.value)}
+          onChange={onUrlChange}
           onKeyDown={handleKeyDown}
-          className="font-mono text-sm pr-8"
+          onVariableClick={onVariableClick}
+          className="pr-8"
           disabled={isSending}
         />
         {isSaving && (

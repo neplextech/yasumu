@@ -32,7 +32,7 @@ import type {
 } from '@yasumu/common';
 
 type ExecuteScriptCommand<Context> = RpcMutation<
-  [entity: ExecutableScript<Context>, terminateAfter?: boolean],
+  [entity: ExecutableScript<Context>],
   ScriptExecutionResult<Context>
 >;
 

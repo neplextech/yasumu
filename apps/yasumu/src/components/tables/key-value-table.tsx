@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useRef, useState } from 'react';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { Input } from '@yasumu/ui/components/input';
 import {
   Table,
   TableBody,
@@ -14,7 +11,10 @@ import {
 } from '@yasumu/ui/components/table';
 import { Trash, Plus } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
-import { flushSync } from 'react-dom';
+import {
+  InteropableInput,
+  useVariablePopover,
+} from '@/components/inputs';
 
 export interface KeyValuePair {
   key: string;
@@ -27,7 +27,7 @@ export default function KeyValueTable(props: {
   onChange?: (pairs: KeyValuePair[]) => void;
   pairs?: KeyValuePair[];
 }) {
-  const inputRefs = useRef<Array<HTMLInputElement>>([]);
+  const { renderVariablePopover } = useVariablePopover();
   const pairs = props.pairs?.length
     ? props.pairs
     : [{ key: '', value: '', enabled: true }];
@@ -66,23 +66,12 @@ export default function KeyValueTable(props: {
   function handleKeyDown(e: React.KeyboardEvent, index: number) {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      flushSync(() => {
-        addNewPair(index + 1);
-      });
-
-      if (inputRefs.current[index + 1]) {
-        inputRefs.current[index + 1].focus();
-      }
+      addNewPair(index + 1);
     }
     if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       deletePair(index);
-      const isLastIndex = index === pairs.length - 1;
-      if (isLastIndex && inputRefs.current[index - 1]) {
-        inputRefs.current[index - 1].focus();
-      }
     }
-
     if (e.key === 't' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       updatePair(index, 'enabled', !pairs[index].enabled);
@@ -108,21 +97,20 @@ export default function KeyValueTable(props: {
               }}
             >
               <TableCell>
-                <Input
-                  ref={(el) => {
-                    if (el) inputRefs.current[i] = el;
-                  }}
+                <InteropableInput
                   placeholder="Name"
                   value={pair.key}
-                  onChange={(e) => updatePair(i, 'key', e.target.value)}
+                  onChange={(val) => updatePair(i, 'key', val)}
+                  onVariableClick={renderVariablePopover}
                   disabled={!pair.enabled}
                 />
               </TableCell>
               <TableCell>
-                <Input
+                <InteropableInput
                   placeholder="Value"
                   value={pair.value}
-                  onChange={(e) => updatePair(i, 'value', e.target.value)}
+                  onChange={(val) => updatePair(i, 'value', val)}
+                  onVariableClick={renderVariablePopover}
                   disabled={!pair.enabled}
                 />
               </TableCell>

@@ -75,8 +75,7 @@ export class RestResolver implements YasumuRpcService<'rest'> {
   public executeScript(
     @WorkspaceId() workspaceId: string,
     entity: ExecutableScript<RestScriptContext>,
-    terminateAfter = false,
   ): Promise<ScriptExecutionResult<RestScriptContext>> {
-    return this.restService.executeScript(workspaceId, entity, terminateAfter);
+    return this.restService.executeScript(workspaceId, entity);
   }
 }

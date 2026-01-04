@@ -9,4 +9,3 @@ import { EntityHistoryResolver } from './entity-history.resolver.ts';
   resolvers: [EntityHistoryResolver],
 })
 export class EntityHistoryModule {}
-

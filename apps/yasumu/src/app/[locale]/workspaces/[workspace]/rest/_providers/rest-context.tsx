@@ -24,9 +24,11 @@ export function RestContextProvider({ children }: React.PropsWithChildren) {
       try {
         setIsLoadingHistory(true);
         const historyData = await workspace.rest.listHistory();
-        const entityIds = historyData.map((item) => item.entityId).reverse();
+        const entityIds = [
+          ...new Set(historyData.map((item) => item.entityId)),
+        ].reverse();
         setHistory(entityIds);
-        
+
         // Set the most recent entity as active (last in the array after reverse)
         if (entityIds.length > 0) {
           _setEntityId(entityIds[entityIds.length - 1]);
@@ -52,7 +54,6 @@ export function RestContextProvider({ children }: React.PropsWithChildren) {
 
     // Sync with backend
     await workspace.rest.upsertHistory(id);
-   
   };
 
   const removeFromHistory = async (id: string) => {
@@ -68,8 +69,7 @@ export function RestContextProvider({ children }: React.PropsWithChildren) {
     });
 
     // Sync with backend
-      await workspace.rest.deleteHistory(id);
-   
+    await workspace.rest.deleteHistory(id);
   };
 
   const setEntityId = (id: string) => {

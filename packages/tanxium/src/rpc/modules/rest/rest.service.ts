@@ -13,7 +13,7 @@ import { NotFoundException } from '../common/exceptions/http.exception.ts';
 import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
 import { ScriptRuntimeService } from '../script-runtime/script-runtime.service.ts';
-import { REST_SCRIPT_PRELOAD } from './rest-script-preload.ts';
+import { REST_CONTEXT_TYPE } from './rest-script-preload.ts';
 
 @Injectable()
 export class RestService {
@@ -110,10 +110,6 @@ export class RestService {
       )
       .returning();
 
-    // NOTE(twilight):
-    // only dispatch if specific fields are updated
-    // as current "dispatchUpdate" is used to sync the file tree
-    // in the future we should use a more specific event for this
     if (data.name || data.method) await this.dispatchUpdate(workspaceId);
 
     return result;
@@ -138,21 +134,13 @@ export class RestService {
     });
   }
 
-  public async executeScript(
+  public executeScript(
     workspaceId: string,
     entity: ExecutableScript<RestScriptContext>,
-    terminateAfter = false,
   ): Promise<ScriptExecutionResult<RestScriptContext>> {
-    const result = await this.scriptRuntimeService.executeScript<
+    return this.scriptRuntimeService.executeScript<
       RestScriptContext,
       ExecutableScript<RestScriptContext>
-    >(
-      workspaceId,
-      entity,
-      REST_SCRIPT_PRELOAD,
-      terminateAfter || entity.invocationTarget === 'onResponse',
-    );
-
-    return result;
+    >(workspaceId, entity, REST_CONTEXT_TYPE);
   }
 }
