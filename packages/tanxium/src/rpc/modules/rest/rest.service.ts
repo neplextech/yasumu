@@ -1,7 +1,7 @@
 import { Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { and, eq, isNull } from 'drizzle-orm';
-import { restEntities } from '@/database/schema.ts';
+import { entityHistory, restEntities } from '@/database/schema.ts';
 import {
   ExecutableScript,
   RestEntityCreateOptions,
@@ -124,7 +124,22 @@ export class RestService {
         and(eq(restEntities.id, id), eq(restEntities.workspaceId, workspaceId)),
       );
 
+    // Delete associated history entry
+    await db
+      .delete(entityHistory)
+      .where(
+        and(
+          eq(entityHistory.entityId, id),
+          eq(entityHistory.workspaceId, workspaceId),
+        ),
+      );
+
     await this.dispatchUpdate(workspaceId);
+
+    // Dispatch history update event
+    await this.tanxiumService.publishMessage('entity-history-updated', {
+      workspaceId,
+    });
   }
 
   public listTree(workspaceId: string) {

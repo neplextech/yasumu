@@ -8,4 +8,13 @@ export interface RpcSubscriptionEvents {
      */
     workspaceId: string;
   };
+  /**
+   * The event for when entity history is updated.
+   */
+  'entity-history-updated': {
+    /**
+     * The ID of the workspace that the history belongs to.
+     */
+    workspaceId: string;
+  };
 }

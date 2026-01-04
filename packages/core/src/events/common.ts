@@ -44,4 +44,9 @@ export interface YasumuEventHandlerInterface {
    * @param email - The email that was received.
    */
   onNewEmail: (workspaceId: string, email: EmailData) => unknown;
+  /**
+   * Called when entity history is updated.
+   * @param workspace - The workspace that the history was updated for.
+   */
+  onEntityHistoryUpdate: (workspace: Workspace) => unknown;
 }

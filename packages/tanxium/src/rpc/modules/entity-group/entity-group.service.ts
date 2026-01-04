@@ -5,8 +5,8 @@ import {
   EntityGroupUpdateOptions,
   TreeViewOptions,
 } from './types.ts';
-import { and, eq, isNull } from 'drizzle-orm';
-import { entityGroups, restEntities } from '../../../database/schema.ts';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { entityGroups, entityHistory, restEntities } from '../../../database/schema.ts';
 import {
   NotFoundException,
   BadRequestException,
@@ -87,7 +87,32 @@ export class EntityGroupService {
 
     if (!result) return null;
 
-    return result;
+    const childGroups = await db
+    .select()
+    .from(entityGroups)
+    .where(
+      and(
+        eq(entityGroups.parentId, id),
+        eq(entityGroups.workspaceId, workspaceId),
+      ),
+    );
+
+  // Fetch rest entities that belong to this group
+  const entities = await db
+    .select()
+    .from(restEntities)
+    .where(
+      and(
+        eq(restEntities.groupId, id),
+        eq(restEntities.workspaceId, workspaceId),
+      ),
+    );
+
+    return {
+      ...result,
+      children: childGroups,
+      entities,
+    };
   }
 
   public async getOrThrow(workspaceId: string, id: string) {
@@ -139,11 +164,23 @@ export class EntityGroupService {
 
   public async delete(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    await this.getOrThrow(workspaceId, id);
+    const { entities } = await this.getOrThrow(workspaceId, id);
 
     await db.delete(entityGroups).where(eq(entityGroups.id, id)).returning();
 
+    // Remove entity history only if there are entities to delete
+    const entityIds = Array.from(new Set(entities.map((entity) => entity.id)));
+    if (entityIds.length > 0) {
+      await db
+        .delete(entityHistory)
+        .where(inArray(entityHistory.entityId, entityIds));
+    }
+
     await this.dispatchUpdate(workspaceId);
+
+    await this.tanxiumService.publishMessage('entity-history-updated', {
+      workspaceId,
+    });
   }
 
   public async listTree(options: TreeViewOptions) {
