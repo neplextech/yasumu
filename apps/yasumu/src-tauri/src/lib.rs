@@ -59,6 +59,17 @@ fn get_echo_server_port(app: tauri::AppHandle) -> Option<u16> {
     yasumu_state.echo_server_port
 }
 
+#[tauri::command]
+fn yasumu_open_devtools(app: tauri::AppHandle) {
+    let window = app.get_webview_window("main").unwrap();
+
+    if window.is_devtools_open() {
+        window.close_devtools();
+    } else {
+        window.open_devtools();
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     rustls::crypto::ring::default_provider()
@@ -150,6 +161,7 @@ pub fn run() {
             on_frontend_ready,
             get_rpc_port,
             get_echo_server_port,
+            yasumu_open_devtools,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

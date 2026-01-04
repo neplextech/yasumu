@@ -13,9 +13,11 @@ import UpdaterProvider from './updater-provider';
 import { CustomThemeProvider } from './custom-theme-provider';
 import { CommandPaletteProvider, CommandPalette } from '../command';
 import { DisableContextMenu } from './disable-context-menu';
+import useDevtools from '@/hooks/use-devtools';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useTanxiumEvent();
+  useDevtools();
 
   return (
     <NextThemesProvider

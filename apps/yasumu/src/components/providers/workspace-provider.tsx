@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useEffectEvent,
   useState,
+  useRef,
 } from 'react';
 import { createClient } from '@/lib/api/tanxium.api';
 import { invoke } from '@tauri-apps/api/core';
@@ -14,14 +15,34 @@ import { exit } from '@tauri-apps/plugin-process';
 import LoadingScreen from '../visuals/loading-screen';
 import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
 import { Workspace, Yasumu, createYasumu } from '@yasumu/core';
-import { useRouter } from 'next/navigation';
-import {
-  asPathIdentifier,
-  DEFAULT_WORKSPACE_PATH,
-} from '@yasumu/tanxium/src/rpc/common/constants';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { toast } from '@yasumu/ui/components/sonner';
+
+const WORKSPACE_SECTIONS = [
+  'rest',
+  'graphql',
+  'socketio',
+  'websocket',
+  'sse',
+  'emails',
+  'environment',
+] as const;
+type WorkspaceSection = (typeof WORKSPACE_SECTIONS)[number];
+
+function isWorkspacePath(pathname: string): boolean {
+  return pathname.includes('/workspaces/');
+}
+
+function getCurrentSection(pathname: string): WorkspaceSection | null {
+  for (const section of WORKSPACE_SECTIONS) {
+    if (pathname.endsWith(`/${section}`)) {
+      return section;
+    }
+  }
+  return null;
+}
 
 export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
@@ -71,6 +92,12 @@ export default function WorkspaceProvider({
     null,
   );
   const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   const initializeYasumuEnvironment = async () => {
     let attempt: number;
@@ -119,6 +146,14 @@ export default function WorkspaceProvider({
           events: {
             onWorkspaceActivated: (workspace) => {
               setCurrentWorkspaceId(workspace.id);
+              const currentPath = pathnameRef.current;
+              if (isWorkspacePath(currentPath)) {
+                const section = getCurrentSection(currentPath);
+                if (section) {
+                  router.replace(`/en/workspaces/default/${section}`);
+                  return;
+                }
+              }
               router.replace('/en/workspaces/default/rest');
             },
             onWorkspaceDeactivated: () => {

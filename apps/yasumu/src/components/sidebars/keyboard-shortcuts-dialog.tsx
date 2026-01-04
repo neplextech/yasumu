@@ -82,12 +82,23 @@ export function KeyboardShortcutsDialog() {
       });
     }
 
-    groups['general'] = groups['general'] ?? [];
-    groups['general'].unshift({
+    (groups['general'] ??= []).unshift({
       name: 'Command Palette',
       description: 'Open the command palette',
       keys: isMac ? ['⌘', 'K'] : ['Ctrl', 'K'],
     });
+    (groups['advanced'] ??= []).unshift(
+      {
+        name: 'Open Settings',
+        description: 'Open the settings',
+        keys: isMac ? ['⌘', ','] : ['Ctrl', ','],
+      },
+      {
+        name: 'Open Devtools',
+        description: 'Open the devtools',
+        keys: isMac ? ['⌘', 'Shift', 'I'] : ['Ctrl', 'Shift', 'I'],
+      },
+    );
 
     return Object.entries(groups)
       .sort(([a], [b]) => getCategoryPriority(a) - getCategoryPriority(b))

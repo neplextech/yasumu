@@ -121,6 +121,11 @@ export function useBuiltinCommands() {
         icon: <Settings className="size-4" />,
         keywords: ['settings', 'preferences', 'options', 'config'],
         category: 'navigation',
+        shortcut: {
+          hotkey: 'mod+,',
+          mac: ['⌘', ','],
+          other: ['Ctrl', ','],
+        },
         execute: () => {
           setIsOpen(false);
           router.push('/en/settings');
