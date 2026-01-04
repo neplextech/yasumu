@@ -98,8 +98,16 @@ export default function AuthEditor({ headers, onChange }: AuthEditorProps) {
 
   const handleAuthTypeChange = useCallback(
     (type: string) => {
-      if (type === 'none') {
-        updateAuthHeader(null);
+      switch (type) {
+        case 'none':
+          updateAuthHeader(null);
+          break;
+        case 'basic':
+          updateAuthHeader('Basic ');
+          break;
+        case 'bearer':
+          updateAuthHeader('Bearer ');
+          break;
       }
     },
     [updateAuthHeader],

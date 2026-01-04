@@ -9,9 +9,27 @@ metadata {
 
 request {
   url: "{{API_URL}}"
-  headers: []
-  parameters: []
-  searchParameters: []
+  headers: [
+    {
+      key: "Authorization"
+      value: "Basic VXNlcm5hbWU6UGFzc3dvcmQ="
+      enabled: true
+    },
+  ]
+  parameters: [
+    {
+      key: "path"
+      value: "users"
+      enabled: true
+    },
+  ]
+  searchParameters: [
+    {
+      key: "foo"
+      value: "bar"
+      enabled: true
+    },
+  ]
   body: null
 }
 
