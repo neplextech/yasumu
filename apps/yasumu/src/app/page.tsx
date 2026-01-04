@@ -8,8 +8,11 @@ import OpenWorkspaceAction from './_components/open-workspace-action';
 import { Button } from '@yasumu/ui/components/button';
 import { Cog } from 'lucide-react';
 import Link from 'next/link';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
 export default function Page() {
+  const workspace = useActiveWorkspace(false);
+
   return (
     <div className="flex min-h-screen w-full bg-background selection:bg-primary/20 relative">
       <div className="flex-1 flex flex-col items-center justify-center p-8 animate-in fade-in duration-500 slide-in-from-bottom-4">
@@ -41,13 +44,15 @@ export default function Page() {
           </div>
         </div>
       </div>
-      <div className="absolute bottom-12 left-12">
-        <Link href="/en/settings">
-          <Button variant="outline" size="icon">
-            <Cog className="size-4" />
-          </Button>
-        </Link>
-      </div>
+      {!workspace && (
+        <div className="absolute bottom-12 left-12">
+          <Link href="/en/settings">
+            <Button variant="outline" size="icon">
+              <Cog className="size-4" />
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

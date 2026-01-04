@@ -127,7 +127,7 @@ function RequestTabItem({ tab, index }: { tab: RequestTab; index: number }) {
   const name = data?.name || 'Loading...';
   const url = data?.url || '';
   const method = data?.method || '';
-  const Icon = data ? resolveHttpMethodIcon(method, { short: true }) : null;
+  const Icon = data ? resolveHttpMethodIcon(method, { short: false }) : null;
 
   return (
     <Tooltip>

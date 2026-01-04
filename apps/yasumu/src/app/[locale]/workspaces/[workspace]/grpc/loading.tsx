@@ -1,3 +1,5 @@
+import LoadingScreen from '@/components/visuals/loading-screen';
+
 export default function Loading() {
-  return <div>Loading...</div>;
+  return <LoadingScreen fullScreen />;
 }

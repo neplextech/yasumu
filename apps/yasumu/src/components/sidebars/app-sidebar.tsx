@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronsUpDown, Lock, Logs, Mail, Settings } from 'lucide-react';
+import { ChevronsUpDown, Home, Lock, Logs, Mail, Settings } from 'lucide-react';
 import {
   Avatar,
   AvatarFallback,
@@ -52,12 +52,12 @@ const data = {
     avatar: '/Yasumu Dark.svg',
   },
   navMain: [
-    // {
-    //   title: 'Home',
-    //   url: '/',
-    //   icon: Home,
-    //   isActive: true,
-    // },
+    {
+      title: 'Home',
+      url: '/',
+      icon: Home,
+      isActive: true,
+    },
     {
       title: 'Rest API',
       url: '/en/workspaces/default/rest',

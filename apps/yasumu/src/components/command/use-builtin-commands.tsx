@@ -222,30 +222,6 @@ export function useBuiltinCommands() {
     ];
   }, [router, openSubDialog, handleOpenWorkspace, setIsOpen]);
 
-  useHotkeys(
-    'mod+s',
-    () => {
-      const workspace = yasumu.workspaces.getActiveWorkspace();
-      if (!workspace) return;
-
-      withErrorHandler(async () => {
-        const savingToast = toast.loading('Saving workspace...');
-        await workspace.synchronize();
-        toast.dismiss(savingToast);
-        toast.success('Workspace saved successfully!');
-      })();
-    },
-    { preventDefault: true },
-  );
-
-  useHotkeys(
-    'mod+r',
-    () => {
-      window.location.reload();
-    },
-    { preventDefault: true },
-  );
-
   useRegisterCommands(commands);
 }
 

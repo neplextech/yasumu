@@ -14,6 +14,7 @@ import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { Environment, TabularPair } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
 import { toast } from '@yasumu/ui/components/sonner';
+import { parseAsString, useQueryState } from 'nuqs';
 
 export default function EnvironmentPage() {
   const {
@@ -23,9 +24,16 @@ export default function EnvironmentPage() {
     setEnvironments,
   } = useEnvironmentStore();
   const workspace = useActiveWorkspace();
-  const [currentEnvironmentId, setCurrentEnvironmentId] = useState<
-    string | undefined
-  >(() => selectedEnvironment?.id);
+  const [currentEnvironmentId, setCurrentEnvironmentId] = useQueryState<string>(
+    'environmentId',
+    parseAsString.withDefault(selectedEnvironment?.id ?? ''),
+  );
+
+  console.log({
+    currentEnvironmentId,
+    selectedEnvironmentId: selectedEnvironment?.id,
+  });
+
   const currentEnvironment = environments.find(
     (env) => env.id === currentEnvironmentId,
   );

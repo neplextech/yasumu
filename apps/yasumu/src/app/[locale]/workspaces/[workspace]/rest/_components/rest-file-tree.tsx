@@ -54,7 +54,7 @@ export function RestFileTree() {
         id: item.id,
         name: item.name ?? 'New Request',
         type: 'file',
-        icon: resolveHttpMethodIcon(item.method, { short: true }),
+        icon: resolveHttpMethodIcon(item.method, { short: false }),
       };
     });
   };
