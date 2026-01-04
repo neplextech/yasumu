@@ -90,7 +90,15 @@ export function CommandPalette() {
     document.addEventListener(
       'keydown',
       (event) => {
-        console.log('keydown', event);
+        // skip if inside an input or textarea or form
+        if (
+          event.target &&
+          (event.target instanceof HTMLInputElement ||
+            event.target instanceof HTMLTextAreaElement ||
+            event.target instanceof HTMLFormElement)
+        ) {
+          return;
+        }
         if (!commands.length) return;
 
         const pressedHotkey = eventToHotkey(event);

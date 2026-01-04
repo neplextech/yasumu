@@ -24,6 +24,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@yasumu/ui/components/resizable';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 
 function tabularPairsToRecord(
   pairs: TabularPair[] | undefined,
@@ -151,6 +153,14 @@ export default function RestPage() {
       updateField('testScript', script);
     },
     [updateField],
+  );
+
+  useHotkeys(
+    'mod+enter',
+    async () => {
+      await withErrorHandler(handleSend)();
+    },
+    { preventDefault: true, enableOnFormTags: false },
   );
 
   if (!entityId) {

@@ -128,7 +128,7 @@ export function RestRequestTabs({
           <TabsTrigger value="auth">Auth</TabsTrigger>
           <TabsTrigger value="body">Body</TabsTrigger>
           <TabsTrigger value="scripts">Scripts</TabsTrigger>
-          <TabsTrigger value="tests">Tests</TabsTrigger>
+          {/* <TabsTrigger value="tests">Tests</TabsTrigger> */}
         </TabsList>
       </div>
 

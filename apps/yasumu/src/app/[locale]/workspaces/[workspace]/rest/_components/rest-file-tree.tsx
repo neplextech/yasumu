@@ -95,6 +95,7 @@ export function RestFileTree() {
         dependencies: data.dependencies,
         metadata: {},
       });
+      await refetchRestEntities();
     },
     [workspace.rest],
   );
@@ -158,6 +159,8 @@ export function RestFileTree() {
         folder,
         targetParentId !== undefined ? targetParentId : folder.parentId,
       );
+
+      await refetchRestEntities();
     },
     [workspace.rest, restEntities],
   );
@@ -225,6 +228,7 @@ export function RestFileTree() {
             parentId: targetFolderId,
           });
         }
+        await refetchRestEntities();
         clearClipboard();
       }
     },

@@ -208,8 +208,8 @@ export function useBuiltinCommands() {
       },
       {
         id: 'exit-application',
-        name: 'Exit Application',
-        description: 'Exit the application',
+        name: 'Quit Application',
+        description: 'Quit the application',
         icon: <LogOut className="size-4" />,
         keywords: ['exit', 'quit', 'close'],
         category: 'general',

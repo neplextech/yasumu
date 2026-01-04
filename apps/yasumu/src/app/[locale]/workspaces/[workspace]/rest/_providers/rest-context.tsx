@@ -26,7 +26,7 @@ export function RestContextProvider({ children }: React.PropsWithChildren) {
         const historyData = await workspace.rest.listHistory();
         const entityIds = [
           ...new Set(historyData.map((item) => item.entityId)),
-        ].reverse();
+        ];
         setHistory(entityIds);
 
         // Set the most recent entity as active (last in the array after reverse)

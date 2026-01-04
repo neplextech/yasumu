@@ -180,6 +180,17 @@ export function FileTreeSidebar({
     onFolderSelect?.(null);
   }, [onFolderSelect]);
 
+  // useHotkeys(
+  //   'mod+v',
+  //   () => {
+  //     if (clipboard) {
+  //       onPasteItem?.(clipboard.id);
+  //     }
+  //   },
+  //   { preventDefault: true, enableOnFormTags: false },
+  //   [onPasteItem, clipboard],
+  // );
+
   return (
     <Sidebar {...props} ref={sidebarRef}>
       <ContextMenu>
@@ -546,6 +557,41 @@ function Tree({
   const { name, children } = item;
   const isSelected = selectedItemId === item.id;
   const isCut = clipboard?.id === item.id && clipboard?.operation === 'cut';
+
+  useHotkeys(
+    'mod+c',
+    () => {
+      if (item.type === 'file') {
+        onFileCopy?.(item.id);
+      } else {
+        onFolderCopy?.(item.id);
+      }
+    },
+    { preventDefault: true, enableOnFormTags: false },
+    [onFileCopy],
+  );
+
+  useHotkeys(
+    'mod+x',
+    () => {
+      if (item.type === 'file') {
+        onFileCut?.(item.id);
+      } else {
+        onFolderCut?.(item.id);
+      }
+    },
+    { preventDefault: true, enableOnFormTags: false },
+    [onFileCut],
+  );
+
+  useHotkeys(
+    'mod+v',
+    () => {
+      onPasteItem?.(item.id);
+    },
+    { preventDefault: true, enableOnFormTags: false },
+    [onPasteItem],
+  );
 
   if (item.type === 'file') {
     const Icon = item.icon;
