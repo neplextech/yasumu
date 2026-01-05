@@ -33,6 +33,7 @@ export function PreviewView({ response, blobUrl }: PreviewViewProps) {
       response.bodyType === 'text'
         ? formatBytes(MAX_TEXT_BODY_SIZE)
         : formatBytes(MAX_BINARY_BODY_SIZE);
+
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-4">
         <p className="font-medium">Response body too large to preview</p>
@@ -43,51 +44,26 @@ export function PreviewView({ response, blobUrl }: PreviewViewProps) {
     );
   }
 
-  switch (category) {
-    case 'image':
-      return blobUrl ? (
-        <ImageViewer src={blobUrl} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'video':
-      return blobUrl ? (
-        <VideoViewer src={blobUrl} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'audio':
-      return blobUrl ? (
-        <AudioViewer src={blobUrl} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'html':
-      return response.textBody ? (
-        <HtmlViewer body={response.textBody} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'pdf':
-      return blobUrl ? (
-        <PdfViewer src={blobUrl} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'csv':
-      return response.textBody ? (
-        <CsvViewer body={response.textBody} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'text':
-      return response.textBody ? (
-        <TextViewer body={response.textBody} />
-      ) : (
-        <BinaryViewer contentType={contentType} />
-      );
-    case 'binary':
-    default:
-      return <BinaryViewer contentType={contentType} />;
-  }
+  const binaryFallback = (
+    <BinaryViewer contentType={contentType} />
+  );
+
+  const withBlob = (render: (src: string) => JSX.Element) =>
+    blobUrl ? render(blobUrl) : binaryFallback;
+
+  const withText = (render: (body: string) => JSX.Element) =>
+    response.textBody ? render(response.textBody) : binaryFallback;
+
+  const renderers: Record<string, () => JSX.Element> = {
+    image: () => withBlob((src) => <ImageViewer src={src} />),
+    video: () => withBlob((src) => <VideoViewer src={src} />),
+    audio: () => withBlob((src) => <AudioViewer src={src} />),
+    pdf: () => withBlob((src) => <PdfViewer src={src} />),
+    html: () => withText((body) => <HtmlViewer body={body} />),
+    csv: () => withText((body) => <CsvViewer body={body} />),
+    text: () => withText((body) => <TextViewer body={body} />),
+    binary: () => binaryFallback,
+  };
+
+  return (renderers[category] ?? renderers.binary)();
 }
