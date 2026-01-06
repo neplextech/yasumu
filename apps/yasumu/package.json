@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "pnpm generate-typedef && next dev --turbopack",
     "build": "pnpm generate-typedef && next build --turbopack",
-    "bundle": "pnpm --filter=tanxium run build",
+    "bundle": "pnpm --filter=tanxium run build && pnpm --filter=test run build",
     "start": "next start",
     "lint": "eslint",
     "tauri": "tauri",

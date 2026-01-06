@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { cp } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 
 const outputDir = join(
   Deno.cwd(),
@@ -15,6 +16,10 @@ const outputDir = join(
 );
 
 await Deno.remove(outputDir, { recursive: true }).catch(Object);
+
+if (!existsSync(outputDir)) {
+  await Deno.mkdir(outputDir, { recursive: true });
+}
 
 const result = await Deno.bundle({
   entrypoints: ['./src/index.ts'],
