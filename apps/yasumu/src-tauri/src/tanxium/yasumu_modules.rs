@@ -8,5 +8,9 @@ pub static YASUMU_MODULES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new
             "yasumu:ui/jsx-runtime",
             include_str!("runtime/modules/jsx-runtime.ts"),
         ),
+        (
+            "yasumu:test",
+            include_str!("../../resources/yasumu-scripts/public-modules/yasumu__test/index.js"),
+        ),
     ])
 });

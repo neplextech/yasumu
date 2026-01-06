@@ -8,6 +8,7 @@
     "requests",
     "environments",
     "scripting",
+    "testing",
     "---Features---",
     "smtp-server",
     "echo-server",

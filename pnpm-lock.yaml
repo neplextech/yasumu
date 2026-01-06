@@ -556,6 +556,8 @@ importers:
         specifier: ^3.5.12
         version: 3.5.12
 
+  packages/test: {}
+
   packages/tsconfig: {}
 
   packages/ui:

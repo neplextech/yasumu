@@ -142,5 +142,5 @@ Request → Router → Middleware → Handler → Service → Repository → Dat
 
 ## License
 
-MIT
+AGPL-3.0
 

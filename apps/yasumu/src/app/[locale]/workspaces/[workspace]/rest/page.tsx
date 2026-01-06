@@ -148,13 +148,6 @@ export default function RestPage() {
     [updateField],
   );
 
-  const handleTestScriptChange = useCallback(
-    (script: YasumuEmbeddedScript) => {
-      updateField('testScript', script);
-    },
-    [updateField],
-  );
-
   useHotkeys(
     'mod+enter',
     async () => {
@@ -194,14 +187,12 @@ export default function RestPage() {
       headers={data.requestHeaders || []}
       body={data.requestBody}
       script={data.script}
-      testScript={data.testScript}
       url={data.url || ''}
       onSearchParamsChange={handleSearchParamsChange}
       onPathParamsChange={handlePathParamsChange}
       onHeadersChange={handleHeadersChange}
       onBodyChange={handleBodyChange}
       onScriptChange={handleScriptChange}
-      onTestScriptChange={handleTestScriptChange}
     />
   );
 
@@ -212,6 +203,7 @@ export default function RestPage() {
       error={requestState.error}
       scriptOutput={requestState.scriptOutput}
       blobUrl={requestState.blobUrl}
+      testResults={requestState.testResults}
     />
   );
 

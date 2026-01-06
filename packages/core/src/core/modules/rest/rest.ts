@@ -114,6 +114,26 @@ export class RestModule {
     return result;
   }
 
+  public async executeTest(
+    entityId: string,
+    script: YasumuEmbeddedScript,
+    context: RestScriptContext,
+  ) {
+    const result =
+      await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
+        parameters: [
+          {
+            entityId,
+            script,
+            context,
+            invocationTarget: 'onTest',
+          },
+        ],
+      });
+
+    return result;
+  }
+
   public async listHistory(): Promise<EntityHistoryData[]> {
     const data =
       await this.workspace.manager.yasumu.rpc.entityHistory.list.$query({

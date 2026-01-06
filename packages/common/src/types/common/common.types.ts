@@ -108,6 +108,10 @@ export interface ScriptExecutionResult<Context = any> {
    * The execution result of the script.
    */
   result: ScriptExecutionResultOrError;
+  /**
+   * The test execution result, if tests were run.
+   */
+  testResult?: ScriptExecutionResultOrError;
 }
 
 /**

@@ -1,0 +1,23 @@
+{
+  "name": "@yasumu/test",
+  "type": "module",
+  "description": "Yasumu testing API",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "deno run --unstable-bundle --allow-read --allow-write ./scripts/build.ts",
+    "deno": "deno",
+    "generate-dts": "tsc --emitDeclarationOnly"
+  },
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "dependencies": {}
+}

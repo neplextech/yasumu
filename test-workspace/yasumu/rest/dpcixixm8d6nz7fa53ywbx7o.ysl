@@ -44,9 +44,10 @@ request {
 dependencies []
 
 script {
-  let reqId: string
+  let reqId: string, runs: number = 0;
   
   export async function onRequest(req: YasumuRequest) {
+    runs++;
     reqId = Yasumu.cuid()
     const userId = req.env.getSecret('USER_ID')
     req.headers.set('x-current-user-id', userId || 'NONE')
@@ -54,7 +55,6 @@ script {
   }
   
   export async function onResponse(req: YasumuRequest, res: YasumuResponse) {
-    console.log(res.json())
     res.env.setVariable('SOURCE', res.json<any>().meta.source)
     res.env.setVariable('TIMESTAMP', res.json<any>().meta.timestamp)
   
@@ -63,6 +63,21 @@ script {
       message: `Your request has been processed!`,
       variant: 'info',
     });
+  }
+  
+  export async function onTest(req: YasumuRequest, res: YasumuResponse) {
+    test('Response is successful', () => {
+      expect(res.status).toBe(200)
+    })
+    test(`Pass | Run: ${runs}`, (ctx) => {
+      ctx.succeed()
+    })
+    test('Fail', (ctx) => {
+      ctx.fail()
+    })
+    test(`Skip ${reqId}`, (ctx) => {
+      ctx.skip()
+    })
   }
 }
 

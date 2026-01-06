@@ -12,7 +12,11 @@ import {
   RestResponse,
   type RestRequestOutcome,
 } from '../_lib/rest-request';
-import type { RestEntityData, RestScriptContext } from '@yasumu/common';
+import type {
+  RestEntityData,
+  RestScriptContext,
+  TestResult,
+} from '@yasumu/common';
 import {
   getContentType,
   categorizeContent,
@@ -29,12 +33,28 @@ export type RequestPhase =
   | 'error'
   | 'cancelled';
 
+export type ScriptOutputType =
+  | 'info'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'test-pass'
+  | 'test-fail'
+  | 'test-skip';
+
+export interface ScriptOutputEntry {
+  message: string;
+  type: ScriptOutputType;
+  timestamp: number;
+}
+
 export interface RequestState {
   phase: RequestPhase;
   response: RestResponse | null;
   error: string | null;
-  scriptOutput: string[];
+  scriptOutput: ScriptOutputEntry[];
   blobUrl: string | null;
+  testResults: TestResult[];
 }
 
 interface UseRestRequestOptions {
@@ -57,6 +77,7 @@ const INITIAL_STATE: RequestState = {
   error: null,
   scriptOutput: [],
   blobUrl: null,
+  testResults: [],
 };
 
 function createResponseBlobUrl(response: RestResponse): string | null {
@@ -93,12 +114,18 @@ export function useRestRequest({
   const { selectedEnvironment } = useEnvironmentStore();
   const queryClient = useQueryClient();
 
-  const appendScriptOutput = useCallback((message: string) => {
-    setState((prev) => ({
-      ...prev,
-      scriptOutput: [...prev.scriptOutput, message],
-    }));
-  }, []);
+  const appendScriptOutput = useCallback(
+    (message: string, type: ScriptOutputType = 'info') => {
+      setState((prev) => ({
+        ...prev,
+        scriptOutput: [
+          ...prev.scriptOutput,
+          { message, type, timestamp: Date.now() },
+        ],
+      }));
+    },
+    [],
+  );
 
   const execute = useCallback(
     async (
@@ -118,6 +145,7 @@ export function useRestRequest({
           error: null,
           scriptOutput: [],
           blobUrl: null,
+          testResults: [],
         };
       });
 
@@ -167,7 +195,7 @@ export function useRestRequest({
       try {
         if (entity.script?.code?.trim()) {
           setState((prev) => ({ ...prev, phase: 'pre-request-script' }));
-          appendScriptOutput('[Pre-Request] Executing script...');
+          appendScriptOutput('[Pre-Request] Executing script...', 'info');
 
           try {
             const result = await workspace.rest.executeScript(
@@ -178,7 +206,10 @@ export function useRestRequest({
 
             if (result.result.success) {
               currentContext = result.context;
-              appendScriptOutput('[Pre-Request] Script completed successfully');
+              appendScriptOutput(
+                '[Pre-Request] Script completed successfully',
+                'success',
+              );
 
               if (result.result.result) {
                 const mockData = result.result.result as {
@@ -205,16 +236,19 @@ export function useRestRequest({
                 };
                 appendScriptOutput(
                   '[Pre-Request] Mock response returned, skipping HTTP request',
+                  'warning',
                 );
               }
             } else {
               appendScriptOutput(
                 `[Pre-Request] Script failed: ${result.result.error}`,
+                'error',
               );
             }
           } catch (err) {
             appendScriptOutput(
               `[Pre-Request] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
             );
           }
         }
@@ -276,11 +310,12 @@ export function useRestRequest({
             !response.bodyTruncated && response.bodyType === 'text';
 
           setState((prev) => ({ ...prev, phase: 'post-response-script' }));
-          appendScriptOutput('[Post-Response] Executing onResponse...');
+          appendScriptOutput('[Post-Response] Executing onResponse...', 'info');
 
           if (!canSendBodyToScript) {
             appendScriptOutput(
               '[Post-Response] Response body not available to script (binary or too large)',
+              'warning',
             );
           }
 
@@ -303,6 +338,7 @@ export function useRestRequest({
             if (result.result.success) {
               appendScriptOutput(
                 '[Post-Response] Script completed successfully',
+                'success',
               );
 
               if (selectedEnvironment && result.context.environment) {
@@ -321,16 +357,90 @@ export function useRestRequest({
             } else {
               appendScriptOutput(
                 `[Post-Response] Script failed: ${result.result.error}`,
+                'error',
               );
             }
           } catch (err) {
             appendScriptOutput(
               `[Post-Response] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
             );
           }
         }
 
-        // TODO: Run test assertions using entity.testScript
+        if (entity.script?.code?.trim()) {
+          const canSendBodyToTest =
+            !response.bodyTruncated && response.bodyType === 'text';
+
+          appendScriptOutput('[Test] Running tests...', 'info');
+
+          const testContext: RestScriptContext = {
+            ...currentContext,
+            response: {
+              status: response.status,
+              headers: response.headers,
+              body: canSendBodyToTest ? (response.textBody ?? '') : null,
+            },
+          };
+
+          try {
+            const testResult = await workspace.rest.executeTest(
+              entityId,
+              entity.script,
+              testContext,
+            );
+
+            if (testResult.result.success) {
+              const results = testResult.result.result as {
+                testResults: TestResult[];
+              };
+              if (results?.testResults?.length > 0) {
+                setState((prev) => ({
+                  ...prev,
+                  testResults: results.testResults,
+                }));
+                const passed = results.testResults.filter(
+                  (r) => r.result === 'pass',
+                ).length;
+                const failed = results.testResults.filter(
+                  (r) => r.result === 'fail',
+                ).length;
+                const skipped = results.testResults.filter(
+                  (r) => r.result === 'skip',
+                ).length;
+
+                if (failed > 0) {
+                  appendScriptOutput(
+                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
+                    'test-fail',
+                  );
+                } else if (skipped > 0 && passed === 0) {
+                  appendScriptOutput(
+                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
+                    'test-skip',
+                  );
+                } else {
+                  appendScriptOutput(
+                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
+                    'test-pass',
+                  );
+                }
+              } else {
+                appendScriptOutput('[Test] No tests defined', 'info');
+              }
+            } else {
+              appendScriptOutput(
+                `[Test] Failed: ${testResult.result.error}`,
+                'error',
+              );
+            }
+          } catch (err) {
+            appendScriptOutput(
+              `[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
+            );
+          }
+        }
 
         setState((prev) => ({ ...prev, phase: 'completed' }));
       } catch (err) {

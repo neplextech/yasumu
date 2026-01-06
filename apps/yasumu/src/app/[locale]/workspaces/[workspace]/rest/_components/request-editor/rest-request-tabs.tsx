@@ -7,7 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@yasumu/ui/components/tabs';
-import { TextEditor, type TypeDefinition } from '@/components/editors';
+import { TextEditor } from '@/components/editors';
 import { Input } from '@yasumu/ui/components/input';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
@@ -30,7 +30,7 @@ import type {
   YasumuEmbeddedScript,
 } from '@yasumu/common';
 import { YasumuScriptingLanguage } from '@yasumu/common';
-import { REQUEST_SCRIPT_PLACEHOLDER, TEST_SCRIPT_PLACEHOLDER } from './common';
+import { REQUEST_SCRIPT_PLACEHOLDER } from './common';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
 
 interface RestRequestTabsProps {
@@ -39,7 +39,6 @@ interface RestRequestTabsProps {
   headers: TabularPair[];
   body: RestEntityRequestBody | null;
   script: YasumuEmbeddedScript;
-  testScript: YasumuEmbeddedScript;
   url: string;
   onSearchParamsChange: (params: TabularPair[]) => void;
   onPathParamsChange: (
@@ -48,7 +47,6 @@ interface RestRequestTabsProps {
   onHeadersChange: (headers: TabularPair[]) => void;
   onBodyChange: (body: { type: string; data: unknown } | null) => void;
   onScriptChange: (script: YasumuEmbeddedScript) => void;
-  onTestScriptChange: (script: YasumuEmbeddedScript) => void;
 }
 
 function extractPathParamKeys(url: string): string[] {
@@ -72,14 +70,12 @@ export function RestRequestTabs({
   headers,
   body,
   script,
-  testScript,
   url,
   onSearchParamsChange,
   onPathParamsChange,
   onHeadersChange,
   onBodyChange,
   onScriptChange,
-  onTestScriptChange,
 }: RestRequestTabsProps) {
   const { renderVariablePopover } = useVariablePopover();
   const pathParamKeys = useMemo(() => extractPathParamKeys(url), [url]);
@@ -104,16 +100,6 @@ export function RestRequestTabs({
       });
     },
     [script?.language, onScriptChange],
-  );
-
-  const handleTestScriptCodeChange = useCallback(
-    (code: string) => {
-      onTestScriptChange({
-        language: testScript?.language || YasumuScriptingLanguage.JavaScript,
-        code,
-      });
-    },
-    [testScript?.language, onTestScriptChange],
   );
 
   return (
@@ -235,7 +221,7 @@ export function RestRequestTabs({
                 Request Scripts
               </span>
               <span className="text-xs text-muted-foreground font-mono">
-                onRequest(req) · onResponse(req, res)
+                onRequest(req) · onResponse(req, res) · onTest(req, res)
               </span>
             </div>
             <TextEditor
@@ -257,26 +243,6 @@ export function RestRequestTabs({
                   </pre>
                 </div>
               }
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tests" className="h-full mt-0">
-          <div className="flex flex-col gap-2 h-full min-h-0">
-            <div className="flex items-center justify-between flex-shrink-0">
-              <span className="text-sm text-muted-foreground font-medium">
-                Test Assertions
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                test(name, fn)
-              </span>
-            </div>
-            <TextEditor
-              value={testScript?.code || ''}
-              onChange={handleTestScriptCodeChange}
-              typeDefinitions={YASUMU_TYPE_DEFINITIONS}
-              readOnly
-              placeholder={TEST_SCRIPT_PLACEHOLDER}
             />
           </div>
         </TabsContent>

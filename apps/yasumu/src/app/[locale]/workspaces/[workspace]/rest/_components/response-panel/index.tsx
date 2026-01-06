@@ -17,13 +17,16 @@ import { CookiesView } from './cookies-view';
 import { BodyView } from './body-view';
 import { PreviewView } from './preview-view';
 import { ConsoleView } from './console-view';
+import { TestView, type TestResultItem } from './test-view';
+import type { ScriptOutputEntry } from '../../_hooks/use-rest-request';
 
 interface RestResponsePanelProps {
   phase: RequestPhase;
   response: RestResponse | null;
   error: string | null;
-  scriptOutput: string[];
+  scriptOutput: ScriptOutputEntry[];
   blobUrl: string | null;
+  testResults: TestResultItem[];
 }
 
 const phaseMessages: Record<RequestPhase, string> = {
@@ -42,6 +45,7 @@ export function RestResponsePanel({
   error,
   scriptOutput,
   blobUrl,
+  testResults,
 }: RestResponsePanelProps) {
   const [activeTab, setActiveTab] = useState<'response' | 'preview'>(
     'response',
@@ -126,6 +130,14 @@ export function RestResponsePanel({
                     </span>
                   </TabsTrigger>
                 )}
+                {testResults.length > 0 && (
+                  <TabsTrigger value="tests">
+                    Tests
+                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                      {testResults.length}
+                    </span>
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
             <TabsContent value="body" className="flex-1 min-h-0">
@@ -140,6 +152,11 @@ export function RestResponsePanel({
             {scriptOutput.length > 0 && (
               <TabsContent value="console" className="flex-1 min-h-0">
                 <ConsoleView output={scriptOutput} />
+              </TabsContent>
+            )}
+            {testResults.length > 0 && (
+              <TabsContent value="tests" className="flex-1 min-h-0">
+                <TestView results={testResults} />
               </TabsContent>
             )}
           </Tabs>

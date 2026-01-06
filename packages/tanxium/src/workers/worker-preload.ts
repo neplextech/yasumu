@@ -1,4 +1,5 @@
 import { REST_CONTEXT_HANDLER } from '@/rpc/modules/rest/rest-script-preload.ts';
+import { TEST_CONTEXT_HANDLER } from './common/test-script-preload.ts';
 import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from './common/worker-heartbeat.ts';
 
 export interface ContextHandlerDefinition {
@@ -29,6 +30,7 @@ export function generateWorkerPreload(
 
   return /* typescript */ `
 import { parentPort } from 'node:worker_threads';
+import { runTest, test as _test, expect as _expect, describe as _describe } from 'yasumu:test';
 
 const HEARTBEAT_INTERVAL = ${SCRIPT_WORKER_HEARTBEAT_TIMEOUT};
 
@@ -42,11 +44,19 @@ if (heartbeatTimer && typeof heartbeatTimer === 'object' && 'unref' in heartbeat
   Deno.unrefTimer(heartbeatTimer);
 }
 
+globalThis.test = _test;
+globalThis.expect = _expect;
+globalThis.describe = _describe;
+
 const contextHandlers = {
 ${handlerEntries}
 };
 
 async function executeHandler(mod, invocationTarget, contextType, context) {
+  if (invocationTarget === 'onTest') {
+    return executeTestHandler(mod, contextType, context);
+  }
+
   const targetFn = mod[invocationTarget];
   
   if (typeof targetFn !== 'function') {
@@ -75,6 +85,47 @@ async function executeHandler(mod, invocationTarget, contextType, context) {
     context: updatedContext,
     result: extractedResult,
   };
+}
+
+async function executeTestHandler(mod, contextType, context) {
+  const targetFn = mod.onTest;
+  
+  if (typeof targetFn !== 'function') {
+    return {
+      success: true,
+      context,
+      result: { testResults: [] },
+    };
+  }
+
+  const handler = contextHandlers[contextType];
+  if (!handler) {
+    return {
+      success: false,
+      context,
+      error: 'Unknown context type for test: ' + contextType,
+    };
+  }
+
+  try {
+    const builtContext = handler.build(context);
+    
+    const testResult = await runTest(() => {
+      return targetFn(...builtContext.args);
+    });
+
+    return {
+      success: true,
+      context,
+      result: testResult,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      context,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 parentPort.postMessage({ type: 'ready' });
@@ -122,5 +173,5 @@ parentPort.on('message', async (message) => {
 }
 
 export function getGlobalWorkerPreload(): string {
-  return generateWorkerPreload([REST_CONTEXT_HANDLER]);
+  return generateWorkerPreload([REST_CONTEXT_HANDLER, TEST_CONTEXT_HANDLER]);
 }

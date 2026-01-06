@@ -249,20 +249,106 @@ declare class Yasumu {
   static readonly version: string;
   static readonly isDevMode: boolean;
   static cuid(): string;
-  static postMessage(message: unknown): void;
-  static isReady(): boolean;
-  static onReady(listener: () => unknown): () => void;
-  static onEvent(listener: (event: string) => unknown): () => void;
-  static registerVirtualModule(name: string, code: string): void;
-  static unregisterVirtualModule(name: string): void;
-  static getResourcesDir(): string;
-  static getAppDataDir(): string;
 }
+
+declare type OnRequest = (req: YasumuRequest) => void | Promise<void>;
+declare type OnResponse = (req: YasumuRequest, res: YasumuResponse) => void | Promise<void>;
+declare type OnTest = (req: YasumuRequest, res: YasumuResponse) => void | Promise<void>;
 `.trim(),
   );
 
+  parts.push('');
+  parts.push('// Testing API');
+  parts.push(TESTING_API_TYPES);
+
   return parts.join('\n');
 }
+
+const TESTING_API_TYPES = `
+interface Expected<T = unknown> {
+  not: Expected<T>;
+  resolves: Expected<Promise<T>>;
+  rejects: Expected<Promise<T>>;
+
+  toBe(expected: T): void;
+  toEqual(expected: T): void;
+  toStrictEqual(expected: T): void;
+  toMatch(expected: string | RegExp): void;
+  toMatchObject(expected: Record<string, unknown>): void;
+  toBeDefined(): void;
+  toBeUndefined(): void;
+  toBeNull(): void;
+  toBeNaN(): void;
+  toBeTruthy(): void;
+  toBeFalsy(): void;
+  toContain(expected: unknown): void;
+  toContainEqual(expected: unknown): void;
+  toHaveLength(expected: number): void;
+  toBeGreaterThan(expected: number): void;
+  toBeGreaterThanOrEqual(expected: number): void;
+  toBeLessThan(expected: number): void;
+  toBeLessThanOrEqual(expected: number): void;
+  toBeCloseTo(expected: number, numDigits?: number): void;
+  toBeInstanceOf(expected: new (...args: unknown[]) => unknown): void;
+  toThrow(expected?: string | RegExp | Error): void;
+  toHaveProperty(keyPath: string | string[], value?: unknown): void;
+
+  toHaveBeenCalled(): void;
+  toHaveBeenCalledTimes(expected: number): void;
+  toHaveBeenCalledWith(...args: unknown[]): void;
+  toHaveBeenLastCalledWith(...args: unknown[]): void;
+  toHaveBeenNthCalledWith(n: number, ...args: unknown[]): void;
+  toHaveReturned(): void;
+  toHaveReturnedTimes(expected: number): void;
+  toHaveReturnedWith(expected: unknown): void;
+  toHaveLastReturnedWith(expected: unknown): void;
+  toHaveNthReturnedWith(n: number, expected: unknown): void;
+}
+
+interface AsymmetricMatchers {
+  anything(): unknown;
+  any(constructor: new (...args: unknown[]) => unknown): unknown;
+  arrayContaining(expected: unknown[]): unknown;
+  objectContaining(expected: Record<string, unknown>): unknown;
+  stringContaining(expected: string): unknown;
+  stringMatching(expected: string | RegExp): unknown;
+  closeTo(expected: number, numDigits?: number): unknown;
+  not: {
+    arrayContaining(expected: unknown[]): unknown;
+    objectContaining(expected: Record<string, unknown>): unknown;
+    stringContaining(expected: string): unknown;
+    stringMatching(expected: string | RegExp): unknown;
+  };
+  addSnapshotSerializer(serializer: unknown): void;
+  assertions(num: number): void;
+  addEqualityTester(tester: (a: unknown, b: unknown) => boolean | undefined): void;
+  extend(matchers: Record<string, (received: unknown, ...args: unknown[]) => { pass: boolean; message: () => string }>): void;
+  hasAssertions(): void;
+}
+
+type Expect = (<T>(actual: T) => Expected<T>) & AsymmetricMatchers;
+
+declare const expect: Expect;
+
+interface TestContext {
+  /**
+   * Skip the current test. The test will be marked as skipped.
+   */
+  skip(): never;
+  /**
+   * Explicitly fail the current test with an optional message.
+   */
+  fail(message?: string): never;
+  /**
+   * Explicitly pass the current test. Useful for early exit.
+   */
+  succeed(): never;
+}
+
+declare function test(name: string, fn: (ctx: TestContext) => void | Promise<void>): void;
+
+declare function describe(name: string, fn: () => void): void;
+`.trim();
 
 function main() {
   console.log('Generating Yasumu type definitions...');

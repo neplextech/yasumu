@@ -149,13 +149,15 @@ export class RestService {
     });
   }
 
-  public executeScript(
+  public async executeScript(
     workspaceId: string,
     entity: ExecutableScript<RestScriptContext>,
   ): Promise<ScriptExecutionResult<RestScriptContext>> {
-    return this.scriptRuntimeService.executeScript<
+    const result = await this.scriptRuntimeService.executeScript<
       RestScriptContext,
       ExecutableScript<RestScriptContext>
     >(workspaceId, entity, REST_CONTEXT_TYPE);
+
+    return result;
   }
 }
