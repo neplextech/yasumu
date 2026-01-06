@@ -428,39 +428,205 @@ export class PostmanWorkspaceStrategy implements ExternalWorkspaceStrategy {
     script: YasumuEmbeddedScript | null;
     testScript: YasumuEmbeddedScript | null;
   } {
-    let script: YasumuEmbeddedScript | null = null;
-    let testScript: YasumuEmbeddedScript | null = null;
+    if (!events) return { script: null, testScript: null };
 
-    if (!events) return { script, testScript };
+    const preRequestCode: string[] = [];
+    const responseCode: string[] = [];
+    const testCode: string[] = [];
 
     for (const event of events) {
       if (!event.script?.exec || event.script.exec.length === 0) continue;
 
-      const code = this.convertPostmanScript(
-        event.script.exec.join('\n'),
-        event.listen,
-      );
+      const rawCode = event.script.exec.join('\n');
+      const convertedCode = this.convertPostmanScript(rawCode);
 
       if (event.listen === 'prerequest') {
-        script = {
-          language: YasumuScriptingLanguage.JavaScript,
-          code,
-        };
-      } else if (event.listen === 'test') {
-        testScript = {
-          language: YasumuScriptingLanguage.JavaScript,
-          code,
-        };
+        preRequestCode.push(convertedCode);
+      } else {
+        const { tests, pre } = this.extractCode(convertedCode);
+        if (pre.length > 0) {
+          responseCode.push(pre.join('\n'));
+        }
+        testCode.push(...tests);
       }
     }
 
-    return { script, testScript };
+    const blocks: string[] = [];
+    const imports: string[] = [];
+
+    if (preRequestCode.length) {
+      blocks.push(
+        `export function onRequest(req: YasumuRequest) {\n${this.indentCode(preRequestCode.join('\n'))}\n}`,
+      );
+    }
+
+    if (responseCode.length) {
+      blocks.push(
+        `export function onResponse(req: YasumuRequest, res: YasumuResponse) {\n${this.indentCode(responseCode.join('\n'))}\n}`,
+      );
+    }
+
+    if (testCode.length) {
+      blocks.push(
+        `export function onTest(req: YasumuRequest, res: YasumuResponse) {\n${this.indentCode(testCode.join('\n\n'))}\n}`,
+      );
+    }
+
+    if (!blocks.length) return { script: null, testScript: null };
+
+    const codeOutput = [...imports, '', ...blocks].join('\n').trim();
+
+    const script: YasumuEmbeddedScript = {
+      language: YasumuScriptingLanguage.JavaScript,
+      code: codeOutput,
+    };
+
+    return { script, testScript: null };
   }
 
-  private convertPostmanScript(
-    code: string,
-    type: 'prerequest' | 'test',
-  ): string {
+  private extractCode(code: string): { tests: string[]; pre: string[] } {
+    const tests: string[] = [];
+    const preLines: string[] = [];
+    const lines = code.split('\n');
+
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const testMatch = line.match(/pm\.test\s*\(/);
+
+      if (testMatch) {
+        const testBlock = this.extractPmTestBlock(lines, i);
+        tests.push(this.convertPmTestToYasumu(testBlock.code));
+        i = testBlock.endIndex + 1;
+      } else {
+        preLines.push(line);
+        i++;
+      }
+    }
+
+    return { tests, pre: preLines.filter((l) => l.trim().length > 0) };
+  }
+
+  private extractPmTestBlock(
+    lines: string[],
+    startIndex: number,
+  ): { code: string; endIndex: number } {
+    let depth = 0;
+    let started = false;
+    let endIndex = startIndex;
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i];
+
+      for (const char of line) {
+        if (char === '(' || char === '{') {
+          depth++;
+          started = true;
+        } else if (char === ')' || char === '}') {
+          depth--;
+        }
+      }
+
+      if (started && depth === 0) {
+        endIndex = i;
+        break;
+      }
+    }
+
+    const block = lines.slice(startIndex, endIndex + 1).join('\n');
+    return { code: block, endIndex };
+  }
+
+  private convertPmTestToYasumu(pmTestCode: string): string {
+    const nameMatch = pmTestCode.match(/pm\.test\s*\(\s*(['"`])(.+?)\1/);
+    const testName = nameMatch ? nameMatch[2] : 'Untitled test';
+
+    const bodyMatch = pmTestCode.match(
+      /pm\.test\s*\([^,]+,\s*(?:async\s*)?\(?.*?\)?\s*=>\s*\{([\s\S]*)\}\s*\)\s*;?\s*$/,
+    );
+
+    if (!bodyMatch) {
+      const fnBodyMatch = pmTestCode.match(
+        /pm\.test\s*\([^,]+,\s*function\s*\([^)]*\)\s*\{([\s\S]*)\}\s*\)\s*;?\s*$/,
+      );
+      const body = fnBodyMatch ? fnBodyMatch[1].trim() : '';
+      return this.wrapInYasumuTest(testName, body);
+    }
+
+    return this.wrapInYasumuTest(testName, bodyMatch[1].trim());
+  }
+
+  private wrapInYasumuTest(name: string, body: string): string {
+    const convertedBody = this.convertExpectations(body);
+    const maybeAsync = [' async ', 'async '].some((s) =>
+      convertedBody.includes(s),
+    )
+      ? 'async'
+      : '';
+
+    return `Deno.test('${name}', ${maybeAsync}() => {\n${this.indentCode(convertedBody)}\n});`;
+  }
+
+  private convertExpectations(code: string): string {
+    let result = code;
+
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.eql\(([^)]+)\)/g,
+      'expect($1).toEqual($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.equal\(([^)]+)\)/g,
+      'expect($1).toBe($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.true/g,
+      'expect($1).toBe(true)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.false/g,
+      'expect($1).toBe(false)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.null/g,
+      'expect($1).toBeNull()',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.undefined/g,
+      'expect($1).toBeUndefined()',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.have\.property\(([^)]+)\)/g,
+      'expect($1).toHaveProperty($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.include\(([^)]+)\)/g,
+      'expect($1).toContain($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.have\.lengthOf\(([^)]+)\)/g,
+      'expect($1).toHaveLength($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.above\(([^)]+)\)/g,
+      'expect($1).toBeGreaterThan($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.below\(([^)]+)\)/g,
+      'expect($1).toBeLessThan($2)',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.exist/g,
+      'expect($1).toBeDefined()',
+    );
+    result = result.replace(
+      /pm\.expect\(([^)]+)\)\.to\.be\.ok/g,
+      'expect($1).toBeTruthy()',
+    );
+
+    return result;
+  }
+
+  private convertPostmanScript(code: string): string {
     let converted = code;
 
     converted = converted.replace(
@@ -518,22 +684,13 @@ export class PostmanWorkspaceStrategy implements ExternalWorkspaceStrategy {
     converted = converted.replace(/pm\.response\.text\(\)/g, 'res.text()');
     converted = converted.replace(/pm\.response\.responseTime/g, '0');
 
-    converted = converted.replace(
-      /console\.log\(([^)]+)\)/g,
-      'console.log($1)',
-    );
-
-    if (type === 'prerequest') {
-      return `export function onRequest(req: YasumuRequest) {\n${this.indentCode(converted)}\n}`;
-    }
-
-    return `export function onResponse(req: YasumuRequest, res: YasumuResponse) {\n${this.indentCode(converted)}\n}`;
+    return converted;
   }
 
   private indentCode(code: string): string {
     return code
       .split('\n')
-      .map((line) => `  ${line}`)
+      .map((line) => `  ${line.trim()}`)
       .join('\n');
   }
 
