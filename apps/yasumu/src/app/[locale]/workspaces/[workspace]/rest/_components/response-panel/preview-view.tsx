@@ -44,9 +44,7 @@ export function PreviewView({ response, blobUrl }: PreviewViewProps) {
     );
   }
 
-  const binaryFallback = (
-    <BinaryViewer contentType={contentType} />
-  );
+  const binaryFallback = <BinaryViewer contentType={contentType} />;
 
   const withBlob = (render: (src: string) => JSX.Element) =>
     blobUrl ? render(blobUrl) : binaryFallback;

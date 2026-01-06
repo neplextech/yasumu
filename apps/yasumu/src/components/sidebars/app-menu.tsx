@@ -18,7 +18,10 @@ import { useYasumu } from '@/components/providers/workspace-provider';
 import { open } from '@tauri-apps/plugin-dialog';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { useQuery } from '@tanstack/react-query';
-import { DEFAULT_WORKSPACE_PATH } from '@yasumu/tanxium/src/rpc/common/constants';
+import {
+  asPathIdentifier,
+  DEFAULT_WORKSPACE_PATH,
+} from '@yasumu/tanxium/src/rpc/common/constants';
 import { Loader2 } from 'lucide-react';
 // import { FaJava } from 'react-icons/fa';
 import {
@@ -51,7 +54,15 @@ export function AppMenu() {
     },
   });
 
-  const handleOpenWorkspace = withErrorHandler(async () => {
+  const handleOpenWorkspace = withErrorHandler(async (isDefault = false) => {
+    if (isDefault) {
+      await yasumu.workspaces.open({
+        id: asPathIdentifier(DEFAULT_WORKSPACE_PATH),
+      });
+      window.location.reload();
+      return;
+    }
+
     const folder = await open({
       canCreateDirectories: true,
       directory: true,
@@ -113,7 +124,7 @@ export function AppMenu() {
           <DropdownMenuLabel>Workspace</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={handleOpenWorkspace}>
+            <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>
               New Workspace
             </DropdownMenuItem>
             <DropdownMenuSub>
@@ -138,8 +149,11 @@ export function AppMenu() {
             {/* <DropdownMenuItem>Rename Workspace</DropdownMenuItem> */}
           </DropdownMenuGroup>
           {/* <DropdownMenuSeparator /> */}
-          <DropdownMenuItem onClick={handleOpenWorkspace}>
+          <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>
             Open Workspace
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleOpenWorkspace(true)}>
+            Open Default Workspace
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Open Recent</DropdownMenuSubTrigger>

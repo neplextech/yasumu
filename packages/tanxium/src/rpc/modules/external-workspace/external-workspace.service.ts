@@ -10,7 +10,7 @@ import {
   NotImplementedException,
 } from '../common/exceptions/http.exception.ts';
 import { ExternalWorkspaceStrategy } from './strategies/common/external-workspace-strategy.ts';
-import { PostmanWorkspaceStrategy } from './strategies/postman-workspace-strategy.ts';
+import { PostmanWorkspaceStrategy } from './strategies/postman/postman-workspace-strategy.ts';
 import {
   YasumuWorkspaceFormat,
   YasumuWorkspaceFormatEntityGroup,
