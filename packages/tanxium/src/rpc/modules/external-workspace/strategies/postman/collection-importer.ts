@@ -197,7 +197,7 @@ export class PostmanCollectionImporter {
 
     if (auth?.basic?.length) {
       baseHeaders.push({
-        key: auth.basic[0].key ?? 'Authorization',
+        key: 'Authorization',
         value: prepend(auth.basic[0].value ?? '', 'Basic '),
         enabled: auth.basic[0].disabled !== true,
       });
@@ -205,7 +205,7 @@ export class PostmanCollectionImporter {
 
     if (auth?.bearer?.length) {
       baseHeaders.push({
-        key: auth.bearer[0].key ?? 'Authorization',
+        key: 'Authorization',
         value: prepend(auth.bearer[0].value ?? '', 'Bearer '),
         enabled: auth.bearer[0].disabled !== true,
       });
