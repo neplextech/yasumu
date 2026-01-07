@@ -3,13 +3,35 @@
 import * as React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
-
 import { cn } from '@yasumu/ui/lib/utils';
 
-function Select({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />;
+type IndicatorPosition = 'start' | 'end';
+type SelectProps = React.ComponentProps<typeof SelectPrimitive.Root> & {
+  indicatorPosition?: IndicatorPosition;
+};
+
+interface SelectContextValue {
+  indicatorPosition: IndicatorPosition;
+}
+
+const SelectContext = React.createContext<SelectContextValue>({
+  indicatorPosition: 'end',
+});
+
+function useSelectContext() {
+  return React.useContext(SelectContext);
+}
+
+function Select(props: SelectProps) {
+  return (
+    <SelectContext
+      value={{
+        indicatorPosition: props.indicatorPosition || 'end',
+      }}
+    >
+      <SelectPrimitive.Root data-slot="select" {...props} />
+    </SelectContext>
+  );
 }
 
 function SelectGroup({
@@ -105,6 +127,8 @@ function SelectItem({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  const { indicatorPosition, open } = useSelectContext();
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -114,12 +138,20 @@ function SelectItem({
       )}
       {...props}
     >
-      <span className="absolute right-2 flex size-3.5 items-center justify-center">
-        <SelectPrimitive.ItemIndicator>
+      <span
+        className={cn(
+          'absolute flex size-3.5 items-center justify-center',
+          indicatorPosition === 'start' ? 'left-2' : 'right-2',
+        )}
+      >
+        <SelectPrimitive.ItemIndicator asChild>
           <CheckIcon className="size-4" />
         </SelectPrimitive.ItemIndicator>
       </span>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemText>
+        {indicatorPosition === 'start' ? <span className="size-4" /> : null}
+        {children}
+      </SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
 }

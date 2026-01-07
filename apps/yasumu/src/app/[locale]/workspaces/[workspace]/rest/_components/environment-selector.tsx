@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useId } from 'react';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { useQueries } from '@tanstack/react-query';
 import {
   Select,
   SelectContent,
@@ -8,12 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@yasumu/ui/components/select';
-import { useRouter } from 'next/navigation';
-import { useEnvironmentStore } from '../../../_stores/environment-store';
-import { Check, Plus, Settings } from 'lucide-react';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { useQueries } from '@tanstack/react-query';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { Plus, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useId } from 'react';
+import { useEnvironmentStore } from '../../../_stores/environment-store';
 
 export default function EnvironmentSelector() {
   const {
@@ -56,6 +56,7 @@ export default function EnvironmentSelector() {
 
   return (
     <Select
+      indicatorPosition="start"
       disabled={isLoadingEnvironments || isLoadingSelectedEnvironment}
       value={selectedEnvironment?.id}
       onValueChange={withErrorHandler(async (id) => {
@@ -88,11 +89,6 @@ export default function EnvironmentSelector() {
             <>
               {environments.map((env) => (
                 <SelectItem key={env.id} value={env.id}>
-                  {env.id === selectedEnvironment?.id ? (
-                    <Check className="size-4" />
-                  ) : (
-                    ''
-                  )}{' '}
                   {env.name}
                 </SelectItem>
               ))}
