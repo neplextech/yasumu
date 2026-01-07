@@ -1,20 +1,24 @@
 'use client';
 
-import { useState, useEffect, useEffectEvent } from 'react';
-import { Separator } from '@yasumu/ui/components/separator';
-import VariablesTable from './_components/variables-table';
-import SecretsTable from './_components/secrets-table';
-import EnvironmentList from './_components/environment-list';
-import { useEnvironmentStore } from '../../_stores/environment-store';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import {
+  useEnvironments,
+  useUpdateEnvironments,
+} from '@/app/[locale]/workspaces/[workspace]/environment/_hooks/useEnvironments';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import LoadingScreen from '@/components/visuals/loading-screen';
 import ErrorScreen from '@/components/visuals/error-screen';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import LoadingScreen from '@/components/visuals/loading-screen';
+import { useQuery } from '@tanstack/react-query';
 import { Environment, TabularPair } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
+import { Separator } from '@yasumu/ui/components/separator';
 import { toast } from '@yasumu/ui/components/sonner';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { parseAsString, useQueryState } from 'nuqs';
+import { useEffect, useEffectEvent } from 'react';
+import { useEnvironmentStore } from '../../_stores/environment-store';
+import EnvironmentList from './_components/environment-list';
+import SecretsTable from './_components/secrets-table';
+import VariablesTable from './_components/variables-table';
 
 export default function EnvironmentPage() {
   const {
@@ -22,6 +26,7 @@ export default function EnvironmentPage() {
     selectedEnvironment,
     setSelectedEnvironment,
     setEnvironments,
+    updateEnvironment,
   } = useEnvironmentStore();
   const workspace = useActiveWorkspace();
   const [currentEnvironmentId, setCurrentEnvironmentId] = useQueryState<string>(
@@ -38,30 +43,23 @@ export default function EnvironmentPage() {
     (env) => env.id === currentEnvironmentId,
   );
 
-  const [
-    { data: environmentsList, refetch, isError, isLoading },
-    {
-      data: selectedEnvironmentData,
-      isLoading: isLoadingSelectedEnvironment,
-      refetch: refetchSelectedEnvironment,
-    },
-  ] = useQueries({
-    queries: [
-      {
-        queryKey: ['environments'],
-        queryFn: () => workspace.environments.list(),
-        staleTime: 0,
-        refetchOnWindowFocus: true,
-        refetchOnMount: 'always' as const,
-      },
-      {
-        queryKey: ['currentEnvironment'],
-        queryFn: () => workspace.environments.getActiveEnvironment(),
-        staleTime: 0,
-        refetchOnWindowFocus: true,
-        refetchOnMount: 'always' as const,
-      },
-    ],
+  const {
+    data: environmentsList,
+    refetch,
+    isError,
+    isLoading,
+  } = useEnvironments();
+  const updateEnvironments = useUpdateEnvironments();
+
+  const {
+    data: selectedEnvironmentData,
+    isLoading: isLoadingSelectedEnvironment,
+  } = useQuery({
+    queryKey: ['currentEnvironment'],
+    queryFn: () => workspace.environments.getActiveEnvironment(),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always' as const,
   });
 
   const updateCurrentEnvironment = useEffectEvent(() => {
@@ -98,13 +96,17 @@ export default function EnvironmentPage() {
       secrets,
       variables,
     });
-    setEnvironments([...environments, env]);
+    const newEnvironments = [...environments, env];
+    setEnvironments(newEnvironments);
+    updateEnvironments(newEnvironments);
     setCurrentEnvironmentId(env.id);
   };
 
   const handleDeleteEnvironment = async (id: string) => {
     await workspace.environments.delete(id);
-    setEnvironments(environments.filter((env) => env.id !== id));
+    const newEnvironments = environments.filter((env) => env.id !== id);
+    updateEnvironments(newEnvironments);
+    setEnvironments(newEnvironments);
     if (currentEnvironmentId === id) {
       setCurrentEnvironmentId(environments[0]?.id);
     }
@@ -114,6 +116,8 @@ export default function EnvironmentPage() {
     const env = environments.find((e) => e.id === id);
     if (!env) return;
     await env.update({ name });
+    updateEnvironment(id, { name });
+
     await refetch();
     toast.success('Environment renamed successfully');
   };
@@ -129,7 +133,9 @@ export default function EnvironmentPage() {
       secrets,
       variables,
     });
-    setEnvironments([...environments, env]);
+    const newEnvironments = [...environments, env];
+    setEnvironments(newEnvironments);
+    updateEnvironments(newEnvironments);
     setCurrentEnvironmentId(env.id);
     toast.success('Environment duplicated successfully');
   };
@@ -145,7 +151,10 @@ export default function EnvironmentPage() {
       { noEmit: true },
     );
 
-    await refetch();
+    const { data } = await refetch();
+    if (data) {
+      setEnvironments(data);
+    }
 
     toast.success('Variables saved successfully');
   };
@@ -161,7 +170,10 @@ export default function EnvironmentPage() {
       { noEmit: true },
     );
 
-    await refetch();
+    const { data } = await refetch();
+    if (data) {
+      setEnvironments(data);
+    }
 
     toast.success('Secrets saved successfully');
   };
