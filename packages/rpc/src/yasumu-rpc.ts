@@ -108,7 +108,11 @@ export interface RpcCommandData<
  */
 export type ResolveRpcCommandValue<K extends YasumuRpcCommands> =
   K extends `${infer T}.${infer U}`
-    ? YasumuRPC[T & keyof YasumuRPC][U & keyof YasumuRPC[T & keyof YasumuRPC]]
+    ? T extends keyof YasumuRPC
+      ? U extends keyof YasumuRPC[T]
+        ? YasumuRPC[T][U]
+        : never
+      : never
     : never;
 
 type ToCommandPathString<T extends keyof YasumuRPC> = T extends keyof YasumuRPC

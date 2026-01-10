@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsgo"
   },
   "exports": {
     "deno": "./src/index.ts",
@@ -29,6 +29,6 @@
   "devDependencies": {
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
-    "typescript": "catalog:build"
+    "@typescript/native-preview": "catalog:build"
   }
 }

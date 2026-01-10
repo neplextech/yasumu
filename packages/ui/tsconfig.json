@@ -1,7 +1,6 @@
 {
   "extends": "@yasumu/tsconfig/react.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "moduleResolution": "NodeNext",
     "paths": {
       "@yasumu/ui/*": ["./src/*"]

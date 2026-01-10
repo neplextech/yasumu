@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa6';
 import { GiDumpling } from 'react-icons/gi';
 import { MdCode, MdBugReport, MdTranslate } from 'react-icons/md';
-import Nepal from 'components/nepal-flag';
+import Nepal from '@/components/nepal-flag';
 
 interface SponsorOption {
   name: string;

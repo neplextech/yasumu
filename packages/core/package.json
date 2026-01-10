@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsgo && tsc-alias",
     "test": "tsx test/index.ts"
   },
   "exports": {
@@ -30,7 +30,7 @@
     "rimraf": "^6.1.0",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.20.6",
-    "typescript": "catalog:build"
+    "@typescript/native-preview": "catalog:build"
   },
   "dependencies": {
     "@yasumu/common": "workspace:*",

@@ -12,7 +12,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsgo"
   },
   "license": "AGPL-3.0",
   "author": "Neplex",
@@ -24,7 +24,7 @@
     "@types/node": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
-    "typescript": "catalog:build"
+    "@typescript/native-preview": "catalog:build"
   },
   "dependencies": {
     "@yasumu/schema": "workspace:*",

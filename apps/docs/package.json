@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
-    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
+    "types:check": "fumadocs-mdx && next typegen && tsgo --noEmit",
     "postinstall": "fumadocs-mdx",
     "lint": "eslint"
   },
@@ -26,10 +26,12 @@
     "@types/node": "catalog:build",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
     "eslint": "^9.39.2",
     "eslint-config-next": "catalog:react",
     "postcss": "^8.5.6",
     "tailwindcss": "catalog:tailwind",
-    "typescript": "catalog:build"
+    "@typescript/native-preview": "catalog:build"
   }
 }

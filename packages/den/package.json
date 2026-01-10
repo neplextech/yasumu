@@ -13,7 +13,7 @@
     "deno": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsgo"
   },
   "license": "AGPL-3.0",
   "author": "Neplex",
@@ -24,7 +24,7 @@
   "devDependencies": {
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
-    "typescript": "catalog:build"
+    "@typescript/native-preview": "catalog:build"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2"

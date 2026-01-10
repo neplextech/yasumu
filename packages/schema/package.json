@@ -11,7 +11,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && tsc-alias",
+    "build": "rimraf dist && tsgo && tsc-alias",
     "example": "tsx example/example.ts",
     "example2": "tsx example/workspace.ts"
   },
@@ -41,6 +41,6 @@
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.20.6",
-    "typescript": "catalog:build"
+    "@typescript/native-preview": "catalog:build"
   }
 }
