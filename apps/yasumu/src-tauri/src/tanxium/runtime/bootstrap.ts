@@ -25,6 +25,7 @@ import {
   YasumuWorkspaceEnvironment,
 } from './yasumu-request.ts';
 import { YasumuWorkspace as YasumuWorkspaceType } from './yasumu-workspace-context.ts';
+import { Cache } from './modules/collection.ts';
 
 let _resourceDir: string, _yasumuVersion: string, _appDataDir: string;
 
@@ -39,6 +40,11 @@ class Yasumu {
    * Yasumu UI API
    */
   public static readonly ui = YasumuUI;
+
+  /**
+   * In-memory cache store
+   */
+  public static readonly cache = new Cache();
 
   private constructor() {
     throw new Error('Yasumu is not a constructor');

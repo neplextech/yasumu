@@ -28,7 +28,9 @@ export function ServerStatus({
         <TooltipTrigger asChild>
           <button className="flex items-center gap-1.5 px-2 h-full hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground">
             <Icon className="size-3.5" />
-            <span className="text-xs font-mono">{port ? `${port}` : '—'}</span>
+            <span className="text-xs font-mono">
+              {port != null ? `${port}` : '—'}
+            </span>
             <VscCircleFilled
               className={cn(
                 'size-2',

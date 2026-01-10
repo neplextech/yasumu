@@ -12,5 +12,9 @@ pub static YASUMU_MODULES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new
             "yasumu:test",
             include_str!("../../resources/yasumu-scripts/public-modules/yasumu__test/index.js"),
         ),
+        (
+            "yasumu:collection",
+            include_str!("runtime/modules/collection.ts"),
+        ),
     ])
 });
