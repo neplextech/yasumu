@@ -1,3 +1,5 @@
+import type { YasumuEmbeddedScript } from '../common/common.types.js';
+
 /**
  * The SMTP server configuration.
  */
@@ -14,4 +16,8 @@ export interface SmtpConfig {
    * The password to use for the SMTP server.
    */
   password?: string | null;
+  /**
+   * The embedded script for this SMTP server.
+   */
+  script?: YasumuEmbeddedScript | null;
 }

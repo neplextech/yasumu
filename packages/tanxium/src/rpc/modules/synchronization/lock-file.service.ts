@@ -8,6 +8,7 @@ import type {
   SyncAction,
   SyncEntityState,
 } from './types.ts';
+import { createHash } from 'node:crypto';
 
 const LOCK_FILE_NAME = 'yasumu-lock.json';
 
@@ -105,19 +106,9 @@ export class LockFileService {
   }
 
   public computeHash(content: string): string {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(content);
-
-    let hash = 0x811c9dc5;
-    for (const byte of data) {
-      hash ^= byte;
-      hash = Math.imul(hash, 0x01000193);
-    }
-
-    const hashHex = Math.abs(hash).toString(16).padStart(8, '0');
-    const lengthHex = data.length.toString(16).padStart(8, '0');
-
-    return `${hashHex}${lengthHex}`;
+    const hash = createHash('sha256');
+    hash.update(content);
+    return hash.digest('hex');
   }
 
   public determineSyncAction(state: SyncEntityState): SyncAction {

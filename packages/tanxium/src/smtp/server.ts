@@ -1,5 +1,6 @@
 import { SMTPServer } from 'smtp-server';
 import { createEmail } from './create-email.ts';
+import { EmailData } from '@yasumu/common';
 
 export interface SmtpServerOptions {
   username?: string | null;
@@ -7,6 +8,7 @@ export interface SmtpServerOptions {
   port: number;
   workspaceId: string;
   smtpId: string;
+  onEmailReceived: (workspaceId: string, email: EmailData) => Promise<void>;
 }
 
 export interface SMTPServerInstance {
@@ -55,8 +57,10 @@ export function createSmtpServer(options: SmtpServerOptions) {
       },
       onData(stream, _session, callback) {
         createEmail(stream, options.workspaceId, options.smtpId)
-          .then(() => {
+          .then((data) => {
             callback(null);
+            if (!data) return;
+            return options.onEmailReceived(data.workspaceId, data.email);
           })
           .catch((err: Error) => {
             callback(err);

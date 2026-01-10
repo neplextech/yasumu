@@ -1,8 +1,8 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "typescript.experimental.useTsgo": true,
-    "rust-analyzer.linkedProjects": ["apps/yasumu/src-tauri/Cargo.toml"],
+    "typescript.experimental.useTsgo": false,
     "deno.enablePaths": ["./apps/yasumu/src-tauri", "./packages/tanxium", "./packages/test"],
+    "rust-analyzer.linkedProjects": ["apps/yasumu/src-tauri/Cargo.toml"],
     "rust-analyzer.diagnostics.disabled": [
         "E0107"
     ],

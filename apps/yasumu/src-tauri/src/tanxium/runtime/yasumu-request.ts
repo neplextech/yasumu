@@ -15,7 +15,7 @@ interface TabularPair {
   enabled: boolean;
 }
 
-interface EnvironmentData {
+export interface EnvironmentData {
   id: string;
   name: string;
   variables: TabularPair[];

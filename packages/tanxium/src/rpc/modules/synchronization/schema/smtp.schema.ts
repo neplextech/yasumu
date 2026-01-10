@@ -10,5 +10,6 @@ export const SmtpSchema = t.script({
       username: t.nullable(t.string()),
       password: t.nullable(t.string()),
     }),
+    script: t.nullable(t.code()),
   },
 });

@@ -1,17 +1,22 @@
 ---
 title: Environments
-description: Managing environment variables and configurations in Yasumu.
+description:
+  Managing environment variables and configurations in Yasumu.
 ---
 
 # Environments
 
-Environments in Yasumu allow you to manage different configurations for development, staging, production, and other contexts. Switch between environments to test your APIs against different backends without modifying individual requests.
+Environments in Yasumu allow you to manage different configurations
+for development, staging, production, and other contexts. Switch
+between environments to test your APIs against different backends
+without modifying individual requests.
 
 ![Environments](/environments.png)
 
 ## What Are Environments?
 
-An environment is a collection of variables and secrets that define context-specific values:
+An environment is a collection of variables and secrets that define
+context-specific values:
 
 - **Base URLs** — Different API endpoints per environment
 - **API Keys** — Different credentials per environment
@@ -21,7 +26,7 @@ An environment is a collection of variables and secrets that define context-spec
 
 Environments are stored in the `environment/` folder as `.ysl` files:
 
-```
+```d
 yasumu/
 └── environment/
     ├── h49ehcz1o96rglpym0qjqr3a.ysl   # Production
@@ -31,7 +36,7 @@ yasumu/
 
 ### File Format
 
-```
+```d
 @environment
 
 metadata {
@@ -58,17 +63,17 @@ secrets [
 
 ### Sections
 
-| Section | Description |
-| :--- | :--- |
-| `metadata` | Environment ID and display name |
-| `variables` | Non-sensitive configuration values |
-| `secrets` | Sensitive values (stored empty in files) |
+| Section     | Description                              |
+| :---------- | :--------------------------------------- |
+| `metadata`  | Environment ID and display name          |
+| `variables` | Non-sensitive configuration values       |
+| `secrets`   | Sensitive values (stored empty in files) |
 
 ## Variables
 
 Variables are key-value pairs that can be used in requests:
 
-```
+```d
 variables [
   {
     key: "API_URL"
@@ -84,6 +89,7 @@ variables [
 ```
 
 Each variable has:
+
 - `key` — Variable name used in requests (e.g., `{{API_URL}}`)
 - `value` — The actual value
 - `enabled` — Whether the variable is active
@@ -92,7 +98,7 @@ Each variable has:
 
 Secrets are sensitive values like API keys and tokens:
 
-```
+```d
 secrets [
   {
     key: "API_KEY"
@@ -103,35 +109,44 @@ secrets [
 ```
 
 <Callout type="warn" title="Secret Storage">
-  Secret values are **never written to `.ysl` files**. The `value` field is always stored as an empty string. Actual secret values are stored securely and locally on your machine, separate from version control.
+  Secret values are **never written to `.ysl` files**. The `value`
+  field is always stored as an empty string. Actual secret values are
+  stored securely and locally on your machine, separate from version
+  control.
 </Callout>
 
 This design ensures:
+
 - **Safe to commit** — `.ysl` files can be safely committed to Git
 - **No accidental leaks** — Secrets never appear in version control
-- **Local override** — Each team member manages their own secret values
+- **Local override** — Each team member manages their own secret
+  values
 
 ## Using Variables
 
-Reference environment variables in your requests using double curly braces:
+Reference environment variables in your requests using double curly
+braces:
 
-```
+```d
 url: "{{API_URL}}/users?apiKey={{API_KEY}}"
 ```
 
 When you send a request, Yasumu resolves:
+
 1. `{{API_URL}}` from the `variables` array
 2. `{{API_KEY}}` from the `secrets` array (using your local value)
 
 ## Switching Environments
 
-Switch environments using the environment selector in the toolbar. When you switch environments, all variable references are resolved using the new environment's values.
+Switch environments using the environment selector in the toolbar.
+When you switch environments, all variable references are resolved
+using the new environment's values.
 
 ## Example Environments
 
 ### Development
 
-```
+```d
 @environment
 
 metadata {
@@ -158,7 +173,7 @@ secrets [
 
 ### Production
 
-```
+```d
 @environment
 
 metadata {
@@ -186,7 +201,11 @@ secrets [
 ## Best Practices
 
 1. **Use clear variable names** — `API_URL` is better than `URL1`
-2. **Separate secrets from variables** — Use secrets for anything sensitive
-3. **Commit your environments** — The `.ysl` files are safe to commit since secrets are empty
-4. **Share variable structure** — Keep the same variable keys across environments
-5. **Enable/disable as needed** — Use the `enabled` flag to temporarily disable variables
+2. **Separate secrets from variables** — Use secrets for anything
+   sensitive
+3. **Commit your environments** — The `.ysl` files are safe to commit
+   since secrets are empty
+4. **Share variable structure** — Keep the same variable keys across
+   environments
+5. **Enable/disable as needed** — Use the `enabled` flag to
+   temporarily disable variables

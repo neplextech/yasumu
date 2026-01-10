@@ -52,12 +52,12 @@ const data = {
     avatar: '/Yasumu Dark.svg',
   },
   navMain: [
-    {
-      title: 'Home',
-      url: '/',
-      icon: Home,
-      isActive: true,
-    },
+    // {
+    //   title: 'Home',
+    //   url: '/',
+    //   icon: Home,
+    //   isActive: true,
+    // },
     {
       title: 'Rest API',
       url: '/en/workspaces/default/rest',

@@ -3,7 +3,7 @@ import { TransactionalConnection } from '../common/transactional-connection.serv
 import { YslService } from './ysl.service.ts';
 import { WorkspaceSchema } from './schema/workspace.schema.ts';
 import { YasumuAnnotations } from './schema/constants.ts';
-import { WorkspaceData } from '@yasumu/common';
+import { WorkspaceData, YasumuScriptingLanguage } from '@yasumu/common';
 import { join, basename } from 'node:path';
 import { existsSync } from 'node:fs';
 import { RestService } from '../rest/rest.service.ts';
@@ -286,10 +286,7 @@ export class SynchronizationService implements OnModuleInit {
             }
           : null,
         script: script
-          ? { language: 'javascript' as const, code: script }
-          : null,
-        testScript: test
-          ? { language: 'javascript' as const, code: test }
+          ? { language: YasumuScriptingLanguage.JavaScript, code: script }
           : null,
       });
 
@@ -354,6 +351,12 @@ export class SynchronizationService implements OnModuleInit {
       port: parsed.blocks.metadata.port,
       username: parsed.blocks.metadata.username,
       password: null,
+      script: parsed.blocks.script
+        ? {
+            language: YasumuScriptingLanguage.JavaScript,
+            code: parsed.blocks.script,
+          }
+        : null,
     });
 
     await this.lockFileService.setEntry(
@@ -574,8 +577,12 @@ export class SynchronizationService implements OnModuleInit {
             metadata: {},
           }
         : null,
-      script: script ? { language: 'javascript' as const, code: script } : null,
-      testScript: test ? { language: 'javascript' as const, code: test } : null,
+      script: script
+        ? { language: YasumuScriptingLanguage.JavaScript, code: script }
+        : null,
+      testScript: test
+        ? { language: YasumuScriptingLanguage.JavaScript, code: test }
+        : null,
     };
 
     if (exists) {
@@ -768,6 +775,12 @@ export class SynchronizationService implements OnModuleInit {
         port: parsed.blocks.metadata.port,
         username: parsed.blocks.metadata.username,
         password: existingSmtp.password,
+        script: parsed.blocks.script
+          ? {
+              language: YasumuScriptingLanguage.JavaScript,
+              code: parsed.blocks.script,
+            }
+          : null,
       })
       .where(
         and(eq(smtp.workspaceId, workspaceId), eq(smtp.id, existingSmtp.id)),
@@ -822,7 +835,6 @@ export class SynchronizationService implements OnModuleInit {
     searchParameters: { key: string; value: string; enabled: boolean }[] | null;
     requestBody: { type: string; value: unknown } | null;
     script: { code: string } | null;
-    testScript: { code: string } | null;
   }): string {
     return JSON.stringify({
       id: entity.id,
@@ -835,7 +847,6 @@ export class SynchronizationService implements OnModuleInit {
       searchParameters: entity.searchParameters ?? [],
       body: entity.requestBody,
       script: entity.script,
-      testScript: entity.testScript,
     });
   }
 
@@ -921,7 +932,6 @@ export class SynchronizationService implements OnModuleInit {
         | null;
       requestBody: { type: string; value: unknown } | null;
       script: { code: string } | null;
-      testScript: { code: string } | null;
     },
   ) {
     const content = this.yslService.serialize(RestSchema, {
@@ -962,7 +972,7 @@ export class SynchronizationService implements OnModuleInit {
           url: entity.url,
         },
         script: entity.script?.code ?? null,
-        test: entity.testScript?.code ?? null,
+        test: null,
       },
     });
 
@@ -1019,11 +1029,7 @@ export class SynchronizationService implements OnModuleInit {
 
   private async pushSmtpToFs(
     workspace: WorkspaceData,
-    smtpConfig: {
-      id: string;
-      port: number;
-      username: string | null;
-    },
+    smtpConfig: typeof smtp.$inferSelect,
   ) {
     const content = this.yslService.serialize(SmtpSchema, {
       annotation: YasumuAnnotations.Smtp,
@@ -1034,6 +1040,7 @@ export class SynchronizationService implements OnModuleInit {
           username: smtpConfig.username,
           password: null,
         },
+        script: smtpConfig.script?.code ?? null,
       },
     });
 

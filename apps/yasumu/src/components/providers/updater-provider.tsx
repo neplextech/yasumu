@@ -87,7 +87,7 @@ export function UpdateDialog({
                     Downloading update...
                   </p>
                   <Progress value={progress.percentage} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground tabular-nums">
                     {formatBytes(progress.downloaded)} /{' '}
                     {formatBytes(progress.total)} ({progress.percentage}%)
                   </p>

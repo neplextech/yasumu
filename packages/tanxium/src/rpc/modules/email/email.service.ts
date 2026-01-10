@@ -1,21 +1,29 @@
 import { Injectable } from '@yasumu/den';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { emails, smtp } from '@/database/schema.ts';
+import { emails, environments, smtp, workspaces } from '@/database/schema.ts';
 import { and, asc, count, desc, eq, or } from 'drizzle-orm';
 import {
   EmailData,
+  ExecutableScript,
   ListEmailOptions,
   PaginatedResult,
   SmtpConfig,
 } from '@yasumu/common';
 import { ilike } from 'drizzle-orm/sql';
 import { createSmtpServer, SMTPServerInstance } from '@/smtp/server.ts';
-import { areDifferentByKeys } from '../../common/utils.ts';
+import { areDifferentByKeys, assertFound } from '../../common/utils.ts';
+import { ScriptRuntimeService } from '../script-runtime/script-runtime.service.ts';
+import { EMAIL_CONTEXT_TYPE } from './email-script-preload.ts';
+import { EmailScriptContext } from '@yasumu/common';
+import { db } from '../../../database/index.ts';
 
 @Injectable()
 export class EmailService {
   private readonly servers = new Map<string, SMTPServerInstance>();
-  public constructor(private readonly connection: TransactionalConnection) {}
+  public constructor(
+    private readonly connection: TransactionalConnection,
+    private readonly scriptRuntimeService: ScriptRuntimeService,
+  ) {}
 
   public getActiveSmtpPort(workspaceId: string): number | null {
     const server = this.servers.get(workspaceId);
@@ -62,6 +70,11 @@ export class EmailService {
       username: config.username,
       port: config.port,
       smtpId: config.id,
+      onEmailReceived: async (workspaceId, email) => {
+        await this.executeScript(workspaceId, email).catch((e) => {
+          console.error('Failed to execute email script', e);
+        });
+      },
     });
 
     this.servers.set(workspaceId, server);
@@ -101,7 +114,11 @@ export class EmailService {
       .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
   }
 
-  public async getEmail(workspaceId: string, id: string) {
+  public async getEmail(
+    workspaceId: string,
+    id: string,
+    markAsRead: boolean = true,
+  ): Promise<EmailData | null> {
     const db = this.connection.getConnection();
     const smtp = await this.getSmtp(workspaceId);
 
@@ -110,10 +127,12 @@ export class EmailService {
       .from(emails)
       .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
 
-    await db
-      .update(emails)
-      .set({ unread: false })
-      .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
+    if (result && markAsRead && result.unread) {
+      await db
+        .update(emails)
+        .set({ unread: false })
+        .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
+    }
 
     return result ?? null;
   }
@@ -135,7 +154,7 @@ export class EmailService {
             ilike(emails.text, `%${search}%`),
           )
         : undefined,
-      unread ? eq(emails.unread, unread) : undefined,
+      unread != null ? eq(emails.unread, unread) : undefined,
     );
 
     const [{ count: total }] = await db
@@ -189,6 +208,111 @@ export class EmailService {
           variant: 'error',
         });
       });
+    }
+  }
+
+  public async executeScript(
+    workspaceId: string,
+    emailOrId: EmailData | string,
+  ) {
+    const smtp = await this.getSmtp(workspaceId);
+
+    // script not configured
+    if (!smtp.script?.code?.trim()) return;
+
+    const email =
+      typeof emailOrId === 'string'
+        ? await this.getEmail(workspaceId, emailOrId, false)
+        : emailOrId;
+
+    // invalid email
+    if (!email) return;
+
+    const [workspace] = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.id, workspaceId));
+
+    assertFound(workspace, 'Workspace not found');
+
+    const [env] = workspace.activeEnvironmentId
+      ? await db
+          .select()
+          .from(environments)
+          .where(
+            and(
+              eq(environments.id, workspace.activeEnvironmentId),
+              eq(environments.workspaceId, workspaceId),
+            ),
+          )
+          .limit(1)
+      : [];
+
+    const context: EmailScriptContext = {
+      workspace: {
+        id: workspaceId,
+        name: workspace.name,
+        path: workspace.path,
+      },
+      environment: env ?? null,
+      email,
+    };
+
+    const script: ExecutableScript<EmailScriptContext> = {
+      context,
+      entityId: smtp.id,
+      invocationTarget: 'onEmail',
+      script: smtp.script,
+    };
+
+    const result = await this.scriptRuntimeService.executeScript<
+      EmailScriptContext,
+      ExecutableScript<EmailScriptContext>
+    >(workspaceId, script, EMAIL_CONTEXT_TYPE);
+
+    if (result?.context?.environment) {
+      const [existingEnv] = await db
+        .select()
+        .from(environments)
+        .where(
+          and(
+            eq(environments.id, workspace.activeEnvironmentId ?? ''),
+            eq(environments.workspaceId, workspaceId),
+          ),
+        )
+        .limit(1);
+
+      if (!existingEnv) return;
+
+      // Create maps for efficient lookup and merge (new values override existing)
+      const variablesMap = new Map(
+        existingEnv.variables.map((v) => [v.key, v]),
+      );
+      for (const variable of result.context.environment.variables) {
+        variablesMap.set(variable.key, variable);
+      }
+
+      const secretsMap = new Map(existingEnv.secrets.map((s) => [s.key, s]));
+      for (const secret of result.context.environment.secrets) {
+        secretsMap.set(secret.key, secret);
+      }
+
+      const mergedVariables = Array.from(variablesMap.values());
+      const mergedSecrets = Array.from(secretsMap.values());
+
+      await db
+        .update(environments)
+        .set({
+          metadata: Object.assign(
+            {},
+            existingEnv.metadata,
+            result.context.environment.metadata,
+          ),
+          variables: mergedVariables,
+          secrets: mergedSecrets,
+          name: result.context.environment.name || existingEnv.name,
+        })
+        .where(eq(environments.id, workspace.activeEnvironmentId ?? ''));
     }
   }
 }

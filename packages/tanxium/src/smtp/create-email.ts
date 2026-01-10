@@ -23,7 +23,7 @@ export async function createEmail(
   const mailText = email.text || '(No Body)';
 
   // missing required fields
-  if (!mailFrom || !mailTo) return;
+  if (!mailFrom || !mailTo) return null;
 
   const [newEmail] = await db
     .insert(emails)
@@ -48,4 +48,6 @@ export async function createEmail(
     message: 'Check your email inbox to view the new email',
     variant: 'success',
   });
+
+  return { workspaceId, email: newEmail };
 }

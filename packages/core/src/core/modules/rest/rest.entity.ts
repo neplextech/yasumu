@@ -82,10 +82,6 @@ export class RestEntity {
     return this.rest.executeScript(this.id, this.data.script, context);
   }
 
-  public async executePostResponseScript(context: RestScriptContext) {
-    return this.rest.executeScript(this.id, this.data.testScript, context);
-  }
-
   public toJSON(): RestEntityData {
     return this.data;
   }
