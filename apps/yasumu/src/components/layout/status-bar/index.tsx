@@ -18,7 +18,6 @@ function StatusBarDivider() {
 export function StatusBar() {
   const { port, echoServerPort } = useYasumu();
   const workspace = useActiveWorkspace(false);
-  const pathname = usePathname();
 
   const { data: smtpPort } = useQuery({
     queryKey: ['smtp-port', workspace?.id],
@@ -26,10 +25,6 @@ export function StatusBar() {
     enabled: !!workspace,
     staleTime: 10000,
   });
-
-  const shouldShow = !!workspace && pathname !== '/';
-
-  if (!shouldShow) return null;
 
   return (
     <>

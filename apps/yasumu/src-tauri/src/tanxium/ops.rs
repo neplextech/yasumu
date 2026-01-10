@@ -232,6 +232,7 @@ deno_core::extension!(
         "common.ts",
         "yasumu-request.ts",
         "yasumu-workspace-context.ts",
+        "modules/collection.ts",
     ],
     state = |state| {
         state.put::<deno_runtime::ops::bootstrap::SnapshotOptions>(

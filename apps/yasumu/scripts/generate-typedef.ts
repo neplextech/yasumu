@@ -23,6 +23,7 @@ const RUNTIME_FILES = [
   'yasumu-request.ts',
   'bootstrap.ts',
   'yasumu-workspace-context.ts',
+  'modules/collection.ts',
 ];
 const WHITELISTED_RUNTIME_FILES = ['internal.d.ts'];
 
@@ -253,12 +254,17 @@ declare class Yasumu {
   static readonly ui: typeof YasumuUI;
   static readonly version: string;
   static readonly isDevMode: boolean;
+  static readonly cache: Cache;
   static cuid(): string;
 }
 
 declare type OnRequest = (req: YasumuRequest) => void | Promise<void>;
 declare type OnResponse = (req: YasumuRequest, res: YasumuResponse) => void | Promise<void>;
 declare type OnTest = (req: YasumuRequest, res: YasumuResponse) => void | Promise<void>;
+
+declare module "yasumu:collection" {
+  export { Collection };
+}
 `.trim(),
   );
 
