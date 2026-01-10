@@ -1,11 +1,48 @@
 import { REST_CONTEXT_HANDLER } from '@/rpc/modules/rest/rest-script-preload.ts';
 import { TEST_CONTEXT_HANDLER } from './common/test-script-preload.ts';
 import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from './common/worker-heartbeat.ts';
+import { EMAIL_CONTEXT_HANDLER } from '../rpc/modules/email/email-script-preload.ts';
+
+// a pure function that the worker can use to generate its preload script
+// this function is stringified and sent to the worker at runtime
+// deno-lint-ignore no-explicit-any
+export type ScriptContextFunction<T extends any[] = [], R = any> = (
+  ...args: T
+) => R;
+
+export interface BuiltContextExtractor {
+  // deno-lint-ignore no-explicit-any
+  getContext: () => any;
+}
+
+export interface ScriptContextBuilderResult {
+  // deno-lint-ignore no-explicit-any
+  args: any[];
+  // deno-lint-ignore no-explicit-any
+  getContext: () => any;
+}
+
+export interface ScriptContextExtractorResult {
+  // deno-lint-ignore no-explicit-any
+  updatedContext: any;
+  // deno-lint-ignore no-explicit-any
+  extractedResult: any;
+}
 
 export interface ContextHandlerDefinition {
   type: string;
-  builder: string;
-  extractor: string;
+  builder:
+    | string
+    | ScriptContextFunction<
+        [context: Record<string, unknown>],
+        ScriptContextBuilderResult
+      >;
+  extractor:
+    | string
+    | ScriptContextFunction<
+        [result: unknown, builtContext: BuiltContextExtractor],
+        ScriptContextExtractorResult
+      >;
 }
 
 export function generateWorkerPreload(
@@ -16,13 +53,14 @@ export function generateWorkerPreload(
       (h) => /* typescript */ `
   '${h.type}': {
     build: (context) => {
-      ${h.builder}
-      return { args, getContext };
+      ${typeof h.builder === 'string' ? `${h.builder}\nreturn { args, getContext };` : `return (${h.builder.toString()})(context);`}
     },
     extract: (result, builtContext) => {
-      const { getContext } = builtContext;
-      ${h.extractor}
-      return { updatedContext, extractedResult };
+      ${
+        typeof h.extractor === 'string'
+          ? `const { getContext } = builtContext;\n${h.extractor}\nreturn { updatedContext, extractedResult };`
+          : `return (${h.extractor.toString()})(result, builtContext);`
+      }
     },
   }`,
     )
@@ -173,5 +211,9 @@ parentPort.on('message', async (message) => {
 }
 
 export function getGlobalWorkerPreload(): string {
-  return generateWorkerPreload([REST_CONTEXT_HANDLER, TEST_CONTEXT_HANDLER]);
+  return generateWorkerPreload([
+    REST_CONTEXT_HANDLER,
+    TEST_CONTEXT_HANDLER,
+    EMAIL_CONTEXT_HANDLER,
+  ]);
 }

@@ -26,6 +26,11 @@ variables [
     value: "16337"
     enabled: true
   },
+  {
+    key: "VERIFICATION_CODE"
+    value: "139476"
+    enabled: true
+  },
 ]
 
 secrets [

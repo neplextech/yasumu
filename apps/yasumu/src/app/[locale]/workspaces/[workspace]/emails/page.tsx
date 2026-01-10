@@ -9,6 +9,7 @@ import {
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import MailboxTab from './_components/mailbox-tab';
 import SettingsTab from './_components/settings-tab';
+import EmailScriptEditor from './_components/email-script-editor';
 
 export default function MailboxPage() {
   const [activeTab, setActiveTab] = useQueryState(
@@ -27,6 +28,7 @@ export default function MailboxPage() {
           <TabsList>
             <TabsTrigger value="mailbox">Mailbox</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="scripts">Script</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="mailbox" className="flex-1 m-0 p-0 overflow-hidden">
@@ -34,6 +36,9 @@ export default function MailboxPage() {
         </TabsContent>
         <TabsContent value="settings" className="flex-1 m-0 overflow-auto">
           <SettingsTab />
+        </TabsContent>
+        <TabsContent value="scripts" className="m-0">
+          <EmailScriptEditor />
         </TabsContent>
       </Tabs>
     </div>

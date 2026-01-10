@@ -70,28 +70,28 @@ export default function EmailList({
   };
 
   return (
-    <div className="flex flex-col h-full border-r bg-background/50">
-      <div className="p-4 border-b bg-background">
-        <Tabs
-          value={filter}
-          onValueChange={(v) => onFilterChange(v as 'all' | 'unread')}
-        >
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="all" className="flex-1">
-              All
-            </TabsTrigger>
-            <TabsTrigger value="unread" className="flex-1">
-              Unread{' '}
-              {emails.filter((e) => e.unread).length > 0 && (
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  {emails.filter((e) => e.unread).length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-      <ScrollArea className="flex-1">
+    <ScrollArea className="h-full">
+      <div className="flex flex-col h-full border-r bg-background/50">
+        <div className="p-4 border-b bg-background">
+          <Tabs
+            value={filter}
+            onValueChange={(v) => onFilterChange(v as 'all' | 'unread')}
+          >
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="all" className="flex-1">
+                All
+              </TabsTrigger>
+              <TabsTrigger value="unread" className="flex-1">
+                Unread{' '}
+                {emails.filter((e) => e.unread).length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {emails.filter((e) => e.unread).length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
         <div>
           {filteredEmails.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
@@ -191,7 +191,7 @@ export default function EmailList({
             </div>
           )}
         </div>
-      </ScrollArea>
-    </div>
+      </div>
+    </ScrollArea>
   );
 }

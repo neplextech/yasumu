@@ -18,7 +18,12 @@ const OUTPUT_FILE = path.join(
   'yasumu-typedef.ts',
 );
 
-const RUNTIME_FILES = ['ui.ts', 'yasumu-request.ts', 'bootstrap.ts'];
+const RUNTIME_FILES = [
+  'ui.ts',
+  'yasumu-request.ts',
+  'bootstrap.ts',
+  'yasumu-workspace-context.ts',
+];
 const WHITELISTED_RUNTIME_FILES = ['internal.d.ts'];
 
 function cleanupGeneratedFiles() {
@@ -179,7 +184,7 @@ function generateYasumuTypes(): string {
 
   const declarations = generateDeclarations(existingFiles);
 
-  const processOrder = ['ui.d.ts', 'yasumu-request.d.ts', 'bootstrap.d.ts'];
+  const processOrder = RUNTIME_FILES.map((f) => f.replace('.ts', '.d.ts'));
 
   for (const fileName of processOrder) {
     const content = declarations.get(fileName);
@@ -243,7 +248,7 @@ function generateYasumuTypes(): string {
 
   parts.push('// Yasumu Runtime API');
   parts.push(
-    `
+    /* typescript */ `
 declare class Yasumu {
   static readonly ui: typeof YasumuUI;
   static readonly version: string;
@@ -264,7 +269,7 @@ declare type OnTest = (req: YasumuRequest, res: YasumuResponse) => void | Promis
   return parts.join('\n');
 }
 
-const TESTING_API_TYPES = `
+const TESTING_API_TYPES = /* typescript */ `
 interface Expected<T = unknown> {
   not: Expected<T>;
   resolves: Expected<Promise<T>>;

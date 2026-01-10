@@ -24,6 +24,7 @@ import {
   YasumuURLSearchParams,
   YasumuWorkspaceEnvironment,
 } from './yasumu-request.ts';
+import { YasumuWorkspace as YasumuWorkspaceType } from './yasumu-workspace-context.ts';
 
 let _resourceDir: string, _yasumuVersion: string, _appDataDir: string;
 
@@ -287,6 +288,12 @@ Object.defineProperties(globalThis, {
     enumerable: false,
     configurable: false,
   },
+  YasumuWorkspace: {
+    value: YasumuWorkspaceType,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
 });
 
 type YasumuRuntime = typeof Yasumu;
@@ -314,6 +321,8 @@ declare global {
   export var YasumuURLSearchParams: YasumuURLSearchParamsType;
   // deno-lint-ignore no-var
   export var YasumuWorkspaceEnvironment: YasumuWorkspaceEnvironmentType;
+  // deno-lint-ignore no-var
+  export var YasumuWorkspace: typeof YasumuWorkspaceType;
   // deno-lint-ignore no-var
   export var __yasumu_renderer_event_listener: ((event: string) => void) | null;
 }

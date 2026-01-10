@@ -1,6 +1,7 @@
 import { sqliteTable, int, text, integer } from 'drizzle-orm/sqlite-core';
-import { commonColumns } from '../../common/index.ts';
+import { commonColumns, json } from '../../common/index.ts';
 import { workspaces } from './workspaces.ts';
+import { YasumuEmbeddedScript } from '@yasumu/common';
 
 export const smtp = sqliteTable('smtp', {
   ...commonColumns(),
@@ -10,6 +11,7 @@ export const smtp = sqliteTable('smtp', {
   port: int('port').notNull().default(0),
   username: text('username'),
   password: text('password'),
+  script: json<YasumuEmbeddedScript>('script'),
 });
 
 export const emails = sqliteTable('emails', {

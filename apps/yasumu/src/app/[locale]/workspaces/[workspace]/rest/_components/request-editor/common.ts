@@ -1,4 +1,4 @@
-export const REQUEST_SCRIPT_PLACEHOLDER = `
+export const REQUEST_SCRIPT_PLACEHOLDER = /* typescript */ `
 export function onRequest(req: YasumuRequest) {
   // Modify request headers, body, etc.
   req.headers.set('X-Custom-Header', 'value');
