@@ -220,18 +220,25 @@ export function useGitHubReleases() {
 
   useEffect(() => {
     async function fetchReleases() {
+      let cachedData: CachedData | null = null;
+
       try {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
-          const parsed: CachedData = (() => {
+          cachedData = (() => {
             try {
               return JSON.parse(cached);
             } catch {
               return null;
             }
           })();
-          if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION) {
-            setReleases(processReleases(parsed.releases));
+
+          // If cache is still valid, use it and return early
+          if (
+            cachedData &&
+            Date.now() - cachedData.timestamp < CACHE_DURATION
+          ) {
+            setReleases(processReleases(cachedData.releases));
             setLoading(false);
             return;
           }
@@ -254,17 +261,22 @@ export function useGitHubReleases() {
 
         const data: GitHubRelease[] = await response.json();
 
-        const cacheData: CachedData = {
+        const newCacheData: CachedData = {
           releases: data,
           timestamp: Date.now(),
         };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(newCacheData));
 
         setReleases(processReleases(data));
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to fetch releases',
-        );
+        // If fetch fails but we have expired cache, use it as fallback
+        if (cachedData) {
+          setReleases(processReleases(cachedData.releases));
+        } else {
+          setError(
+            err instanceof Error ? err.message : 'Failed to fetch releases',
+          );
+        }
       } finally {
         setLoading(false);
       }
