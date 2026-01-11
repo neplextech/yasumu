@@ -91,7 +91,6 @@ export function RestFileTree() {
         requestHeaders: data.requestHeaders,
         requestBody: data.requestBody,
         script: data.script,
-        testScript: data.testScript,
         dependencies: data.dependencies,
         metadata: {},
       });
@@ -145,7 +144,6 @@ export function RestFileTree() {
               requestHeaders: data.requestHeaders,
               requestBody: data.requestBody,
               script: data.script,
-              testScript: data.testScript,
               dependencies: data.dependencies,
               metadata: {},
             });
@@ -211,7 +209,6 @@ export function RestFileTree() {
             requestHeaders: data.requestHeaders,
             requestBody: data.requestBody,
             script: data.script,
-            testScript: data.testScript,
             dependencies: data.dependencies,
             metadata: {},
           });
@@ -291,6 +288,7 @@ export function RestFileTree() {
       onFileCut={handleFileCut}
       onFolderCut={handleFolderCut}
       onPasteItem={withErrorHandler(handlePaste)}
+      reloadTree={refetchRestEntities}
     />
   );
 }

@@ -10,6 +10,7 @@ import { ServerStatus } from './server-status';
 import { ConsoleButton } from './console-button';
 import { ConsoleSheet } from './console-sheet';
 import { usePathname } from 'next/navigation';
+import { useEffect, useEffectEvent } from 'react';
 
 function StatusBarDivider() {
   return <div className="w-px h-3 bg-border" />;
@@ -19,12 +20,23 @@ export function StatusBar() {
   const { port, echoServerPort } = useYasumu();
   const workspace = useActiveWorkspace(false);
 
-  const { data: smtpPort } = useQuery({
+  const { data: smtpPort, refetch: refetchSmtpPort } = useQuery({
     queryKey: ['smtp-port', workspace?.id],
     queryFn: () => workspace?.emails.getSmtpPort().catch(() => null) ?? null,
     enabled: !!workspace,
     staleTime: 10000,
   });
+
+  const fetchSmtpPort = useEffectEvent(() => {
+    if (smtpPort == null) {
+      refetchSmtpPort().catch(Object);
+    }
+  });
+
+  useEffect(() => {
+    if (!workspace) return;
+    fetchSmtpPort();
+  }, [workspace]);
 
   return (
     <>

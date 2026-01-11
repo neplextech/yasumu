@@ -24,6 +24,8 @@ import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { toast } from '@yasumu/ui/components/sonner';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { relaunch, exit } from '@tauri-apps/plugin-process';
+import { MdDeveloperMode } from 'react-icons/md';
+import { invoke } from '@tauri-apps/api/core';
 
 export function useBuiltinCommands() {
   const router = useRouter();
@@ -175,6 +177,23 @@ export function useBuiltinCommands() {
             toast.dismiss(savingToast);
             toast.success('Workspace saved successfully!');
           })();
+        },
+      },
+      {
+        id: 'open-devtools',
+        name: 'Open Developer Tools',
+        description: 'Open the developer tools window',
+        icon: <MdDeveloperMode className="size-4" />,
+        shortcut: {
+          hotkey: 'mod+shift+i',
+          mac: ['⌘', 'Shift', 'I'],
+          other: ['Ctrl', 'Shift', 'I'],
+        },
+        keywords: ['reload', 'refresh', 'restart'],
+        category: 'general',
+        disableShortcutRegistration: false,
+        execute: () => {
+          return invoke('yasumu_open_devtools');
         },
       },
       {

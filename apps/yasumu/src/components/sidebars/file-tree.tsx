@@ -1,4 +1,4 @@
-import { ChevronRight, File, Folder } from 'lucide-react';
+import { ChevronRight, File, Folder, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -42,6 +42,7 @@ import { CreateInputDialog } from '../dialogs/create-input-dialog';
 import { cn } from '@yasumu/ui/lib/utils';
 import { usePlatform } from '@/hooks/use-platform';
 import { useCopyToClipboard } from '@yasumu/ui/hooks/use-copy-to-clipboard';
+import { VscCollapseAll } from 'react-icons/vsc';
 
 export type ClipboardOperation = 'copy' | 'cut';
 
@@ -79,6 +80,7 @@ export interface FileTreeSidebarProps
   clipboard?: ClipboardItem | null;
   selectedFolderId?: string | null;
   onFolderSelect?: (id: string | null) => void;
+  reloadTree?: () => void;
 }
 
 export function FileTreeSidebar({
@@ -100,6 +102,7 @@ export function FileTreeSidebar({
   clipboard,
   selectedFolderId,
   onFolderSelect,
+  reloadTree,
   ...props
 }: FileTreeSidebarProps) {
   const tree = Array.isArray(fileTree) ? fileTree : [fileTree];
@@ -110,8 +113,48 @@ export function FileTreeSidebar({
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [newFileDialogOpen, setNewFileDialogOpen] = React.useState(false);
+  const [openFolders, setOpenFolders] = React.useState<Set<string>>(new Set());
+  const [isInitialized, setIsInitialized] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const { isMac } = usePlatform();
+
+  // Initialize all folders as open on first render
+  React.useEffect(() => {
+    if (!isInitialized && tree.length > 0) {
+      const getAllFolderIds = (items: FileTreeItem[]): string[] => {
+        return items.flatMap((item) => {
+          if (item.type === 'folder') {
+            return [
+              item.id,
+              ...(item.children ? getAllFolderIds(item.children) : []),
+            ];
+          }
+          return [];
+        });
+      };
+      setOpenFolders(new Set(getAllFolderIds(tree)));
+      setIsInitialized(true);
+    }
+  }, [tree, isInitialized]);
+
+  const handleCollapseAll = React.useCallback(() => {
+    setOpenFolders(new Set());
+  }, []);
+
+  const handleToggleFolder = React.useCallback(
+    (folderId: string, isOpen: boolean) => {
+      setOpenFolders((prev) => {
+        const next = new Set(prev);
+        if (isOpen) {
+          next.add(folderId);
+        } else {
+          next.delete(folderId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleItemSelect = React.useCallback(
     (id: string, type: 'file' | 'folder', name: string) => {
@@ -225,6 +268,12 @@ export function FileTreeSidebar({
                     >
                       <File className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                     </CreateInputDialog>
+                    <button onClick={() => reloadTree?.()}>
+                      <RefreshCw className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
+                    </button>
+                    <button onClick={handleCollapseAll}>
+                      <VscCollapseAll className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
+                    </button>
                   </div>
                 </div>
               </SidebarGroupLabel>
@@ -252,6 +301,8 @@ export function FileTreeSidebar({
                       selectedItemId={selectedItem?.id}
                       onItemSelect={handleItemSelect}
                       isMac={isMac}
+                      openFolders={openFolders}
+                      onToggleFolder={handleToggleFolder}
                     />
                   ))}
                 </SidebarMenu>
@@ -533,6 +584,8 @@ function Tree({
   selectedItemId,
   onItemSelect,
   isMac,
+  openFolders,
+  onToggleFolder,
 }: {
   item: FileTreeItem;
   onFileSelect?: (id: string) => void;
@@ -553,6 +606,8 @@ function Tree({
   selectedItemId?: string;
   onItemSelect?: (id: string, type: 'file' | 'folder', name: string) => void;
   isMac?: boolean;
+  openFolders?: Set<string>;
+  onToggleFolder?: (folderId: string, isOpen: boolean) => void;
 }) {
   const { name, children } = item;
   const isSelected = selectedItemId === item.id;
@@ -630,11 +685,14 @@ function Tree({
     );
   }
 
+  const isOpen = openFolders?.has(item.id) ?? true;
+
   return (
     <SidebarMenuItem>
       <Collapsible
         className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
-        defaultOpen
+        open={isOpen}
+        onOpenChange={(open) => onToggleFolder?.(item.id, open)}
       >
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -694,6 +752,8 @@ function Tree({
                 selectedItemId={selectedItemId}
                 onItemSelect={onItemSelect}
                 isMac={isMac}
+                openFolders={openFolders}
+                onToggleFolder={onToggleFolder}
               />
             ))}
           </SidebarMenuSub>

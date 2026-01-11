@@ -1,3 +1,4 @@
+// @ts-ignore type issue
 import '@yasumu/ui/globals.css';
 import { JetBrains_Mono, Poppins } from 'next/font/google';
 import { Providers } from '@/components/providers';
