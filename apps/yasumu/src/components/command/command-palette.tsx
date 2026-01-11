@@ -106,6 +106,7 @@ export function CommandPalette() {
         // Try to match command.shortcut.hotkey (which should also be in normalized "mod+r" format)
         const shortcut = commands.find(
           (cmd) =>
+            !cmd.disableShortcutRegistration &&
             cmd.shortcut &&
             // Exact match
             (pressedHotkey === cmd.shortcut.hotkey.toLowerCase() ||

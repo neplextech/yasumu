@@ -50,6 +50,7 @@ export interface YasumuContextData {
   echoServerPort: number | null;
   yasumu: Yasumu;
   currentWorkspaceId: string | null;
+  currentWorkspace: Workspace | null;
 }
 
 const YasumuContext = createContext<YasumuContextData | null>(null);
@@ -68,8 +69,8 @@ export function useActiveWorkspace(): Workspace;
 export function useActiveWorkspace(strict: true): Workspace;
 export function useActiveWorkspace(strict: false): Workspace | null;
 export function useActiveWorkspace(strict: boolean = true): Workspace | null {
-  const { yasumu } = useYasumu();
-  const workspace = yasumu.workspaces.getActiveWorkspace();
+  const { yasumu, currentWorkspace } = useYasumu();
+  const workspace = currentWorkspace ?? yasumu.workspaces.getActiveWorkspace();
 
   if (strict && !workspace) {
     throw new Error('Active workspace not found');
@@ -105,7 +106,7 @@ export default function WorkspaceProvider({
     null,
   );
   const [yasumu, setYasumu] = useState<Yasumu | null>(null);
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(
     null,
   );
   const router = useRouter();
@@ -162,7 +163,7 @@ export default function WorkspaceProvider({
           },
           events: {
             onWorkspaceActivated: (workspace) => {
-              setCurrentWorkspaceId(workspace.id);
+              setCurrentWorkspace(workspace);
               const currentPath = pathnameRef.current;
               if (isWorkspacePath(currentPath)) {
                 const section = getCurrentSection(currentPath);
@@ -174,7 +175,7 @@ export default function WorkspaceProvider({
               router.replace('/en/workspaces/default/rest');
             },
             onWorkspaceDeactivated: () => {
-              setCurrentWorkspaceId(null);
+              setCurrentWorkspace(null);
               router.replace('/');
             },
             async onEnvironmentActivated(workspace) {
@@ -250,7 +251,8 @@ export default function WorkspaceProvider({
         port,
         echoServerPort,
         yasumu,
-        currentWorkspaceId,
+        currentWorkspace,
+        currentWorkspaceId: currentWorkspace?.id ?? null,
       }}
     >
       {children}

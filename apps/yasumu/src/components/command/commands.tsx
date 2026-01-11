@@ -17,6 +17,7 @@ export interface YasumuCommand {
   shortcut?: CommandShortcut;
   keywords?: string[];
   category?: string;
+  disableShortcutRegistration?: boolean;
   execute: () => void | Promise<void>;
 }
 
