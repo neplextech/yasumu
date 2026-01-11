@@ -48,6 +48,8 @@ function useChangelogReleases() {
 
   const fetchReleases = useCallback(
     async (pageNum: number, append = false) => {
+      let cachedData: CachedData | null = null;
+
       try {
         if (append) {
           setLoadingMore(true);
@@ -58,17 +60,22 @@ function useChangelogReleases() {
         if (!append) {
           const cached = localStorage.getItem(CACHE_KEY);
           if (cached) {
-            const parsed: CachedData | null = (() => {
+            cachedData = (() => {
               try {
                 return JSON.parse(cached);
               } catch {
                 return null;
               }
             })();
-            if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION) {
-              setReleases(parsed.releases);
-              setPage(parsed.page);
-              setHasMore(parsed.hasMore);
+
+            // If cache is still valid, use it and return early
+            if (
+              cachedData &&
+              Date.now() - cachedData.timestamp < CACHE_DURATION
+            ) {
+              setReleases(cachedData.releases);
+              setPage(cachedData.page);
+              setHasMore(cachedData.hasMore);
               setLoading(false);
               return;
             }
@@ -101,21 +108,28 @@ function useChangelogReleases() {
           ? [...releases, ...releaseData]
           : releaseData;
 
-        const cacheData: CachedData = {
+        const newCacheData: CachedData = {
           releases: updatedReleases,
           timestamp: Date.now(),
           page: pageNum,
           hasMore: newHasMore,
         };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(newCacheData));
 
         setReleases(updatedReleases);
         setPage(pageNum);
         setHasMore(newHasMore);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to fetch releases',
-        );
+        // If fetch fails but we have expired cache (and not appending), use it as fallback
+        if (cachedData && !append) {
+          setReleases(cachedData.releases);
+          setPage(cachedData.page);
+          setHasMore(cachedData.hasMore);
+        } else {
+          setError(
+            err instanceof Error ? err.message : 'Failed to fetch releases',
+          );
+        }
       } finally {
         setLoading(false);
         setLoadingMore(false);
