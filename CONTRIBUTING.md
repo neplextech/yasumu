@@ -214,12 +214,17 @@ in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
 Make sure to properly format the source code, check for linter errors
 and test the code before pushing.
 
-## File Names
+## File Naming
 
-1. Use `PascalCase` format if the file belongs to a class. Ex:
-   `YasumuClient.ts`, `ProtocolService.ts`, etc.
-2. Use `camelCase` format for the files that belong to functions. Ex:
-   `contextMenu`, `appMenu`, etc.
-3. Use `lowercase` format for other cases.
+Prefer the use of `kebab-case` for file naming. Files such as services may append `.service` to the name (for example: `user.service.ts`).
+
+**Why `kebab-case`?**
+
+* **Readability:** Words are clearly separated with hyphens, making file names easier to read at a glance.
+* **Consistency:** Uniform naming avoids confusion when importing files, especially in case-sensitive file systems.
+* **URL & CLI Friendly:** Works seamlessly in URLs and command-line operations without needing quotes or escaping spaces.
+* **Cross-Platform Safe:** Reduces issues with file systems that treat uppercase/lowercase differently.
+
+Using `kebab-case` consistently helps maintain a clean, professional, and easily navigable project structure.
 
 > 🎉 Happy coding!
