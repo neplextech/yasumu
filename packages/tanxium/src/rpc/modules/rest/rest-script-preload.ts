@@ -8,7 +8,10 @@ export const REST_CONTEXT_HANDLER: ContextHandlerDefinition = {
   builder: (context: any) => {
     const env = new YasumuWorkspaceEnvironment(context.environment);
     const req = new YasumuRequest(context, env);
-    const res = YasumuResponse.fromContext(context, env);
+    const res = YasumuResponse.fromContext(context, {
+      environment: context.environment,
+      workspace: context.workspace,
+    });
     const args = [req, res];
     const getContext = () => req.toContext();
 

@@ -3,7 +3,7 @@ import {
   type EnvironmentData,
 } from './yasumu-request.ts';
 
-interface YasumuWorkspaceData {
+export interface YasumuWorkspaceData {
   id: string;
   name: string;
   path: string | null;
@@ -46,6 +46,14 @@ export class YasumuWorkspace {
     return {
       workspace: this.context.workspace,
       environment: this.env.toData(),
+    };
+  }
+
+  public toJSON(): YasumuWorkspaceData {
+    return {
+      id: this.id,
+      name: this.name,
+      path: this.path,
     };
   }
 }

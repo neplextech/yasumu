@@ -23,6 +23,7 @@ import {
   createBlobUrlFromBuffer,
   createBlobUrlFromText,
 } from '@/components/responses/viewers';
+import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
 
 export type RequestPhase =
   | 'idle'
@@ -188,6 +189,11 @@ export function useRestRequest({
           parameters: interpolatedParams,
         },
         response: null,
+        workspace: {
+          id: workspace.id,
+          name: workspace.name,
+          path: isDefaultWorkspacePath(workspace.path) ? null : workspace.path,
+        },
       };
 
       let mockResponse: RestResponse | null = null;

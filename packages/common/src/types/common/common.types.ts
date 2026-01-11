@@ -12,11 +12,30 @@ export interface YasumuEmbeddedScript {
   code: string;
 }
 
+export interface ScriptWorkspaceContext {
+  /**
+   * The id of the workspace.
+   */
+  id: string;
+  /**
+   * The name of the workspace.
+   */
+  name: string;
+  /**
+   * The path of the workspace.
+   */
+  path: string | null;
+}
+
 export interface CommonScriptRuntimeContext {
   /**
    * The current environment of the script runtime.
    */
   environment: EnvironmentData | null;
+  /**
+   * The current workspace context data.
+   */
+  workspace: ScriptWorkspaceContext;
 }
 
 export interface ExecutableScript<Context = any> {

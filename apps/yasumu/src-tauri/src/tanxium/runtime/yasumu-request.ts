@@ -1,3 +1,9 @@
+import {
+  YasumuWorkspace,
+  YasumuWorkspaceContextData,
+  YasumuWorkspaceData,
+} from './yasumu-workspace-context.ts';
+
 type HttpMethod =
   | 'GET'
   | 'POST'
@@ -41,6 +47,7 @@ interface RestScriptContext {
   environment: EnvironmentData | null;
   request: RestRequestContextData;
   response: RestResponseContextData | null;
+  workspace: YasumuWorkspaceData;
 }
 
 export class YasumuWorkspaceEnvironment {
@@ -358,8 +365,9 @@ export class YasumuRequest {
   private _headers: YasumuHeaders;
   private _body: unknown;
   private _params: YasumuURLSearchParams;
-  private _env: YasumuWorkspaceEnvironment;
+  // private _env: YasumuWorkspaceEnvironment;
   private _context: RestScriptContext;
+  private _workspace: YasumuWorkspace;
 
   constructor(context: RestScriptContext, env?: YasumuWorkspaceEnvironment) {
     this._context = context;
@@ -368,7 +376,10 @@ export class YasumuRequest {
     this._headers = new YasumuHeaders(context.request.headers);
     this._body = context.request.body;
     this._params = new YasumuURLSearchParams(context.request.parameters);
-    this._env = env ?? new YasumuWorkspaceEnvironment(context.environment);
+    this._workspace = new YasumuWorkspace({
+      environment: (env?.toData() || context.environment) ?? null,
+      workspace: context.workspace,
+    });
   }
 
   get url(): string {
@@ -404,7 +415,7 @@ export class YasumuRequest {
   }
 
   get env(): YasumuWorkspaceEnvironment {
-    return this._env;
+    return this._workspace.env;
   }
 
   json<T = unknown>(): T {
@@ -422,12 +433,12 @@ export class YasumuRequest {
   }
 
   clone(): YasumuRequest {
-    return new YasumuRequest(this.toContext(), this._env);
+    return new YasumuRequest(this.toContext(), this._workspace.env);
   }
 
   toContext(): RestScriptContext {
     return {
-      environment: this._env.toData(),
+      environment: this._workspace.env.toData(),
       request: {
         url: this._url,
         method: this._method,
@@ -436,6 +447,7 @@ export class YasumuRequest {
         parameters: this._params.toObject(),
       },
       response: this._context.response,
+      workspace: this._workspace.toJSON(),
     };
   }
 }
@@ -453,12 +465,12 @@ export class YasumuResponse {
   private _headers: YasumuHeaders;
   private _body: unknown;
   private _ok: boolean;
-  private _env: YasumuWorkspaceEnvironment | null;
+  private _workspace: YasumuWorkspace;
 
   constructor(
     body?: unknown,
     init?: YasumuResponseInit,
-    env?: YasumuWorkspaceEnvironment,
+    workspace?: YasumuWorkspaceContextData,
   ) {
     this._body = body ?? init?.body ?? null;
     this._status = init?.status ?? 200;
@@ -468,12 +480,19 @@ export class YasumuResponse {
         ? init.headers
         : new YasumuHeaders(init?.headers);
     this._ok = this._status >= 200 && this._status < 300;
-    this._env = env ?? null;
+    this._workspace = new YasumuWorkspace({
+      environment: workspace?.environment || null,
+      workspace: workspace?.workspace || {
+        id: 'invalid-id',
+        name: 'Invalid Workspace',
+        path: null,
+      },
+    });
   }
 
   static fromContext(
     context: RestScriptContext,
-    env?: YasumuWorkspaceEnvironment,
+    workspace?: YasumuWorkspaceContextData,
   ): YasumuResponse | null {
     if (!context.response) return null;
 
@@ -483,7 +502,7 @@ export class YasumuResponse {
         status: context.response.status,
         headers: context.response.headers,
       },
-      env,
+      workspace,
     );
   }
 
@@ -508,10 +527,7 @@ export class YasumuResponse {
   }
 
   get env(): YasumuWorkspaceEnvironment {
-    if (!this._env) {
-      this._env = new YasumuWorkspaceEnvironment(null);
-    }
-    return this._env;
+    return this._workspace.env;
   }
 
   json<T = unknown>(): T {
@@ -536,7 +552,7 @@ export class YasumuResponse {
         statusText: this._statusText,
         headers: new YasumuHeaders(this._headers),
       },
-      this._env ?? undefined,
+      this._workspace.toContext(),
     );
   }
 
