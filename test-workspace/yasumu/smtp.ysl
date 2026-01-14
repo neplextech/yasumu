@@ -7,17 +7,3 @@ metadata {
   password: null
 }
 
-script {
-  export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
-    if (!email.subject.toLowerCase().includes('verification code')) return;
-  
-    const otp = email.html.split('data-otp="')[1]?.split('"')[0];
-  
-    console.log(`Parsed OTP: ${otp}`);
-  
-    if (otp) {
-      ctx.workspace.env.setVariable('VERIFICATION_CODE', otp);
-    }
-  }
-}
-

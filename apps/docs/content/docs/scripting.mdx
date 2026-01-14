@@ -61,14 +61,15 @@ The `req` object represents the HTTP request and is available in both
 
 ### Properties
 
-| Property  | Type                         | Description                                      |
-| :-------- | :--------------------------- | :----------------------------------------------- |
-| `url`     | `string`                     | The request URL (can be modified in `onRequest`) |
-| `method`  | `string`                     | HTTP method (GET, POST, etc.)                    |
-| `headers` | `YasumuHeaders`              | Request headers object                           |
-| `body`    | `unknown`                    | Request body                                     |
-| `params`  | `YasumuURLSearchParams`      | URL search parameters                            |
-| `env`     | `YasumuWorkspaceEnvironment` | Environment access                               |
+| Property    | Type                         | Description                                      |
+| :---------- | :--------------------------- | :----------------------------------------------- |
+| `url`       | `string`                     | The request URL (can be modified in `onRequest`) |
+| `method`    | `string`                     | HTTP method (GET, POST, etc.)                    |
+| `headers`   | `YasumuHeaders`              | Request headers object                           |
+| `body`      | `unknown`                    | Request body                                     |
+| `params`    | `YasumuURLSearchParams`      | URL search parameters                            |
+| `env`       | `YasumuWorkspaceEnvironment` | Environment access                               |
+| `workspace` | `YasumuWorkspace`            | The current workspace object                     |
 
 ### Methods
 
@@ -126,14 +127,15 @@ the `onResponse` function.
 
 ### Properties
 
-| Property     | Type                         | Description                 |
-| :----------- | :--------------------------- | :-------------------------- |
-| `status`     | `number`                     | HTTP status code            |
-| `statusText` | `string`                     | HTTP status message         |
-| `ok`         | `boolean`                    | `true` if status is 200-299 |
-| `headers`    | `YasumuHeaders`              | Response headers            |
-| `body`       | `unknown`                    | Response body               |
-| `env`        | `YasumuWorkspaceEnvironment` | Environment access          |
+| Property     | Type                         | Description                  |
+| :----------- | :--------------------------- | :--------------------------- |
+| `status`     | `number`                     | HTTP status code             |
+| `statusText` | `string`                     | HTTP status message          |
+| `ok`         | `boolean`                    | `true` if status is 200-299  |
+| `headers`    | `YasumuHeaders`              | Response headers             |
+| `body`       | `unknown`                    | Response body                |
+| `env`        | `YasumuWorkspaceEnvironment` | Environment access           |
+| `workspace`  | `YasumuWorkspace`            | The current workspace object |
 
 ### Methods
 
@@ -255,6 +257,51 @@ This is useful for:
 - Testing without hitting the actual API
 - Simulating error responses
 - Development when the backend isn't available
+
+## Awaiting Emails
+
+Yasumu offers a powerful API for programmatically awaiting incoming
+emails within your scripts. This functionality is particularly
+valuable for testing and development scenarios that require
+verification of email delivery as part of an automated workflow.
+
+```javascript
+export async function onRequest(req: YasumuRequest) {
+  // Wait for an email to arrive in the workspace's mailbox.
+  // The predicate should return true for emails that match your criteria.
+  // The optional timeout (in milliseconds) determines how long to wait.
+  const email = await req.workspace.emails.awaitEmail(
+    (email) => /* your predicate logic here */,
+    /* timeout */ 30_000
+  );
+  console.log('Received email:', email);
+  // Received email:
+  // {
+  //   id: '123',
+  //   from: 'sender@example.com',
+  //   to: 'recipient@example.com',
+  //   subject: 'Test Email',
+  //   text: 'This is a test email',
+  //   html: '<p>This is a test email</p>',
+  //   cc: null,
+  //   unread: true,
+  //   createdAt: 1715769600000,
+  //   updatedAt: 1715769600000,
+  // }
+}
+
+// It may also be added in the `onResponse` function to await an email after a request is made.
+export async function onResponse(req: YasumuResponse) {
+  const email = await req.workspace.emails.awaitEmail(
+    (email) => /* your predicate logic here */,
+    /* timeout */ 30_000
+  );
+  console.log('Received email:', email);
+}
+```
+
+For detailed examples and advanced features, please refer to the
+dedicated [E-mail Scripting](/docs/smtp-server#email-scripting) guide.
 
 ## Console Output
 

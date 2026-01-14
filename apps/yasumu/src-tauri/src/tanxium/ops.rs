@@ -1,9 +1,9 @@
+use crate::YasumuInternalState;
 use crate::tanxium::state::get_renderer_event_sender;
 use crate::tanxium::types::AppHandleState;
-use crate::YasumuInternalState;
 use cuid2::cuid;
-use deno_core::op2;
 use deno_core::OpState;
+use deno_core::op2;
 use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
@@ -232,6 +232,7 @@ deno_core::extension!(
         "common.ts",
         "yasumu-request.ts",
         "yasumu-workspace-context.ts",
+        "message-queue.ts",
         "modules/collection.ts",
     ],
     state = |state| {

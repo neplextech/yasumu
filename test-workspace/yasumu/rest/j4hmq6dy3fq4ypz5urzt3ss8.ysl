@@ -1,0 +1,26 @@
+@rest
+
+metadata {
+  name: "Await Email"
+  method: "POST"
+  id: "j4hmq6dy3fq4ypz5urzt3ss8"
+  groupId: "mv2z3sr80ai1cv2axxap3juq"
+}
+
+request {
+  url: "https://echo.yasumu.local"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  export async function onRequest(req: YasumuRequest) {
+    const email = await req.workspace.emails.awaitEmail((email) => true, 30_000);
+    console.log({ email })
+  }
+}
+

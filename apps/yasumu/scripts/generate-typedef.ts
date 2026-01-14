@@ -23,6 +23,7 @@ const RUNTIME_FILES = [
   'yasumu-request.ts',
   'bootstrap.ts',
   'yasumu-workspace-context.ts',
+  'message-queue.ts',
   'modules/collection.ts',
 ];
 const WHITELISTED_RUNTIME_FILES = ['internal.d.ts'];

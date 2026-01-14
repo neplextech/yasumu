@@ -187,6 +187,21 @@ export class ScriptWorker {
     return moduleKey;
   }
 
+  public async publishMessage<T = unknown>(
+    event: string,
+    data: T,
+  ): Promise<void> {
+    await this.ensureWorker();
+    if (!this.worker) {
+      throw new Error('Worker is not available');
+    }
+    this.worker.postMessage({
+      type: 'publish-message',
+      event,
+      data,
+    });
+  }
+
   public async execute<Context>(
     moduleKey: string,
     invocationTarget: string,
