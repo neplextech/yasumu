@@ -436,6 +436,10 @@ export class YasumuRequest {
     return new YasumuRequest(this.toContext(), this._workspace.env);
   }
 
+  get workspace(): YasumuWorkspace {
+    return this._workspace;
+  }
+
   toContext(): RestScriptContext {
     return {
       environment: this._workspace.env.toData(),
@@ -554,6 +558,10 @@ export class YasumuResponse {
       },
       this._workspace.toContext(),
     );
+  }
+
+  get workspace(): YasumuWorkspace {
+    return this._workspace;
   }
 
   toContextData(): RestResponseContextData {

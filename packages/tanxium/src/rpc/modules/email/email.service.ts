@@ -71,6 +71,10 @@ export class EmailService {
       port: config.port,
       smtpId: config.id,
       onEmailReceived: async (workspaceId, email) => {
+        await this.scriptRuntimeService.publishEvent('yasumu:new-email', {
+          workspaceId,
+          email,
+        });
         await this.executeScript(workspaceId, email).catch((e) => {
           console.error('Failed to execute email script', e);
         });

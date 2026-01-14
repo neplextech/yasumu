@@ -11,6 +11,14 @@ import {
 
 @Injectable()
 export class ScriptRuntimeService {
+  public async publishEvent<T = unknown>(
+    event: string,
+    data: T,
+  ): Promise<void> {
+    const worker = getGlobalScriptWorker();
+    await worker.publishMessage(event, data);
+  }
+
   public async executeScript<Context, Entity extends ExecutableScript<Context>>(
     workspaceId: string,
     entity: Entity,

@@ -175,6 +175,13 @@ parentPort.on('message', async (message) => {
     return;
   }
 
+  if (message.type === 'publish-message') {
+    const { event, data } = message;
+    if (!event) return;
+    Yasumu.queue.publish(event, data);
+    return;
+  }
+
   if (message.type !== 'execute') return;
 
   const { requestId, moduleKey, invocationTarget, contextType, context } = message;

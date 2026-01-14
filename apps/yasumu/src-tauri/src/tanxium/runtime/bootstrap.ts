@@ -26,6 +26,7 @@ import {
 } from './yasumu-request.ts';
 import { YasumuWorkspace as YasumuWorkspaceType } from './yasumu-workspace-context.ts';
 import { Cache } from './modules/collection.ts';
+import { MessageQueue } from './message-queue.ts';
 
 let _resourceDir: string, _yasumuVersion: string, _appDataDir: string;
 
@@ -45,6 +46,11 @@ class Yasumu {
    * In-memory cache store
    */
   public static readonly cache = new Cache();
+
+  /**
+   * Yasumu message queue
+   */
+  public static readonly queue = new MessageQueue();
 
   private constructor() {
     throw new Error('Yasumu is not a constructor');

@@ -38,6 +38,8 @@ export function StatusBar() {
     fetchSmtpPort();
   }, [workspace]);
 
+  if (!workspace) return null;
+
   return (
     <>
       <div
