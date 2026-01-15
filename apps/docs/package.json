@@ -18,7 +18,9 @@
     "lucide-react": "^0.561.0",
     "next": "catalog:react",
     "react": "catalog:react",
-    "react-dom": "catalog:react"
+    "react-dom": "catalog:react",
+    "reading-time": "^1.5.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:tailwind",
@@ -26,12 +28,12 @@
     "@types/node": "catalog:build",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
+    "@typescript/native-preview": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
     "eslint": "^9.39.2",
     "eslint-config-next": "catalog:react",
     "postcss": "^8.5.6",
-    "tailwindcss": "catalog:tailwind",
-    "@typescript/native-preview": "catalog:build"
+    "tailwindcss": "catalog:tailwind"
   }
 }

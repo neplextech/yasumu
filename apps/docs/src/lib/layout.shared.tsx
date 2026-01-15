@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import React from 'react';
+import { Book, Download, History, Pencil } from 'lucide-react';
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -16,6 +16,36 @@ export function baseOptions(): BaseLayoutProps {
       ),
     },
     links: [
+      {
+        text: 'Documentation',
+        url: '/docs',
+        type: 'main',
+        description: 'Documentation for Yasumu',
+        icon: <Book className="w-4 h-4" />,
+      },
+      {
+        text: 'Blogs',
+        url: '/blogs',
+        type: 'main',
+        description: 'Blogs about Yasumu',
+        icon: <Pencil className="w-4 h-4" />,
+      },
+      {
+        text: 'Download',
+        url: 'https://yasumu.dev/download',
+        type: 'main',
+        external: true,
+        description: 'Download Yasumu',
+        icon: <Download className="w-4 h-4" />,
+      },
+      {
+        text: 'Changelog',
+        url: 'https://yasumu.dev/changelog',
+        type: 'main',
+        external: true,
+        description: 'Changelog of Yasumu',
+        icon: <History className="w-4 h-4" />,
+      },
       {
         icon: (
           <svg

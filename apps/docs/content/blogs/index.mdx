@@ -1,0 +1,107 @@
+---
+title: Welcome to the Yasumu Blog
+description:
+  'Stay up to date with the latest news, release announcements,
+  tutorials, and insights from the Yasumu team. Learn tips and tricks
+  to supercharge your API development workflow.'
+date: 2026-01-15
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+import {
+  BookOpen,
+  Sparkles,
+  Github,
+  ArrowRight,
+  Bell,
+  Megaphone,
+  GraduationCap,
+  Rocket,
+  BookMarked,
+} from 'lucide-react';
+
+<div className="not-prose">
+
+{/* Hero Section */}
+
+<div className="relative mb-12 pb-8 border-b border-fd-border">
+ 
+  <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-fd-foreground mb-4">
+    Yasumu Blog
+  </h1>
+  
+  <h4 className="text-lg text-fd-muted-foreground max-w-2xl leading-relaxed">
+    This is your go-to source for all things Yasumu. From release
+    announcements to in-depth tutorials, we&apos;ve got you covered.
+    Discover tips, best practices, and insights to help you get the
+    most out of Yasumu and supercharge your API development workflow.
+  </h4>
+
+  <div className="flex flex-wrap gap-3 mt-6">
+    <a
+      href="https://github.com/neplextech/yasumu"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fd-foreground text-fd-background text-sm font-medium hover:bg-fd-foreground/90 transition-colors"
+    >
+      <Github className="w-4 h-4" />
+      Follow on GitHub
+    </a>
+    <a
+      href="/docs"
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-fd-border bg-fd-card text-sm font-medium hover:bg-fd-muted transition-colors"
+    >
+      <BookOpen className="w-4 h-4" />
+      Read the Docs
+    </a>
+  </div>
+</div>
+
+{/* Newsletter CTA */}
+
+<div className="relative overflow-hidden rounded-2xl border border-fd-border bg-fd-card">
+  <div className="absolute top-0 right-0 w-48 h-48 bg-fd-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+  <div className="relative p-6 md:p-8 text-center">
+    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-fd-primary/10 border border-fd-primary/20 mb-4">
+      <Bell className="w-6 h-6 text-fd-primary" />
+    </div>
+
+    <h3 className="text-xl font-bold text-fd-foreground mb-2">
+      Stay in the Loop
+    </h3>
+
+    <h4 className="text-fd-muted-foreground text-sm max-w-md mx-auto mb-6">
+      We're just getting started! More tutorials, release notes, and
+      deep dives into Yasumu features are coming soon.
+    </h4>
+
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a
+        href="https://github.com/neplextech/yasumu"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-fd-foreground text-fd-background font-medium text-sm hover:bg-fd-foreground/90 transition-colors"
+      >
+        <Github className="w-4 h-4" />
+        Star on GitHub
+      </a>
+      <a
+        href="/docs/getting-started"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-fd-border bg-fd-card font-medium text-sm hover:bg-fd-muted transition-colors"
+      >
+        Get Started
+        <ArrowRight className="w-4 h-4" />
+      </a>
+    </div>
+
+    <h4 className="mt-6 pt-4 border-t border-fd-border text-xs text-fd-muted-foreground">
+      🚀 Coming soon: Tutorials • Automation Guides • CI/CD
+      integration
+    </h4>
+
+  </div>
+</div>
+
+</div>
