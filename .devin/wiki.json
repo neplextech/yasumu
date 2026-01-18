@@ -1,0 +1,301 @@
+{
+  "repo_notes": [
+    {
+      "content": ""
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "Introduce Yasumu as an API testing and development tool, explaining its purpose, target audience, and high-level capabilities",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Architecture Overview",
+      "purpose": "Explain the three-layer architecture: Tauri desktop shell, Next.js frontend, and embedded Deno (Tanxium) runtime, including how they communicate",
+      "parent": "Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Guide users through installation, creating their first workspace, and executing their first REST request",
+      "parent": "Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Monorepo Structure",
+      "purpose": "Explain the pnpm workspace organization, package architecture, and dependency management strategy",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Core Packages",
+      "purpose": "Document the core packages: @yasumu/core, @yasumu/tanxium, @yasumu/rpc, @yasumu/schema, @yasumu/common, their responsibilities and APIs",
+      "parent": "Monorepo Structure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Application Packages",
+      "purpose": "Document the application packages: yasumu desktop app, docs site, marketing site (www)",
+      "parent": "Monorepo Structure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Build System",
+      "purpose": "Explain Turborepo configuration, build scripts, pnpm catalogs, and development workflow",
+      "parent": "Monorepo Structure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Desktop Application",
+      "purpose": "Overview of the Yasumu desktop application's structure, including Tauri integration and Next.js frontend",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Tauri Architecture",
+      "purpose": "Explain Tauri configuration, capabilities system, permission model, and native plugin integration",
+      "parent": "Desktop Application",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Frontend Architecture",
+      "purpose": "Document the Next.js application structure, React components, context providers, routing, and state management",
+      "parent": "Desktop Application",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Configuration System",
+      "purpose": "Explain tauri.conf.json vs tauri.conf.canary.json, configuration options, and how they affect builds",
+      "parent": "Desktop Application",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Tanxium Runtime",
+      "purpose": "Overview of the embedded Deno runtime that powers script execution, module loading, and backend services",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Runtime Bootstrap",
+      "purpose": "Explain runtime initialization, the Yasumu global API, ops system, event queues, and IPC mechanisms",
+      "parent": "Tanxium Runtime",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Module Loading",
+      "purpose": "Document the custom TypeScript module loader, virtual modules system, and module resolution strategies",
+      "parent": "Tanxium Runtime",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Script Execution",
+      "purpose": "Explain ScriptWorker architecture, script lifecycle, timeouts, heartbeat monitoring, and the runtime API",
+      "parent": "Tanxium Runtime",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Permissions System",
+      "purpose": "Document Deno's permission model, CustomPrompter implementation, and user consent flow for privileged operations",
+      "parent": "Tanxium Runtime",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Workspace System",
+      "purpose": "Overview of workspace-based project organization, file structure, and synchronization",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Workspace Files",
+      "purpose": "Explain YSL file format, workspace.ysl structure, yasumu-lock.json synchronization, and version control integration",
+      "parent": "Workspace System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Entity Management",
+      "purpose": "Document REST entities, entity groups, hierarchical organization, and CRUD operations via backend services",
+      "parent": "Workspace System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Environment Variables",
+      "purpose": "Explain environment definitions, variables vs secrets, interpolation syntax, and environment-specific configurations",
+      "parent": "Workspace System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "REST Client",
+      "purpose": "Overview of REST client functionality: creating requests, configuring parameters, and viewing responses",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Request Lifecycle",
+      "purpose": "Document the complete request flow: pre-request scripts, HTTP execution, post-response scripts, tests, and state management",
+      "parent": "REST Client",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "UI Components",
+      "purpose": "Document REST page components: file tree, request editor tabs, response viewer, and history management",
+      "parent": "REST Client",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Scripting API",
+      "purpose": "Document YasumuRequest, YasumuResponse, YasumuWorkspaceEnvironment, and other runtime APIs available in scripts",
+      "parent": "REST Client",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Backend Services",
+      "purpose": "Overview of backend RPC services, Hono server, and database architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "RPC Server",
+      "purpose": "Explain Hono-based HTTP server, yasumuRpcRoute, command execution, zod validation, and subscription events",
+      "parent": "Backend Services",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Entity Services",
+      "purpose": "Document EntityGroupService, RestService, EntityHistoryService, and their CRUD operations",
+      "parent": "Backend Services",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Database Schema",
+      "purpose": "Explain SQLite database structure, Drizzle ORM usage, migrations, and schema generation workflow",
+      "parent": "Backend Services",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Build & Deployment",
+      "purpose": "Overview of CI/CD pipeline, release process, code signing, and distribution",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "CI/CD Workflows",
+      "purpose": "Document GitHub Actions workflows, build matrix strategy, cross-platform compilation, and artifact generation",
+      "parent": "Build & Deployment",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}
