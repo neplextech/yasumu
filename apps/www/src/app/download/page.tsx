@@ -209,6 +209,117 @@ function ChecksumSection({ assets }: ChecksumSectionProps) {
   );
 }
 
+function MacOsUnsignedBypassCommand({ channel }: { channel: ReleaseChannel }) {
+  const [copied, setCopied] = useState(false);
+
+  const app = channel === 'canary' ? 'Yasumu\\ Canary.app' : 'Yasumu.app';
+  const command = `xattr -rd com.apple.quarantine /Applications/${app}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = command;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="mt-12 max-w-3xl mx-auto">
+      <div className="bg-linear-to-br from-amber-950/30 to-orange-950/20 border border-amber-500/20 rounded-xl p-6 backdrop-blur-sm">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+            <FaApple className="text-amber-400 text-lg" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-semibold text-amber-300 mb-2">
+              macOS Gatekeeper Bypass
+            </h4>
+            <p className="text-sm text-amber-200/70 mb-4 leading-relaxed">
+              Yasumu is not yet signed with an Apple Developer certificate. When
+              opening the app for the first time, macOS will block it. Run this
+              command in Terminal after installing:
+            </p>
+            <div className="relative group">
+              <div className="bg-black/60 border border-white/10 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/2">
+                  <div className="flex items-center gap-2">
+                    <FaTerminal className="text-gray-500 text-xs" />
+                    <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+                      Terminal
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    className={clsx(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all duration-200',
+                      copied
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white',
+                    )}
+                  >
+                    {copied ? (
+                      <>
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+                <pre className="px-4 py-3 text-sm text-gray-300 font-mono overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
+                  <code>{command}</code>
+                </pre>
+              </div>
+            </div>
+            <p className="text-xs text-amber-200/50 mt-3">
+              This removes the quarantine attribute, allowing the app to launch
+              normally.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Download() {
   const { releases, loading, error } = useGitHubReleases();
   const [activeChannel, setActiveChannel] = useState<ReleaseChannel>('stable');
@@ -315,6 +426,9 @@ export default function Download() {
         ) : (
           <>
             <DownloadSection assets={currentAssets} />
+            {currentAssets.macOS.length > 0 && (
+              <MacOsUnsignedBypassCommand channel={effectiveChannel} />
+            )}
             <ChecksumSection assets={currentAssets} />
           </>
         )}
