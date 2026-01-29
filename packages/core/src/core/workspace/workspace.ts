@@ -2,6 +2,7 @@ import { EnvironmentManager } from '../manager/environment-manager.js';
 import { WorkspaceManager } from '../manager/workspace-manager.js';
 import { EmailModule } from '../modules/email/email.js';
 import { RestModule } from '../modules/rest/rest.js';
+import { GraphqlModule } from '../modules/graphql/graphql.js';
 import type { WorkspaceData } from '@yasumu/common';
 import { ExternalWorkspaceProvider } from './external-workspace-provider.js';
 
@@ -17,6 +18,10 @@ export class Workspace {
    * The REST module for the workspace.
    */
   public readonly rest = new RestModule(this);
+  /**
+   * The GraphQL module for the workspace.
+   */
+  public readonly graphql = new GraphqlModule(this);
   /**
    * The environment manager for this workspace.
    */

@@ -5,12 +5,11 @@ import type {
   TestResult,
   YasumuEmbeddedScript,
 } from '../common/common.types.js';
-import type { HttpMethod } from './rest.constants.js';
 
 /**
  * The body of the request.
  */
-export interface RestEntityRequestBody extends CustomMetadata {
+export interface GraphqlEntityRequestBody extends CustomMetadata {
   /**
    * The type of the body.
    */
@@ -21,7 +20,7 @@ export interface RestEntityRequestBody extends CustomMetadata {
   value: unknown;
 }
 
-export interface RestEntityMetadata {
+export interface GraphqlEntityMetadata {
   responseCache: {
     status: number;
     statusText: string;
@@ -40,15 +39,11 @@ export interface RestEntityMetadata {
 /**
  * The data of the request.
  */
-export interface RestEntityData extends CommonEntity {
+export interface GraphqlEntityData extends CommonEntity {
   /**
    * The name of the request.
    */
   name: string | null;
-  /**
-   * The method of the request.
-   */
-  method: HttpMethod;
   /**
    * The url of the request.
    */
@@ -72,7 +67,7 @@ export interface RestEntityData extends CommonEntity {
   /**
    * The body of the request.
    */
-  requestBody: RestEntityRequestBody | null;
+  requestBody: GraphqlEntityRequestBody | null;
   /**
    * The script of this entity.
    */
@@ -86,15 +81,11 @@ export interface RestEntityData extends CommonEntity {
 /**
  * The options for creating a new rest entity.
  */
-export interface RestEntityCreateOptions extends CustomMetadata {
+export interface GraphqlEntityCreateOptions extends CustomMetadata {
   /**
    * The name of the request.
    */
   name: string;
-  /**
-   * The method of the request.
-   */
-  method: HttpMethod;
   /**
    * The url of the request.
    */
@@ -118,7 +109,7 @@ export interface RestEntityCreateOptions extends CustomMetadata {
   /**
    * The request body of this entity.
    */
-  requestBody?: RestEntityRequestBody | null;
+  requestBody?: GraphqlEntityRequestBody | null;
   /**
    * The script of this entity.
    */
@@ -132,15 +123,11 @@ export interface RestEntityCreateOptions extends CustomMetadata {
 /**
  * The options for updating a rest entity.
  */
-export interface RestEntityUpdateOptions extends CustomMetadata {
+export interface GraphqlEntityUpdateOptions extends CustomMetadata {
   /**
    * The name of the request.
    */
   name?: string;
-  /**
-   * The method of the request.
-   */
-  method?: HttpMethod;
   /**
    * The url of the request.
    */
@@ -164,7 +151,7 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
   /**
    * The request body of this entity.
    */
-  requestBody?: RestEntityRequestBody | null;
+  requestBody?: GraphqlEntityRequestBody | null;
   /**
    * The script of this entity.
    */
@@ -178,24 +165,23 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
 /**
  * A folder in the REST entity tree.
  */
-export interface RestTreeFolder {
+export interface GraphqlTreeFolder {
   id: string;
   name: string;
   type: 'folder';
   parentId: string | null;
   workspaceId: string;
   entityType: string;
-  children: RestTreeItem[];
+  children: GraphqlTreeItem[];
 }
 
 /**
- * A file (REST request) in the REST entity tree.
+ * A file (GRAPHQL request) in the GRAPHQL entity tree.
  */
-export interface RestTreeFile {
+export interface GraphqlTreeFile {
   id: string;
   name: string | null;
   type: 'file';
-  method: HttpMethod;
   url: string | null;
   groupId: string | null;
   workspaceId: string;
@@ -204,4 +190,4 @@ export interface RestTreeFile {
 /**
  * An item in the REST entity tree (either a folder or a file).
  */
-export type RestTreeItem = RestTreeFolder | RestTreeFile;
+export type GraphqlTreeItem = GraphqlTreeFolder | GraphqlTreeFile;
