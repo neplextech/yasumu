@@ -1,85 +1,179 @@
-import { Input } from '@yasumu/ui/components/input';
-import KeyValueTable from '@/components/tables/key-value-table';
+'use client';
+
+import { useCallback, useMemo } from 'react';
 import { Separator } from '@yasumu/ui/components/separator';
-import SendButton from './_components/send-button';
-import IntrospectButton from './_components/introspect-button';
+import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import LoadingScreen from '@/components/visuals/loading-screen';
+import { useGraphqlContext } from './_providers/graphql-context';
+import { useGraphqlEntity } from './_hooks/use-graphql-entity';
+import { useGraphqlRequest } from './_hooks/use-graphql-request';
+import { GraphqlUrlBar } from './_components/request-editor/graphql-url-bar';
+import { GraphqlRequestTabs } from './_components/request-editor/graphql-request-tabs';
+import { GraphqlResponsePanel } from './_components/response-panel';
+import RequestTabList from './_components/tabs';
+import { useAppLayout } from '@/components/providers/app-layout-provider';
+import { YasumuLayout } from '@/lib/constants/layout';
+import { useVariablePopover } from '@/components/inputs';
+import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/common';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
-import { Textarea } from '@yasumu/ui/components/textarea';
-
-const mockQuery = `query GetUsers {
-  users {
-    id
-    name
-    email
-    posts {
-      id
-      title
-      content
-    }
-  }
-}`;
-
-const mockVariables = `{
-  "userId": "1",
-  "limit": 10
-}`;
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@yasumu/ui/components/resizable';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 
 export default function GraphqlPage() {
+  const { entityId } = useGraphqlContext();
+  const { layout } = useAppLayout();
+  const { renderVariablePopover } = useVariablePopover();
+  const { data, isLoading, error, isSaving, updateField, save } =
+    useGraphqlEntity({
+      entityId,
+    });
+  const {
+    state: requestState,
+    execute,
+    cancel,
+  } = useGraphqlRequest({ entityId });
+
+  const isRequestActive = useMemo(
+    () =>
+      requestState.phase === 'pre-request-script' ||
+      requestState.phase === 'sending' ||
+      requestState.phase === 'post-response-script',
+    [requestState.phase],
+  );
+
+  const isClassicLayout = layout === YasumuLayout.Classic;
+
+  const handleUrlChange = useCallback(
+    (url: string) => {
+      updateField('url', url);
+    },
+    [updateField],
+  );
+
+  const handleQueryChange = useCallback(
+    (query: string) => {
+      updateField('query', query);
+    },
+    [updateField],
+  );
+
+  const handleVariablesChange = useCallback(
+    (variables: string) => {
+      updateField('variables', variables);
+    },
+    [updateField],
+  );
+
+  const handleHeadersChange = useCallback(
+    (headers: TabularPair[]) => {
+      updateField('requestHeaders', headers);
+    },
+    [updateField],
+  );
+
+  const handleScriptChange = useCallback(
+    (script: YasumuEmbeddedScript) => {
+      updateField('script', script);
+    },
+    [updateField],
+  );
+
+  const handleSend = useCallback(async () => {
+    if (!data) return;
+    await save();
+    await execute(data);
+  }, [data, save, execute]);
+
+  const handleCancel = useCallback(() => {
+    cancel();
+  }, [cancel]);
+
+  useHotkeys(
+    'mod+enter',
+    async () => {
+      await withErrorHandler(handleSend)();
+    },
+    { preventDefault: true, enableOnFormTags: false },
+  );
+
+  if (!entityId) {
+    return (
+      <main className="w-full h-screen relative grid place-items-center">
+        <YasumuBackgroundArt message="Yasumu" />
+      </main>
+    );
+  }
+
+  if (isLoading || !data) {
+    return <LoadingScreen fullScreen />;
+  }
+
+  if (error) {
+    return (
+      <main className="w-full h-screen relative grid place-items-center">
+        <div className="text-center space-y-2">
+          <p className="text-destructive font-medium">Failed to load entity</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </main>
+    );
+  }
+
+  const requestEditor = (
+    <GraphqlRequestTabs
+      key={entityId}
+      query={data.query || ''}
+      variables={data.variables || ''}
+      headers={data.requestHeaders || []}
+      script={data.script}
+      onQueryChange={handleQueryChange}
+      onVariablesChange={handleVariablesChange}
+      onHeadersChange={handleHeadersChange}
+      onScriptChange={handleScriptChange}
+    />
+  );
+
+  const responsePanel = (
+    <GraphqlResponsePanel
+      phase={requestState.phase}
+      response={requestState.response}
+      error={requestState.error}
+      scriptOutput={requestState.scriptOutput}
+      testResults={requestState.testResults}
+    />
+  );
+
   return (
-    <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
-      <div className="flex gap-4">
-        <Input placeholder="Enter GraphQL endpoint URL" />
-        <IntrospectButton />
-        <SendButton />
+    <main className="w-full h-full flex flex-col overflow-hidden">
+      <div className="p-4 space-y-4 shrink-0">
+        <RequestTabList />
+        <GraphqlUrlBar
+          url={data.url || ''}
+          onUrlChange={handleUrlChange}
+          onSend={handleSend}
+          onCancel={handleCancel}
+          onVariableClick={renderVariablePopover}
+          isSending={isRequestActive}
+          isSaving={isSaving}
+        />
       </div>
       <Separator />
-      <Tabs defaultValue="query">
-        <TabsList>
-          <TabsTrigger value="query">Query</TabsTrigger>
-          <TabsTrigger value="variables">Variables</TabsTrigger>
-          <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="pre-request-script">
-            Pre-request Script
-          </TabsTrigger>
-          <TabsTrigger value="post-response-script">
-            Post-response Script
-          </TabsTrigger>
-          <TabsTrigger value="tests">Tests</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        <TabsContent value="query">
-          <Textarea
-            placeholder="Enter your GraphQL query..."
-            defaultValue={mockQuery}
-            className="font-mono"
-          />
-        </TabsContent>
-        <TabsContent value="variables">
-          <Textarea
-            placeholder="Enter your GraphQL variables (JSON)..."
-            defaultValue={mockVariables}
-            className="font-mono"
-          />
-        </TabsContent>
-        <TabsContent value="headers">
-          <KeyValueTable />
-        </TabsContent>
-        <TabsContent value="pre-request-script">
-          <Textarea placeholder="Your pre-request script goes here..." />
-        </TabsContent>
-        <TabsContent value="post-response-script">
-          <Textarea placeholder="Your post-response script goes here..." />
-        </TabsContent>
-        <TabsContent value="tests">
-          <Textarea placeholder="Your test script goes here..." />
-        </TabsContent>
-        <TabsContent value="settings">Settings Editor</TabsContent>
-      </Tabs>
+      <ResizablePanelGroup
+        direction={isClassicLayout ? 'vertical' : 'horizontal'}
+        className="flex-1 min-h-0"
+      >
+        <ResizablePanel defaultSize={50} minSize={20}>
+          {requestEditor}
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={50} minSize={20}>
+          {responsePanel}
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </main>
   );
 }

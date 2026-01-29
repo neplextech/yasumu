@@ -29,6 +29,10 @@ import type {
   EntityHistoryData,
   EntityHistoryCreateOptions,
   EntityHistoryListOptions,
+  GraphqlEntityCreateOptions,
+  GraphqlEntityData,
+  GraphqlEntityUpdateOptions,
+  GraphqlScriptContext,
 } from '@yasumu/common';
 
 type ExecuteScriptCommand<Context> = RpcMutation<
@@ -126,6 +130,51 @@ export interface YasumuRPC {
      * @returns The result of the script execution.
      */
     executeScript: ExecuteScriptCommand<RestScriptContext>;
+  };
+  /**
+   * The graphql commands.
+   */
+  graphql: {
+    /**
+     * Graphql entity creation command.
+     * @param data The data for the graphql entity.
+     */
+    create: RpcMutation<[data: GraphqlEntityCreateOptions], GraphqlEntityData>;
+    /**
+     * Graphql entity retrieval command.
+     * @param id The ID of the graphql entity.
+     */
+    get: RpcQuery<[id: string], GraphqlEntityData>;
+    /**
+     * Graphql entity listing command.
+     * @returns The list of graphql entities.
+     */
+    list: RpcQuery<[], GraphqlEntityData[]>;
+    /**
+     * Graphql entity listing command.
+     * @returns The list of graphql entities.
+     */
+    listTree: RpcQuery<[], GraphqlEntityData[]>;
+    /**
+     * Graphql entity update command.
+     * @param id The ID of the graphql entity.
+     * @param data The data for the graphql entity.
+     */
+    update: RpcMutation<
+      [id: string, data: Partial<GraphqlEntityUpdateOptions>],
+      GraphqlEntityData
+    >;
+    /**
+     * Graphql entity deletion command.
+     * @param id The ID of the graphql entity.
+     */
+    delete: RpcMutation<[id: string], void>;
+    /**
+     * Execute a script on a graphql entity.
+     * @param entity The entity to execute the script on.
+     * @returns The result of the script execution.
+     */
+    executeScript: ExecuteScriptCommand<GraphqlScriptContext>;
   };
   /**
    * The entity groups commands.

@@ -32,7 +32,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import SidebarThemeSelector from './theme-selector';
 import { TbWorldWww } from 'react-icons/tb';
-import { SiDiscord, SiGithub } from 'react-icons/si';
+import { SiDiscord, SiGithub, SiGraphql } from 'react-icons/si';
 import { YasumuSocials } from '@/lib/constants/socials';
 import SidebarLayoutStyleSelector from './layout-style-selector';
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
@@ -64,12 +64,12 @@ const data = {
       icon: TbWorldWww,
       isActive: false,
     },
-    // {
-    //   title: 'GraphQL',
-    //   url: '/en/workspaces/default/graphql',
-    //   icon: SiGraphql,
-    //   isActive: false,
-    // },
+    {
+      title: 'GraphQL',
+      url: '/en/workspaces/default/graphql',
+      icon: SiGraphql,
+      isActive: false,
+    },
     // {
     //   title: 'Socket.IO',
     //   url: '/en/workspaces/default/socketio',
