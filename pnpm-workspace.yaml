@@ -1,25 +1,42 @@
 packages:
-  - "apps/*"
-  - "packages/*"
-# TODO: re-enable in the future
-# currently disabled because react had RCE vulnerability and patch was released yesterday
-# minimumReleaseAge: 10080
-# minimumReleaseAgeExclude:
-#   - transletta
+  - apps/*
+  - packages/*
+
 catalogs:
   build:
-    "@types/node": "^24.6.2"
-    "typescript": "^5.9.3"
-    "@typescript/native-preview": "^7.0.0-dev.20260109.1"
-  tailwind:
-    "@tailwindcss/postcss": "^4"
-    "tailwindcss": "^4"
+    '@types/node': ^24.6.2
+    '@typescript/native-preview': ^7.0.0-dev.20260109.1
+    typescript: ^5.9.3
   react:
-    "react": "^19.2.1"
-    "react-dom": "^19.2.1"
-    "next": "^16.1.1"
-    "@vercel/analytics": "^1.6.1"
-    "@types/react": "^19.2.7"
-    "@types/react-dom": "^19.2.3"
-    "babel-plugin-react-compiler": "^1.0.0"
-    "eslint-config-next": "16.0.7"
+    '@types/react': ^19.2.7
+    '@types/react-dom': ^19.2.3
+    '@vercel/analytics': ^1.6.1
+    babel-plugin-react-compiler: ^1.0.0
+    eslint-config-next: 16.0.7
+    next: ^16.1.1
+    react: ^19.2.1
+    react-dom: ^19.2.1
+  tailwind:
+    '@tailwindcss/postcss': ^4
+    tailwindcss: ^4
+
+overrides:
+  '@modelcontextprotocol/sdk@<1.24.0': '>=1.24.0'
+  '@modelcontextprotocol/sdk@<1.25.2': '>=1.25.2'
+  body-parser@>=2.2.0 <2.2.1: '>=2.2.1'
+  diff@<4.0.4: '>=4.0.4'
+  diff@>=6.0.0 <8.0.3: '>=8.0.3'
+  esbuild@<=0.24.2: '>=0.25.0'
+  glob@>=11.0.0 <11.1.0: '>=11.1.0'
+  hono@<4.11.4: '>=4.11.4'
+  hono@<4.11.7: '>=4.11.7'
+  js-yaml@>=4.0.0 <4.1.1: '>=4.1.1'
+  lodash@>=4.0.0 <=4.17.22: '>=4.17.23'
+  next@>=15.6.0-canary.0 <16.1.5: '>=16.1.5'
+  next@>=16.0.0-beta.0 <16.1.5: '>=16.1.5'
+  next@>=16.1.0-canary.0 <16.1.5: '>=16.1.5'
+  nodemailer@<7.0.11: '>=7.0.11'
+  nodemailer@<=7.0.10: '>=7.0.11'
+  preact@>=10.28.0 <10.28.2: '>=10.28.2'
+  qs@<6.14.1: '>=6.14.1'
+  tmp@<=0.2.3: '>=0.2.4'
