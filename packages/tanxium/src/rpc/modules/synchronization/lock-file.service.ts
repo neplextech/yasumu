@@ -20,6 +20,7 @@ export class LockFileService {
       entities: {
         workspace: {},
         rest: {},
+        graphql: {},
         environment: {},
         smtp: {},
         group: {},

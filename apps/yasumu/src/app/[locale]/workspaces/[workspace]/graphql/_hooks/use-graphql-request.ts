@@ -11,7 +11,8 @@ import {
   GraphqlRequestController,
   GraphqlResponse,
 } from '../_lib/graphql-request';
-import type { GraphqlEntityData } from './use-graphql-entity';
+import type { GraphqlEntityData } from '@yasumu/common';
+import { getGraphqlBodyValue } from './use-graphql-entity';
 import type { TestResult } from '@yasumu/common';
 
 export type RequestPhase =
@@ -111,7 +112,7 @@ export function useGraphqlRequest({
       if (graphql) {
         const freshEntity = await graphql.get(entityId);
         if (freshEntity) {
-          entity = freshEntity.data as GraphqlEntityData;
+          entity = freshEntity.data;
         }
       }
 
@@ -131,11 +132,13 @@ export function useGraphqlRequest({
           .filter((h) => h.enabled && h.key)
           .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
       );
-      const interpolatedQuery = entity.query
-        ? interpolateValue(entity.query)
+      console.log({ entity });
+      const bodyValue = getGraphqlBodyValue(entity.requestBody);
+      const interpolatedQuery = bodyValue.query
+        ? interpolateValue(bodyValue.query)
         : '';
-      const interpolatedVariables = entity.variables
-        ? interpolateValue(entity.variables)
+      const interpolatedVariables = bodyValue.variables
+        ? interpolateValue(bodyValue.variables)
         : null;
 
       try {
@@ -153,7 +156,7 @@ export function useGraphqlRequest({
           url: interpolatedUrl,
           query: interpolatedQuery,
           variables: interpolatedVariables,
-          operationName: entity.operationName,
+          operationName: bodyValue.operationName || null,
           headers: interpolatedHeaders,
           echoServerPort,
           interpolate,

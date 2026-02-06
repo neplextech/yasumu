@@ -30,7 +30,7 @@ const registeredLibs = new Set<string>();
 let monacoInstance: Monaco | null = null;
 let initPromise: Promise<Monaco> | null = null;
 
-function getMonacoInstance(): Promise<Monaco> {
+export function getMonacoInstance(): Promise<Monaco> {
   if (monacoInstance) return Promise.resolve(monacoInstance);
   if (initPromise) return initPromise;
 
@@ -111,6 +111,18 @@ export function TextEditor({
 
       registerTypeDefinitions(monaco, typeDefinitions);
 
+      if (language === 'graphql') {
+        const model = editor.getModel();
+        if (model && !model.uri.path.endsWith('.graphql')) {
+          const newModel = monaco.editor.createModel(
+            value,
+            'graphql',
+            monaco.Uri.parse('inmemory://model/query.graphql'),
+          );
+          editor.setModel(newModel);
+        }
+      }
+
       editor.updateOptions({
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
@@ -136,7 +148,7 @@ export function TextEditor({
         readOnly,
       });
     },
-    [typeDefinitions, readOnly],
+    [typeDefinitions, readOnly, language, value],
   );
 
   const handleChange = useCallback(

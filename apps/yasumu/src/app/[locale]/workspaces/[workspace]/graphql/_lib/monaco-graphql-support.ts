@@ -2,60 +2,99 @@
 
 import { useEffect, useRef } from 'react';
 import type { GraphQLSchema } from 'graphql';
+import { getMonacoInstance } from '@/components/editors/text-editor';
 
-/**
- * Initializes monaco-graphql language mode for IntelliSense and autocomplete.
- * This sets up the GraphQL language worker for Monaco editor.
- */
+let isGraphQLInitialized = false;
+let monacoGraphQLAPI: any = null;
+
 export function useMonacoGraphqlLanguage(schema: GraphQLSchema | null) {
-  const schemaRef = useRef<GraphQLSchema | null>(null);
+  const apiRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!schema) return;
-    schemaRef.current = schema;
+    if (typeof window === 'undefined') return;
 
-    let cleanup: (() => void) | undefined;
+    let mounted = true;
 
-    const initGraphqlMode = async () => {
+    async function setupGraphQL() {
       try {
-        // Dynamic import to avoid SSR issues
-        const { initializeMode } = await import('monaco-graphql/initializeMode');
+        const monaco = await getMonacoInstance();
 
-        const api = initializeMode({
-          schemas: [
+        if (!mounted) return;
+
+        if (!isGraphQLInitialized) {
+          const { initializeMode } = await import(
+            'monaco-graphql/initializeMode'
+          );
+
+          // Initialize the mode
+          const api = initializeMode({
+            schemas: schema
+              ? [
+                  {
+                    schema,
+                    uri: 'inmemory://model/query.graphql',
+                    fileMatch: ['**/*.graphql'],
+                  },
+                ]
+              : [],
+          });
+
+          monacoGraphQLAPI = api;
+          isGraphQLInitialized = true;
+          apiRef.current = api;
+        } else if (schema && monacoGraphQLAPI?.setSchemaConfig) {
+          monacoGraphQLAPI.setSchemaConfig([
             {
-              // Introspection result will be used for IntelliSense
-              introspectionJSON: undefined,
-              uri: 'schema.graphql',
-            },
-          ],
-        });
-
-        // If we have a schema, set it for IntelliSense
-        if (schemaRef.current) {
-          const { printSchema } = await import('graphql');
-          const sdl = printSchema(schemaRef.current);
-
-          api.setSchemaConfig([
-            {
-              uri: 'schema.graphql',
-              documentString: sdl,
+              schema,
+              uri: 'https://myschema.com/schema.graphql',
+              fileMatch: ['**/*.graphql'],
             },
           ]);
+          apiRef.current = monacoGraphQLAPI;
         }
-
-        cleanup = () => {
-          // monaco-graphql mode cleanup is global, no individual dispose needed
-        };
-      } catch (err) {
-        console.warn('Failed to initialize monaco-graphql:', err);
+      } catch (error) {
+        console.error('Failed to setup GraphQL language support:', error);
       }
-    };
+    }
 
-    initGraphqlMode();
+    setupGraphQL();
 
     return () => {
-      cleanup?.();
+      mounted = false;
     };
   }, [schema]);
+
+  return apiRef.current;
+}
+
+export async function preloadGraphQLLanguage(schema?: GraphQLSchema | null) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const monaco = await getMonacoInstance();
+
+    if (!isGraphQLInitialized) {
+      const { initializeMode } = await import('monaco-graphql/initializeMode');
+
+      const api = initializeMode({
+        schemas: schema
+          ? [
+              {
+                schema,
+                uri: 'https://myschema.com/schema.graphql',
+                fileMatch: ['**/*.graphql'],
+              },
+            ]
+          : [],
+      });
+
+      monacoGraphQLAPI = api;
+      isGraphQLInitialized = true;
+      return api;
+    }
+
+    return monacoGraphQLAPI;
+  } catch (error) {
+    console.error('Failed to preload GraphQL language:', error);
+  }
 }

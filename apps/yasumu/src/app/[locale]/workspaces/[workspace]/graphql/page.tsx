@@ -6,10 +6,14 @@ import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { useGraphqlContext } from './_providers/graphql-context';
 import { useGraphqlEntity } from './_hooks/use-graphql-entity';
+import { getGraphqlBodyValue } from './_hooks/use-graphql-entity';
 import { useGraphqlRequest } from './_hooks/use-graphql-request';
 import { useGraphqlIntrospection } from './_hooks/use-graphql-introspection';
 import { useQueryBuilder } from './_hooks/use-query-builder';
-import { useMonacoGraphqlLanguage } from './_lib/monaco-graphql-support';
+import {
+  preloadGraphQLLanguage,
+  useMonacoGraphqlLanguage,
+} from './_lib/monaco-graphql-support';
 import { GraphqlUrlBar } from './_components/request-editor/graphql-url-bar';
 import { GraphqlRequestTabs } from './_components/request-editor/graphql-request-tabs';
 import { GraphqlResponsePanel } from './_components/response-panel';
@@ -45,10 +49,17 @@ export default function GraphqlPage() {
   const { entityId } = useGraphqlContext();
   const { layout } = useAppLayout();
   const { renderVariablePopover } = useVariablePopover();
-  const { data, isLoading, error, isSaving, updateField, save } =
-    useGraphqlEntity({
-      entityId,
-    });
+  const {
+    data,
+    isLoading,
+    error,
+    isSaving,
+    updateField,
+    updateBodyValue,
+    save,
+  } = useGraphqlEntity({
+    entityId,
+  });
   const {
     state: requestState,
     execute,
@@ -65,6 +76,10 @@ export default function GraphqlPage() {
 
   // Monaco GraphQL IntelliSense
   useMonacoGraphqlLanguage(schema);
+
+  useEffect(() => {
+    preloadGraphQLLanguage(schema);
+  }, [schema]);
 
   // Query builder
   const {
@@ -112,16 +127,16 @@ export default function GraphqlPage() {
 
   const handleQueryChange = useCallback(
     (query: string) => {
-      updateField('query', query);
+      updateBodyValue({ query });
     },
-    [updateField],
+    [updateBodyValue],
   );
 
   const handleVariablesChange = useCallback(
     (variables: string) => {
-      updateField('variables', variables);
+      updateBodyValue({ variables });
     },
-    [updateField],
+    [updateBodyValue],
   );
 
   const handleHeadersChange = useCallback(
@@ -212,8 +227,8 @@ export default function GraphqlPage() {
   const requestEditor = (
     <GraphqlRequestTabs
       key={entityId}
-      query={data.query || ''}
-      variables={data.variables || ''}
+      query={getGraphqlBodyValue(data.requestBody).query}
+      variables={getGraphqlBodyValue(data.requestBody).variables}
       headers={data.requestHeaders || []}
       script={data.script}
       searchParams={data.searchParameters || []}

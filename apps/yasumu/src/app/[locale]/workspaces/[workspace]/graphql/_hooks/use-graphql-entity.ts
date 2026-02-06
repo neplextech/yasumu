@@ -2,49 +2,62 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import {
-  TabularPair,
+import { YasumuScriptingLanguage } from '@yasumu/common';
+import type {
+  GraphqlEntityData,
+  GraphqlEntityRequestBody,
+  GraphqlEntityUpdateOptions,
   YasumuEmbeddedScript,
-  YasumuScriptingLanguage,
 } from '@yasumu/common';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+export type { GraphqlEntityData, GraphqlEntityUpdateOptions };
+
 const DEBOUNCE_DELAY = 500;
 
-// GraphQL entity data structure (matches REST pattern)
-export interface GraphqlEntityData {
-  id: string;
-  name: string | null;
-  url: string | null;
-  groupId: string | null;
-  query: string | null;
-  variables: string | null;
-  operationName: string | null;
-  requestHeaders: TabularPair[];
-  requestParameters: TabularPair[];
-  searchParameters: TabularPair[];
-  script: YasumuEmbeddedScript;
-  testScript: YasumuEmbeddedScript;
-  dependencies: string[];
-  metadata: Record<string, unknown> | null;
-  createdAt: number;
-  updatedAt: number;
+/**
+ * The structured value inside GraphqlEntityRequestBody.value for GraphQL requests.
+ */
+export interface GraphqlBodyValue {
+  query: string;
+  variables: string;
+  operationName: string;
 }
 
-export interface GraphqlEntityUpdateOptions {
-  name?: string | null;
-  url?: string | null;
-  groupId?: string | null;
-  query?: string | null;
-  variables?: string | null;
-  operationName?: string | null;
-  requestHeaders?: TabularPair[];
-  requestParameters?: TabularPair[];
-  searchParameters?: TabularPair[];
-  script?: YasumuEmbeddedScript;
-  testScript?: YasumuEmbeddedScript;
-  dependencies?: string[];
-  metadata?: Record<string, unknown> | null;
+/**
+ * Extract query/variables/operationName from a GraphQL entity's requestBody.
+ */
+export function getGraphqlBodyValue(
+  requestBody: GraphqlEntityRequestBody | null | undefined,
+): GraphqlBodyValue {
+  const defaultValue: GraphqlBodyValue = {
+    query: '',
+    variables: '',
+    operationName: '',
+  };
+  if (!requestBody?.value || typeof requestBody.value !== 'object')
+    return defaultValue;
+  const val = requestBody.value as Partial<GraphqlBodyValue>;
+  return {
+    query: val.query || '',
+    variables: val.variables || '',
+    operationName: val.operationName || '',
+  };
+}
+
+/**
+ * Create a new GraphqlEntityRequestBody with updated body value fields.
+ */
+export function updateGraphqlBodyValue(
+  current: GraphqlEntityRequestBody | null | undefined,
+  updates: Partial<GraphqlBodyValue>,
+): GraphqlEntityRequestBody {
+  const currentValue = getGraphqlBodyValue(current);
+  return {
+    type: 'json',
+    value: { ...currentValue, ...updates },
+    metadata: current?.metadata || {},
+  };
 }
 
 interface UseGraphqlEntityOptions {
@@ -61,6 +74,7 @@ interface UseGraphqlEntityReturn {
     value: GraphqlEntityUpdateOptions[K],
   ) => void;
   updateFields: (fields: Partial<GraphqlEntityUpdateOptions>) => void;
+  updateBodyValue: (updates: Partial<GraphqlBodyValue>) => void;
   save: () => Promise<void>;
 }
 
@@ -77,14 +91,15 @@ function createDefaultEntity(): GraphqlEntityData {
     name: null,
     url: null,
     groupId: null,
-    query: null,
-    variables: null,
-    operationName: null,
     requestHeaders: [],
     requestParameters: [],
     searchParameters: [],
+    requestBody: {
+      type: 'json',
+      value: { query: '', variables: '', operationName: '' },
+      metadata: {},
+    },
     script: createDefaultScript(),
-    testScript: createDefaultScript(),
     dependencies: [],
     metadata: null,
     createdAt: Date.now(),
@@ -118,7 +133,7 @@ export function useGraphqlEntity({
     queryFn: async () => {
       if (!entityId || !graphql) return null;
       const entity = await graphql.get(entityId);
-      return entity.data as GraphqlEntityData;
+      return entity.data;
     },
     enabled: !!entityId,
     staleTime: Infinity,
@@ -220,6 +235,35 @@ export function useGraphqlEntity({
     [updateFields],
   );
 
+  const updateBodyValue = useCallback(
+    (updates: Partial<GraphqlBodyValue>) => {
+      if (!entityId) return;
+
+      setLocalData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          requestBody: updateGraphqlBodyValue(prev.requestBody, updates),
+        };
+      });
+
+      // We need to read current requestBody to build the full update
+      setLocalData((prev) => {
+        if (prev) {
+          const newBody = updateGraphqlBodyValue(prev.requestBody, updates);
+          pendingUpdates.current = {
+            ...pendingUpdates.current,
+            requestBody: newBody,
+          };
+        }
+        return prev;
+      });
+
+      scheduleSave();
+    },
+    [entityId, scheduleSave],
+  );
+
   const save = useCallback(async () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -235,6 +279,7 @@ export function useGraphqlEntity({
     isSaving,
     updateField,
     updateFields,
+    updateBodyValue,
     save,
   };
 }

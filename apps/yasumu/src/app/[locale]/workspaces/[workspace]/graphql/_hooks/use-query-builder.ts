@@ -141,7 +141,9 @@ function generateQueryFromFields(
 
 export function useQueryBuilder(schema: GraphQLSchema | null) {
   const [operations, setOperations] = useState<RootOperation[]>([]);
-  const [activeOperation, setActiveOperation] = useState<'query' | 'mutation' | 'subscription'>('query');
+  const [activeOperation, setActiveOperation] = useState<
+    'query' | 'mutation' | 'subscription'
+  >('query');
 
   useEffect(() => {
     if (!schema) {
@@ -154,7 +156,10 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
     if (queryOp) ops.push(queryOp);
     const mutationOp = buildRootOperation(schema.getMutationType(), 'mutation');
     if (mutationOp) ops.push(mutationOp);
-    const subscriptionOp = buildRootOperation(schema.getSubscriptionType(), 'subscription');
+    const subscriptionOp = buildRootOperation(
+      schema.getSubscriptionType(),
+      'subscription',
+    );
     if (subscriptionOp) ops.push(subscriptionOp);
 
     setOperations(ops);

@@ -27,77 +27,80 @@ export function useGraphqlIntrospection() {
   const [state, setState] = useState<IntrospectionState>(INITIAL_STATE);
   const abortRef = useRef<AbortController | null>(null);
 
-  const introspect = useCallback(async (url: string, headers?: Record<string, string>) => {
-    if (!url) {
-      setState((prev) => ({ ...prev, error: 'URL is required' }));
-      return;
-    }
+  const introspect = useCallback(
+    async (url: string, headers?: Record<string, string>) => {
+      if (!url) {
+        setState((prev) => ({ ...prev, error: 'URL is required' }));
+        return;
+      }
 
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
 
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      const requestHeaders = new Headers({
-        'Content-Type': 'application/json',
-        'user-agent': 'Yasumu/1.0',
-        origin: 'http://localhost',
-      });
+      try {
+        const requestHeaders = new Headers({
+          'Content-Type': 'application/json',
+          'user-agent': 'Yasumu/1.0',
+          origin: 'http://localhost',
+        });
 
-      if (headers) {
-        for (const [key, value] of Object.entries(headers)) {
-          if (key) requestHeaders.set(key, value);
+        if (headers) {
+          for (const [key, value] of Object.entries(headers)) {
+            if (key) requestHeaders.set(key, value);
+          }
         }
-      }
 
-      const body = JSON.stringify({ query: getIntrospectionQuery() });
+        const body = JSON.stringify({ query: getIntrospectionQuery() });
 
-      const response = await tauriFetch(url, {
-        method: 'POST',
-        headers: requestHeaders,
-        body,
-        signal: abortRef.current.signal,
-      });
+        const response = await tauriFetch(url, {
+          method: 'POST',
+          headers: requestHeaders,
+          body,
+          signal: abortRef.current.signal,
+        });
 
-      const json = await response.json();
+        const json = await response.json();
 
-      if (json.errors && json.errors.length > 0) {
+        if (json.errors && json.errors.length > 0) {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: `Introspection failed: ${json.errors[0].message}`,
+          }));
+          return;
+        }
+
+        if (!json.data) {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: 'Invalid introspection response: no data field',
+          }));
+          return;
+        }
+
+        const introspectionResult = json.data as IntrospectionQuery;
+        const schema = buildClientSchema(introspectionResult);
+
+        setState({
+          schema,
+          introspectionResult,
+          isLoading: false,
+          error: null,
+        });
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: `Introspection failed: ${json.errors[0].message}`,
+          error: err instanceof Error ? err.message : 'Introspection failed',
         }));
-        return;
       }
-
-      if (!json.data) {
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: 'Invalid introspection response: no data field',
-        }));
-        return;
-      }
-
-      const introspectionResult = json.data as IntrospectionQuery;
-      const schema = buildClientSchema(introspectionResult);
-
-      setState({
-        schema,
-        introspectionResult,
-        isLoading: false,
-        error: null,
-      });
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : 'Introspection failed',
-      }));
-    }
-  }, []);
+    },
+    [],
+  );
 
   const reset = useCallback(() => {
     abortRef.current?.abort();

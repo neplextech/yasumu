@@ -35,7 +35,11 @@ interface VariablesEditorProps {
 function parseVariablesToEntries(json: string): VariableEntry[] {
   try {
     const parsed = JSON.parse(json);
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
       return Object.entries(parsed).map(([key, value]) => ({
         key,
         value: typeof value === 'string' ? value : JSON.stringify(value),
@@ -103,7 +107,9 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
     (index: number) => {
       const newEntries = entries.filter((_, i) => i !== index);
       handleTableChange(
-        newEntries.length ? newEntries : [{ key: '', value: '', enabled: true }],
+        newEntries.length
+          ? newEntries
+          : [{ key: '', value: '', enabled: true }],
       );
     },
     [entries, handleTableChange],
@@ -120,7 +126,11 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
   );
 
   return (
-    <Tabs value={mode} onValueChange={handleModeSwitch} className="h-full flex flex-col min-h-0">
+    <Tabs
+      value={mode}
+      onValueChange={handleModeSwitch}
+      className="h-full flex flex-col min-h-0"
+    >
       <div className="flex items-center justify-between shrink-0">
         <span className="text-sm text-muted-foreground font-medium">
           Variables

@@ -19,9 +19,7 @@ export const graphqlEntities = sqliteTable('graphql_entity', {
   requestParameters: json<KeyValuePair[]>('requestParameters').$default(
     () => [],
   ),
-  searchParameters: json<KeyValuePair[]>('searchParameters').$default(
-    () => [],
-  ),
+  searchParameters: json<KeyValuePair[]>('searchParameters').$default(() => []),
   requestHeaders: json<KeyValuePair[]>('requestHeaders').$default(() => []),
   requestBody: json<GraphqlEntityRequestBody>('requestBody'),
   script: json<YasumuEmbeddedScript>('script'),

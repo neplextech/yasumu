@@ -6,7 +6,7 @@ metadata {
   version: 0
 }
 
-snapshot 1768400471602
+snapshot 1770404556732
 
 groups {
   w10lye9m7dsomdwoj9zooyf4: {
@@ -27,6 +27,13 @@ groups {
     id: "mv2z3sr80ai1cv2axxap3juq"
     name: "Random"
     entity: rest
+    parentId: null
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+  oorv89riay7elg8tshrmqolp: {
+    id: "oorv89riay7elg8tshrmqolp"
+    name: "Shop API"
+    entity: graphql
     parentId: null
     workspaceId: "v753h51r3e10zzcg5rkel8mv"
   }

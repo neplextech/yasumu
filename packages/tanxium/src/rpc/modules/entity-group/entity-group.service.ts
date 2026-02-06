@@ -21,7 +21,10 @@ import { EntityGroupData } from '@yasumu/common';
 
 @Injectable()
 export class EntityGroupService {
-  private static readonly entityTableMap: Record<string, typeof restEntities | typeof graphqlEntities> = {
+  private static readonly entityTableMap: Record<
+    string,
+    typeof restEntities | typeof graphqlEntities
+  > = {
     rest: restEntities,
     graphql: graphqlEntities,
   };
@@ -34,9 +37,7 @@ export class EntityGroupService {
   private getEntityTable(entityType: string) {
     const table = EntityGroupService.entityTableMap[entityType];
     if (!table) {
-      throw new BadRequestException(
-        `Unsupported entity type: ${entityType}`,
-      );
+      throw new BadRequestException(`Unsupported entity type: ${entityType}`);
     }
     return table;
   }

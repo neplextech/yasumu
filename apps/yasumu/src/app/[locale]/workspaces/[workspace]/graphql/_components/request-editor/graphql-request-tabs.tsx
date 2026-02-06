@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Tabs,
   TabsContent,
@@ -30,6 +30,7 @@ import { VariablesEditor } from './variables-editor';
 import { QueryBuilder } from './query-builder';
 import type { GraphQLSchema } from 'graphql';
 import type { RootOperation } from '../../_hooks/use-query-builder';
+import GraphqlTextEditor from './graphql-text-editor';
 
 interface GraphqlRequestTabsProps {
   query: string;
@@ -135,6 +136,10 @@ export function GraphqlRequestTabs({
     [onQueryChange],
   );
 
+  const [querySubTab, setQuerySubTab] = useState<'editor' | 'query-builder'>(
+    'editor',
+  );
+
   return (
     <Tabs defaultValue="query" className="flex-1 flex flex-col h-full min-h-0">
       <div className="px-1 border-b shrink-0">
@@ -143,43 +148,63 @@ export function GraphqlRequestTabs({
           <TabsTrigger value="variables">Variables</TabsTrigger>
           <TabsTrigger value="parameters">Params</TabsTrigger>
           <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="query-builder">Query Builder</TabsTrigger>
           <TabsTrigger value="scripts">Scripts</TabsTrigger>
         </TabsList>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 min-h-0">
         <TabsContent value="query" className="h-full mt-0">
-          <div className="flex flex-col gap-2 h-full min-h-0">
-            <div className="flex items-center justify-between shrink-0">
-              <span className="text-sm text-muted-foreground font-medium">
-                GraphQL Query
-              </span>
+          <div className="flex flex-col h-full min-h-0">
+            <div className="flex items-center gap-1 mb-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setQuerySubTab('editor')}
+                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                  querySubTab === 'editor'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                }`}
+              >
+                Editor
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuerySubTab('query-builder')}
+                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                  querySubTab === 'query-builder'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                }`}
+              >
+                Query Builder
+              </button>
             </div>
-            <TextEditor
-              value={query}
-              onChange={onQueryChange}
-              language="graphql"
-              placeholder={
-                <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
-                  <pre className="font-mono text-sm whitespace-pre-wrap">{`query GetUsers {
-  users {
-    id
-    name
-    email
-  }
-}`}</pre>
-                </div>
-              }
-            />
+
+            {querySubTab === 'editor' ? (
+              <div className="flex flex-col gap-2 flex-1 min-h-0">
+                <GraphqlTextEditor
+                  query={query}
+                  onQueryChange={onQueryChange}
+                />
+              </div>
+            ) : (
+              <QueryBuilder
+                operations={queryBuilderOperations}
+                activeOperation={queryBuilderActiveOperation}
+                currentOperation={queryBuilderCurrentOperation}
+                generatedQuery={queryBuilderGeneratedQuery}
+                onActiveOperationChange={onQueryBuilderActiveOperationChange}
+                onToggleField={onQueryBuilderToggleField}
+                onToggleExpand={onQueryBuilderToggleExpand}
+                onSetArgValue={onQueryBuilderSetArgValue}
+                onApplyQuery={handleApplyBuiltQuery}
+              />
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="variables" className="h-full mt-0">
-          <VariablesEditor
-            variables={variables}
-            onChange={onVariablesChange}
-          />
+          <VariablesEditor variables={variables} onChange={onVariablesChange} />
         </TabsContent>
 
         <TabsContent value="parameters" className="h-full mt-0 space-y-4">
@@ -248,9 +273,7 @@ export function GraphqlRequestTabs({
             </div>
             <KeyValueTable
               pairs={searchParams as KeyValuePair[]}
-              onChange={(pairs) =>
-                onSearchParamsChange(pairs as TabularPair[])
-              }
+              onChange={(pairs) => onSearchParamsChange(pairs as TabularPair[])}
             />
           </div>
         </TabsContent>
@@ -262,20 +285,6 @@ export function GraphqlRequestTabs({
           <KeyValueTable
             pairs={headers as KeyValuePair[]}
             onChange={(pairs) => onHeadersChange(pairs as TabularPair[])}
-          />
-        </TabsContent>
-
-        <TabsContent value="query-builder" className="h-full mt-0">
-          <QueryBuilder
-            operations={queryBuilderOperations}
-            activeOperation={queryBuilderActiveOperation}
-            currentOperation={queryBuilderCurrentOperation}
-            generatedQuery={queryBuilderGeneratedQuery}
-            onActiveOperationChange={onQueryBuilderActiveOperationChange}
-            onToggleField={onQueryBuilderToggleField}
-            onToggleExpand={onQueryBuilderToggleExpand}
-            onSetArgValue={onQueryBuilderSetArgValue}
-            onApplyQuery={handleApplyBuiltQuery}
           />
         </TabsContent>
 
