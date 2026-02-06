@@ -1,12 +1,15 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Separator } from '@yasumu/ui/components/separator';
 import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { useGraphqlContext } from './_providers/graphql-context';
 import { useGraphqlEntity } from './_hooks/use-graphql-entity';
 import { useGraphqlRequest } from './_hooks/use-graphql-request';
+import { useGraphqlIntrospection } from './_hooks/use-graphql-introspection';
+import { useQueryBuilder } from './_hooks/use-query-builder';
+import { useMonacoGraphqlLanguage } from './_lib/monaco-graphql-support';
 import { GraphqlUrlBar } from './_components/request-editor/graphql-url-bar';
 import { GraphqlRequestTabs } from './_components/request-editor/graphql-request-tabs';
 import { GraphqlResponsePanel } from './_components/response-panel';
@@ -23,6 +26,21 @@ import {
 import { useHotkeys } from 'react-hotkeys-hook';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 
+function tabularPairsToRecord(
+  pairs: TabularPair[] | undefined,
+): Record<string, { value: string; enabled: boolean }> {
+  if (!pairs) return {};
+  return pairs.reduce(
+    (acc, pair) => {
+      if (pair.key) {
+        acc[pair.key] = { value: pair.value, enabled: pair.enabled };
+      }
+      return acc;
+    },
+    {} as Record<string, { value: string; enabled: boolean }>,
+  );
+}
+
 export default function GraphqlPage() {
   const { entityId } = useGraphqlContext();
   const { layout } = useAppLayout();
@@ -36,6 +54,44 @@ export default function GraphqlPage() {
     execute,
     cancel,
   } = useGraphqlRequest({ entityId });
+
+  // Introspection
+  const {
+    schema,
+    isLoading: isIntrospecting,
+    error: introspectionError,
+    introspect,
+  } = useGraphqlIntrospection();
+
+  // Monaco GraphQL IntelliSense
+  useMonacoGraphqlLanguage(schema);
+
+  // Query builder
+  const {
+    operations: queryBuilderOperations,
+    activeOperation: queryBuilderActiveOperation,
+    setActiveOperation: setQueryBuilderActiveOperation,
+    currentOperation: queryBuilderCurrentOperation,
+    toggleField: queryBuilderToggleField,
+    toggleExpand: queryBuilderToggleExpand,
+    setArgValue: queryBuilderSetArgValue,
+    generatedQuery: queryBuilderGeneratedQuery,
+  } = useQueryBuilder(schema);
+
+  // Path params
+  const [pathParams, setPathParams] = useState<
+    Record<string, { value: string; enabled: boolean }>
+  >({});
+
+  useEffect(() => {
+    if (data?.requestParameters) {
+      setPathParams(
+        tabularPairsToRecord(data.requestParameters as TabularPair[]),
+      );
+    } else {
+      setPathParams({});
+    }
+  }, [entityId, data?.requestParameters]);
 
   const isRequestActive = useMemo(
     () =>
@@ -75,6 +131,26 @@ export default function GraphqlPage() {
     [updateField],
   );
 
+  const handleSearchParamsChange = useCallback(
+    (params: TabularPair[]) => {
+      updateField('searchParameters', params);
+    },
+    [updateField],
+  );
+
+  const handlePathParamsChange = useCallback(
+    (params: Record<string, { value: string; enabled: boolean }>) => {
+      setPathParams(params);
+      const tabularParams = Object.entries(params).map(([key, val]) => ({
+        key,
+        value: val.value,
+        enabled: val.enabled,
+      }));
+      updateField('requestParameters', tabularParams);
+    },
+    [updateField],
+  );
+
   const handleScriptChange = useCallback(
     (script: YasumuEmbeddedScript) => {
       updateField('script', script);
@@ -91,6 +167,16 @@ export default function GraphqlPage() {
   const handleCancel = useCallback(() => {
     cancel();
   }, [cancel]);
+
+  const handleIntrospect = useCallback(async () => {
+    if (!data?.url) return;
+    const interpolatedHeaders = Object.fromEntries(
+      (data.requestHeaders || [])
+        .filter((h) => h.enabled && h.key)
+        .map((h) => [h.key, h.value]),
+    );
+    await introspect(data.url, interpolatedHeaders);
+  }, [data?.url, data?.requestHeaders, introspect]);
 
   useHotkeys(
     'mod+enter',
@@ -130,10 +216,24 @@ export default function GraphqlPage() {
       variables={data.variables || ''}
       headers={data.requestHeaders || []}
       script={data.script}
+      searchParams={data.searchParameters || []}
+      pathParams={pathParams}
+      url={data.url || ''}
+      schema={schema}
+      queryBuilderOperations={queryBuilderOperations}
+      queryBuilderActiveOperation={queryBuilderActiveOperation}
+      queryBuilderCurrentOperation={queryBuilderCurrentOperation}
+      queryBuilderGeneratedQuery={queryBuilderGeneratedQuery}
       onQueryChange={handleQueryChange}
       onVariablesChange={handleVariablesChange}
       onHeadersChange={handleHeadersChange}
       onScriptChange={handleScriptChange}
+      onSearchParamsChange={handleSearchParamsChange}
+      onPathParamsChange={handlePathParamsChange}
+      onQueryBuilderActiveOperationChange={setQueryBuilderActiveOperation}
+      onQueryBuilderToggleField={queryBuilderToggleField}
+      onQueryBuilderToggleExpand={queryBuilderToggleExpand}
+      onQueryBuilderSetArgValue={queryBuilderSetArgValue}
     />
   );
 
@@ -156,9 +256,11 @@ export default function GraphqlPage() {
           onUrlChange={handleUrlChange}
           onSend={handleSend}
           onCancel={handleCancel}
+          onIntrospect={handleIntrospect}
           onVariableClick={renderVariablePopover}
           isSending={isRequestActive}
           isSaving={isSaving}
+          isIntrospecting={isIntrospecting}
         />
       </div>
       <Separator />

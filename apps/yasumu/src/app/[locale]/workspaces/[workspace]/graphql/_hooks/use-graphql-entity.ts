@@ -21,6 +21,8 @@ export interface GraphqlEntityData {
   variables: string | null;
   operationName: string | null;
   requestHeaders: TabularPair[];
+  requestParameters: TabularPair[];
+  searchParameters: TabularPair[];
   script: YasumuEmbeddedScript;
   testScript: YasumuEmbeddedScript;
   dependencies: string[];
@@ -37,6 +39,8 @@ export interface GraphqlEntityUpdateOptions {
   variables?: string | null;
   operationName?: string | null;
   requestHeaders?: TabularPair[];
+  requestParameters?: TabularPair[];
+  searchParameters?: TabularPair[];
   script?: YasumuEmbeddedScript;
   testScript?: YasumuEmbeddedScript;
   dependencies?: string[];
@@ -77,6 +81,8 @@ function createDefaultEntity(): GraphqlEntityData {
     variables: null,
     operationName: null,
     requestHeaders: [],
+    requestParameters: [],
+    searchParameters: [],
     script: createDefaultScript(),
     testScript: createDefaultScript(),
     dependencies: [],

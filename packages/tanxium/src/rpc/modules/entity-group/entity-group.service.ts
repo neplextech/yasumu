@@ -10,6 +10,7 @@ import {
   entityGroups,
   entityHistory,
   restEntities,
+  graphqlEntities,
 } from '../../../database/schema.ts';
 import {
   NotFoundException,
@@ -20,10 +21,25 @@ import { EntityGroupData } from '@yasumu/common';
 
 @Injectable()
 export class EntityGroupService {
+  private static readonly entityTableMap: Record<string, typeof restEntities | typeof graphqlEntities> = {
+    rest: restEntities,
+    graphql: graphqlEntities,
+  };
+
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly tanxiumService: TanxiumService,
   ) {}
+
+  private getEntityTable(entityType: string) {
+    const table = EntityGroupService.entityTableMap[entityType];
+    if (!table) {
+      throw new BadRequestException(
+        `Unsupported entity type: ${entityType}`,
+      );
+    }
+    return table;
+  }
 
   private async locateGroupWithCommonParent(
     name: string,
@@ -101,14 +117,15 @@ export class EntityGroupService {
         ),
       );
 
-    // Fetch rest entities that belong to this group
+    // Fetch entities that belong to this group based on entity type
+    const entityTable = this.getEntityTable(result.entityType);
     const entities = await db
       .select()
-      .from(restEntities)
+      .from(entityTable)
       .where(
         and(
-          eq(restEntities.groupId, id),
-          eq(restEntities.workspaceId, workspaceId),
+          eq(entityTable.groupId, id),
+          eq(entityTable.workspaceId, workspaceId),
         ),
       );
 
@@ -205,11 +222,12 @@ export class EntityGroupService {
         ),
       );
 
-    // Fetch all rest entities for this workspace
+    // Fetch entities for this workspace based on entity type
+    const entityTable = this.getEntityTable(entityType);
     const entities = await db
       .select()
-      .from(restEntities)
-      .where(eq(restEntities.workspaceId, workspaceId));
+      .from(entityTable)
+      .where(eq(entityTable.workspaceId, workspaceId));
 
     // Define tree item types for frontend consumption
     type GroupTreeItem = (typeof groups)[number] & {
