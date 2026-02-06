@@ -21,10 +21,25 @@ import { EntityGroupData } from '@yasumu/common';
 
 @Injectable()
 export class EntityGroupService {
+  private static readonly entityTableMap: Record<string, typeof restEntities | typeof graphqlEntities> = {
+    rest: restEntities,
+    graphql: graphqlEntities,
+  };
+
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly tanxiumService: TanxiumService,
   ) {}
+
+  private getEntityTable(entityType: string) {
+    const table = EntityGroupService.entityTableMap[entityType];
+    if (!table) {
+      throw new BadRequestException(
+        `Unsupported entity type: ${entityType}`,
+      );
+    }
+    return table;
+  }
 
   private async locateGroupWithCommonParent(
     name: string,
@@ -103,8 +118,7 @@ export class EntityGroupService {
       );
 
     // Fetch entities that belong to this group based on entity type
-    const entityTable =
-      result.entityType === 'graphql' ? graphqlEntities : restEntities;
+    const entityTable = this.getEntityTable(result.entityType);
     const entities = await db
       .select()
       .from(entityTable)
@@ -209,8 +223,7 @@ export class EntityGroupService {
       );
 
     // Fetch entities for this workspace based on entity type
-    const entityTable =
-      entityType === 'graphql' ? graphqlEntities : restEntities;
+    const entityTable = this.getEntityTable(entityType);
     const entities = await db
       .select()
       .from(entityTable)
