@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   type GraphQLSchema,
   type GraphQLField,
@@ -143,7 +143,7 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
   const [operations, setOperations] = useState<RootOperation[]>([]);
   const [activeOperation, setActiveOperation] = useState<'query' | 'mutation' | 'subscription'>('query');
 
-  useMemo(() => {
+  useEffect(() => {
     if (!schema) {
       setOperations([]);
       return;
@@ -161,7 +161,7 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
     if (ops.length > 0 && !ops.find((o) => o.type === activeOperation)) {
       setActiveOperation(ops[0].type);
     }
-  }, [schema]);
+  }, [schema, activeOperation]);
 
   const currentOperation = useMemo(
     () => operations.find((o) => o.type === activeOperation) ?? null,

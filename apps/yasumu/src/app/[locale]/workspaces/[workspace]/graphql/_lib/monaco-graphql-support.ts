@@ -3,8 +3,6 @@
 import { useEffect, useRef } from 'react';
 import type { GraphQLSchema } from 'graphql';
 
-let monacoGraphqlInitialized = false;
-
 /**
  * Initializes monaco-graphql language mode for IntelliSense and autocomplete.
  * This sets up the GraphQL language worker for Monaco editor.
@@ -46,7 +44,6 @@ export function useMonacoGraphqlLanguage(schema: GraphQLSchema | null) {
           ]);
         }
 
-        monacoGraphqlInitialized = true;
         cleanup = () => {
           // monaco-graphql mode cleanup is global, no individual dispose needed
         };
