@@ -10,6 +10,7 @@ import {
   entityGroups,
   entityHistory,
   restEntities,
+  graphqlEntities,
 } from '../../../database/schema.ts';
 import {
   NotFoundException,
@@ -101,14 +102,16 @@ export class EntityGroupService {
         ),
       );
 
-    // Fetch rest entities that belong to this group
+    // Fetch entities that belong to this group based on entity type
+    const entityTable =
+      result.entityType === 'graphql' ? graphqlEntities : restEntities;
     const entities = await db
       .select()
-      .from(restEntities)
+      .from(entityTable)
       .where(
         and(
-          eq(restEntities.groupId, id),
-          eq(restEntities.workspaceId, workspaceId),
+          eq(entityTable.groupId, id),
+          eq(entityTable.workspaceId, workspaceId),
         ),
       );
 
@@ -205,11 +208,13 @@ export class EntityGroupService {
         ),
       );
 
-    // Fetch all rest entities for this workspace
+    // Fetch entities for this workspace based on entity type
+    const entityTable =
+      entityType === 'graphql' ? graphqlEntities : restEntities;
     const entities = await db
       .select()
-      .from(restEntities)
-      .where(eq(restEntities.workspaceId, workspaceId));
+      .from(entityTable)
+      .where(eq(entityTable.workspaceId, workspaceId));
 
     // Define tree item types for frontend consumption
     type GroupTreeItem = (typeof groups)[number] & {
