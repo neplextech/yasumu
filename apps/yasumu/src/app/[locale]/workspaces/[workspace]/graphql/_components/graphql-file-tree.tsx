@@ -79,8 +79,7 @@ export function GraphqlFileTree() {
   useEffect(() => {
     const controller = new AbortController();
 
-    // TODO: Add onGraphqlEntityUpdate event to YasumuEventHandlerInterface when GraphQL API is implemented
-    (yasumu.events as any).on('onGraphqlEntityUpdate', refetchGraphqlEntities, {
+    yasumu.events.on('onGraphqlEntityUpdate', refetchGraphqlEntities, {
       signal: controller.signal,
     });
 
@@ -268,9 +267,9 @@ export function GraphqlFileTree() {
             name,
             url: null,
             groupId: parentId,
-            query: null,
-            variables: null,
-            operationName: null,
+            requestBody: null,
+            requestParameters: [],
+            searchParameters: [],
             requestHeaders: [],
             metadata: {},
           });

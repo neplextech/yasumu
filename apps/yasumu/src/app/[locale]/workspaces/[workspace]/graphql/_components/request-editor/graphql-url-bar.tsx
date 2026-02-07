@@ -3,6 +3,7 @@
 import { Button } from '@yasumu/ui/components/button';
 import { Loader2 } from 'lucide-react';
 import { InteropableInput } from '@/components/inputs';
+import IntrospectButton from '../introspect-button';
 
 interface GraphqlUrlBarProps {
   url: string;
@@ -55,18 +56,11 @@ export function GraphqlUrlBar({
         )}
       </div>
       {onIntrospect && (
-        <Button
+        <IntrospectButton
           onClick={onIntrospect}
-          variant="outline"
           disabled={!url.trim() || isLoading}
-          className="min-w-[100px]"
-        >
-          {isIntrospecting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            'Introspect'
-          )}
-        </Button>
+          isLoading={isIntrospecting}
+        />
       )}
       {isSending ? (
         <Button
