@@ -6,7 +6,7 @@
   "scripts": {
     "app": "pnpm --filter=@yasumu/app tauri dev --additional-watch-folders ../../../packages/tanxium/src",
     "bootstrap": "turbo gen bootstrap --args",
-    "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,json}\"",
+    "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,md,mdx,json}\"",
     "build": "turbo run build",
     "build:app": "turbo run build --filter=!./apps/www --filter=!./apps/docs --filter=!./apps/yasumu",
     "prepare": "pnpm --filter=tanxium --filter=test run deno install",

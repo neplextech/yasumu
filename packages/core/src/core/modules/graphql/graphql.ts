@@ -27,6 +27,17 @@ export class GraphqlModule {
     return new GraphqlEntity(this, result);
   }
 
+  public async createBulk(
+    items: GraphqlEntityCreateOptions[],
+  ): Promise<GraphqlEntity[]> {
+    const results =
+      await this.workspace.manager.yasumu.rpc.graphql.createBulk.$mutate({
+        parameters: [{ items }],
+      });
+
+    return results.map((result) => new GraphqlEntity(this, result));
+  }
+
   public async get(id: string): Promise<GraphqlEntity> {
     const data = await this.workspace.manager.yasumu.rpc.graphql.get.$query({
       parameters: [id],

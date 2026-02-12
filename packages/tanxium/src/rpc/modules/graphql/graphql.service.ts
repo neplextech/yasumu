@@ -89,12 +89,44 @@ export class GraphqlService {
         name: data.name,
         url: data.url,
         groupId: data.groupId,
+        requestBody: data.requestBody,
+        requestHeaders: data.requestHeaders,
+        requestParameters: data.requestParameters,
+        searchParameters: data.searchParameters,
+        script: data.script,
       })
       .returning();
 
     await this.dispatchUpdate(workspaceId);
 
     return result;
+  }
+
+  public async createBulk(
+    workspaceId: string,
+    items: GraphqlEntityCreateOptions[],
+  ) {
+    const db = this.connection.getConnection();
+
+    if (items.length === 0) return [];
+
+    const values = items.map((data) => ({
+      workspaceId,
+      name: data.name,
+      url: data.url,
+      groupId: data.groupId,
+      requestBody: data.requestBody,
+      requestHeaders: data.requestHeaders,
+      requestParameters: data.requestParameters,
+      searchParameters: data.searchParameters,
+      script: data.script,
+    }));
+
+    const results = await db.insert(graphqlEntities).values(values).returning();
+
+    await this.dispatchUpdate(workspaceId);
+
+    return results;
   }
 
   public async update(
@@ -115,7 +147,9 @@ export class GraphqlService {
       )
       .returning();
 
-    if (data.name) await this.dispatchUpdate(workspaceId);
+    if (data.name !== undefined || data.groupId !== undefined) {
+      await this.dispatchUpdate(workspaceId);
+    }
 
     return result;
   }

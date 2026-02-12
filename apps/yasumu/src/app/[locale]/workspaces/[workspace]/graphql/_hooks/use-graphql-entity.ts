@@ -148,13 +148,13 @@ export function useGraphqlEntity({
   useEffect(() => {
     isMounted.current = true;
     pendingUpdates.current = {};
+    setLocalData(null); // immediately clear stale data from previous entity
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
 
     if (!entityId) {
-      setLocalData(null);
       return;
     }
     const cached = queryClient.getQueryData<GraphqlEntityData>(queryKey);

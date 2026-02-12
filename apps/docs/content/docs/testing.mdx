@@ -11,14 +11,14 @@ completes and can validate response data, status codes, headers, and
 more.
 
 <Callout type="tip" title="Global APIs">
-  The `test`, `expect` and `describe` functions are available
-  globally in your scripts. No imports needed.
+  The `test`, `expect` and `describe` functions are available globally in your
+  scripts. No imports needed.
 </Callout>
 
 <Callout type="warn" title="Test Context Required">
-  The `test()` and `expect()` functions only work inside the
-  `onTest()` function. Calling them in `onRequest()` or `onResponse()`
-  will have no effect as they are silently ignored in non-test mode.
+  The `test()` and `expect()` functions only work inside the `onTest()`
+  function. Calling them in `onRequest()` or `onResponse()` will have no effect
+  as they are silently ignored in non-test mode.
 </Callout>
 
 ## Why Tests Live with Scripts
@@ -39,10 +39,7 @@ functions:
 
 ```javascript
 export function onRequest(req) {
-  req.headers.set(
-    'Authorization',
-    `Bearer ${req.env.getSecret('TOKEN')}`,
-  );
+  req.headers.set('Authorization', `Bearer ${req.env.getSecret('TOKEN')}`);
 }
 
 export function onResponse(req, res) {
@@ -428,10 +425,9 @@ timestamps and color-coded status messages:
 ![Console view with script execution logs](/test-console-view.png)
 
 <Callout type="info" title="Tests Only Run in onTest">
-  If you accidentally call `onTest()` inside `onRequest` or
-  `onResponse`, it will only produce log output — no tests are
-  actually executed. This is by design to ensure tests only run in
-  test mode.
+  If you accidentally call `onTest()` inside `onRequest` or `onResponse`, it
+  will only produce log output — no tests are actually executed. This is by
+  design to ensure tests only run in test mode.
 </Callout>
 
 ![Console showing onTest calls being ignored](/test-console-log.png)
@@ -442,10 +438,7 @@ Here's a comprehensive example testing a user API endpoint:
 
 ```javascript
 export function onRequest(req) {
-  req.headers.set(
-    'Authorization',
-    `Bearer ${req.env.getSecret('API_TOKEN')}`,
-  );
+  req.headers.set('Authorization', `Bearer ${req.env.getSecret('API_TOKEN')}`);
 }
 
 export function onResponse(req, res) {
@@ -520,6 +513,6 @@ export function onTest(req, res) {
 6. **Keep tests fast** — Avoid heavy computations in tests
 
 <Callout type="info" title="Test Execution">
-  Tests run synchronously in the order they're defined. The `onTest`
-  function is called after `onResponse` completes.
+  Tests run synchronously in the order they're defined. The `onTest` function is
+  called after `onResponse` completes.
 </Callout>

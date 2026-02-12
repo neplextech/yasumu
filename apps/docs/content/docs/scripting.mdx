@@ -11,9 +11,9 @@ received. Scripts are written in `JavaScript` or `TypeScript` and have
 access to request, response, and environment data.
 
 <Callout type="tip" title="Scripting Language">
-  Yasumu supports both `JavaScript` and `TypeScript` syntax for
-  scripting out-of-the-box. The editor also provides type definitions
-  and autocomplete for the request and response objects.
+  Yasumu supports both `JavaScript` and `TypeScript` syntax for scripting
+  out-of-the-box. The editor also provides type definitions and autocomplete for
+  the request and response objects.
 </Callout>
 
 ## Overview
@@ -25,9 +25,8 @@ functions:
 - **`onResponse(req, res)`** — Runs after the response is received
 
 <Callout type="info" title="Looking for e-mail scripting?">
-  Please refer to the [E-mail
-  Scripting](/docs/smtp-server#email-scripting) guide for detailed
-  overviews on how to add email listener in Yasumu.
+  Please refer to the [E-mail Scripting](/docs/smtp-server#email-scripting)
+  guide for detailed overviews on how to add email listener in Yasumu.
 </Callout>
 
 ## Script Structure
@@ -201,9 +200,9 @@ export function onResponse(req, res) {
 ```
 
 <Callout type="info" title="Environment Persistence">
-  Variables set via `setVariable()` are automatically saved to the
-  active environment after the script completes. This allows you to
-  chain requests and pass data between them.
+  Variables set via `setVariable()` are automatically saved to the active
+  environment after the script completes. This allows you to chain requests and
+  pass data between them.
 </Callout>
 
 ### Setting Secrets
@@ -490,9 +489,7 @@ export async function onRequest(req) {
   // Create HMAC signature
   const encoder = new TextEncoder();
   const keyData = encoder.encode(apiKey);
-  const message = encoder.encode(
-    `${req.method}:${req.url}:${timestamp}`,
-  );
+  const message = encoder.encode(`${req.method}:${req.url}:${timestamp}`);
 
   const key = await crypto.subtle.importKey(
     'raw',
@@ -535,9 +532,8 @@ export function onRequest(req) {
 ```
 
 <Callout type="info" title="CUID vs UUID">
-  CUIDs are shorter, URL-safe, and designed to be monotonically
-  increasing, making them ideal for database IDs and distributed
-  systems.
+  CUIDs are shorter, URL-safe, and designed to be monotonically increasing,
+  making them ideal for database IDs and distributed systems.
 </Callout>
 
 ### Hashing Data
@@ -572,9 +568,8 @@ export function onRequest(req) {
 ```
 
 <Callout type="info" title="Async Functions">
-  Scripts support `async`/`await`. If you use async APIs like
-  `crypto.subtle`, make sure to declare your function as `async` and
-  `await` the results.
+  Scripts support `async`/`await`. If you use async APIs like `crypto.subtle`,
+  make sure to declare your function as `async` and `await` the results.
 </Callout>
 
 ## Common Use Cases

@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+} from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
 import {
@@ -14,6 +20,7 @@ import { useGraphqlFileTreeContext } from '../_providers/file-tree-context';
 import { GeneratorDialog } from './dialogs/generator-dialog';
 import { Wand2 } from 'lucide-react';
 import { GraphqlIcon } from './graphql-icon';
+import { fileNamify } from '@/lib/utils/filenamify';
 
 // GraphQL tree item type (will be provided by core API)
 interface GraphqlTreeItem {
@@ -27,7 +34,6 @@ interface GraphqlTreeItem {
 export function GraphqlFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
-  const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const { setEntityId, removeFromHistory } = useGraphqlContext();
   const {
     clipboard,
@@ -72,10 +78,9 @@ export function GraphqlFileTree() {
     });
   };
 
-  useEffect(() => {
-    if (graphqlEntities) {
-      setFileTree(mapTreeToFileTree(graphqlEntities as GraphqlTreeItem[]));
-    }
+  const fileTree = useMemo(() => {
+    if (!graphqlEntities) return [];
+    return mapTreeToFileTree(graphqlEntities as GraphqlTreeItem[]);
   }, [graphqlEntities]);
 
   useEffect(() => {
@@ -282,6 +287,7 @@ export function GraphqlFileTree() {
     operations: {
       name: string;
       content: string;
+      operationName: string;
       type: 'query' | 'mutation' | 'subscription';
     }[],
   ) => {
@@ -292,8 +298,18 @@ export function GraphqlFileTree() {
     const folderMap: Record<string, string> = {}; // type -> folderId
 
     for (const type of types) {
-      // Capitalize
-      const folderName = type.charAt(0).toUpperCase() + type.slice(1) + 's';
+      const folderName = (() => {
+        switch (type) {
+          case 'query':
+            return 'Queries';
+          case 'mutation':
+            return 'Mutations';
+          case 'subscription':
+            return 'Subscriptions';
+          default:
+            return 'Others';
+        }
+      })();
 
       // Create folder
       const folder = await graphql.createEntityGroup({
@@ -304,27 +320,30 @@ export function GraphqlFileTree() {
       folderMap[type] = folder.id;
     }
 
-    // Create operations
-    for (const op of operations) {
-      await graphql.create({
-        name: op.name,
+    // Bulk create all operations at once
+    const items = operations.map((op) => {
+      const operationName = fileNamify(op.name);
+      return {
+        name: operationName,
         url: url,
         groupId: folderMap[op.type],
         requestBody: {
-          type: 'json',
+          type: 'json' as const,
           value: {
             query: op.content,
             variables: '{}',
-            operationName: op.name,
+            operationName,
           },
           metadata: {},
         },
-        requestParameters: [],
-        searchParameters: [],
-        requestHeaders: [],
+        requestParameters: [] as any[],
+        searchParameters: [] as any[],
+        requestHeaders: [] as any[],
         metadata: {},
-      });
-    }
+      };
+    });
+
+    await graphql.createBulk(items);
 
     await refetchGraphqlEntities();
   };
@@ -344,7 +363,7 @@ export function GraphqlFileTree() {
         onFolderSelect={setSelectedFolderId}
         additionalToolbarItems={
           <button onClick={() => setIsGeneratorOpen(true)}>
-            <Wand2 className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700 text-purple-400" />
+            <Wand2 className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
           </button>
         }
         onFileSelect={withErrorHandler(async (id: string) => {

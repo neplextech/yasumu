@@ -121,6 +121,16 @@ export interface GraphqlEntityCreateOptions extends CustomMetadata {
 }
 
 /**
+ * The options for bulk creating graphql entities.
+ */
+export interface GraphqlEntityBulkCreateOptions {
+  /**
+   * The list of entities to create.
+   */
+  items: GraphqlEntityCreateOptions[];
+}
+
+/**
  * The options for updating a rest entity.
  */
 export interface GraphqlEntityUpdateOptions extends CustomMetadata {

@@ -29,6 +29,7 @@ import type {
   EntityHistoryData,
   EntityHistoryCreateOptions,
   EntityHistoryListOptions,
+  GraphqlEntityBulkCreateOptions,
   GraphqlEntityCreateOptions,
   GraphqlEntityData,
   GraphqlEntityUpdateOptions,
@@ -140,6 +141,14 @@ export interface YasumuRPC {
      * @param data The data for the graphql entity.
      */
     create: RpcMutation<[data: GraphqlEntityCreateOptions], GraphqlEntityData>;
+    /**
+     * Graphql bulk entity creation command.
+     * @param data The data for the bulk graphql entity creation.
+     */
+    createBulk: RpcMutation<
+      [data: GraphqlEntityBulkCreateOptions],
+      GraphqlEntityData[]
+    >;
     /**
      * Graphql entity retrieval command.
      * @param id The ID of the graphql entity.

@@ -18,6 +18,7 @@ import {
 } from '../common/exceptions/http.exception.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
 import { EntityGroupData } from '@yasumu/common';
+import { RpcSubscriptionEvents } from '@yasumu/rpc';
 
 @Injectable()
 export class EntityGroupService {
@@ -64,10 +65,13 @@ export class EntityGroupService {
     return result ?? null;
   }
 
-  private async dispatchUpdate(workspaceId: string) {
-    await this.tanxiumService.publishMessage('rest-entity-updated', {
-      workspaceId,
-    });
+  private async dispatchUpdate(workspaceId: string, entityType: string) {
+    await this.tanxiumService.publishMessage(
+      `${entityType}-entity-updated` as keyof RpcSubscriptionEvents,
+      {
+        workspaceId,
+      },
+    );
   }
 
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
@@ -92,7 +96,7 @@ export class EntityGroupService {
       })
       .returning();
 
-    await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId, data.entityType);
     return result;
   }
 
@@ -179,14 +183,14 @@ export class EntityGroupService {
       .where(eq(entityGroups.id, id))
       .returning();
 
-    await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId, entityGroup.entityType);
 
     return updated as unknown as EntityGroupData;
   }
 
   public async delete(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const { entities } = await this.getOrThrow(workspaceId, id);
+    const { entities, entityType } = await this.getOrThrow(workspaceId, id);
 
     await db.delete(entityGroups).where(eq(entityGroups.id, id)).returning();
 
@@ -198,7 +202,7 @@ export class EntityGroupService {
         .where(inArray(entityHistory.entityId, entityIds));
     }
 
-    await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId, entityType);
 
     await this.tanxiumService.publishMessage('entity-history-updated', {
       workspaceId,

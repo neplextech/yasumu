@@ -10,6 +10,7 @@ import {
 import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
+import { Checkbox } from '@yasumu/ui/components/checkbox';
 import {
   Select,
   SelectContent,
@@ -20,22 +21,18 @@ import {
 import { useGraphqlIntrospection } from '../../_hooks/use-graphql-introspection';
 import { Wand2, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import {
-  GraphQLSchema,
   isObjectType,
-  isScalarType,
   isLeafType,
   GraphQLField,
   isListType,
   isNonNullType,
   GraphQLType,
-  GraphQLArgument,
 } from 'graphql';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from '@yasumu/ui/components/alert';
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 
 interface GeneratorDialogProps {
   open: boolean;
@@ -47,6 +44,7 @@ interface GeneratorDialogProps {
     operations: {
       name: string;
       content: string;
+      operationName: string;
       type: 'query' | 'mutation' | 'subscription';
     }[],
   ) => Promise<void>;
@@ -68,6 +66,9 @@ export function GeneratorDialog({
   } = useGraphqlIntrospection();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCount, setGeneratedCount] = useState<number | null>(null);
+  const [includeQueries, setIncludeQueries] = useState(true);
+  const [includeMutations, setIncludeMutations] = useState(true);
+  const [includeSubscriptions, setIncludeSubscriptions] = useState(true);
 
   const handleIntrospect = async () => {
     if (!url) return;
@@ -81,6 +82,7 @@ export function GeneratorDialog({
       const operations: {
         name: string;
         content: string;
+        operationName: string;
         type: 'query' | 'mutation' | 'subscription';
       }[] = [];
 
@@ -96,6 +98,7 @@ export function GeneratorDialog({
             name: field.name,
             content: query,
             type: operationType,
+            operationName: field.name,
           });
         });
       };
@@ -104,12 +107,19 @@ export function GeneratorDialog({
       processType(schema.getMutationType(), 'mutation');
       processType(schema.getSubscriptionType(), 'subscription');
 
+      const filtered = operations.filter((op) => {
+        if (op.type === 'query') return includeQueries;
+        if (op.type === 'mutation') return includeMutations;
+        if (op.type === 'subscription') return includeSubscriptions;
+        return true;
+      });
+
       await onGenerate(
         url,
         targetFolderId === 'root' ? null : targetFolderId,
-        operations,
+        filtered,
       );
-      setGeneratedCount(operations.length);
+      setGeneratedCount(filtered.length);
       setTimeout(() => {
         onOpenChange(false);
         setGeneratedCount(null);
@@ -135,10 +145,10 @@ export function GeneratorDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-purple-500" />
-            GraphQL Magic Wand
+            GraphQL Importer
           </DialogTitle>
           <DialogDescription>
-            Automatically generate queries from a GraphQL URL.
+            Automatically import entities from the given GraphQL URL.
           </DialogDescription>
         </DialogHeader>
 
@@ -201,7 +211,7 @@ export function GeneratorDialog({
                 <SelectValue placeholder="Select folder" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="root">Root (Header)</SelectItem>
+                <SelectItem value="root">Root</SelectItem>
                 {folderOptions.map((folder) => (
                   <SelectItem key={folder.id} value={folder.id}>
                     {folder.name}
@@ -210,6 +220,38 @@ export function GeneratorDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {schema && !introspectionError && (
+            <div className="grid gap-3">
+              <Label>Operation Types to Generate</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={includeQueries}
+                    onCheckedChange={(v) => setIncludeQueries(!!v)}
+                    disabled={isGenerating}
+                  />
+                  Queries
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={includeMutations}
+                    onCheckedChange={(v) => setIncludeMutations(!!v)}
+                    disabled={isGenerating}
+                  />
+                  Mutations
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={includeSubscriptions}
+                    onCheckedChange={(v) => setIncludeSubscriptions(!!v)}
+                    disabled={isGenerating}
+                  />
+                  Subscriptions
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -239,47 +281,47 @@ function generateOperation(
   field: GraphQLField<any, any>,
   operationType: 'query' | 'mutation' | 'subscription',
 ): string {
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
+
+  const operationName = capitalize(field.name);
+
   const args =
     field.args.length > 0
       ? `(${field.args.map((arg) => `${arg.name}: $${arg.name}`).join(', ')})`
       : '';
 
-  // Variables definition
   const varDefs =
     field.args.length > 0
-      ? `(${field.args.map((arg) => `$${arg.name}: ${arg.type.toString()}`).join(', ')})`
+      ? `(${field.args
+          .map((arg) => `$${arg.name}: ${arg.type.toString()}`)
+          .join(', ')})`
       : '';
 
-  // Selection set - valid scalars only for top level
   const returnType = getNamedType(field.type);
   let selectionSet = '';
 
   if (isObjectType(returnType)) {
     const subFields = Object.values(returnType.getFields());
-    // Pick scalars/enums/leafs
     const scalarFields = subFields.filter((f) =>
       isLeafType(getNamedType(f.type)),
     );
+
     if (scalarFields.length > 0) {
       selectionSet = ` {
-  ${scalarFields
-    .slice(0, 5)
-    .map((f) => f.name)
-    .join('\n  ')}
-}`;
-    } else {
-      // If no scalars, try to find an id or just pick first field if logic allows,
-      // but requirement says "dont include nested fields", likely means don't go deeper than the first level of the return type.
-      // If the return type has NO scalars, we might need to pick at least one field to make it valid graphql.
-      if (subFields.length > 0) {
-        selectionSet = ` {
-  ${subFields[0].name} # Expand to see more fields
-}`;
-      }
+    ${scalarFields
+      .slice(0, 5)
+      .map((f) => f.name)
+      .join('\n    ')}
+  }`;
+    } else if (subFields.length > 0) {
+      selectionSet = ` {
+    ${subFields[0].name}
+  }`;
     }
   }
 
-  return `${operationType} ${field.name}${varDefs} {
+  return `${operationType} ${operationName}${varDefs} {
   ${field.name}${args}${selectionSet}
 }`;
 }

@@ -3,6 +3,7 @@ import { GraphqlService } from './graphql.service.ts';
 import { WorkspaceId } from '../common/decorators.ts';
 import type {
   ExecutableScript,
+  GraphqlEntityBulkCreateOptions,
   GraphqlEntityCreateOptions,
   GraphqlEntityData,
   GraphqlEntityUpdateOptions,
@@ -51,6 +52,17 @@ export class GraphqlResolver implements YasumuRpcService<'graphql'> {
       workspaceId,
       data,
     )) as unknown as GraphqlEntityData;
+  }
+
+  @Mutation()
+  public async createBulk(
+    @WorkspaceId() workspaceId: string,
+    data: GraphqlEntityBulkCreateOptions,
+  ): Promise<GraphqlEntityData[]> {
+    return (await this.graphqlService.createBulk(
+      workspaceId,
+      data.items,
+    )) as unknown as GraphqlEntityData[];
   }
 
   @Mutation()

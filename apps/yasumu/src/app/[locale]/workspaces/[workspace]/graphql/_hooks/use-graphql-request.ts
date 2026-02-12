@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useActiveWorkspace,
@@ -11,9 +11,13 @@ import {
   GraphqlRequestController,
   GraphqlResponse,
 } from '../_lib/graphql-request';
-import type { GraphqlEntityData } from '@yasumu/common';
+import type {
+  GraphqlEntityData,
+  GraphqlScriptContext,
+  TestResult,
+} from '@yasumu/common';
 import { getGraphqlBodyValue } from './use-graphql-entity';
-import type { TestResult } from '@yasumu/common';
+import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
 
 export type RequestPhase =
   | 'idle'
@@ -78,7 +82,11 @@ export function useGraphqlRequest({
   const { selectedEnvironment } = useEnvironmentStore();
   const queryClient = useQueryClient();
 
-  // GraphQL API accessor (will be implemented in core)
+  // Reset request state when switching entities
+  useEffect(() => {
+    setState(INITIAL_STATE);
+  }, [entityId]);
+
   const graphql = workspace.graphql;
 
   const appendScriptOutput = useCallback(
@@ -126,13 +134,12 @@ export function useGraphqlRequest({
       }
 
       const interpolateValue = (value: string) => interpolate(value);
-      const interpolatedUrl = interpolateValue(entity.url || '');
-      const interpolatedHeaders = Object.fromEntries(
+      let interpolatedUrl = interpolateValue(entity.url || '');
+      let interpolatedHeaders = Object.fromEntries(
         (entity.requestHeaders || [])
           .filter((h) => h.enabled && h.key)
           .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
       );
-      console.log({ entity });
       const bodyValue = getGraphqlBodyValue(entity.requestBody);
       const interpolatedQuery = bodyValue.query
         ? interpolateValue(bodyValue.query)
@@ -141,46 +148,257 @@ export function useGraphqlRequest({
         ? interpolateValue(bodyValue.variables)
         : null;
 
-      try {
-        // Pre-request script execution would go here
-        // For now, skip since we're assuming the API will be implemented later
-
-        if (isCancelledRef.current) {
-          setState((prev) => ({ ...prev, phase: 'cancelled' }));
-          return;
-        }
-
-        setState((prev) => ({ ...prev, phase: 'sending' }));
-
-        const outcome = await controllerRef.current.execute({
+      let currentContext: GraphqlScriptContext = {
+        environment: selectedEnvironment?.toJSON() ?? null,
+        request: {
           url: interpolatedUrl,
-          query: interpolatedQuery,
-          variables: interpolatedVariables,
-          operationName: bodyValue.operationName || null,
           headers: interpolatedHeaders,
-          echoServerPort,
-          interpolate,
-        });
+          body: {
+            query: interpolatedQuery,
+            variables: interpolatedVariables,
+          },
+          parameters: {},
+        },
+        response: null,
+        workspace: {
+          id: workspace.id,
+          name: workspace.name,
+          path: isDefaultWorkspacePath(workspace.path) ? null : workspace.path,
+        },
+      };
+
+      let mockResponse: GraphqlResponse | null = null;
+
+      try {
+        // === Pre-request script execution ===
+        if (entity.script?.code?.trim()) {
+          setState((prev) => ({ ...prev, phase: 'pre-request-script' }));
+          appendScriptOutput('[Pre-Request] Executing script...', 'info');
+
+          try {
+            const result = await graphql.executeScript(
+              entityId,
+              entity.script,
+              currentContext,
+            );
+
+            if (result.result.success) {
+              currentContext = result.context;
+              // Apply script-modified context back to request params
+              interpolatedUrl = currentContext.request.url;
+              interpolatedHeaders = currentContext.request.headers;
+
+              appendScriptOutput(
+                '[Pre-Request] Script completed successfully',
+                'success',
+              );
+
+              if (result.result.result) {
+                const mockData = result.result.result as {
+                  status: number;
+                  statusText: string;
+                  headers: Record<string, string>;
+                  body: unknown;
+                };
+                const bodyStr =
+                  typeof mockData.body === 'string'
+                    ? mockData.body
+                    : JSON.stringify(mockData.body);
+                mockResponse = {
+                  status: mockData.status,
+                  statusText: mockData.statusText,
+                  headers: mockData.headers,
+                  rawBody: bodyStr,
+                  data: null,
+                  errors: null,
+                  time: 0,
+                  size: new Blob([bodyStr]).size,
+                };
+                appendScriptOutput(
+                  '[Pre-Request] Mock response returned, skipping HTTP request',
+                  'warning',
+                );
+              }
+            } else {
+              appendScriptOutput(
+                `[Pre-Request] Script failed: ${result.result.error}`,
+                'error',
+              );
+            }
+          } catch (err) {
+            appendScriptOutput(
+              `[Pre-Request] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
+            );
+          }
+        }
 
         if (isCancelledRef.current) {
           setState((prev) => ({ ...prev, phase: 'cancelled' }));
           return;
         }
 
-        if (outcome.error) {
-          setState((prev) => ({
-            ...prev,
-            phase: 'error',
-            error: outcome.error,
-          }));
-          return;
+        let response: GraphqlResponse;
+
+        if (mockResponse) {
+          response = mockResponse;
+          setState((prev) => ({ ...prev, response }));
+        } else {
+          setState((prev) => ({ ...prev, phase: 'sending' }));
+
+          const outcome = await controllerRef.current.execute({
+            url: interpolatedUrl,
+            query: interpolatedQuery,
+            variables: interpolatedVariables,
+            operationName: /* bodyValue.operationName || */ null,
+            headers: interpolatedHeaders,
+            echoServerPort,
+            interpolate,
+          });
+
+          if (isCancelledRef.current) {
+            setState((prev) => ({ ...prev, phase: 'cancelled' }));
+            return;
+          }
+
+          if (outcome.error) {
+            setState((prev) => ({
+              ...prev,
+              phase: 'error',
+              error: outcome.error,
+            }));
+            return;
+          }
+
+          response = outcome.response!;
+          setState((prev) => ({ ...prev, response }));
         }
 
-        const response = outcome.response!;
-        setState((prev) => ({ ...prev, response }));
+        // === Post-response script execution ===
+        if (entity.script?.code?.trim()) {
+          setState((prev) => ({ ...prev, phase: 'post-response-script' }));
+          appendScriptOutput('[Post-Response] Executing onResponse...', 'info');
 
-        // Post-response script execution would go here
-        // For now, skip since we're assuming the API will be implemented later
+          const responseContext: GraphqlScriptContext = {
+            ...currentContext,
+            response: {
+              status: response.status,
+              headers: response.headers,
+              body: response.rawBody ?? '',
+            },
+          };
+
+          try {
+            const result = await graphql.executeScript(
+              entityId,
+              entity.script,
+              responseContext,
+            );
+
+            if (result.result.success) {
+              appendScriptOutput(
+                '[Post-Response] Script completed successfully',
+                'success',
+              );
+
+              if (selectedEnvironment && result.context.environment) {
+                const envData = result.context.environment;
+                await selectedEnvironment.update({
+                  variables: envData.variables,
+                  secrets: envData.secrets,
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: ['environments'],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: ['currentEnvironment'],
+                });
+              }
+            } else {
+              appendScriptOutput(
+                `[Post-Response] Script failed: ${result.result.error}`,
+                'error',
+              );
+            }
+          } catch (err) {
+            appendScriptOutput(
+              `[Post-Response] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
+            );
+          }
+        }
+
+        // === Test execution ===
+        if (entity.script?.code?.trim()) {
+          appendScriptOutput('[Test] Running tests...', 'info');
+
+          const testContext: GraphqlScriptContext = {
+            ...currentContext,
+            response: {
+              status: response.status,
+              headers: response.headers,
+              body: response.rawBody ?? '',
+            },
+          };
+
+          try {
+            const testResult = await graphql.executeTest(
+              entityId,
+              entity.script,
+              testContext,
+            );
+
+            if (testResult.result.success) {
+              const results = testResult.result.result as {
+                testResults: TestResult[];
+              };
+              if (results?.testResults?.length > 0) {
+                setState((prev) => ({
+                  ...prev,
+                  testResults: results.testResults,
+                }));
+                const passed = results.testResults.filter(
+                  (r) => r.result === 'pass',
+                ).length;
+                const failed = results.testResults.filter(
+                  (r) => r.result === 'fail',
+                ).length;
+                const skipped = results.testResults.filter(
+                  (r) => r.result === 'skip',
+                ).length;
+
+                if (failed > 0) {
+                  appendScriptOutput(
+                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
+                    'test-fail',
+                  );
+                } else if (skipped > 0 && passed === 0) {
+                  appendScriptOutput(
+                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
+                    'test-skip',
+                  );
+                } else {
+                  appendScriptOutput(
+                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
+                    'test-pass',
+                  );
+                }
+              } else {
+                appendScriptOutput('[Test] No tests defined', 'info');
+              }
+            } else {
+              appendScriptOutput(
+                `[Test] Failed: ${testResult.result.error}`,
+                'error',
+              );
+            }
+          } catch (err) {
+            appendScriptOutput(
+              `[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
+            );
+          }
+        }
 
         setState((prev) => ({ ...prev, phase: 'completed' }));
       } catch (err) {
@@ -193,7 +411,15 @@ export function useGraphqlRequest({
         }
       }
     },
-    [entityId, workspace, echoServerPort, interpolate, selectedEnvironment],
+    [
+      entityId,
+      workspace,
+      echoServerPort,
+      interpolate,
+      appendScriptOutput,
+      selectedEnvironment,
+      queryClient,
+    ],
   );
 
   const cancel = useCallback(() => {

@@ -6,6 +6,7 @@
     "---Core Concepts---",
     "workspaces",
     "requests",
+    "graphql",
     "environments",
     "scripting",
     "testing",
