@@ -9,9 +9,7 @@ import type {
   GraphqlEntityUpdateOptions,
   YasumuEmbeddedScript,
 } from '@yasumu/common';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-
-export type { GraphqlEntityData, GraphqlEntityUpdateOptions };
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 const DEBOUNCE_DELAY = 500;
 
@@ -113,7 +111,6 @@ export function useGraphqlEntity({
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [localData, setLocalData] = useState<GraphqlEntityData | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const pendingUpdates = useRef<Partial<GraphqlEntityUpdateOptions>>({});
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
@@ -140,29 +137,22 @@ export function useGraphqlEntity({
     refetchOnWindowFocus: false,
   });
 
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
+  // Only sync server data to local data on mount or when entityId changes
   useEffect(() => {
     if (serverData && isFetched) {
       setLocalData(serverData);
-      pendingUpdates.current = {};
     }
   }, [serverData, isFetched, entityId]);
 
+  // Handle entityId change / reset
   useEffect(() => {
+    isMounted.current = true;
     pendingUpdates.current = {};
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
+
     if (!entityId) {
       setLocalData(null);
       return;
@@ -171,7 +161,44 @@ export function useGraphqlEntity({
     if (cached) {
       setLocalData(cached);
     }
-  }, [entityId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    return () => {
+      isMounted.current = false;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [entityId, queryClient, queryKey]);
+
+  const { mutateAsync, isPending: isMutationPending } = useMutation({
+    mutationFn: async (vars: {
+      id: string;
+      updates: Partial<GraphqlEntityUpdateOptions>;
+    }) => {
+      if (!graphql) throw new Error('GraphQL client not available');
+      return graphql.update(vars.id, vars.updates);
+    },
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousData =
+        queryClient.getQueryData<GraphqlEntityData>(queryKey);
+
+      queryClient.setQueryData<GraphqlEntityData | null>(queryKey, (old) => {
+        if (!old) return null;
+        return { ...old, ...updates };
+      });
+
+      return { previousData };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
+    },
+    onSettled: () => {
+      // Optional: invalidate queries if needed, but risky for overwrites as experienced.
+    },
+  });
 
   const flushSave = useCallback(async () => {
     if (
@@ -185,21 +212,13 @@ export function useGraphqlEntity({
     pendingUpdates.current = {};
 
     try {
-      setIsSaving(true);
-      await graphql.update(entityId, updates);
-      queryClient.setQueryData(queryKey, (old: GraphqlEntityData | null) => {
-        if (!old) return old;
-        return { ...old, ...updates };
-      });
+      await mutateAsync({ id: entityId, updates });
     } catch (err) {
       console.error('Failed to save GraphQL entity:', err);
-      pendingUpdates.current = { ...pendingUpdates.current, ...updates };
-    } finally {
-      if (isMounted.current) {
-        setIsSaving(false);
-      }
+      // Restore pending updates if failed?
+      // pendingUpdates.current = { ...pendingUpdates.current, ...updates };
     }
-  }, [entityId, graphql, queryClient, queryKey]);
+  }, [entityId, graphql, mutateAsync]);
 
   const scheduleSave = useCallback(() => {
     if (saveTimeoutRef.current) {
@@ -241,22 +260,21 @@ export function useGraphqlEntity({
 
       setLocalData((prev) => {
         if (!prev) return prev;
+        const newBody = updateGraphqlBodyValue(prev.requestBody, updates);
+
+        // We need to read current requestBody to build the full update for pendingUpdates
+        // Since we are in the setState callback, 'prev' is the latest state BEFORE this update.
+        // But we need to make sure we accumulate properly.
+        const pendingBody = updateGraphqlBodyValue(prev.requestBody, updates);
+        pendingUpdates.current = {
+          ...pendingUpdates.current,
+          requestBody: pendingBody,
+        };
+
         return {
           ...prev,
-          requestBody: updateGraphqlBodyValue(prev.requestBody, updates),
+          requestBody: newBody,
         };
-      });
-
-      // We need to read current requestBody to build the full update
-      setLocalData((prev) => {
-        if (prev) {
-          const newBody = updateGraphqlBodyValue(prev.requestBody, updates);
-          pendingUpdates.current = {
-            ...pendingUpdates.current,
-            requestBody: newBody,
-          };
-        }
-        return prev;
       });
 
       scheduleSave();
@@ -276,7 +294,7 @@ export function useGraphqlEntity({
     data: localData,
     isLoading,
     error: error as Error | null,
-    isSaving,
+    isSaving: isMutationPending,
     updateField,
     updateFields,
     updateBodyValue,

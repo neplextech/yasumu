@@ -1,6 +1,6 @@
-'use client';
-
-import { useCallback, useMemo, useState } from 'react';
+import { DocumentationView } from './documentation-view';
+import { useCallback, useMemo } from 'react';
+import { useQueryState, parseAsStringEnum } from 'nuqs';
 import {
   Tabs,
   TabsContent,
@@ -136,12 +136,34 @@ export function GraphqlRequestTabs({
     [onQueryChange],
   );
 
-  const [querySubTab, setQuerySubTab] = useState<'editor' | 'query-builder'>(
-    'editor',
+  const [requestTab, setRequestTab] = useQueryState(
+    'requestTab',
+    parseAsStringEnum([
+      'query',
+      'variables',
+      'parameters',
+      'headers',
+      'scripts',
+    ]).withDefault('query'),
+  );
+
+  const [querySubTab, setQuerySubTab] = useQueryState(
+    'queryView',
+    parseAsStringEnum(['editor', 'query-builder', 'docs']).withDefault(
+      'editor',
+    ),
   );
 
   return (
-    <Tabs defaultValue="query" className="flex-1 flex flex-col h-full min-h-0">
+    <Tabs
+      value={requestTab || 'query'}
+      onValueChange={(v) =>
+        setRequestTab(
+          v as 'query' | 'variables' | 'parameters' | 'headers' | 'scripts',
+        )
+      }
+      className="flex-1 flex flex-col h-full min-h-0"
+    >
       <div className="px-1 border-b shrink-0">
         <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
           <TabsTrigger value="query">Query</TabsTrigger>
@@ -178,16 +200,29 @@ export function GraphqlRequestTabs({
               >
                 Query Builder
               </button>
+              <button
+                type="button"
+                onClick={() => setQuerySubTab('docs')}
+                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                  querySubTab === 'docs'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                }`}
+              >
+                Documentation
+              </button>
             </div>
 
-            {querySubTab === 'editor' ? (
+            {querySubTab === 'editor' && (
               <div className="flex flex-col gap-2 flex-1 min-h-0">
                 <GraphqlTextEditor
                   query={query}
                   onQueryChange={onQueryChange}
                 />
               </div>
-            ) : (
+            )}
+
+            {querySubTab === 'query-builder' && (
               <QueryBuilder
                 operations={queryBuilderOperations}
                 activeOperation={queryBuilderActiveOperation}
@@ -199,6 +234,12 @@ export function GraphqlRequestTabs({
                 onSetArgValue={onQueryBuilderSetArgValue}
                 onApplyQuery={handleApplyBuiltQuery}
               />
+            )}
+
+            {querySubTab === 'docs' && (
+              <div className="h-full flex flex-col min-h-0">
+                <DocumentationView schema={schema} />
+              </div>
             )}
           </div>
         </TabsContent>

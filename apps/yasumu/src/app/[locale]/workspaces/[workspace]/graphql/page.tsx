@@ -94,19 +94,13 @@ export default function GraphqlPage() {
   } = useQueryBuilder(schema);
 
   // Path params
-  const [pathParams, setPathParams] = useState<
-    Record<string, { value: string; enabled: boolean }>
-  >({});
-
-  useEffect(() => {
-    if (data?.requestParameters) {
-      setPathParams(
-        tabularPairsToRecord(data.requestParameters as TabularPair[]),
-      );
-    } else {
-      setPathParams({});
-    }
-  }, [entityId, data?.requestParameters]);
+  const pathParams = useMemo(
+    () =>
+      data?.requestParameters
+        ? tabularPairsToRecord(data.requestParameters as TabularPair[])
+        : {},
+    [data?.requestParameters],
+  );
 
   const isRequestActive = useMemo(
     () =>
@@ -155,7 +149,6 @@ export default function GraphqlPage() {
 
   const handlePathParamsChange = useCallback(
     (params: Record<string, { value: string; enabled: boolean }>) => {
-      setPathParams(params);
       const tabularParams = Object.entries(params).map(([key, val]) => ({
         key,
         value: val.value,
@@ -192,6 +185,26 @@ export default function GraphqlPage() {
     );
     await introspect(data.url, interpolatedHeaders);
   }, [data?.url, data?.requestHeaders, introspect]);
+
+  // Auto-introspection
+  const [lastIntrospectedUrl, setLastIntrospectedUrl] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!data?.url || isIntrospecting) return;
+
+    // Initial load or URL changed
+    if (data.url !== lastIntrospectedUrl) {
+      console.log('Auto-introspecting', data.url);
+      const timeoutId = setTimeout(() => {
+        handleIntrospect();
+        setLastIntrospectedUrl(data.url!);
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [data?.url, isIntrospecting, lastIntrospectedUrl, handleIntrospect]);
 
   useHotkeys(
     'mod+enter',

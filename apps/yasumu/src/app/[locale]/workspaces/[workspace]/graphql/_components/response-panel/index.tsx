@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useQueryState, parseAsStringEnum } from 'nuqs';
+import { useEffect } from 'react';
 import {
   Tabs,
   TabsContent,
@@ -47,7 +48,30 @@ export function GraphqlResponsePanel({
   scriptOutput,
   testResults,
 }: GraphqlResponsePanelProps) {
-  const [activeTab, setActiveTab] = useState<'data' | 'raw'>('data');
+  const [activeTab, setActiveTab] = useQueryState(
+    'responseView',
+    parseAsStringEnum(['data', 'raw']).withDefault('data'),
+  );
+
+  const [subTab, setSubTab] = useQueryState(
+    'responseDataView',
+    parseAsStringEnum(['response', 'errors', 'headers', 'console']).withDefault(
+      'response',
+    ),
+  );
+
+  // Auto-focus logic
+  useEffect(() => {
+    if (!response) return;
+
+    if (response.errors && response.errors.length > 0) {
+      setActiveTab('data');
+      setSubTab('errors');
+    } else {
+      setActiveTab('data');
+      setSubTab('response');
+    }
+  }, [response, setActiveTab, setSubTab]);
 
   if (
     phase === 'pre-request-script' ||
@@ -92,22 +116,28 @@ export function GraphqlResponsePanel({
     <div className="flex flex-col h-full bg-background">
       <GraphqlResponseStatusBar response={response} />
       <Tabs
-        value={activeTab}
+        value={activeTab || 'data'}
         onValueChange={(v) => setActiveTab(v as 'data' | 'raw')}
         className="flex flex-col flex-1 min-h-0"
       >
         <div className="px-1 shrink-0 border-b">
           <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
-            <TabsTrigger value="data">Data</TabsTrigger>
+            <TabsTrigger value="data">Response</TabsTrigger>
             <TabsTrigger value="raw">Raw</TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="data" className="flex-1 min-h-0">
-          <Tabs defaultValue="response" className="flex flex-col h-full">
+          <Tabs
+            value={subTab || 'response'}
+            onValueChange={(v) =>
+              setSubTab(v as 'response' | 'errors' | 'headers' | 'console')
+            }
+            className="flex flex-col h-full"
+          >
             <div className="px-1 shrink-0 border-b">
               <TabsList className="bg-transparent w-full justify-start gap-1">
-                <TabsTrigger value="response">Response</TabsTrigger>
+                <TabsTrigger value="response">Data</TabsTrigger>
                 {errorsCount > 0 && (
                   <TabsTrigger value="errors">
                     Errors

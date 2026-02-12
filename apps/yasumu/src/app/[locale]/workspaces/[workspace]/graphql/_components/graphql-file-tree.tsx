@@ -11,6 +11,8 @@ import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { useGraphqlContext } from '../_providers/graphql-context';
 import { useGraphqlFileTreeContext } from '../_providers/file-tree-context';
+import { GeneratorDialog } from './dialogs/generator-dialog';
+import { Wand2 } from 'lucide-react';
 import { GraphqlIcon } from './graphql-icon';
 
 // GraphQL tree item type (will be provided by core API)
@@ -245,66 +247,161 @@ export function GraphqlFileTree() {
     [clipboard, graphql, duplicateFolder, clearClipboard],
   );
 
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+
+  const flattenFolders = useCallback(
+    (
+      items: GraphqlTreeItem[],
+      depth = 0,
+    ): { id: string; name: string; parentId?: string | null }[] => {
+      let result: { id: string; name: string; parentId?: string | null }[] = [];
+      for (const item of items) {
+        if (item.type === 'folder') {
+          result.push({
+            id: item.id,
+            name: item.name ?? 'Untitled Folder',
+            parentId: item.parentId,
+          });
+          if (item.children) {
+            result.push(...flattenFolders(item.children, depth + 1));
+          }
+        }
+      }
+      return result;
+    },
+    [],
+  );
+
+  const folders = graphqlEntities
+    ? flattenFolders(graphqlEntities as GraphqlTreeItem[])
+    : [];
+
+  const handleGenerate = async (
+    url: string,
+    targetFolderId: string | null,
+    operations: {
+      name: string;
+      content: string;
+      type: 'query' | 'mutation' | 'subscription';
+    }[],
+  ) => {
+    if (!graphql) return;
+
+    // Create subfolders based on types
+    const types = new Set(operations.map((op) => op.type));
+    const folderMap: Record<string, string> = {}; // type -> folderId
+
+    for (const type of types) {
+      // Capitalize
+      const folderName = type.charAt(0).toUpperCase() + type.slice(1) + 's';
+
+      // Create folder
+      const folder = await graphql.createEntityGroup({
+        name: folderName,
+        parentId: targetFolderId,
+        entityType: 'graphql',
+      });
+      folderMap[type] = folder.id;
+    }
+
+    // Create operations
+    for (const op of operations) {
+      await graphql.create({
+        name: op.name,
+        url: url,
+        groupId: folderMap[op.type],
+        requestBody: {
+          type: 'json',
+          value: {
+            query: op.content,
+            variables: '{}',
+            operationName: op.name,
+          },
+          metadata: {},
+        },
+        requestParameters: [],
+        searchParameters: [],
+        requestHeaders: [],
+        metadata: {},
+      });
+    }
+
+    await refetchGraphqlEntities();
+  };
+
   if (isLoadingGraphqlEntities) {
     return <LoadingScreen fullScreen />;
   }
 
   return (
-    <FileTreeSidebar
-      fileTree={fileTree}
-      className="font-sans w-full"
-      collapsible="none"
-      clipboard={clipboard}
-      selectedFolderId={selectedFolderId}
-      onFolderSelect={setSelectedFolderId}
-      onFileSelect={withErrorHandler(async (id: string) => {
-        setEntityId(id);
-        await graphql?.upsertHistory(id);
-      })}
-      onFileCreate={withErrorHandler(
-        async (name: string, parentId?: string | null) => {
-          await graphql?.create({
-            name,
-            url: null,
-            groupId: parentId,
-            requestBody: null,
-            requestParameters: [],
-            searchParameters: [],
-            requestHeaders: [],
-            metadata: {},
-          });
-        },
-      )}
-      onFolderCreate={withErrorHandler(
-        async (name: string, parentId?: string | null) => {
-          await graphql?.createEntityGroup({
-            name,
-            parentId: parentId ?? null,
-            entityType: 'graphql',
-          });
-        },
-      )}
-      onFileDelete={withErrorHandler(async (id: string) => {
-        await graphql?.delete(id);
-        removeFromHistory(id);
-      })}
-      onFolderDelete={withErrorHandler(async (id: string) => {
-        await graphql?.deleteEntityGroup(id);
-      })}
-      onFileRename={withErrorHandler(async (id: string, name: string) => {
-        await graphql?.update(id, { name });
-      })}
-      onFolderRename={withErrorHandler(async (id: string, name: string) => {
-        await graphql?.updateEntityGroup(id, { name });
-      })}
-      onFileDuplicate={withErrorHandler(duplicateFile)}
-      onFolderDuplicate={withErrorHandler(duplicateFolder)}
-      onFileCopy={handleFileCopy}
-      onFolderCopy={handleFolderCopy}
-      onFileCut={handleFileCut}
-      onFolderCut={handleFolderCut}
-      onPasteItem={withErrorHandler(handlePaste)}
-      reloadTree={refetchGraphqlEntities}
-    />
+    <>
+      <FileTreeSidebar
+        fileTree={fileTree}
+        className="font-sans w-full"
+        collapsible="none"
+        clipboard={clipboard}
+        selectedFolderId={selectedFolderId}
+        onFolderSelect={setSelectedFolderId}
+        additionalToolbarItems={
+          <button onClick={() => setIsGeneratorOpen(true)}>
+            <Wand2 className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700 text-purple-400" />
+          </button>
+        }
+        onFileSelect={withErrorHandler(async (id: string) => {
+          setEntityId(id);
+          await graphql?.upsertHistory(id);
+        })}
+        onFileCreate={withErrorHandler(
+          async (name: string, parentId?: string | null) => {
+            await graphql?.create({
+              name,
+              url: null,
+              groupId: parentId,
+              requestBody: null,
+              requestParameters: [],
+              searchParameters: [],
+              requestHeaders: [],
+              metadata: {},
+            });
+          },
+        )}
+        onFolderCreate={withErrorHandler(
+          async (name: string, parentId?: string | null) => {
+            await graphql?.createEntityGroup({
+              name,
+              parentId: parentId ?? null,
+              entityType: 'graphql',
+            });
+          },
+        )}
+        onFileDelete={withErrorHandler(async (id: string) => {
+          await graphql?.delete(id);
+          removeFromHistory(id);
+        })}
+        onFolderDelete={withErrorHandler(async (id: string) => {
+          await graphql?.deleteEntityGroup(id);
+        })}
+        onFileRename={withErrorHandler(async (id: string, name: string) => {
+          await graphql?.update(id, { name });
+        })}
+        onFolderRename={withErrorHandler(async (id: string, name: string) => {
+          await graphql?.updateEntityGroup(id, { name });
+        })}
+        onFileDuplicate={withErrorHandler(duplicateFile)}
+        onFolderDuplicate={withErrorHandler(duplicateFolder)}
+        onFileCopy={handleFileCopy}
+        onFolderCopy={handleFolderCopy}
+        onFileCut={handleFileCut}
+        onFolderCut={handleFolderCut}
+        onPasteItem={withErrorHandler(handlePaste)}
+        reloadTree={refetchGraphqlEntities}
+      />
+      <GeneratorDialog
+        open={isGeneratorOpen}
+        onOpenChange={setIsGeneratorOpen}
+        folders={folders}
+        onGenerate={handleGenerate}
+      />
+    </>
   );
 }
