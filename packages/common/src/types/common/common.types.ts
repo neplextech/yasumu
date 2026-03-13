@@ -198,3 +198,22 @@ export interface PaginatedResult<T> {
    */
   items: T[];
 }
+
+export interface TestResult {
+  /**
+   * The test name.
+   */
+  test: string;
+  /**
+   * The result of the test.
+   */
+  result: 'pass' | 'fail' | 'skip';
+  /**
+   * The error message of the test in case of failure.
+   */
+  error: string | null;
+  /**
+   * The duration of the test in milliseconds.
+   */
+  duration: number;
+}

@@ -1,6 +1,7 @@
 export type EntityType =
   | 'workspace'
   | 'rest'
+  | 'graphql'
   | 'environment'
   | 'smtp'
   | 'group';

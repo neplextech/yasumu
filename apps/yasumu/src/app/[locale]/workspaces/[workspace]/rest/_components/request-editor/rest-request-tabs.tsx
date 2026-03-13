@@ -28,8 +28,8 @@ import type {
   RestEntityRequestBody,
   TabularPair,
   YasumuEmbeddedScript,
-} from '@yasumu/common';
-import { YasumuScriptingLanguage } from '@yasumu/common';
+} from '@yasumu/core';
+import { YasumuScriptingLanguage } from '@yasumu/core';
 import { REQUEST_SCRIPT_PLACEHOLDER } from './common';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
 

@@ -10,6 +10,7 @@ import {
   entityGroups,
   entityHistory,
   restEntities,
+  graphqlEntities,
 } from '../../../database/schema.ts';
 import {
   NotFoundException,
@@ -17,13 +18,30 @@ import {
 } from '../common/exceptions/http.exception.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
 import { EntityGroupData } from '@yasumu/common';
+import { RpcSubscriptionEvents } from '@yasumu/rpc';
 
 @Injectable()
 export class EntityGroupService {
+  private static readonly entityTableMap: Record<
+    string,
+    typeof restEntities | typeof graphqlEntities
+  > = {
+    rest: restEntities,
+    graphql: graphqlEntities,
+  };
+
   public constructor(
     private readonly connection: TransactionalConnection,
     private readonly tanxiumService: TanxiumService,
   ) {}
+
+  private getEntityTable(entityType: string) {
+    const table = EntityGroupService.entityTableMap[entityType];
+    if (!table) {
+      throw new BadRequestException(`Unsupported entity type: ${entityType}`);
+    }
+    return table;
+  }
 
   private async locateGroupWithCommonParent(
     name: string,
@@ -47,10 +65,13 @@ export class EntityGroupService {
     return result ?? null;
   }
 
-  private async dispatchUpdate(workspaceId: string) {
-    await this.tanxiumService.publishMessage('rest-entity-updated', {
-      workspaceId,
-    });
+  private async dispatchUpdate(workspaceId: string, entityType: string) {
+    await this.tanxiumService.publishMessage(
+      `${entityType}-entity-updated` as keyof RpcSubscriptionEvents,
+      {
+        workspaceId,
+      },
+    );
   }
 
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
@@ -75,7 +96,7 @@ export class EntityGroupService {
       })
       .returning();
 
-    await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId, data.entityType);
     return result;
   }
 
@@ -101,14 +122,15 @@ export class EntityGroupService {
         ),
       );
 
-    // Fetch rest entities that belong to this group
+    // Fetch entities that belong to this group based on entity type
+    const entityTable = this.getEntityTable(result.entityType);
     const entities = await db
       .select()
-      .from(restEntities)
+      .from(entityTable)
       .where(
         and(
-          eq(restEntities.groupId, id),
-          eq(restEntities.workspaceId, workspaceId),
+          eq(entityTable.groupId, id),
+          eq(entityTable.workspaceId, workspaceId),
         ),
       );
 
@@ -161,14 +183,14 @@ export class EntityGroupService {
       .where(eq(entityGroups.id, id))
       .returning();
 
-    await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId, entityGroup.entityType);
 
     return updated as unknown as EntityGroupData;
   }
 
   public async delete(workspaceId: string, id: string) {
     const db = this.connection.getConnection();
-    const { entities } = await this.getOrThrow(workspaceId, id);
+    const { entities, entityType } = await this.getOrThrow(workspaceId, id);
 
     await db.delete(entityGroups).where(eq(entityGroups.id, id)).returning();
 
@@ -180,7 +202,7 @@ export class EntityGroupService {
         .where(inArray(entityHistory.entityId, entityIds));
     }
 
-    await this.dispatchUpdate(workspaceId);
+    await this.dispatchUpdate(workspaceId, entityType);
 
     await this.tanxiumService.publishMessage('entity-history-updated', {
       workspaceId,
@@ -205,11 +227,12 @@ export class EntityGroupService {
         ),
       );
 
-    // Fetch all rest entities for this workspace
+    // Fetch entities for this workspace based on entity type
+    const entityTable = this.getEntityTable(entityType);
     const entities = await db
       .select()
-      .from(restEntities)
-      .where(eq(restEntities.workspaceId, workspaceId));
+      .from(entityTable)
+      .where(eq(entityTable.workspaceId, workspaceId));
 
     // Define tree item types for frontend consumption
     type GroupTreeItem = (typeof groups)[number] & {

@@ -1,4 +1,4 @@
-import type { restEntities } from '@/database/schema.ts';
+import type { restEntities, graphqlEntities } from '@/database/schema.ts';
 import type { EntityType } from '@yasumu/common';
 
 export type {
@@ -12,4 +12,4 @@ export interface TreeViewOptions {
   entityType: EntityType;
 }
 
-export type EntityTable = typeof restEntities;
+export type EntityTable = typeof restEntities | typeof graphqlEntities;

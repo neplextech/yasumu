@@ -1,7 +1,6 @@
 ---
 title: Command Line Interface
-description:
-  Execute and manage your Yasumu workspaces from the terminal using
+description: Execute and manage your Yasumu workspaces from the terminal using
   the CLI.
 ---
 
@@ -13,9 +12,9 @@ pipelines, and running requests without opening the desktop
 application.
 
 <Callout type="info" title="YSL File Execution">
-  The CLI reads and executes `.ysl` (Yasumu Schema Language) files
-  directly from your workspace, making it perfect for headless
-  environments and automated testing.
+  The CLI reads and executes `.ysl` (Yasumu Schema Language) files directly from
+  your workspace, making it perfect for headless environments and automated
+  testing.
 </Callout>
 
 ## Installation
@@ -139,8 +138,8 @@ strings), the CLI provides a mechanism to inject secret values from
 system environment variables.
 
 <Callout type="warn" title="Security">
-  Never commit actual secret values to your repository. Use the
-  `YASUMU_ENV_` prefix pattern to inject secrets at runtime.
+  Never commit actual secret values to your repository. Use the `YASUMU_ENV_`
+  prefix pattern to inject secrets at runtime.
 </Callout>
 
 **Convention:** `YASUMU_ENV_<SECRET_KEY>` maps to the secret
@@ -246,8 +245,8 @@ The CLI automatically strips TypeScript-specific syntax before
 execution.
 
 <Callout type="info" title="Compatibility Note">
-  Some advanced TypeScript features may not be fully supported. For
-  complex scripts, consider using plain JavaScript.
+  Some advanced TypeScript features may not be fully supported. For complex
+  scripts, consider using plain JavaScript.
 </Callout>
 
 ## Exit Codes

@@ -81,6 +81,7 @@ export interface FileTreeSidebarProps
   selectedFolderId?: string | null;
   onFolderSelect?: (id: string | null) => void;
   reloadTree?: () => void;
+  additionalToolbarItems?: React.ReactNode;
 }
 
 export function FileTreeSidebar({
@@ -103,6 +104,7 @@ export function FileTreeSidebar({
   selectedFolderId,
   onFolderSelect,
   reloadTree,
+  additionalToolbarItems,
   ...props
 }: FileTreeSidebarProps) {
   const tree = Array.isArray(fileTree) ? fileTree : [fileTree];
@@ -268,6 +270,7 @@ export function FileTreeSidebar({
                     >
                       <File className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                     </CreateInputDialog>
+                    {additionalToolbarItems}
                     <button onClick={() => reloadTree?.()}>
                       <RefreshCw className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                     </button>

@@ -2,6 +2,7 @@ import type {
   CommonEntity,
   CustomMetadata,
   TabularPair,
+  TestResult,
   YasumuEmbeddedScript,
 } from '../common/common.types.js';
 import type { HttpMethod } from './rest.constants.js';
@@ -18,25 +19,6 @@ export interface RestEntityRequestBody extends CustomMetadata {
    * The data of the body.
    */
   value: unknown;
-}
-
-export interface TestResult {
-  /**
-   * The test name.
-   */
-  test: string;
-  /**
-   * The result of the test.
-   */
-  result: 'pass' | 'fail' | 'skip';
-  /**
-   * The error message of the test in case of failure.
-   */
-  error: string | null;
-  /**
-   * The duration of the test in milliseconds.
-   */
-  duration: number;
 }
 
 export interface RestEntityMetadata {

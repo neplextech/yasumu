@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, {
+  useRef,
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import Editor, {
   loader,
   type Monaco,
@@ -30,7 +36,7 @@ const registeredLibs = new Set<string>();
 let monacoInstance: Monaco | null = null;
 let initPromise: Promise<Monaco> | null = null;
 
-function getMonacoInstance(): Promise<Monaco> {
+export function getMonacoInstance(): Promise<Monaco> {
   if (monacoInstance) return Promise.resolve(monacoInstance);
   if (initPromise) return initPromise;
 
@@ -96,10 +102,19 @@ export function TextEditor({
   const { resolvedTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(!!monacoInstance);
 
+  const graphqlPath = useMemo(
+    () =>
+      `file:///graphql/query-${Math.random().toString(36).slice(2)}.graphql`,
+    [],
+  );
+  const editorPath = language === 'graphql' ? graphqlPath : undefined;
+
   useEffect(() => {
     getMonacoInstance().then((monaco) => {
       localMonacoRef.current = monaco;
-      registerTypeDefinitions(monaco, typeDefinitions);
+      if (typeDefinitions) {
+        registerTypeDefinitions(monaco, typeDefinitions);
+      }
       setIsMonacoReady(true);
     });
   }, [typeDefinitions]);
@@ -109,7 +124,9 @@ export function TextEditor({
       editorRef.current = editor;
       localMonacoRef.current = monaco;
 
-      registerTypeDefinitions(monaco, typeDefinitions);
+      if (typeDefinitions) {
+        registerTypeDefinitions(monaco, typeDefinitions);
+      }
 
       editor.updateOptions({
         minimap: { enabled: false },
@@ -147,6 +164,7 @@ export function TextEditor({
   );
 
   const editorTheme = resolvedTheme === 'dark' ? 'vs-dark' : 'vs';
+
   const showPlaceholder = !value && !!placeholder;
 
   if (!isMonacoReady) {
@@ -172,6 +190,7 @@ export function TextEditor({
         height="100%"
         width="100%"
         language={language}
+        path={editorPath}
         value={value}
         onChange={handleChange}
         onMount={handleEditorDidMount}

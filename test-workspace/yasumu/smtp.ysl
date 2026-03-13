@@ -2,8 +2,22 @@
 
 metadata {
   id: "fyed9v8otb9a9vedyx8wy9f6"
-  port: 50611
+  port: 2525
   username: ""
   password: null
+}
+
+script {
+  export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
+    if (!email.subject.toLowerCase().includes('verification code')) return;
+  
+    const otp = email.html.split('data-otp="')[1]?.split('"')[0];
+  
+    console.log(`Parsed OTP: ${otp}`);
+  
+    if (otp) {
+      Yasumu.cache.set('VERIFICATION_CODE', otp);
+    }
+  }
 }
 

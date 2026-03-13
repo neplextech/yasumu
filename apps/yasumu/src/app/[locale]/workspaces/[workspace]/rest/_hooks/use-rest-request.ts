@@ -16,7 +16,7 @@ import type {
   RestEntityData,
   RestScriptContext,
   TestResult,
-} from '@yasumu/common';
+} from '@yasumu/core';
 import {
   getContentType,
   categorizeContent,

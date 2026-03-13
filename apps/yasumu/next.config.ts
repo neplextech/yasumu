@@ -25,6 +25,22 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.module.rules.push({
+        test: /\.worker\.(js|ts)$/,
+        use: { loader: 'worker-loader' },
+      });
+
+      // Handle monaco-graphql worker
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
+    return config;
+  },
 };
 
 const withNextIntl = createNextIntlPlugin({

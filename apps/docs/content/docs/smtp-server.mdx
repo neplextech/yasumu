@@ -1,7 +1,6 @@
 ---
 title: SMTP Server
-description:
-  Catch-all SMTP server for testing email functionality in
+description: Catch-all SMTP server for testing email functionality in
   development.
 ---
 
@@ -227,19 +226,16 @@ Email scripts are written in the **Script** tab of the email section:
 ![Email Script Editor](/email-scripting.png)
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   // Process incoming emails
   console.log('New email from:', email.from);
 }
 ```
 
 <Callout type="info" title="Email Event">
-  The `onEmail` function is called every time a new email is received
-  by the SMTP server. Use conditional checks to filter which emails
-  your script processes.
+  The `onEmail` function is called every time a new email is received by the
+  SMTP server. Use conditional checks to filter which emails your script
+  processes.
 </Callout>
 
 ### The Email Object (`email`)
@@ -273,13 +269,9 @@ The `ctx` object provides access to workspace functionality.
 A common use case is extracting verification codes from emails:
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   // Only process verification emails
-  if (!email.subject.toLowerCase().includes('verification code'))
-    return;
+  if (!email.subject.toLowerCase().includes('verification code')) return;
 
   // Extract OTP from HTML content
   const otp = email.html.split('data-otp="')[1]?.split('"')[0];
@@ -305,10 +297,7 @@ The extracted value is automatically saved to your environment:
 Use conditional checks to process only relevant emails:
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   // Filter by subject
   if (!email.subject.includes('Order Confirmation')) return;
 
@@ -324,10 +313,7 @@ export function onEmail(
 For more complex extraction patterns, use regular expressions:
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   // Extract 6-digit OTP code
   const otpMatch = email.text.match(/\b(\d{6})\b/);
   if (otpMatch) {
@@ -354,10 +340,7 @@ Use `console.log()` to debug your email scripts. Output appears in the
 **Console** section at the bottom of the screen:
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   console.log('Email received:', email.subject);
   console.log('From:', email.from);
   console.log('To:', email.to);
@@ -373,16 +356,11 @@ export function onEmail(
 #### Password Reset Flow
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   if (!email.subject.toLowerCase().includes('password reset')) return;
 
   // Extract reset token from link
-  const tokenMatch = email.html.match(
-    /reset-password\?token=([^"&]+)/,
-  );
+  const tokenMatch = email.html.match(/reset-password\?token=([^"&]+)/);
   if (tokenMatch) {
     ctx.workspace.env.setVariable('RESET_TOKEN', tokenMatch[1]);
     console.log('Password reset token saved');
@@ -393,12 +371,8 @@ export function onEmail(
 #### Email Verification
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  if (!email.subject.toLowerCase().includes('verify your email'))
-    return;
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
+  if (!email.subject.toLowerCase().includes('verify your email')) return;
 
   // Extract verification link
   const linkMatch = email.html.match(/href="([^"]*verify[^"]*)"/i);
@@ -412,10 +386,7 @@ export function onEmail(
 #### Two-Factor Authentication
 
 ```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
+export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
   if (
     !email.subject.toLowerCase().includes('2fa') &&
     !email.subject.toLowerCase().includes('two-factor')
@@ -444,9 +415,9 @@ export function onEmail(
    email
 
 <Callout type="tip" title="Chaining with API Requests">
-  Variables set via email scripts can be used immediately in your API
-  requests using the `{{ VARIABLE_NAME }}` syntax. This enables
-  automated testing of email-based authentication flows.
+  Variables set via email scripts can be used immediately in your API requests
+  using the `{{ VARIABLE_NAME }}` syntax. This enables automated testing of
+  email-based authentication flows.
 </Callout>
 
 ## Use Cases

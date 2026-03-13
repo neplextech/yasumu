@@ -9,6 +9,15 @@ export interface RpcSubscriptionEvents {
     workspaceId: string;
   };
   /**
+   * The event for when a graphql entity is updated.
+   */
+  'graphql-entity-updated': {
+    /**
+     * The ID of the workspace that the graphql entity belongs to.
+     */
+    workspaceId: string;
+  };
+  /**
    * The event for when entity history is updated.
    */
   'entity-history-updated': {

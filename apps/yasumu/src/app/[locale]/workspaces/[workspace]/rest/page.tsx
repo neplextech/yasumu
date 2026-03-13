@@ -18,7 +18,7 @@ import type {
   TabularPair,
   RestEntityRequestBody,
   YasumuEmbeddedScript,
-} from '@yasumu/common';
+} from '@yasumu/core';
 import {
   ResizableHandle,
   ResizablePanel,

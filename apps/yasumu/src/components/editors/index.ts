@@ -1,5 +1,1 @@
-export {
-  TextEditor,
-  preloadMonacoEditor,
-  type TypeDefinition,
-} from './text-editor';
+export * from './text-editor';

@@ -7,8 +7,10 @@ import { WorkspaceData, YasumuScriptingLanguage } from '@yasumu/common';
 import { join, basename } from 'node:path';
 import { existsSync } from 'node:fs';
 import { RestService } from '../rest/rest.service.ts';
+import { GraphqlService } from '../graphql/graphql.service.ts';
 import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { RestSchema } from './schema/rest.schema.ts';
+import { GraphqlSchema } from './schema/graphql.schema.ts';
 import { EnvironmentSchema } from './schema/environment.schema.ts';
 import { SmtpSchema } from './schema/smtp.schema.ts';
 import { Infer } from '@yasumu/schema';
@@ -22,6 +24,7 @@ import { EmailService } from '../email/email.service.ts';
 import type { EntityType, SyncAction, SyncEntityState } from './types.ts';
 import {
   restEntities,
+  graphqlEntities,
   environments,
   smtp,
   entityGroups,
@@ -38,6 +41,7 @@ export class SynchronizationService implements OnModuleInit {
     private readonly connection: TransactionalConnection,
     private readonly yslService: YslService,
     private readonly restService: RestService,
+    private readonly graphqlService: GraphqlService,
     private readonly entityGroupService: EntityGroupService,
     private readonly lockFileService: LockFileService,
     private readonly conflictResolver: ConflictResolver,
@@ -73,7 +77,7 @@ export class SynchronizationService implements OnModuleInit {
 
   private getPath(
     workspace: WorkspaceData,
-    target: 'workspace' | 'rest' | 'environment' | 'smtp',
+    target: 'workspace' | 'rest' | 'graphql' | 'environment' | 'smtp',
   ) {
     const root = join(workspace.path, 'yasumu');
     switch (target) {
@@ -81,6 +85,8 @@ export class SynchronizationService implements OnModuleInit {
         return root;
       case 'rest':
         return join(root, 'rest');
+      case 'graphql':
+        return join(root, 'graphql');
       case 'environment':
         return join(root, 'environment');
       case 'smtp':
@@ -174,6 +180,7 @@ export class SynchronizationService implements OnModuleInit {
 
       await this.loadWorkspaceFromFs(workspace);
       await this.loadRestEntitiesFromFs(workspace);
+      await this.loadGraphqlEntitiesFromFs(workspace);
       await this.loadEnvironmentsFromFs(workspace);
       await this.loadSmtpFromFs(workspace);
     });
@@ -230,6 +237,7 @@ export class SynchronizationService implements OnModuleInit {
     }
 
     await this.createRestEntitiesFromFs(newWorkspace);
+    await this.createGraphqlEntitiesFromFs(newWorkspace);
     await this.createEnvironmentsFromFs(newWorkspace);
     await this.createSmtpFromFs(newWorkspace);
 
@@ -293,6 +301,61 @@ export class SynchronizationService implements OnModuleInit {
       await this.lockFileService.setEntry(
         workspace.path,
         'rest',
+        metadata.id,
+        this.lockFileService.computeHash(fileContent),
+      );
+    }
+  }
+
+  private async createGraphqlEntitiesFromFs(workspace: WorkspaceData) {
+    const graphqlDir = this.getPath(workspace, 'graphql');
+    const files = await this.listYslFiles(graphqlDir);
+    const db = this.connection.getConnection();
+
+    const existingGroups = await this.entityGroupService.findAll(workspace.id);
+    const validGroupIds = new Set(existingGroups.map((g) => g.id));
+
+    for (const filePath of files) {
+      const fileContent = await this.readYslFile(filePath);
+      if (!fileContent) continue;
+
+      const parsed = this.yslService.deserialize(GraphqlSchema, fileContent);
+      const { metadata, request, script, test: _test } = parsed.blocks;
+
+      const groupId =
+        metadata.groupId && validGroupIds.has(metadata.groupId)
+          ? metadata.groupId
+          : null;
+
+      await db.insert(graphqlEntities).values({
+        id: metadata.id,
+        workspaceId: workspace.id,
+        name: metadata.name,
+        url: request.url,
+        groupId,
+        requestHeaders: request.headers,
+        requestParameters: request.parameters,
+        searchParameters: request.searchParameters,
+        requestBody: request.body
+          ? {
+              type: request.body.type as
+                | 'json'
+                | 'text'
+                | 'binary'
+                | 'form-data'
+                | 'x-www-form-urlencoded',
+              value: request.body.content ?? '',
+              metadata: {},
+            }
+          : null,
+        script: script
+          ? { language: YasumuScriptingLanguage.JavaScript, code: script }
+          : null,
+      });
+
+      await this.lockFileService.setEntry(
+        workspace.path,
+        'graphql',
         metadata.id,
         this.lockFileService.computeHash(fileContent),
       );
@@ -459,6 +522,90 @@ export class SynchronizationService implements OnModuleInit {
     }
   }
 
+  private async loadGraphqlEntitiesFromFs(workspace: WorkspaceData) {
+    const graphqlDir = this.getPath(workspace, 'graphql');
+    const files = await this.listYslFiles(graphqlDir);
+    const db = this.connection.getConnection();
+
+    const existingEntities = await this.graphqlService.list(workspace.id);
+    const existingIds = new Set(existingEntities.map((e) => e.id));
+    const processedIds = new Set<string>();
+
+    const existingGroups = await this.entityGroupService.findAll(workspace.id);
+    const validGroupIds = new Set(existingGroups.map((g) => g.id));
+
+    for (const filePath of files) {
+      const fileContent = await this.readYslFile(filePath);
+      if (!fileContent) continue;
+
+      const parsed = this.yslService.deserialize(GraphqlSchema, fileContent);
+      const entityId = parsed.blocks.metadata.id;
+      processedIds.add(entityId);
+
+      const existingEntity = existingEntities.find((e) => e.id === entityId);
+      const dbContent = existingEntity
+        ? this.serializeGraphqlContent(existingEntity)
+        : null;
+
+      const { action, state } = await this.determineSyncAction(
+        workspace.path,
+        'graphql',
+        entityId,
+        dbContent,
+        fileContent,
+      );
+
+      if (action === 'none') continue;
+
+      if (action === 'conflict') {
+        const keepLocal = await this.handleConflict(state);
+        if (keepLocal) {
+          if (existingEntity) {
+            await this.pushGraphqlEntityToFs(workspace, existingEntity);
+          }
+          continue;
+        }
+      }
+
+      if (action === 'pull' || action === 'conflict') {
+        await this.applyGraphqlEntityFromYsl(
+          workspace.id,
+          parsed,
+          existingIds.has(entityId),
+          validGroupIds,
+        );
+      }
+
+      await this.lockFileService.setEntry(
+        workspace.path,
+        'graphql',
+        entityId,
+        this.lockFileService.computeHash(fileContent),
+      );
+    }
+
+    for (const existingEntity of existingEntities) {
+      if (!processedIds.has(existingEntity.id)) {
+        const lockEntry = await this.lockFileService.getEntry(
+          workspace.path,
+          'graphql',
+          existingEntity.id,
+        );
+
+        if (lockEntry) {
+          await db
+            .delete(graphqlEntities)
+            .where(eq(graphqlEntities.id, existingEntity.id));
+          await this.lockFileService.removeEntry(
+            workspace.path,
+            'graphql',
+            existingEntity.id,
+          );
+        }
+      }
+    }
+  }
+
   private async loadRestEntitiesFromFs(workspace: WorkspaceData) {
     const restDir = this.getPath(workspace, 'rest');
     const files = await this.listYslFiles(restDir);
@@ -592,6 +739,58 @@ export class SynchronizationService implements OnModuleInit {
         .where(eq(restEntities.id, metadata.id));
     } else {
       await db.insert(restEntities).values({
+        id: metadata.id,
+        workspaceId,
+        ...data,
+      });
+    }
+  }
+
+  private async applyGraphqlEntityFromYsl(
+    workspaceId: string,
+    parsed: Infer<typeof GraphqlSchema>,
+    exists: boolean,
+    validGroupIds: Set<string>,
+  ) {
+    const db = this.connection.getConnection();
+    const { metadata, request, script, test: _test } = parsed.blocks;
+
+    const groupId =
+      metadata.groupId && validGroupIds.has(metadata.groupId)
+        ? metadata.groupId
+        : null;
+
+    const data = {
+      name: metadata.name,
+      url: request.url,
+      groupId,
+      requestHeaders: request.headers,
+      requestParameters: request.parameters,
+      searchParameters: request.searchParameters,
+      requestBody: request.body
+        ? {
+            type: request.body.type as
+              | 'json'
+              | 'text'
+              | 'binary'
+              | 'form-data'
+              | 'x-www-form-urlencoded',
+            value: request.body.content ?? '',
+            metadata: {},
+          }
+        : null,
+      script: script
+        ? { language: YasumuScriptingLanguage.JavaScript, code: script }
+        : null,
+    };
+
+    if (exists) {
+      await db
+        .update(graphqlEntities)
+        .set(data)
+        .where(eq(graphqlEntities.id, metadata.id));
+    } else {
+      await db.insert(graphqlEntities).values({
         id: metadata.id,
         workspaceId,
         ...data,
@@ -862,6 +1061,32 @@ export class SynchronizationService implements OnModuleInit {
     });
   }
 
+  private serializeGraphqlContent(entity: {
+    id: string;
+    name: string;
+    url: string | null;
+    groupId: string | null;
+    requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
+    requestParameters:
+      | { key: string; value: string; enabled: boolean }[]
+      | null;
+    searchParameters: { key: string; value: string; enabled: boolean }[] | null;
+    requestBody: { type: string; value: unknown } | null;
+    script: { code: string } | null;
+  }): string {
+    return JSON.stringify({
+      id: entity.id,
+      name: entity.name,
+      url: entity.url,
+      groupId: entity.groupId,
+      headers: entity.requestHeaders ?? [],
+      parameters: entity.requestParameters ?? [],
+      searchParameters: entity.searchParameters ?? [],
+      body: entity.requestBody,
+      script: entity.script,
+    });
+  }
+
   private serializeSmtpContent(smtpConfig: {
     id: string;
     port: number;
@@ -987,6 +1212,76 @@ export class SynchronizationService implements OnModuleInit {
     );
   }
 
+  private async pushGraphqlEntityToFs(
+    workspace: WorkspaceData,
+    entity: {
+      id: string;
+      name: string;
+      url: string | null;
+      groupId: string | null;
+      requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
+      requestParameters:
+        | { key: string; value: string; enabled: boolean }[]
+        | null;
+      searchParameters:
+        | { key: string; value: string; enabled: boolean }[]
+        | null;
+      requestBody: { type: string; value: unknown } | null;
+      script: { code: string } | null;
+    },
+  ) {
+    const content = this.yslService.serialize(GraphqlSchema, {
+      annotation: YasumuAnnotations.Graphql,
+      blocks: {
+        dependencies: [],
+        metadata: {
+          groupId: entity.groupId,
+          id: entity.id,
+          name: entity.name,
+        },
+        request: {
+          body: entity.requestBody
+            ? {
+                type: entity.requestBody.type,
+                content:
+                  typeof entity.requestBody.value === 'string'
+                    ? entity.requestBody.value
+                    : JSON.stringify(entity.requestBody.value),
+              }
+            : null,
+          headers: (entity.requestHeaders ?? []).map((h) => ({
+            key: h.key ?? '',
+            value: h.value ?? '',
+            enabled: h.enabled,
+          })),
+          parameters: (entity.requestParameters ?? []).map((p) => ({
+            key: p.key ?? '',
+            value: p.value ?? '',
+            enabled: p.enabled,
+          })),
+          searchParameters: (entity.searchParameters ?? []).map((s) => ({
+            key: s.key ?? '',
+            value: s.value ?? '',
+            enabled: s.enabled,
+          })),
+          url: entity.url,
+        },
+        script: entity.script?.code ?? null,
+        test: null,
+      },
+    });
+
+    const graphqlDir = this.getPath(workspace, 'graphql');
+    await this.ensurePath(graphqlDir);
+    await this.yslService.emit(content, join(graphqlDir, `${entity.id}.ysl`));
+    await this.lockFileService.setEntry(
+      workspace.path,
+      'graphql',
+      entity.id,
+      this.lockFileService.computeHash(content),
+    );
+  }
+
   private async pushEnvironmentToFs(
     workspace: WorkspaceData,
     env: {
@@ -1074,6 +1369,15 @@ export class SynchronizationService implements OnModuleInit {
 
       await this.cleanupDeletedFiles(workspace, 'rest', restEntityIds);
 
+      const graphqlEntitiesList = await this.graphqlService.list(workspaceId);
+      const graphqlEntityIds = new Set(graphqlEntitiesList.map((e) => e.id));
+
+      for (const entity of graphqlEntitiesList) {
+        await this.pushGraphqlEntityToFs(workspace, entity);
+      }
+
+      await this.cleanupDeletedFiles(workspace, 'graphql', graphqlEntityIds);
+
       const envList = await this.environmentsService.list(workspaceId);
       const envIds = new Set(envList.map((e) => e.id));
 
@@ -1090,7 +1394,7 @@ export class SynchronizationService implements OnModuleInit {
 
   private async cleanupDeletedFiles(
     workspace: WorkspaceData,
-    entityType: 'rest' | 'environment',
+    entityType: 'rest' | 'graphql' | 'environment',
     existingIds: Set<string>,
   ) {
     const dir = this.getPath(workspace, entityType);

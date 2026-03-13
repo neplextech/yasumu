@@ -1,4 +1,5 @@
 import { REST_CONTEXT_HANDLER } from '@/rpc/modules/rest/rest-script-preload.ts';
+import { GRAPHQL_CONTEXT_HANDLER } from '@/rpc/modules/graphql/graphql-script-preload.ts';
 import { TEST_CONTEXT_HANDLER } from './common/test-script-preload.ts';
 import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from './common/worker-heartbeat.ts';
 import { EMAIL_CONTEXT_HANDLER } from '../rpc/modules/email/email-script-preload.ts';
@@ -220,6 +221,7 @@ parentPort.on('message', async (message) => {
 export function getGlobalWorkerPreload(): string {
   return generateWorkerPreload([
     REST_CONTEXT_HANDLER,
+    GRAPHQL_CONTEXT_HANDLER,
     TEST_CONTEXT_HANDLER,
     EMAIL_CONTEXT_HANDLER,
   ]);

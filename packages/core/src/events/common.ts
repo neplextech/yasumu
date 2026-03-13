@@ -49,4 +49,9 @@ export interface YasumuEventHandlerInterface {
    * @param workspace - The workspace that the history was updated for.
    */
   onEntityHistoryUpdate: (workspace: Workspace) => unknown;
+  /**
+   * Called when a GraphQL entity is updated.
+   * @param workspace - The workspace that the GraphQL entity was updated for.
+   */
+  onGraphqlEntityUpdate: (workspace: Workspace) => unknown;
 }

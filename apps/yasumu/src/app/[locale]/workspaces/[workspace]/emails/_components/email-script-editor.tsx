@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { YasumuScriptingLanguage } from '@yasumu/core';
 import { EMAIL_SCRIPT_PLACEHOLDER, EMAIL_TYPEDEF } from './common';
 import { useCallback, useEffect, useRef } from 'react';
-import type { YasumuEmbeddedScript } from '@yasumu/common';
+import type { YasumuEmbeddedScript } from '@yasumu/core';
 import { Loader2 } from 'lucide-react';
 import { SiTypescript } from 'react-icons/si';
 
