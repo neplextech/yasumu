@@ -11,7 +11,7 @@ let currentSchema: GraphQLSchema | null = null;
 let completionProviderDisposable: { dispose: () => void } | null = null;
 let hoverProviderDisposable: { dispose: () => void } | null = null;
 
-const GLOBAL_PROVIDER_KEY = '__yasumuGraphqlProviders';
+const GLOBAL_PROVIDER_KEY = '__yasumuGlobalGraphqlProviders';
 
 type Disposable = { dispose: () => void };
 
