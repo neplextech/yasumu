@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 interface HistoryItem {
   id: string;
   entityId: string;
-  entityType: 'graphql';
+  entityType: string;
   workspaceId: string;
   createdAt: number;
   updatedAt: number;
@@ -47,7 +47,7 @@ export function GraphqlContextProvider({ children }: React.PropsWithChildren) {
     isLoading: isLoadingHistory,
     refetch,
   } = useQuery<HistoryItem[]>({
-    queryKey: ['graphqlEntityHistory', workspace.id],
+    queryKey: ['entityHistory', workspace.id],
     queryFn: () => graphql?.listHistory?.() ?? Promise.resolve([]),
     enabled: !!graphql,
   });
@@ -91,7 +91,7 @@ export function GraphqlContextProvider({ children }: React.PropsWithChildren) {
 
     // Optimistically add new entry to cache (at the end to maintain tab order)
     queryClient.setQueryData<HistoryItem[]>(
-      ['graphqlEntityHistory', workspace.id],
+      ['entityHistory', workspace.id],
       (old) => {
         if (!old) return old;
         return [
@@ -115,7 +115,7 @@ export function GraphqlContextProvider({ children }: React.PropsWithChildren) {
   const removeFromHistory = async (id: string) => {
     // Optimistically update cache
     queryClient.setQueryData<HistoryItem[]>(
-      ['graphqlEntityHistory', workspace.id],
+      ['entityHistory', workspace.id],
       (old) => {
         if (!old) return old;
         return old.filter((item: HistoryItem) => item.entityId !== id);
@@ -134,6 +134,10 @@ export function GraphqlContextProvider({ children }: React.PropsWithChildren) {
   };
 
   const setEntityId = (id: string) => {
+    if (id === entityId) {
+      return;
+    }
+
     _setEntityId(id);
     addToHistory(id);
   };

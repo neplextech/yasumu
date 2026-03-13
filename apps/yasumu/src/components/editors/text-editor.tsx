@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, {
+  useRef,
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import Editor, {
   loader,
   type Monaco,
@@ -96,10 +102,19 @@ export function TextEditor({
   const { resolvedTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(!!monacoInstance);
 
+  const graphqlPath = useMemo(
+    () =>
+      `file:///graphql/query-${Math.random().toString(36).slice(2)}.graphql`,
+    [],
+  );
+  const editorPath = language === 'graphql' ? graphqlPath : undefined;
+
   useEffect(() => {
     getMonacoInstance().then((monaco) => {
       localMonacoRef.current = monaco;
-      registerTypeDefinitions(monaco, typeDefinitions);
+      if (typeDefinitions) {
+        registerTypeDefinitions(monaco, typeDefinitions);
+      }
       setIsMonacoReady(true);
     });
   }, [typeDefinitions]);
@@ -109,18 +124,8 @@ export function TextEditor({
       editorRef.current = editor;
       localMonacoRef.current = monaco;
 
-      registerTypeDefinitions(monaco, typeDefinitions);
-
-      if (language === 'graphql') {
-        const model = editor.getModel();
-        if (model && !model.uri.path.endsWith('.graphql')) {
-          const newModel = monaco.editor.createModel(
-            value,
-            'graphql',
-            monaco.Uri.parse('inmemory://model/query.graphql'),
-          );
-          editor.setModel(newModel);
-        }
+      if (typeDefinitions) {
+        registerTypeDefinitions(monaco, typeDefinitions);
       }
 
       editor.updateOptions({
@@ -148,7 +153,7 @@ export function TextEditor({
         readOnly,
       });
     },
-    [typeDefinitions, readOnly, language, value],
+    [typeDefinitions, readOnly],
   );
 
   const handleChange = useCallback(
@@ -159,6 +164,7 @@ export function TextEditor({
   );
 
   const editorTheme = resolvedTheme === 'dark' ? 'vs-dark' : 'vs';
+
   const showPlaceholder = !value && !!placeholder;
 
   if (!isMonacoReady) {
@@ -184,6 +190,7 @@ export function TextEditor({
         height="100%"
         width="100%"
         language={language}
+        path={editorPath}
         value={value}
         onChange={handleChange}
         onMount={handleEditorDidMount}

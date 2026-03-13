@@ -368,7 +368,6 @@ export function GraphqlFileTree() {
         }
         onFileSelect={withErrorHandler(async (id: string) => {
           setEntityId(id);
-          await graphql?.upsertHistory(id);
         })}
         onFileCreate={withErrorHandler(
           async (name: string, parentId?: string | null) => {

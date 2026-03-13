@@ -21,7 +21,7 @@ import { DataView } from './data-view';
 import { ErrorsView } from './errors-view';
 import { RawView } from './raw-view';
 import { ConsoleView } from './console-view';
-import type { TestResult } from '@yasumu/common';
+import type { TestResult } from '@yasumu/core';
 
 interface GraphqlResponsePanelProps {
   phase: RequestPhase;

@@ -6,7 +6,7 @@ metadata {
   version: 0
 }
 
-snapshot 1770404556732
+snapshot 1773431055773
 
 groups {
   w10lye9m7dsomdwoj9zooyf4: {
@@ -30,11 +30,46 @@ groups {
     parentId: null
     workspaceId: "v753h51r3e10zzcg5rkel8mv"
   }
-  oorv89riay7elg8tshrmqolp: {
-    id: "oorv89riay7elg8tshrmqolp"
+  i13lo367ly1po7o4yb88rki8: {
+    id: "i13lo367ly1po7o4yb88rki8"
     name: "Shop API"
     entity: graphql
     parentId: null
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+  rzidy22x1dhb31okltf3fbkr: {
+    id: "rzidy22x1dhb31okltf3fbkr"
+    name: "Queries"
+    entity: graphql
+    parentId: "i13lo367ly1po7o4yb88rki8"
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+  x6a8ivyux4byvglpnrf9xte5: {
+    id: "x6a8ivyux4byvglpnrf9xte5"
+    name: "Mutations"
+    entity: graphql
+    parentId: "i13lo367ly1po7o4yb88rki8"
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+  luknfhx6993yzxziewfc1t52: {
+    id: "luknfhx6993yzxziewfc1t52"
+    name: "Admin API"
+    entity: graphql
+    parentId: null
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+  saua1y75xoq4azylox6rfnva: {
+    id: "saua1y75xoq4azylox6rfnva"
+    name: "Queries"
+    entity: graphql
+    parentId: "luknfhx6993yzxziewfc1t52"
+    workspaceId: "v753h51r3e10zzcg5rkel8mv"
+  }
+  c14egzcjsmueue7ckmmht1kw: {
+    id: "c14egzcjsmueue7ckmmht1kw"
+    name: "Mutations"
+    entity: graphql
+    parentId: "luknfhx6993yzxziewfc1t52"
     workspaceId: "v753h51r3e10zzcg5rkel8mv"
   }
 }

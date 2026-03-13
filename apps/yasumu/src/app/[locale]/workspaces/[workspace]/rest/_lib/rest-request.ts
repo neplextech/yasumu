@@ -3,7 +3,7 @@ import type {
   RestEntityData,
   RestEntityRequestBody,
   TabularPair,
-} from '@yasumu/common';
+} from '@yasumu/core';
 
 const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
 export const MAX_BINARY_BODY_SIZE = 10 * 1024 * 1024; // 10MB threshold for binary

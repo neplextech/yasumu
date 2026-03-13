@@ -15,7 +15,7 @@ import type {
   GraphqlEntityData,
   GraphqlScriptContext,
   TestResult,
-} from '@yasumu/common';
+} from '@yasumu/core';
 import { getGraphqlBodyValue } from './use-graphql-entity';
 import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
 

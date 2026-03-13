@@ -12,7 +12,7 @@ import LoadingScreen from '@/components/visuals/loading-screen';
 import { useRestContext } from '../_providers/rest-context';
 import { useFileTreeContext } from '../_providers/file-tree-context';
 import { resolveHttpMethodIcon } from './http-methods';
-import type { RestTreeItem } from '@yasumu/common';
+import type { RestTreeItem } from '@yasumu/core';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();

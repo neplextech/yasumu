@@ -21,7 +21,7 @@ import RequestTabList from './_components/tabs';
 import { useAppLayout } from '@/components/providers/app-layout-provider';
 import { YasumuLayout } from '@/lib/constants/layout';
 import { useVariablePopover } from '@/components/inputs';
-import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/common';
+import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
 import {
   ResizableHandle,
   ResizablePanel,

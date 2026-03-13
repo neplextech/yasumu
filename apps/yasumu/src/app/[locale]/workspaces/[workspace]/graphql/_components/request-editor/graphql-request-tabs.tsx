@@ -22,8 +22,8 @@ import KeyValueTable, {
   type KeyValuePair,
 } from '@/components/tables/key-value-table';
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
-import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/common';
-import { YasumuScriptingLanguage } from '@yasumu/common';
+import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
+import { YasumuScriptingLanguage } from '@yasumu/core';
 import { GRAPHQL_SCRIPT_PLACEHOLDER } from './common';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
 import { VariablesEditor } from './variables-editor';

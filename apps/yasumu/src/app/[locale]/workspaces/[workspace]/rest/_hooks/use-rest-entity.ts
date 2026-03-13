@@ -9,7 +9,7 @@ import {
   TabularPair,
   YasumuEmbeddedScript,
   YasumuScriptingLanguage,
-} from '@yasumu/common';
+} from '@yasumu/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const DEBOUNCE_DELAY = 500;

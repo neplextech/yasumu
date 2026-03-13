@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import { YasumuScriptingLanguage } from '@yasumu/common';
+import { YasumuScriptingLanguage } from '@yasumu/core';
 import type {
   GraphqlEntityData,
   GraphqlEntityRequestBody,
   GraphqlEntityUpdateOptions,
   YasumuEmbeddedScript,
-} from '@yasumu/common';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+} from '@yasumu/core';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const DEBOUNCE_DELAY = 500;
 
@@ -111,11 +111,12 @@ export function useGraphqlEntity({
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [localData, setLocalData] = useState<GraphqlEntityData | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const pendingUpdates = useRef<Partial<GraphqlEntityUpdateOptions>>({});
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
-  // GraphQL API accessor (will be implemented in core)
+  // GraphQL API accessor
   const graphql = workspace.graphql;
 
   const queryKey = useMemo(() => ['graphql-entity', entityId], [entityId]);
@@ -137,68 +138,42 @@ export function useGraphqlEntity({
     refetchOnWindowFocus: false,
   });
 
-  // Only sync server data to local data on mount or when entityId changes
-  useEffect(() => {
-    if (serverData && isFetched) {
-      setLocalData(serverData);
-    }
-  }, [serverData, isFetched, entityId]);
-
-  // Handle entityId change / reset
   useEffect(() => {
     isMounted.current = true;
-    pendingUpdates.current = {};
-    setLocalData(null); // immediately clear stale data from previous entity
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-
-    if (!entityId) {
-      return;
-    }
-    const cached = queryClient.getQueryData<GraphqlEntityData>(queryKey);
-    if (cached) {
-      setLocalData(cached);
-    }
-
     return () => {
       isMounted.current = false;
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [entityId, queryClient, queryKey]);
+  }, []);
 
-  const { mutateAsync, isPending: isMutationPending } = useMutation({
-    mutationFn: async (vars: {
-      id: string;
-      updates: Partial<GraphqlEntityUpdateOptions>;
-    }) => {
-      if (!graphql) throw new Error('GraphQL client not available');
-      return graphql.update(vars.id, vars.updates);
-    },
-    onMutate: async ({ id, updates }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previousData =
-        queryClient.getQueryData<GraphqlEntityData>(queryKey);
+  // Only sync server data to local data on mount or when entityId changes
+  useEffect(() => {
+    if (serverData && isFetched) {
+      setLocalData(serverData);
+      pendingUpdates.current = {};
+    }
+  }, [serverData, isFetched, entityId]);
 
-      queryClient.setQueryData<GraphqlEntityData | null>(queryKey, (old) => {
-        if (!old) return null;
-        return { ...old, ...updates };
-      });
-
-      return { previousData };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
-      }
-    },
-    onSettled: () => {
-      // Optional: invalidate queries if needed, but risky for overwrites as experienced.
-    },
-  });
+  // Handle entityId change / reset
+  useEffect(() => {
+    pendingUpdates.current = {};
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    if (!entityId) {
+      setLocalData(null);
+      return;
+    }
+    const cached = queryClient.getQueryData<GraphqlEntityData>(queryKey);
+    if (cached) {
+      setLocalData(cached);
+    }
+    // Note: Don't set localData to null here - let the query fetch handle it
+    // This prevents flickering when switching entities
+  }, [entityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flushSave = useCallback(async () => {
     if (
@@ -212,13 +187,22 @@ export function useGraphqlEntity({
     pendingUpdates.current = {};
 
     try {
-      await mutateAsync({ id: entityId, updates });
+      setIsSaving(true);
+      await graphql.update(entityId, updates);
+      queryClient.setQueryData(queryKey, (old: GraphqlEntityData | null) => {
+        if (!old) return old;
+        return { ...old, ...updates };
+      });
     } catch (err) {
       console.error('Failed to save GraphQL entity:', err);
-      // Restore pending updates if failed?
-      // pendingUpdates.current = { ...pendingUpdates.current, ...updates };
+      // Restore pending updates if failed
+      pendingUpdates.current = { ...pendingUpdates.current, ...updates };
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
     }
-  }, [entityId, graphql, mutateAsync]);
+  }, [entityId, graphql, queryClient, queryKey]);
 
   const scheduleSave = useCallback(() => {
     if (saveTimeoutRef.current) {
@@ -294,7 +278,7 @@ export function useGraphqlEntity({
     data: localData,
     isLoading,
     error: error as Error | null,
-    isSaving: isMutationPending,
+    isSaving,
     updateField,
     updateFields,
     updateBodyValue,
