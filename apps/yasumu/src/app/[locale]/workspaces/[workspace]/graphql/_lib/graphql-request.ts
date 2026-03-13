@@ -1,4 +1,5 @@
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import type { TestResult } from '@yasumu/core';
 
 const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
 
@@ -22,6 +23,7 @@ export interface GraphqlResponse {
   errors: GraphqlError[] | null;
   rawBody: string;
   size: number;
+  testResults: TestResult[];
 }
 
 export interface GraphqlError {
@@ -42,6 +44,42 @@ export interface GraphqlRequestError {
 }
 
 export type GraphqlRequestOutcome = GraphqlRequestResult | GraphqlRequestError;
+
+function isTestResultArray(value: unknown): value is TestResult[] {
+  if (!Array.isArray(value)) return false;
+
+  return value.every(
+    (item) =>
+      typeof item === 'object' &&
+      item !== null &&
+      typeof (item as TestResult).test === 'string' &&
+      ((item as TestResult).result === 'pass' ||
+        (item as TestResult).result === 'fail' ||
+        (item as TestResult).result === 'skip') &&
+      ((item as TestResult).error === null ||
+        typeof (item as TestResult).error === 'string') &&
+      typeof (item as TestResult).duration === 'number',
+  );
+}
+
+function extractTestResults(parsed: unknown): TestResult[] {
+  if (!parsed || typeof parsed !== 'object') return [];
+
+  const directTestResults = (parsed as { testResults?: unknown }).testResults;
+  if (isTestResultArray(directTestResults)) {
+    return directTestResults;
+  }
+
+  const extensionTestResults = (
+    parsed as { extensions?: { testResults?: unknown } }
+  ).extensions?.testResults;
+
+  if (isTestResultArray(extensionTestResults)) {
+    return extensionTestResults;
+  }
+
+  return [];
+}
 
 function buildUrl(
   baseUrl: string,
@@ -150,11 +188,13 @@ export async function executeGraphqlRequest(
 
     let data: unknown = null;
     let errors: GraphqlError[] | null = null;
+    let testResults: TestResult[] = [];
 
     try {
       const parsed = JSON.parse(rawBody);
       data = parsed.data ?? null;
       errors = parsed.errors ?? null;
+      testResults = extractTestResults(parsed);
     } catch {
       // Response is not valid JSON
     }
@@ -169,6 +209,7 @@ export async function executeGraphqlRequest(
         errors,
         rawBody,
         size,
+        testResults,
       },
       error: null,
     };

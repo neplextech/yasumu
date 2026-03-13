@@ -19,6 +19,12 @@ import type {
 import { getGraphqlBodyValue } from './use-graphql-entity';
 import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
 
+function extractTestResultsFromResponse(
+  response: GraphqlResponse,
+): TestResult[] {
+  return response.testResults ?? [];
+}
+
 export type RequestPhase =
   | 'idle'
   | 'pre-request-script'
@@ -213,6 +219,7 @@ export function useGraphqlRequest({
                   errors: null,
                   time: 0,
                   size: new Blob([bodyStr]).size,
+                  testResults: [],
                 };
                 appendScriptOutput(
                   '[Pre-Request] Mock response returned, skipping HTTP request',
@@ -384,7 +391,21 @@ export function useGraphqlRequest({
                   );
                 }
               } else {
-                appendScriptOutput('[Test] No tests defined', 'info');
+                const responseTestResults =
+                  extractTestResultsFromResponse(response);
+
+                if (responseTestResults.length > 0) {
+                  setState((prev) => ({
+                    ...prev,
+                    testResults: responseTestResults,
+                  }));
+                  appendScriptOutput(
+                    `[Test] Loaded ${responseTestResults.length} test result(s) from response`,
+                    'info',
+                  );
+                } else {
+                  appendScriptOutput('[Test] No tests defined', 'info');
+                }
               }
             } else {
               appendScriptOutput(
@@ -396,6 +417,31 @@ export function useGraphqlRequest({
             appendScriptOutput(
               `[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
               'error',
+            );
+
+            const responseTestResults =
+              extractTestResultsFromResponse(response);
+            if (responseTestResults.length > 0) {
+              setState((prev) => ({
+                ...prev,
+                testResults: responseTestResults,
+              }));
+              appendScriptOutput(
+                `[Test] Loaded ${responseTestResults.length} test result(s) from response`,
+                'info',
+              );
+            }
+          }
+        } else {
+          const responseTestResults = extractTestResultsFromResponse(response);
+          if (responseTestResults.length > 0) {
+            setState((prev) => ({
+              ...prev,
+              testResults: responseTestResults,
+            }));
+            appendScriptOutput(
+              `[Test] Loaded ${responseTestResults.length} test result(s) from response`,
+              'info',
             );
           }
         }

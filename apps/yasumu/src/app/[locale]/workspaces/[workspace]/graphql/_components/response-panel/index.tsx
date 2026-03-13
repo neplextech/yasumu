@@ -21,6 +21,7 @@ import { DataView } from './data-view';
 import { ErrorsView } from './errors-view';
 import { RawView } from './raw-view';
 import { ConsoleView } from './console-view';
+import { TestView } from './test-view';
 import type { TestResult } from '@yasumu/core';
 
 interface GraphqlResponsePanelProps {
@@ -55,9 +56,13 @@ export function GraphqlResponsePanel({
 
   const [subTab, setSubTab] = useQueryState(
     'responseDataView',
-    parseAsStringEnum(['response', 'errors', 'headers', 'console']).withDefault(
+    parseAsStringEnum([
       'response',
-    ),
+      'errors',
+      'headers',
+      'console',
+      'tests',
+    ]).withDefault('response'),
   );
 
   // Auto-focus logic
@@ -131,7 +136,9 @@ export function GraphqlResponsePanel({
           <Tabs
             value={subTab || 'response'}
             onValueChange={(v) =>
-              setSubTab(v as 'response' | 'errors' | 'headers' | 'console')
+              setSubTab(
+                v as 'response' | 'errors' | 'headers' | 'console' | 'tests',
+              )
             }
             className="flex flex-col h-full"
           >
@@ -160,6 +167,14 @@ export function GraphqlResponsePanel({
                     </span>
                   </TabsTrigger>
                 )}
+                {testResults.length > 0 && (
+                  <TabsTrigger value="tests">
+                    Tests
+                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                      {testResults.length}
+                    </span>
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
             <TabsContent value="response" className="flex-1 min-h-0">
@@ -176,6 +191,11 @@ export function GraphqlResponsePanel({
             {scriptOutput.length > 0 && (
               <TabsContent value="console" className="flex-1 min-h-0">
                 <ConsoleView output={scriptOutput} />
+              </TabsContent>
+            )}
+            {testResults.length > 0 && (
+              <TabsContent value="tests" className="flex-1 min-h-0">
+                <TestView results={testResults} />
               </TabsContent>
             )}
           </Tabs>
