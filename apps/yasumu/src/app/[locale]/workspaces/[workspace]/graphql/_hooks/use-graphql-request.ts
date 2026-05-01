@@ -18,6 +18,7 @@ import type {
 } from '@yasumu/core';
 import { getGraphqlBodyValue } from './use-graphql-entity';
 import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
+import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
 function extractTestResultsFromResponse(
   response: GraphqlResponse,
@@ -111,6 +112,13 @@ export function useGraphqlRequest({
   const execute = useCallback(
     async (_entity: GraphqlEntityData) => {
       if (!entityId) return;
+
+      const startedAt = performance.now();
+      trackEvent('graphql_request_started', {
+        workspace_id: workspace.id,
+        entity_id: entityId,
+        has_script: !!_entity.script?.code?.trim(),
+      });
 
       isCancelledRef.current = false;
       setState({
@@ -274,6 +282,11 @@ export function useGraphqlRequest({
               phase: 'error',
               error: outcome.error,
             }));
+            trackTiming('graphql_request_failed', startedAt, {
+              workspace_id: workspace.id,
+              entity_id: entityId,
+              failure_stage: 'request',
+            });
             return;
           }
 
@@ -447,6 +460,13 @@ export function useGraphqlRequest({
         }
 
         setState((prev) => ({ ...prev, phase: 'completed' }));
+        trackTiming('graphql_request_completed', startedAt, {
+          workspace_id: workspace.id,
+          entity_id: entityId,
+          status: response.status,
+          has_errors: !!response.errors?.length,
+          test_count: extractTestResultsFromResponse(response).length,
+        });
       } catch (err) {
         if (!isCancelledRef.current) {
           setState((prev) => ({
@@ -454,6 +474,11 @@ export function useGraphqlRequest({
             phase: 'error',
             error: err instanceof Error ? err.message : 'Unknown error',
           }));
+          trackTiming('graphql_request_failed', startedAt, {
+            workspace_id: workspace.id,
+            entity_id: entityId,
+            failure_stage: 'exception',
+          });
         }
       }
     },
@@ -471,12 +496,18 @@ export function useGraphqlRequest({
   const cancel = useCallback(() => {
     isCancelledRef.current = true;
     controllerRef.current.cancel();
+    if (entityId) {
+      trackEvent('graphql_request_cancelled', {
+        workspace_id: workspace.id,
+        entity_id: entityId,
+      });
+    }
     setState((prev) => ({
       ...prev,
       phase: 'cancelled',
       error: 'Request cancelled',
     }));
-  }, []);
+  }, [entityId, workspace.id]);
 
   const reset = useCallback(() => {
     setState(INITIAL_STATE);

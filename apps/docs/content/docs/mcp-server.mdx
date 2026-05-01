@@ -1,0 +1,507 @@
+---
+title: MCP Server
+description: Local Model Context Protocol server for automating Yasumu workspaces.
+---
+
+# MCP Server
+
+Yasumu includes a local Model Context Protocol server that lets an MCP
+client inspect, edit, synchronize, and execute workspace requests. It
+runs inside the Tanxium runtime while the desktop app is open, so the
+server uses the same RPC services and persistence layer as the
+application.
+
+The server is designed for local automation. A compatible agent can
+create a request, update its lifecycle script, run it, inspect the
+response, and synchronize the workspace files without switching to the
+desktop UI.
+
+## When to Use It
+
+Use the MCP server when you want an AI agent or another local tool to:
+
+- discover workspaces and saved REST or GraphQL requests
+- create or update saved requests
+- add JavaScript lifecycle scripts to REST requests
+- execute REST requests with the same script lifecycle used by Yasumu
+- run request tests and inspect test results
+- synchronize the workspace to disk after edits
+
+The MCP server is not a remote API. It binds to `127.0.0.1` and should
+be treated as a local desktop automation endpoint.
+
+## Transport
+
+The server uses Streamable HTTP JSON-RPC at the root path:
+
+```http
+POST http://127.0.0.1:<port>/
+Content-Type: application/json
+```
+
+The health endpoint is available at the same root path:
+
+```http
+GET http://127.0.0.1:<port>/
+```
+
+Some MCP clients open an SSE stream before or after the Streamable HTTP
+connection. Yasumu supports that compatibility path:
+
+```http
+GET http://127.0.0.1:<port>/
+Accept: text/event-stream
+```
+
+The active port is assigned automatically when Yasumu starts. You can
+find it from the MCP status item in the Yasumu status bar. Opening the
+status item navigates to the health endpoint.
+
+## Client Setup
+
+Most clients only need the server URL:
+
+```text
+http://127.0.0.1:<port>/
+```
+
+If your client asks for a transport, choose Streamable HTTP. If the
+client also supports SSE fallback, leave it enabled. Yasumu returns
+JSON for normal HTTP requests and `text/event-stream` only when the
+client explicitly asks for SSE through the `Accept` header.
+
+## Protocol Calls
+
+Initialize the server:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-03-26",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "example-client",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+List tools:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}
+```
+
+Call a tool:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "workspaces_list",
+    "arguments": {
+      "take": 20
+    }
+  }
+}
+```
+
+Notifications are accepted and return HTTP `202` with no JSON-RPC
+body.
+
+## Workspace Resolution
+
+Tools that operate on workspace entities accept `workspaceId`. The
+value can be any of these:
+
+- workspace id
+- workspace name
+- full workspace path
+- workspace folder name
+
+If `workspaceId` is omitted, Yasumu uses the active workspace. Passing
+the workspace explicitly is recommended for agents because it avoids
+accidentally editing whichever workspace is active in the UI.
+
+For example, all of these can resolve the same workspace if they match
+an existing workspace record:
+
+```json
+{ "workspaceId": "u3slh2..." }
+```
+
+```json
+{ "workspaceId": "test-workspace" }
+```
+
+```json
+{ "workspaceId": "D:\\work\\neplex\\yasumu\\test-workspace" }
+```
+
+## Tools
+
+| Tool                          | Description                                      |
+| :---------------------------- | :----------------------------------------------- |
+| `workspaces_list`             | List recent workspaces                           |
+| `workspaces_active`           | Return the active workspace id                   |
+| `workspaces_get`              | Get a workspace by id                            |
+| `rest_list`                   | List REST requests in a workspace                |
+| `rest_get`                    | Get a REST request by id                         |
+| `rest_create`                 | Create a REST request                            |
+| `rest_update`                 | Update any supported REST request fields         |
+| `rest_update_script`          | Replace the JavaScript lifecycle script          |
+| `rest_execute`                | Execute a REST request and run lifecycle scripts |
+| `rest_delete`                 | Delete a REST request by id                      |
+| `graphql_list`                | List GraphQL requests in a workspace             |
+| `graphql_get`                 | Get a GraphQL request by id                      |
+| `graphql_create`              | Create a GraphQL request                         |
+| `graphql_update`              | Update a GraphQL request by id                   |
+| `graphql_delete`              | Delete a GraphQL request by id                   |
+| `synchronization_synchronize` | Synchronize a workspace with its `yasumu` folder |
+
+## REST Execution
+
+`rest_execute` runs a saved REST request by id. It is intended for
+agent workflows where creating the request is not enough and the agent
+must send it, inspect the response, or run tests.
+
+Execution follows this order:
+
+1. Load the saved request from the selected workspace.
+2. Load the active environment.
+3. Interpolate request URL, headers, body, and path parameters.
+4. Run the request script `onRequest` handler when a script is present.
+5. Send the HTTP request, unless `onRequest` returns a mock response.
+6. Run the request script `onResponse` handler.
+7. Persist environment variable or secret changes made by the response
+   script.
+8. Run the request script `onTest` handler.
+9. Return the request, response, lifecycle summaries, and test results.
+
+### Execute a Saved Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "rest_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "q12allkockl4taxtxuhul9rb"
+    }
+  }
+}
+```
+
+### Execute With Path Parameters
+
+Use `pathParams` for URLs such as
+`https://pokeapi.co/api/v2/pokemon/:name`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "rest_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "q12allkockl4taxtxuhul9rb",
+      "pathParams": {
+        "name": "pikachu"
+      }
+    }
+  }
+}
+```
+
+Path parameter values can also be passed with an enabled flag:
+
+```json
+{
+  "pathParams": {
+    "name": {
+      "value": "pikachu",
+      "enabled": true
+    }
+  }
+}
+```
+
+### Execute With Temporary Variables
+
+`variables` override active environment variables only for this
+execution. They are useful when the agent needs to run a request with
+short lived values:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "rest_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "q12allkockl4taxtxuhul9rb",
+      "variables": {
+        "pokemonName": "bulbasaur"
+      }
+    }
+  }
+}
+```
+
+Any `{{pokemonName}}` token in the URL, headers, body, or enabled
+parameters resolves to `bulbasaur` for that run.
+
+### Execute With Extra Query Parameters
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "name": "rest_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "q12allkockl4taxtxuhul9rb",
+      "queryParams": {
+        "limit": 10
+      }
+    }
+  }
+}
+```
+
+## REST Scripts
+
+REST scripts are JavaScript snippets that can export lifecycle
+handlers. Agents can use `rest_update_script` to persist a script, or
+pass a one-off script to `rest_execute`.
+
+### Persist a Script
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "method": "tools/call",
+  "params": {
+    "name": "rest_update_script",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "q12allkockl4taxtxuhul9rb",
+      "script": "export function onRequest(req) { req.headers.set('x-agent', 'yasumu'); }"
+    }
+  }
+}
+```
+
+### Run With a One-Off Script
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "method": "tools/call",
+  "params": {
+    "name": "rest_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "q12allkockl4taxtxuhul9rb",
+      "script": "export function onResponse(req, res) { res.env.setVariable('lastStatus', String(res.status)); }"
+    }
+  }
+}
+```
+
+Set `persistScript` to `true` when the same script should be saved on
+the request before execution:
+
+```json
+{
+  "name": "rest_execute",
+  "arguments": {
+    "workspaceId": "test-workspace",
+    "id": "q12allkockl4taxtxuhul9rb",
+    "script": "export function onTest(req, res) { test('status is ok', () => expect(res.status).toBe(200)); }",
+    "persistScript": true
+  }
+}
+```
+
+### Mock Responses
+
+If `onRequest` returns a `YasumuResponse`, Yasumu skips the HTTP
+request and treats it as a mock response:
+
+```js
+export function onRequest() {
+  return new YasumuResponse(JSON.stringify({ source: 'mock' }), {
+    status: 200,
+    statusText: 'OK',
+    headers: { 'content-type': 'application/json' },
+  });
+}
+```
+
+The returned MCP payload marks this with `lifecycle.mocked: true`.
+
+## REST Execution Response
+
+`rest_execute` returns a text MCP result containing JSON. The shape is:
+
+```json
+{
+  "request": {
+    "id": "q12allkockl4taxtxuhul9rb",
+    "name": "Get pokemon by name",
+    "method": "GET",
+    "url": "https://pokeapi.co/api/v2/pokemon/pikachu"
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "time": 148.5,
+    "headers": {},
+    "cookies": [],
+    "textBody": "{...}",
+    "bodyType": "text",
+    "size": 12345,
+    "bodyTruncated": false
+  },
+  "error": null,
+  "lifecycle": {
+    "preRequest": {
+      "success": true,
+      "error": null,
+      "result": null
+    },
+    "postResponse": {
+      "success": true,
+      "error": null,
+      "result": null
+    },
+    "tests": {
+      "summary": {
+        "success": true,
+        "error": null,
+        "result": {
+          "testResults": []
+        }
+      },
+      "results": []
+    },
+    "mocked": false
+  }
+}
+```
+
+Large text bodies are truncated. Binary bodies are reported with
+metadata, but the binary payload is not embedded in the MCP response.
+
+## Synchronization
+
+After an agent edits workspace entities, call
+`synchronization_synchronize` to write the latest workspace state to
+the workspace `yasumu` folder:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "tools/call",
+  "params": {
+    "name": "synchronization_synchronize",
+    "arguments": {
+      "workspaceId": "test-workspace"
+    }
+  }
+}
+```
+
+This keeps the desktop database state and the serialized workspace
+files aligned for collaboration and version control.
+
+## Security and Privacy
+
+The MCP server is local-only and does not bind to external network
+interfaces. It does not expose shell execution or arbitrary filesystem
+tools. All workspace operations go through Yasumu's Tanxium RPC
+services.
+
+Environment secrets can be used for request interpolation and scripts,
+but they are not listed separately by the MCP server. Agents should
+avoid printing secrets into script output, response mocks, or request
+bodies unless that is explicitly intended.
+
+## Troubleshooting
+
+### Method Not Found During Connect
+
+If a client reports `Method not found` during initialization, verify
+that it is posting JSON-RPC to the root endpoint:
+
+```text
+http://127.0.0.1:<port>/
+```
+
+Older or strict clients may also try SSE fallback. Yasumu supports SSE
+only when the request includes `Accept: text/event-stream`.
+
+### Invalid Content Type for SSE
+
+This usually means the client requested the health endpoint as normal
+HTTP instead of an SSE stream. Configure the client for Streamable HTTP
+and keep the URL at the root path.
+
+### Workspace Not Found
+
+Use `workspaces_list` first and pass the exact workspace id returned by
+Yasumu. Workspace names and folder names are accepted for convenience,
+but ids are the most predictable option.
+
+### Request Execution Fails
+
+Check the returned `error` field from `rest_execute`. Common causes are:
+
+- the saved request has no URL
+- a path parameter such as `:name` was not provided
+- the remote server is unavailable
+- the request timed out
+- the script changed the URL or method to an invalid value
+
+Use `timeoutMs` for slow endpoints:
+
+```json
+{
+  "name": "rest_execute",
+  "arguments": {
+    "workspaceId": "test-workspace",
+    "id": "q12allkockl4taxtxuhul9rb",
+    "timeoutMs": 60000
+  }
+}
+```
+
+### Script Runs but Tests Are Missing
+
+Ensure the saved or one-off script exports an `onTest` handler. The
+handler runs after the response is available and receives the response
+context used by `onResponse`.

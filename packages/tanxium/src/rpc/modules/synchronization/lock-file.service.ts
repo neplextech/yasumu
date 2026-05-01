@@ -61,7 +61,24 @@ export class LockFileService {
       await Deno.mkdir(dirPath, { recursive: true });
     }
 
-    await Deno.writeTextFile(lockFilePath, JSON.stringify(data, null, 2));
+    const content = JSON.stringify(data, null, 2);
+    const tempPath = join(
+      dirPath,
+      `${LOCK_FILE_NAME}.${Deno.pid}.${Date.now()}.tmp`,
+    );
+
+    await Deno.writeTextFile(tempPath, content);
+
+    try {
+      await Deno.rename(tempPath, lockFilePath);
+    } catch (error) {
+      if (existsSync(lockFilePath)) {
+        await Deno.remove(lockFilePath);
+        await Deno.rename(tempPath, lockFilePath);
+        return;
+      }
+      throw error;
+    }
   }
 
   public async getEntry(

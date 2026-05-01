@@ -9,15 +9,16 @@ import { LuMail, LuRadio, LuServer } from 'react-icons/lu';
 import { ServerStatus } from './server-status';
 import { ConsoleButton } from './console-button';
 import { ConsoleSheet } from './console-sheet';
-import { usePathname } from 'next/navigation';
 import { useEffect, useEffectEvent } from 'react';
+import { LuPlugZap } from 'react-icons/lu';
+import { trackEvent } from '@/lib/instrumentation/analytics';
 
 function StatusBarDivider() {
   return <div className="w-px h-3 bg-border" />;
 }
 
 export function StatusBar() {
-  const { port, echoServerPort } = useYasumu();
+  const { port, echoServerPort, mcpServerPort } = useYasumu();
   const workspace = useActiveWorkspace(false);
 
   const { data: smtpPort, refetch: refetchSmtpPort } = useQuery({
@@ -66,6 +67,21 @@ export function StatusBar() {
             port={smtpPort ?? null}
             icon={LuMail}
             active={!!smtpPort}
+          />
+          <StatusBarDivider />
+          <ServerStatus
+            label="MCP Server"
+            port={mcpServerPort}
+            icon={LuPlugZap}
+            active={!!mcpServerPort}
+            href={
+              mcpServerPort ? `http://127.0.0.1:${mcpServerPort}` : undefined
+            }
+            onOpen={() =>
+              trackEvent('mcp_status_opened', {
+                port_available: !!mcpServerPort,
+              })
+            }
           />
         </div>
         <div className="flex items-center h-full">

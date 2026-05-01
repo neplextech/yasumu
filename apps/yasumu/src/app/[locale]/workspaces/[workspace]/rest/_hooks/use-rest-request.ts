@@ -24,6 +24,7 @@ import {
   createBlobUrlFromText,
 } from '@/components/responses/viewers';
 import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
+import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
 export type RequestPhase =
   | 'idle'
@@ -134,6 +135,14 @@ export function useRestRequest({
       pathParams: Record<string, { value: string; enabled: boolean }>,
     ) => {
       if (!entityId) return;
+
+      const startedAt = performance.now();
+      trackEvent('rest_request_started', {
+        workspace_id: workspace.id,
+        entity_id: entityId,
+        method: _entity.method,
+        has_script: !!_entity.script?.code?.trim(),
+      });
 
       isCancelledRef.current = false;
       setState((prev) => {
@@ -303,6 +312,12 @@ export function useRestRequest({
               phase: 'error',
               error: outcome.error,
             }));
+            trackTiming('rest_request_failed', startedAt, {
+              workspace_id: workspace.id,
+              entity_id: entityId,
+              method: entity.method,
+              failure_stage: 'request',
+            });
             return;
           }
 
@@ -449,6 +464,13 @@ export function useRestRequest({
         }
 
         setState((prev) => ({ ...prev, phase: 'completed' }));
+        trackTiming('rest_request_completed', startedAt, {
+          workspace_id: workspace.id,
+          entity_id: entityId,
+          method: entity.method,
+          status: response.status,
+          body_type: response.bodyType,
+        });
       } catch (err) {
         if (!isCancelledRef.current) {
           setState((prev) => ({
@@ -456,6 +478,12 @@ export function useRestRequest({
             phase: 'error',
             error: err instanceof Error ? err.message : 'Unknown error',
           }));
+          trackTiming('rest_request_failed', startedAt, {
+            workspace_id: workspace.id,
+            entity_id: entityId,
+            method: _entity.method,
+            failure_stage: 'exception',
+          });
         }
       }
     },
@@ -473,12 +501,18 @@ export function useRestRequest({
   const cancel = useCallback(() => {
     isCancelledRef.current = true;
     controllerRef.current.cancel();
+    if (entityId) {
+      trackEvent('rest_request_cancelled', {
+        workspace_id: workspace.id,
+        entity_id: entityId,
+      });
+    }
     setState((prev) => ({
       ...prev,
       phase: 'cancelled',
       error: 'Request cancelled',
     }));
-  }, []);
+  }, [entityId, workspace.id]);
 
   const reset = useCallback(() => {
     setState(INITIAL_STATE);

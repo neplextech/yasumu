@@ -8,6 +8,10 @@ import { RotateCcw } from 'lucide-react';
 import SettingsSection from './settings-section';
 import SettingItem from './setting-item';
 import type { SettingsState } from './use-settings';
+import {
+  setAnalyticsEnabled,
+  trackEvent,
+} from '@/lib/instrumentation/analytics';
 
 interface PrivacySettingsProps {
   settings: SettingsState;
@@ -25,6 +29,10 @@ export default function PrivacySettings({
 
   const handleAnalyticsChange = (value: boolean) => {
     onUpdateSetting('analyticsEnabled', value);
+    setAnalyticsEnabled(value);
+    trackEvent('settings_analytics_toggled', {
+      enabled: value,
+    });
     setModified(true);
   };
 

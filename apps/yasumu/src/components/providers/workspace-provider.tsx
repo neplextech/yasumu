@@ -19,6 +19,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { toast } from '@yasumu/ui/components/sonner';
+import { trackEvent } from '@/lib/instrumentation/analytics';
 
 const WORKSPACE_SECTIONS = [
   'rest',
@@ -48,6 +49,7 @@ export interface YasumuContextData {
   client: ReturnType<typeof createClient>;
   port: number;
   echoServerPort: number | null;
+  mcpServerPort: number | null;
   yasumu: Yasumu;
   currentWorkspaceId: string | null;
   currentWorkspace: Workspace | null;
@@ -102,6 +104,7 @@ export default function WorkspaceProvider({
   const { setSelectedEnvironment, setEnvironments } = useEnvironmentStore();
   const [port, setPort] = useState<number | null>(null);
   const [echoServerPort, setEchoServerPort] = useState<number | null>(null);
+  const [mcpServerPort, setMcpServerPort] = useState<number | null>(null);
   const [client, setClient] = useState<ReturnType<typeof createClient> | null>(
     null,
   );
@@ -125,6 +128,9 @@ export default function WorkspaceProvider({
         if (!port) throw new Error('Tanxium sent invalid port');
         const echoServerPort = await invoke<number | null>(
           'get_echo_server_port',
+        );
+        const mcpServerPort = await invoke<number | null>(
+          'get_mcp_server_port',
         );
 
         const client = createClient(port);
@@ -164,6 +170,9 @@ export default function WorkspaceProvider({
           events: {
             onWorkspaceActivated: (workspace) => {
               setCurrentWorkspace(workspace);
+              trackEvent('workspace_activated', {
+                workspace_id: workspace.id,
+              });
               const currentPath = pathnameRef.current;
               if (isWorkspacePath(currentPath)) {
                 const section = getCurrentSection(currentPath);
@@ -175,6 +184,9 @@ export default function WorkspaceProvider({
               router.replace('/en/workspaces/default/rest');
             },
             onWorkspaceDeactivated: () => {
+              trackEvent('workspace_deactivated', {
+                workspace_id: currentWorkspace?.id ?? null,
+              });
               setCurrentWorkspace(null);
               router.replace('/');
             },
@@ -211,6 +223,7 @@ export default function WorkspaceProvider({
 
         setPort(port);
         setEchoServerPort(echoServerPort);
+        setMcpServerPort(mcpServerPort);
         setClient(client);
         setYasumu(yasumu);
 
@@ -250,6 +263,7 @@ export default function WorkspaceProvider({
         client,
         port,
         echoServerPort,
+        mcpServerPort,
         yasumu,
         currentWorkspace,
         currentWorkspaceId: currentWorkspace?.id ?? null,

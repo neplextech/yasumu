@@ -170,6 +170,22 @@ export class SynchronizationService implements OnModuleInit {
     return resolution.keepLocal;
   }
 
+  private async resolveSyncAction(
+    action: SyncAction,
+    state: SyncEntityState,
+  ): Promise<Exclude<SyncAction, 'conflict'>> {
+    if (action !== 'conflict') return action;
+    return (await this.handleConflict(state)) ? 'push' : 'pull';
+  }
+
+  private async loadWorkspaceFromFileSystem(workspace: WorkspaceData) {
+    await this.loadWorkspaceFromFs(workspace);
+    await this.loadRestEntitiesFromFs(workspace);
+    await this.loadGraphqlEntitiesFromFs(workspace);
+    await this.loadEnvironmentsFromFs(workspace);
+    await this.loadSmtpFromFs(workspace);
+  }
+
   public async loadFromFileSystem(workspaceId: string) {
     return await this.workspaceMutex.runExclusive(workspaceId, async () => {
       const workspace = await this.findWorkspace(workspaceId);
@@ -178,11 +194,7 @@ export class SynchronizationService implements OnModuleInit {
 
       if (isDefaultWorkspacePath(workspace.path)) return;
 
-      await this.loadWorkspaceFromFs(workspace);
-      await this.loadRestEntitiesFromFs(workspace);
-      await this.loadGraphqlEntitiesFromFs(workspace);
-      await this.loadEnvironmentsFromFs(workspace);
-      await this.loadSmtpFromFs(workspace);
+      await this.loadWorkspaceFromFileSystem(workspace);
     });
   }
 
@@ -264,7 +276,7 @@ export class SynchronizationService implements OnModuleInit {
       if (!fileContent) continue;
 
       const parsed = this.yslService.deserialize(RestSchema, fileContent);
-      const { metadata, request, script, test } = parsed.blocks;
+      const { metadata, request, script, test: _test } = parsed.blocks;
 
       const groupId =
         metadata.groupId && validGroupIds.has(metadata.groupId)
@@ -446,20 +458,16 @@ export class SynchronizationService implements OnModuleInit {
       fileContent,
     );
 
-    if (action === 'none') return;
+    const resolvedAction = await this.resolveSyncAction(action, state);
 
-    if (action === 'conflict') {
-      const keepLocal = await this.handleConflict(state);
-      if (keepLocal) {
-        await this.pushWorkspaceToFs(workspace);
-        return;
-      }
+    if (resolvedAction === 'none') return;
+
+    if (resolvedAction === 'push') {
+      await this.pushWorkspaceToFs(workspace);
+      return;
     }
 
-    if (
-      action === 'pull' ||
-      (action === 'conflict' && !(await this.handleConflict(state)))
-    ) {
+    if (resolvedAction === 'pull') {
       await this.applyWorkspaceFromYsl(workspace, fileContent);
     }
 
@@ -555,19 +563,18 @@ export class SynchronizationService implements OnModuleInit {
         fileContent,
       );
 
-      if (action === 'none') continue;
+      const resolvedAction = await this.resolveSyncAction(action, state);
 
-      if (action === 'conflict') {
-        const keepLocal = await this.handleConflict(state);
-        if (keepLocal) {
-          if (existingEntity) {
-            await this.pushGraphqlEntityToFs(workspace, existingEntity);
-          }
-          continue;
+      if (resolvedAction === 'none') continue;
+
+      if (resolvedAction === 'push') {
+        if (existingEntity) {
+          await this.pushGraphqlEntityToFs(workspace, existingEntity);
         }
+        continue;
       }
 
-      if (action === 'pull' || action === 'conflict') {
+      if (resolvedAction === 'pull') {
         await this.applyGraphqlEntityFromYsl(
           workspace.id,
           parsed,
@@ -639,19 +646,18 @@ export class SynchronizationService implements OnModuleInit {
         fileContent,
       );
 
-      if (action === 'none') continue;
+      const resolvedAction = await this.resolveSyncAction(action, state);
 
-      if (action === 'conflict') {
-        const keepLocal = await this.handleConflict(state);
-        if (keepLocal) {
-          if (existingEntity) {
-            await this.pushRestEntityToFs(workspace, existingEntity);
-          }
-          continue;
+      if (resolvedAction === 'none') continue;
+
+      if (resolvedAction === 'push') {
+        if (existingEntity) {
+          await this.pushRestEntityToFs(workspace, existingEntity);
         }
+        continue;
       }
 
-      if (action === 'pull' || action === 'conflict') {
+      if (resolvedAction === 'pull') {
         await this.applyRestEntityFromYsl(
           workspace.id,
           parsed,
@@ -830,19 +836,18 @@ export class SynchronizationService implements OnModuleInit {
         fileContent,
       );
 
-      if (action === 'none') continue;
+      const resolvedAction = await this.resolveSyncAction(action, state);
 
-      if (action === 'conflict') {
-        const keepLocal = await this.handleConflict(state);
-        if (keepLocal) {
-          if (existingEnv) {
-            await this.pushEnvironmentToFs(workspace, existingEnv);
-          }
-          continue;
+      if (resolvedAction === 'none') continue;
+
+      if (resolvedAction === 'push') {
+        if (existingEnv) {
+          await this.pushEnvironmentToFs(workspace, existingEnv);
         }
+        continue;
       }
 
-      if (action === 'pull' || action === 'conflict') {
+      if (resolvedAction === 'pull') {
         await this.applyEnvironmentFromYsl(workspace.id, parsed, existingEnv);
       }
 
@@ -938,17 +943,16 @@ export class SynchronizationService implements OnModuleInit {
       fileContent,
     );
 
-    if (action === 'none') return;
+    const resolvedAction = await this.resolveSyncAction(action, state);
 
-    if (action === 'conflict') {
-      const keepLocal = await this.handleConflict(state);
-      if (keepLocal) {
-        await this.pushSmtpToFs(workspace, existingSmtp);
-        return;
-      }
+    if (resolvedAction === 'none') return;
+
+    if (resolvedAction === 'push') {
+      await this.pushSmtpToFs(workspace, existingSmtp);
+      return;
     }
 
-    if (action === 'pull' || action === 'conflict') {
+    if (resolvedAction === 'pull') {
       await this.applySmtpFromYsl(workspace.id, fileContent, existingSmtp);
     }
 
@@ -1358,37 +1362,46 @@ export class SynchronizationService implements OnModuleInit {
 
       if (isDefaultWorkspacePath(workspace.path)) return;
 
-      await this.pushWorkspaceToFs(workspace);
+      await this.loadWorkspaceFromFileSystem(workspace);
+
+      const refreshedWorkspace =
+        (await this.findWorkspace(workspaceId)) ?? workspace;
+
+      await this.pushWorkspaceToFs(refreshedWorkspace);
 
       const restEntitiesList = await this.restService.list(workspaceId);
       const restEntityIds = new Set(restEntitiesList.map((e) => e.id));
 
       for (const entity of restEntitiesList) {
-        await this.pushRestEntityToFs(workspace, entity);
+        await this.pushRestEntityToFs(refreshedWorkspace, entity);
       }
 
-      await this.cleanupDeletedFiles(workspace, 'rest', restEntityIds);
+      await this.cleanupDeletedFiles(refreshedWorkspace, 'rest', restEntityIds);
 
       const graphqlEntitiesList = await this.graphqlService.list(workspaceId);
       const graphqlEntityIds = new Set(graphqlEntitiesList.map((e) => e.id));
 
       for (const entity of graphqlEntitiesList) {
-        await this.pushGraphqlEntityToFs(workspace, entity);
+        await this.pushGraphqlEntityToFs(refreshedWorkspace, entity);
       }
 
-      await this.cleanupDeletedFiles(workspace, 'graphql', graphqlEntityIds);
+      await this.cleanupDeletedFiles(
+        refreshedWorkspace,
+        'graphql',
+        graphqlEntityIds,
+      );
 
       const envList = await this.environmentsService.list(workspaceId);
       const envIds = new Set(envList.map((e) => e.id));
 
       for (const env of envList) {
-        await this.pushEnvironmentToFs(workspace, env);
+        await this.pushEnvironmentToFs(refreshedWorkspace, env);
       }
 
-      await this.cleanupDeletedFiles(workspace, 'environment', envIds);
+      await this.cleanupDeletedFiles(refreshedWorkspace, 'environment', envIds);
 
       const smtpConfig = await this.emailService.getSmtp(workspaceId);
-      await this.pushSmtpToFs(workspace, smtpConfig);
+      await this.pushSmtpToFs(refreshedWorkspace, smtpConfig);
     });
   }
 

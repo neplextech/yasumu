@@ -15,6 +15,7 @@ import {
   useActiveWorkspace,
   useYasumu,
 } from '@/components/providers/workspace-provider';
+import { trackEvent } from '@/lib/instrumentation/analytics';
 
 export type EntityHistoryScope = 'rest' | 'graphql';
 
@@ -119,6 +120,13 @@ export function EntityHistoryProvider({
 
   const removeFromHistory = useCallback(
     async (id: string) => {
+      trackEvent('workspace_entity_tab_closed', {
+        workspace_id: workspace.id,
+        scope,
+        entity_id: id,
+        tab_count: history.length,
+      });
+
       queryClient.setQueryData<EntityHistoryData[]>(queryKey, (old) =>
         old ? old.filter((item) => item.entityId !== id) : old,
       );
@@ -130,15 +138,30 @@ export function EntityHistoryProvider({
 
       await deleteHistory(id);
     },
-    [deleteHistory, entityId, history, queryClient, queryKey],
+    [
+      deleteHistory,
+      entityId,
+      history,
+      queryClient,
+      queryKey,
+      scope,
+      workspace.id,
+    ],
   );
 
   const setEntityId = useCallback(
     (id: string) => {
+      trackEvent('workspace_entity_tab_selected', {
+        workspace_id: workspace.id,
+        scope,
+        entity_id: id,
+        already_open: history.includes(id),
+        tab_count: history.length,
+      });
       setSelectedEntityId(id);
       void addToHistory(id);
     },
-    [addToHistory],
+    [addToHistory, history, scope, workspace.id],
   );
 
   const value = useMemo(

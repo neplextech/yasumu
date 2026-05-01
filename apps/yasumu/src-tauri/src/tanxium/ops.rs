@@ -117,6 +117,20 @@ fn op_set_echo_server_port(state: &mut OpState, port: u16) {
     }
 }
 
+#[op2(fast)]
+fn op_set_mcp_server_port(state: &mut OpState, port: u16) {
+    let app_handle = {
+        let app_handle_state = state.borrow::<AppHandleState>();
+        app_handle_state.app_handle.clone()
+    };
+    let state = app_handle.state::<Mutex<YasumuInternalState>>();
+    let mut yasumu_state = state.lock().unwrap();
+
+    if yasumu_state.mcp_server_port.is_none() {
+        yasumu_state.mcp_server_port = Some(port);
+    }
+}
+
 #[op2]
 #[string]
 fn op_generate_cuid() -> String {
@@ -215,6 +229,7 @@ deno_core::extension!(
         op_is_yasumu_ready,
         op_get_yasumu_version,
         op_set_echo_server_port,
+        op_set_mcp_server_port,
         op_register_virtual_module,
         op_unregister_virtual_module,
         op_is_yasumu_dev_mode,

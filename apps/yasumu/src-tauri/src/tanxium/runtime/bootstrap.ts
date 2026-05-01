@@ -9,6 +9,7 @@ import {
   op_is_yasumu_ready,
   op_get_yasumu_version,
   op_set_echo_server_port,
+  op_set_mcp_server_port,
   op_register_virtual_module,
   op_unregister_virtual_module,
   op_is_yasumu_dev_mode,
@@ -197,6 +198,15 @@ class Yasumu {
   public static setEchoServerPort(port: number) {
     if (isWorkerEnvironment()) return;
     op_set_echo_server_port(port);
+  }
+
+  /**
+   * Set the MCP server port
+   * @param port The port to set
+   */
+  public static setMcpServerPort(port: number) {
+    if (isWorkerEnvironment()) return;
+    op_set_mcp_server_port(port);
   }
 
   /**

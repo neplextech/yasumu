@@ -12,6 +12,7 @@ pub struct YasumuInternalState {
     pub ready: bool,
     pub rpc_port: Option<u16>,
     pub echo_server_port: Option<u16>,
+    pub mcp_server_port: Option<u16>,
     pub virtual_modules: VirtualModulesStore,
 }
 
@@ -60,6 +61,13 @@ fn get_echo_server_port(app: tauri::AppHandle) -> Option<u16> {
 }
 
 #[tauri::command]
+fn get_mcp_server_port(app: tauri::AppHandle) -> Option<u16> {
+    let state = app.state::<Mutex<YasumuInternalState>>();
+    let yasumu_state = state.lock().unwrap();
+    yasumu_state.mcp_server_port
+}
+
+#[tauri::command]
 fn yasumu_open_devtools(app: tauri::AppHandle) {
     let window = app.get_webview_window("main").unwrap();
 
@@ -90,6 +98,7 @@ pub fn run() {
             ready: false,
             rpc_port: None,
             echo_server_port: None,
+            mcp_server_port: None,
             virtual_modules: Arc::new(Mutex::new(HashMap::new())),
         }))
         .setup(move |app| {
@@ -161,6 +170,7 @@ pub fn run() {
             on_frontend_ready,
             get_rpc_port,
             get_echo_server_port,
+            get_mcp_server_port,
             yasumu_open_devtools,
         ])
         .run(tauri::generate_context!())

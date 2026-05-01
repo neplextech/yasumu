@@ -17,6 +17,8 @@ async function setup() {
     console.error(`Error reading the application configuration: ${e}`);
   }
 
+  const { setAnalyticsEnabled, trackEvent } =
+    await import('@/lib/instrumentation/analytics');
   const { default: posthog } = await import('posthog-js');
   const { app } = await import('@tauri-apps/api');
 
@@ -40,6 +42,11 @@ async function setup() {
     app_version: version || 'unknown',
     app_tauri_version: tauriVersion || 'unknown',
     app_name: name || 'unknown',
+  });
+  setAnalyticsEnabled(true);
+  trackEvent('app_started', {
+    app_version: version || 'unknown',
+    app_bundle_type: bundleType || 'unknown',
   });
 }
 

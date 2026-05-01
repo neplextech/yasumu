@@ -8,10 +8,6 @@ import {
   isScalarType,
   isInterfaceType,
   isUnionType,
-  GraphQLFieldMap,
-  GraphQLInputFieldMap,
-  GraphQLArgument,
-  GraphQLField,
   isListType,
   isNonNullType,
   GraphQLType,
@@ -21,6 +17,7 @@ import { Input } from '@yasumu/ui/components/input';
 import { Button } from '@yasumu/ui/components/button';
 import { Search, Box, Type, List, Boxes, BookOpen } from 'lucide-react';
 import { Badge } from '@yasumu/ui/components/badge';
+import { trackEvent } from '@/lib/instrumentation/analytics';
 
 interface DocumentationViewProps {
   schema: GraphQLSchema | null;
@@ -34,6 +31,11 @@ type TypeCategory =
   | 'scalars'
   | 'interfaces'
   | 'unions';
+
+interface SearchMatch {
+  kind: 'type' | 'field' | 'argument' | 'description';
+  label: string;
+}
 
 function formatCategoryLabel(category: TypeCategory): string {
   if (category === 'root') return 'Root';
@@ -94,19 +96,120 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
     return result;
   }, [schema]);
 
+  const searchMatches = useMemo(() => {
+    const matches = new Map<string, SearchMatch[]>();
+    const lowerQuery = searchQuery.trim().toLowerCase();
+    if (!schema || !lowerQuery) return matches;
+
+    const addMatch = (typeName: string, match: SearchMatch) => {
+      const existing = matches.get(typeName) ?? [];
+      if (
+        !existing.some(
+          (item) => item.kind === match.kind && item.label === match.label,
+        )
+      ) {
+        existing.push(match);
+      }
+      matches.set(typeName, existing);
+    };
+
+    const inspectType = (type: GraphQLNamedType) => {
+      if (type.name.toLowerCase().includes(lowerQuery)) {
+        addMatch(type.name, { kind: 'type', label: type.name });
+      }
+
+      if (type.description?.toLowerCase().includes(lowerQuery)) {
+        addMatch(type.name, { kind: 'description', label: 'Description' });
+      }
+
+      if (isObjectType(type) || isInterfaceType(type)) {
+        for (const field of Object.values(type.getFields())) {
+          const fieldText = [
+            field.name,
+            field.description,
+            String(field.type),
+            ...field.args.flatMap((arg) => [
+              arg.name,
+              arg.description,
+              String(arg.type),
+            ]),
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+          if (fieldText.includes(lowerQuery)) {
+            addMatch(type.name, { kind: 'field', label: field.name });
+          }
+
+          for (const arg of field.args) {
+            if (
+              [arg.name, arg.description, String(arg.type)]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+                .includes(lowerQuery)
+            ) {
+              addMatch(type.name, {
+                kind: 'argument',
+                label: `${field.name}.${arg.name}`,
+              });
+            }
+          }
+        }
+      }
+
+      if (isInputObjectType(type)) {
+        for (const field of Object.values(type.getFields())) {
+          if (
+            [field.name, field.description, String(field.type)]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase()
+              .includes(lowerQuery)
+          ) {
+            addMatch(type.name, { kind: 'field', label: field.name });
+          }
+        }
+      }
+
+      if (isEnumType(type)) {
+        for (const value of type.getValues()) {
+          if (
+            [value.name, value.description]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase()
+              .includes(lowerQuery)
+          ) {
+            addMatch(type.name, { kind: 'field', label: value.name });
+          }
+        }
+      }
+    };
+
+    for (const types of Object.values(organizedTypes)) {
+      for (const type of types) inspectType(type);
+    }
+
+    return matches;
+  }, [organizedTypes, schema, searchQuery]);
+
   const filteredTypes = useMemo(() => {
-    if (!searchQuery) return organizedTypes;
+    if (!searchQuery.trim()) return organizedTypes;
     const lowerQuery = searchQuery.toLowerCase();
     const result = { ...organizedTypes };
 
     (Object.keys(result) as TypeCategory[]).forEach((key) => {
-      result[key] = organizedTypes[key].filter((t) =>
-        t.name.toLowerCase().includes(lowerQuery),
+      result[key] = organizedTypes[key].filter(
+        (t) =>
+          t.name.toLowerCase().includes(lowerQuery) ||
+          searchMatches.has(t.name),
       );
     });
 
     return result;
-  }, [organizedTypes, searchQuery]);
+  }, [organizedTypes, searchMatches, searchQuery]);
 
   const totalVisibleTypes = useMemo(
     () =>
@@ -119,6 +222,21 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
 
   const handleTypeClick = (typeName: string) => {
     setSelectedType(typeName);
+    const matchCount = searchMatches.get(typeName)?.length ?? 0;
+    trackEvent('graphql_docs_type_selected', {
+      type_name: typeName,
+      has_search: searchQuery.trim().length > 0,
+      match_count: matchCount,
+    });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (value.trim().length >= 2) {
+      trackEvent('graphql_docs_searched', {
+        query_length: value.trim().length,
+      });
+    }
   };
 
   const renderTypeLink = (type: GraphQLType) => {
@@ -200,9 +318,9 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search types..."
+              placeholder="Search types, queries, mutations..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-8 h-9"
             />
           </div>
@@ -247,6 +365,14 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                           className="mr-2 h-3.5 w-3.5 opacity-70"
                         />
                         <span className="truncate">{type.name}</span>
+                        {searchMatches.has(type.name) && (
+                          <Badge
+                            variant="outline"
+                            className="ml-auto h-5 rounded-sm px-1.5 text-[10px]"
+                          >
+                            {searchMatches.get(type.name)?.length}
+                          </Badge>
+                        )}
                       </Button>
                     ))}
                   </div>
@@ -276,6 +402,19 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                     {selectedTypeObj.description}
                   </p>
                 )}
+                {searchMatches.has(selectedTypeObj.name) && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {searchMatches.get(selectedTypeObj.name)?.map((match) => (
+                      <Badge
+                        key={`${match.kind}:${match.label}`}
+                        variant="secondary"
+                        className="rounded-sm font-mono text-[10px]"
+                      >
+                        {match.kind}: {match.label}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Fields for Object/Interface Types */}
@@ -289,77 +428,96 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                     </Badge>
                   </h2>
                   <div className="space-y-2">
-                    {Object.values(selectedTypeObj.getFields()).map((field) => (
-                      <div
-                        key={field.name}
-                        className="group rounded-md border bg-card/40 p-3"
-                      >
-                        <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 font-mono text-sm">
-                          <span className="font-bold text-sky-600 dark:text-sky-400">
-                            {field.name}
-                          </span>
+                    {Object.values(selectedTypeObj.getFields()).map((field) => {
+                      const isMatched = searchMatches
+                        .get(selectedTypeObj.name)
+                        ?.some((match) => match.label.startsWith(field.name));
+
+                      return (
+                        <div
+                          key={field.name}
+                          className="group rounded-md border bg-card/40 p-3 data-[matched=true]:border-primary/50 data-[matched=true]:bg-primary/5"
+                          data-matched={isMatched}
+                        >
+                          <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 font-mono text-sm">
+                            <span className="font-bold text-sky-600 dark:text-sky-400">
+                              {field.name}
+                            </span>
+                            {field.args.length > 0 && (
+                              <span className="text-muted-foreground">
+                                (
+                                {field.args.map((arg, i) => (
+                                  <span key={arg.name}>
+                                    {i > 0 && ', '}
+                                    <span className="text-orange-600 dark:text-orange-400">
+                                      {arg.name}
+                                    </span>
+                                    : {renderTypeLink(arg.type)}
+                                  </span>
+                                ))}
+                                )
+                              </span>
+                            )}
+                            <span className="text-muted-foreground mr-2">
+                              :
+                            </span>
+                            {renderTypeLink(field.type)}
+                            {field.args.length > 0 && (
+                              <Badge
+                                variant="outline"
+                                className="ml-2 h-5 rounded-sm text-[10px]"
+                              >
+                                {field.args.length} args
+                              </Badge>
+                            )}
+                            {isMatched && (
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 h-5 rounded-sm text-[10px]"
+                              >
+                                Match
+                              </Badge>
+                            )}
+                            {field.deprecationReason && (
+                              <Badge
+                                variant="destructive"
+                                className="ml-2 text-[10px] h-4"
+                              >
+                                Deprecated
+                              </Badge>
+                            )}
+                          </div>
+                          {field.description && (
+                            <p className="text-sm text-muted-foreground mt-2 leading-5">
+                              {field.description}
+                            </p>
+                          )}
                           {field.args.length > 0 && (
-                            <span className="text-muted-foreground">
-                              (
-                              {field.args.map((arg, i) => (
-                                <span key={arg.name}>
-                                  {i > 0 && ', '}
-                                  <span className="text-orange-600 dark:text-orange-400">
+                            <div className="mt-3 space-y-1 border-t pt-2">
+                              {field.args.map((arg) => (
+                                <div
+                                  key={arg.name}
+                                  className="flex flex-wrap items-center gap-1.5 text-xs"
+                                >
+                                  <span className="font-mono text-orange-600 dark:text-orange-400">
                                     {arg.name}
                                   </span>
-                                  : {renderTypeLink(arg.type)}
-                                </span>
+                                  <span className="text-muted-foreground">
+                                    :
+                                  </span>
+                                  {renderTypeLink(arg.type)}
+                                  {arg.description && (
+                                    <span className="text-muted-foreground">
+                                      {arg.description}
+                                    </span>
+                                  )}
+                                </div>
                               ))}
-                              )
-                            </span>
-                          )}
-                          <span className="text-muted-foreground mr-2">:</span>
-                          {renderTypeLink(field.type)}
-                          {field.args.length > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="ml-2 h-5 rounded-sm text-[10px]"
-                            >
-                              {field.args.length} args
-                            </Badge>
-                          )}
-                          {field.deprecationReason && (
-                            <Badge
-                              variant="destructive"
-                              className="ml-2 text-[10px] h-4"
-                            >
-                              Deprecated
-                            </Badge>
+                            </div>
                           )}
                         </div>
-                        {field.description && (
-                          <p className="text-sm text-muted-foreground mt-2 leading-5">
-                            {field.description}
-                          </p>
-                        )}
-                        {field.args.length > 0 && (
-                          <div className="mt-3 space-y-1 border-t pt-2">
-                            {field.args.map((arg) => (
-                              <div
-                                key={arg.name}
-                                className="flex flex-wrap items-center gap-1.5 text-xs"
-                              >
-                                <span className="font-mono text-orange-600 dark:text-orange-400">
-                                  {arg.name}
-                                </span>
-                                <span className="text-muted-foreground">:</span>
-                                {renderTypeLink(arg.type)}
-                                {arg.description && (
-                                  <span className="text-muted-foreground">
-                                    {arg.description}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

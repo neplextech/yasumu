@@ -13,6 +13,7 @@
     "---Features---",
     "smtp-server",
     "echo-server",
+    "mcp-server",
     "themes",
     "cli",
     "---Migration---",
