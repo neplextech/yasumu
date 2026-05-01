@@ -19,14 +19,14 @@
     "url": "https://github.com/neplextech/yasumu.git"
   },
   "devDependencies": {
-    "@turbo/gen": "^2.5.8",
-    "@types/nodemailer": "^7.0.4",
+    "@turbo/gen": "^2.9.7",
+    "@types/nodemailer": "^8.0.0",
     "@typescript/native-preview": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
-    "nodemailer": "^7.0.12",
-    "prettier": "^3.6.2",
-    "turbo": "^2.5.8",
+    "nodemailer": "^8.0.7",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.7",
     "typescript": "catalog:build"
   },
   "packageManager": "pnpm@10.19.0"

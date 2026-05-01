@@ -5,9 +5,10 @@ import { NotFoundException } from '../common/exceptions/http.exception.ts';
 import { YasumuRpcService } from '@yasumu/rpc';
 
 @Resolver('workspaces')
-export class WorkspacesResolver
-  implements YasumuRpcService<'workspaces', true>
-{
+export class WorkspacesResolver implements YasumuRpcService<
+  'workspaces',
+  true
+> {
   public constructor(private readonly workspacesService: WorkspacesService) {}
 
   @Query()

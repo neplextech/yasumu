@@ -5,13 +5,19 @@ description: Built-in echo server for testing HTTP clients and requests.
 
 # Echo Server
 
-The Tanxium Echo Server is a built-in utility for testing HTTP clients, similar to Postman Echo or Bruno's echo service. It mirrors back your request details, making it perfect for debugging and development.
+The Tanxium Echo Server is a built-in utility for testing HTTP
+clients, similar to Postman Echo or Bruno's echo service. It mirrors
+back your request details, making it perfect for debugging and
+development.
 
-The echo server is available at `http://echo.yasumu.local` when Yasumu is running.
+The echo server is available at `http://echo.yasumu.local` when Yasumu
+is running.
 
 ## Overview
 
-The echo server intercepts requests to **any path** (except specific helper endpoints) and returns a JSON response containing details about the request you sent. This is useful for:
+The echo server intercepts requests to **any path** (except specific
+helper endpoints) and returns a JSON response containing details about
+the request you sent. This is useful for:
 
 - Debugging request configurations
 - Verifying headers and authentication
@@ -33,7 +39,8 @@ Content-Type: application/json
 
 ## Response Structure
 
-The server responds with a JSON object containing your request details:
+The server responds with a JSON object containing your request
+details:
 
 ```json
 {

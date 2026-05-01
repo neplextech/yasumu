@@ -9,9 +9,7 @@ import type { YasumuRpcService } from '@yasumu/rpc';
 import type { EntityHistoryData } from '@yasumu/common';
 
 @Resolver('entityHistory')
-export class EntityHistoryResolver
-  implements YasumuRpcService<'entityHistory'>
-{
+export class EntityHistoryResolver implements YasumuRpcService<'entityHistory'> {
   public constructor(
     private readonly entityHistoryService: EntityHistoryService,
   ) {}

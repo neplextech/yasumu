@@ -27,21 +27,21 @@
     "url": "https://github.com/neplextech/yasumu.git"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.7.4",
+    "@hono/zod-validator": "^0.7.6",
     "@yasumu/common": "file:../../packages/common",
     "@yasumu/rpc": "file:../../packages/rpc",
     "@yasumu/core": "file:../../packages/core",
     "@yasumu/den": "file:../../packages/den",
     "@yasumu/schema": "file:../../packages/schema",
-    "drizzle-kit": "^0.31.6",
-    "drizzle-orm": "^0.44.7",
-    "hono": "^4.10.4",
-    "mailparser": "^3.9.0",
-    "smtp-server": "^3.16.1",
-    "zod": "^4.1.12"
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.16",
+    "mailparser": "^3.9.8",
+    "smtp-server": "^3.18.4",
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@types/mailparser": "^3.4.6",
-    "@types/smtp-server": "^3.5.12"
+    "@types/smtp-server": "^3.5.13"
   }
 }

@@ -12,15 +12,15 @@
   },
   "dependencies": {
     "@vercel/analytics": "catalog:react",
-    "fumadocs-core": "16.3.2",
-    "fumadocs-mdx": "14.2.2",
-    "fumadocs-ui": "16.3.2",
-    "lucide-react": "^0.561.0",
+    "fumadocs-core": "16.8.5",
+    "fumadocs-mdx": "14.3.2",
+    "fumadocs-ui": "16.8.5",
+    "lucide-react": "^1.14.0",
     "next": "catalog:react",
     "react": "catalog:react",
     "react-dom": "catalog:react",
     "reading-time": "^1.5.0",
-    "zod": "^4.3.5"
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:tailwind",
@@ -33,7 +33,7 @@
     "@yasumu/tsconfig": "workspace:*",
     "eslint": "^9.39.2",
     "eslint-config-next": "catalog:react",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.13",
     "tailwindcss": "catalog:tailwind"
   }
 }

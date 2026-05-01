@@ -2,9 +2,8 @@ async function setup() {
   try {
     if (process.env.NODE_ENV === 'development') return;
 
-    const { YASUMU_ANALYTICS_FLAG_KEY } = await import(
-      '@/lib/constants/instrumentation'
-    );
+    const { YASUMU_ANALYTICS_FLAG_KEY } =
+      await import('@/lib/constants/instrumentation');
     const { Store } = await import('@tauri-apps/plugin-store');
     const store = await Store.load('yasumu-config.json').catch(() => null);
 

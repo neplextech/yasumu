@@ -4,9 +4,7 @@ import { WorkspaceId } from '../common/decorators.ts';
 import { YasumuRpcService } from '@yasumu/rpc';
 
 @Resolver('synchronization')
-export class SynchronizationResolver
-  implements YasumuRpcService<'synchronization'>
-{
+export class SynchronizationResolver implements YasumuRpcService<'synchronization'> {
   public constructor(
     private readonly synchronizationService: SynchronizationService,
   ) {}

@@ -8,9 +8,7 @@ import type {
 } from '@yasumu/common';
 
 @Resolver('externalWorkspace')
-export class ExternalWorkspaceResolver
-  implements YasumuRpcService<'externalWorkspace'>
-{
+export class ExternalWorkspaceResolver implements YasumuRpcService<'externalWorkspace'> {
   public constructor(
     private readonly externalWorkspaceService: ExternalWorkspaceService,
   ) {}

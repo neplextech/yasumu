@@ -172,9 +172,7 @@ export class RestExecutor {
 
         if (!onResponseResult.success && options.verbose) {
           console.log(
-            pc.yellow(
-              `  ⚠ onResponse script error: ${onResponseResult.error}`,
-            ),
+            pc.yellow(`  ⚠ onResponse script error: ${onResponseResult.error}`),
           );
         }
       }

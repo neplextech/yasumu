@@ -1,7 +1,10 @@
 node_modules
 dist
 build
+out
 .next
+**/public-modules
+**/yasumu-server/index.js
 
 README.md
 

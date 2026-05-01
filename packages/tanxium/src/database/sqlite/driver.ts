@@ -24,8 +24,8 @@ export type DrizzleNodeSQLiteConfig =
 
 export class NodeSQLiteDatabase<
   TFullSchema extends Record<string, unknown> = Record<string, never>, // Full schema definition
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>, // Relational schema derived from Full schema
+  TSchema extends TablesRelationalConfig =
+    ExtractTablesWithRelations<TFullSchema>, // Relational schema derived from Full schema
 > extends BaseSQLiteDatabase<
   'sync',
   { changes: number | bigint; lastInsertRowid: number | bigint },
@@ -37,8 +37,8 @@ export class NodeSQLiteDatabase<
 
 function construct<
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig =
+    ExtractTablesWithRelations<TFullSchema>,
 >(
   client: DatabaseSync,
   config: DrizzleConfig<TFullSchema> = {}, // Config uses TFullSchema
@@ -87,8 +87,8 @@ function construct<
 
 export function drizzle<
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig =
+    ExtractTablesWithRelations<TFullSchema>,
 >(
   ...params:
     | []
@@ -151,8 +151,8 @@ export function drizzle<
 export namespace drizzle {
   export function mock<
     TFullSchema extends Record<string, unknown> = Record<string, never>,
-    TSchema extends
-      TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+    TSchema extends TablesRelationalConfig =
+      ExtractTablesWithRelations<TFullSchema>,
   >(
     config?: DrizzleConfig<TFullSchema>,
   ): NodeSQLiteDatabase<TFullSchema, TSchema> & {

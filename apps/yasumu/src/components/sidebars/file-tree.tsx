@@ -60,8 +60,9 @@ export interface FileTreeItem {
   type: 'folder' | 'file';
 }
 
-export interface FileTreeSidebarProps
-  extends React.ComponentProps<typeof Sidebar> {
+export interface FileTreeSidebarProps extends React.ComponentProps<
+  typeof Sidebar
+> {
   fileTree: FileTreeItem[];
   onFileSelect?: (id: string) => void;
   onFileCreate?: (name: string, parentId?: string | null) => void;

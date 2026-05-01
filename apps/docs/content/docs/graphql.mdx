@@ -1,8 +1,7 @@
 ---
 title: GraphQL
-description:
-  Designing, testing, and debugging GraphQL APIs with Yasumu's built-in
-  GraphQL client.
+description: Designing, testing, and debugging GraphQL APIs with Yasumu's
+  built-in GraphQL client.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -53,9 +52,9 @@ Paste your GraphQL endpoint URL into the URL bar at the top (e.g.,
 
 ### Introspect the Schema
 
-Click the **Introspect** button next to the URL bar. Yasumu will
-fetch the schema from your endpoint and unlock features like
-IntelliSense, the Query Builder, and the Documentation viewer.
+Click the **Introspect** button next to the URL bar. Yasumu will fetch
+the schema from your endpoint and unlock features like IntelliSense,
+the Query Builder, and the Documentation viewer.
 
 </Step>
 <Step>
@@ -99,7 +98,8 @@ GraphQL entities.
 
 ### Organizing with Folders
 
-Group related requests into folders by functionality. You can nest folders to any depth.
+Group related requests into folders by functionality. You can nest
+folders to any depth.
 
 ![graphql-file-tree](/graphql-file-tree.png)
 
@@ -148,9 +148,9 @@ schema from your endpoint. Introspection:
 
 ### Sending Requests
 
-Click **Send** or press `Ctrl+Enter` (`⌘+Enter` on macOS) to
-execute the request. While a request is in progress, the button
-changes to **Cancel** so you can abort it if needed.
+Click **Send** or press `Ctrl+Enter` (`⌘+Enter` on macOS) to execute
+the request. While a request is in progress, the button changes to
+**Cancel** so you can abort it if needed.
 
 ## Query Editor
 
@@ -161,19 +161,18 @@ sub-views:
 - **Query Builder** — A visual, point-and-click query constructor
 - **Documentation** — An interactive schema documentation browser
 
-Switch between them using the sub-tab buttons at the top of the
-Query panel.
+Switch between them using the sub-tab buttons at the top of the Query
+panel.
 
 ### Editor
 
-The editor uses **Monaco** (the same engine behind VS Code) with
-full GraphQL language support:
+The editor uses **Monaco** (the same engine behind VS Code) with full
+GraphQL language support:
 
 - **Syntax highlighting** for GraphQL queries
 - **IntelliSense autocomplete** — field names, types, and arguments
   are suggested as you type (requires introspection)
-- **Error highlighting** — invalid queries are underlined in real
-  time
+- **Error highlighting** — invalid queries are underlined in real time
 - **Variable support** — reference environment variables with
   `{{VARIABLE}}`
 
@@ -210,9 +209,8 @@ write GraphQL syntax by hand.
 
 ### Pick an Operation Type
 
-Use the tabs at the top to switch between **Query**, **Mutation**,
-and **Subscription** — only types available in your schema are
-shown.
+Use the tabs at the top to switch between **Query**, **Mutation**, and
+**Subscription** — only types available in your schema are shown.
 
 </Step>
 <Step>
@@ -220,17 +218,17 @@ shown.
 ### Select Fields
 
 Browse the field tree on the left panel. Check the boxes next to the
-fields you want to include in your query. Expand nested object
-fields with the **chevron** (▸) to select sub-fields.
+fields you want to include in your query. Expand nested object fields
+with the **chevron** (▸) to select sub-fields.
 
 </Step>
 <Step>
 
 ### Set Arguments
 
-When you select a field that has arguments, inline input fields
-appear directly below it. Fill in argument values as needed —
-required arguments are marked with a red asterisk (\*).
+When you select a field that has arguments, inline input fields appear
+directly below it. Fill in argument values as needed — required
+arguments are marked with a red asterisk (\*).
 
 </Step>
 <Step>
@@ -282,8 +280,8 @@ The left sidebar lists all types organized by category:
 
 Click any type to view its full documentation in the main panel:
 
-- **Type badge** — Shows whether it's a Query, Mutation, Object,
-  Enum, etc.
+- **Type badge** — Shows whether it's a Query, Mutation, Object, Enum,
+  etc.
 - **Description** — The type's description from the schema
 - **Fields** — Each field with its name, arguments, return type, and
   description
@@ -294,8 +292,8 @@ Click any type to view its full documentation in the main panel:
 
 ### Searching Types
 
-Use the search box at the top of the sidebar to filter types by
-name. This makes it easy to find specific types in large schemas.
+Use the search box at the top of the sidebar to filter types by name.
+This makes it easy to find specific types in large schemas.
 
 ## Variables Editor
 
@@ -337,10 +335,10 @@ Both modes stay in sync — changes in one are reflected in the other.
 
 The **Params** tab manages URL parameters for your request:
 
-- **Path Parameters** — Automatically detected from `:param` syntax
-  in your URL (e.g., `https://api.example.com/:version/graphql`)
-- **Search Parameters** — Query string key-value pairs appended to
-  the URL
+- **Path Parameters** — Automatically detected from `:param` syntax in
+  your URL (e.g., `https://api.example.com/:version/graphql`)
+- **Search Parameters** — Query string key-value pairs appended to the
+  URL
 
 ![graphql-params](/graphql-params.png)
 
@@ -406,8 +404,7 @@ autocomplete and error checking.
 
 The **Entity Importer** (also called the GraphQL Generator) can
 automatically generate request entities for every operation in your
-GraphQL schema. This is a huge time saver when working with a new
-API.
+GraphQL schema. This is a huge time saver when working with a new API.
 
 ![graphql-entity-importer](/graphql-importer.png)
 
@@ -445,8 +442,8 @@ mutations.
 
 ### Generate
 
-Click **Generate Requests** to create all the entities at once.
-Yasumu automatically:
+Click **Generate Requests** to create all the entities at once. Yasumu
+automatically:
 
 - Creates subfolders named **Queries**, **Mutations**, and
   **Subscriptions**
@@ -504,8 +501,8 @@ focuses the Errors tab.
 ### Environment Selector
 
 The environment selector sits at the end of the tab bar. Switch
-between environments to change which variables are used when
-resolving `{{VARIABLE}}` references.
+between environments to change which variables are used when resolving
+`{{VARIABLE}}` references.
 
 ## Keyboard Shortcuts
 
@@ -519,10 +516,10 @@ resolving `{{VARIABLE}}` references.
 
 ## Best Practices
 
-1. **Introspect early** — Always introspect the schema first to
-   unlock IntelliSense, the Query Builder, and Documentation
-2. **Use the Entity Importer** — When working with a new API, use
-   the importer to scaffold all operations in seconds
+1. **Introspect early** — Always introspect the schema first to unlock
+   IntelliSense, the Query Builder, and Documentation
+2. **Use the Entity Importer** — When working with a new API, use the
+   importer to scaffold all operations in seconds
 3. **Organize with folders** — Group related operations (e.g., by
    resource or domain) for easy navigation
 4. **Use environment variables** — Avoid hardcoding URLs and tokens.
