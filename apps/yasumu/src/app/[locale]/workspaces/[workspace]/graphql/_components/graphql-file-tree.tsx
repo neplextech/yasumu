@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
+import { FileTreeSidebar } from '@/components/sidebars/file-tree';
 import {
   useActiveWorkspace,
   useYasumu,
@@ -16,32 +16,29 @@ import {
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { useGraphqlContext } from '../_providers/graphql-context';
-import { useGraphqlFileTreeContext } from '../_providers/file-tree-context';
+import {
+  useFileTreeClipboardActions,
+  useGraphqlFileTreeContext,
+} from '../_providers/file-tree-context';
 import { GeneratorDialog } from './dialogs/generator-dialog';
 import { Wand2 } from 'lucide-react';
 import { GraphqlIcon } from './graphql-icon';
 import { fileNamify } from '@/lib/utils/filenamify';
-
-// GraphQL tree item type (will be provided by core API)
-interface GraphqlTreeItem {
-  id: string;
-  name: string | null;
-  type: 'file' | 'folder';
-  parentId?: string | null;
-  children?: GraphqlTreeItem[];
-}
+import type { GraphqlTreeItem } from '@yasumu/core';
+import {
+  findFolderInWorkspaceTree,
+  flattenWorkspaceFolders,
+  mapWorkspaceTreeToFileTree,
+} from '@/components/workspace/file-tree-utils';
 
 export function GraphqlFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
   const { setEntityId, removeFromHistory } = useGraphqlContext();
-  const {
-    clipboard,
-    setClipboard,
-    clearClipboard,
-    selectedFolderId,
-    setSelectedFolderId,
-  } = useGraphqlFileTreeContext();
+  const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } =
+    useGraphqlFileTreeContext();
+  const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } =
+    useFileTreeClipboardActions();
 
   const graphql = workspace.graphql;
 
@@ -50,7 +47,7 @@ export function GraphqlFileTree() {
     isLoading: isLoadingGraphqlEntities,
     refetch,
   } = useQuery({
-    queryKey: ['graphqlEntities'],
+    queryKey: ['graphqlEntities', workspace.id],
     queryFn: () => graphql?.listTree?.() ?? Promise.resolve([]),
     enabled: !!graphql,
   });
@@ -59,29 +56,15 @@ export function GraphqlFileTree() {
     return refetch();
   });
 
-  const mapTreeToFileTree = (items: GraphqlTreeItem[]): FileTreeItem[] => {
-    return items.map((item): FileTreeItem => {
-      if (item.type === 'folder') {
-        return {
-          id: item.id,
-          name: item.name ?? 'New Folder',
-          type: 'folder',
-          children: mapTreeToFileTree(item.children ?? []),
-        };
-      }
-      return {
-        id: item.id,
-        name: item.name ?? 'New Query',
-        type: 'file',
-        icon: GraphqlIcon,
-      };
-    });
-  };
-
-  const fileTree = useMemo(() => {
-    if (!graphqlEntities) return [];
-    return mapTreeToFileTree(graphqlEntities as GraphqlTreeItem[]);
-  }, [graphqlEntities]);
+  const fileTree = useMemo(
+    () =>
+      mapWorkspaceTreeToFileTree(graphqlEntities ?? [], {
+        folderFallbackName: 'New Folder',
+        fileFallbackName: 'New Query',
+        resolveFileIcon: () => GraphqlIcon,
+      }),
+    [graphqlEntities],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -119,22 +102,8 @@ export function GraphqlFileTree() {
 
   const duplicateFolder = useCallback(
     async (id: string, targetParentId?: string | null) => {
-      const findFolderInTree = (
-        items: GraphqlTreeItem[],
-        folderId: string,
-      ): GraphqlTreeItem | null => {
-        for (const item of items) {
-          if (item.id === folderId) return item;
-          if (item.type === 'folder' && item.children) {
-            const found = findFolderInTree(item.children, folderId);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
       const folder = graphqlEntities
-        ? findFolderInTree(graphqlEntities as GraphqlTreeItem[], id)
+        ? findFolderInWorkspaceTree<GraphqlTreeItem>(graphqlEntities, id)
         : null;
       if (!folder || folder.type !== 'folder') return;
 
@@ -184,34 +153,6 @@ export function GraphqlFileTree() {
     [graphql, graphqlEntities],
   );
 
-  const handleFileCopy = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'file', operation: 'copy' });
-    },
-    [setClipboard],
-  );
-
-  const handleFolderCopy = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'folder', operation: 'copy' });
-    },
-    [setClipboard],
-  );
-
-  const handleFileCut = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'file', operation: 'cut' });
-    },
-    [setClipboard],
-  );
-
-  const handleFolderCut = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'folder', operation: 'cut' });
-    },
-    [setClipboard],
-  );
-
   const handlePaste = useCallback(
     async (targetFolderId: string | null) => {
       if (!clipboard) return;
@@ -254,32 +195,10 @@ export function GraphqlFileTree() {
 
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
-  const flattenFolders = useCallback(
-    (
-      items: GraphqlTreeItem[],
-      depth = 0,
-    ): { id: string; name: string; parentId?: string | null }[] => {
-      let result: { id: string; name: string; parentId?: string | null }[] = [];
-      for (const item of items) {
-        if (item.type === 'folder') {
-          result.push({
-            id: item.id,
-            name: item.name ?? 'Untitled Folder',
-            parentId: item.parentId,
-          });
-          if (item.children) {
-            result.push(...flattenFolders(item.children, depth + 1));
-          }
-        }
-      }
-      return result;
-    },
-    [],
+  const folders = useMemo(
+    () => flattenWorkspaceFolders(graphqlEntities ?? []),
+    [graphqlEntities],
   );
-
-  const folders = graphqlEntities
-    ? flattenFolders(graphqlEntities as GraphqlTreeItem[])
-    : [];
 
   const handleGenerate = async (
     url: string,

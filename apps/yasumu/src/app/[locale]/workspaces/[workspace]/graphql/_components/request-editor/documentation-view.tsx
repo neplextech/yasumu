@@ -19,8 +19,7 @@ import {
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Input } from '@yasumu/ui/components/input';
 import { Button } from '@yasumu/ui/components/button';
-import { ChevronRight, Search, Box, Type, List, Boxes } from 'lucide-react';
-import { cn } from '@yasumu/ui/lib/utils';
+import { Search, Box, Type, List, Boxes, BookOpen } from 'lucide-react';
 import { Badge } from '@yasumu/ui/components/badge';
 
 interface DocumentationViewProps {
@@ -35,6 +34,11 @@ type TypeCategory =
   | 'scalars'
   | 'interfaces'
   | 'unions';
+
+function formatCategoryLabel(category: TypeCategory): string {
+  if (category === 'root') return 'Root';
+  return category;
+}
 
 export function DocumentationView({ schema }: DocumentationViewProps) {
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -104,6 +108,15 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
     return result;
   }, [organizedTypes, searchQuery]);
 
+  const totalVisibleTypes = useMemo(
+    () =>
+      Object.values(filteredTypes).reduce(
+        (count, types) => count + types.length,
+        0,
+      ),
+    [filteredTypes],
+  );
+
   const handleTypeClick = (typeName: string) => {
     setSelectedType(typeName);
   };
@@ -122,13 +135,25 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
 
   if (!schema) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
-        No schema available. Introspect a URL to view documentation.
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="max-w-sm text-center space-y-4">
+          <div className="mx-auto grid size-12 place-items-center rounded-md border bg-muted/30">
+            <BookOpen className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">No schema loaded</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Introspect the current endpoint to explore types, fields,
+              arguments, enum values, interfaces, and unions.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const selectedTypeObj = selectedType ? typeMap[selectedType] : null;
+  const defaultType = schema.getQueryType() ?? organizedTypes.root[0] ?? null;
+  const selectedTypeObj = selectedType ? typeMap[selectedType] : defaultType;
 
   const isRootQuery =
     schema &&
@@ -154,10 +179,24 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
   if (isRootSubscription) typeBadgeLabel = 'Subscription';
 
   return (
-    <div className="flex h-full border rounded-md overflow-hidden">
+    <div className="flex h-full border rounded-md overflow-hidden bg-background">
       {/* Sidebar */}
       <div className="w-1/3 border-r bg-muted/10 flex flex-col min-w-[250px] overflow-y-auto">
-        <div className="p-2 border-b">
+        <div className="p-3 border-b space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-sm font-medium">Schema</div>
+              <div className="text-xs text-muted-foreground">
+                {totalVisibleTypes} visible types
+              </div>
+            </div>
+            <Badge variant="outline" className="rounded-sm font-mono">
+              {
+                Object.keys(typeMap).filter((name) => !name.startsWith('__'))
+                  .length
+              }
+            </Badge>
+          </div>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -170,6 +209,11 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
         </div>
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-4">
+            {totalVisibleTypes === 0 && (
+              <div className="rounded-md border border-dashed p-6 text-center text-xs text-muted-foreground">
+                No types match this search.
+              </div>
+            )}
             {(
               Object.entries(filteredTypes) as [
                 TypeCategory,
@@ -179,9 +223,14 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
               if (types.length === 0) return null;
               return (
                 <div key={category}>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                    {category}
-                  </h3>
+                  <div className="mb-2 flex items-center justify-between px-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {formatCategoryLabel(category)}
+                    </h3>
+                    <span className="text-[10px] font-mono text-muted-foreground/70">
+                      {types.length}
+                    </span>
+                  </div>
                   <div className="space-y-0.5">
                     {types.map((type) => (
                       <Button
@@ -213,12 +262,12 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
         {selectedTypeObj ? (
           <ScrollArea className="h-full">
             <div className="p-6 space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
+              <div className="space-y-3 rounded-md border bg-muted/10 p-4">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="font-mono">
                     {typeBadgeLabel}
                   </Badge>
-                  <h1 className="text-2xl font-bold font-mono text-primary">
+                  <h1 className="text-xl font-semibold font-mono text-primary">
                     {selectedTypeObj.name}
                   </h1>
                 </div>
@@ -235,11 +284,17 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold flex items-center gap-2 border-b pb-2">
                     <Boxes className="h-4 w-4" /> Fields
+                    <Badge variant="secondary" className="ml-auto rounded-sm">
+                      {Object.keys(selectedTypeObj.getFields()).length}
+                    </Badge>
                   </h2>
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {Object.values(selectedTypeObj.getFields()).map((field) => (
-                      <div key={field.name} className="group">
-                        <div className="flex flex-wrap items-baseline gap-0 font-mono text-sm">
+                      <div
+                        key={field.name}
+                        className="group rounded-md border bg-card/40 p-3"
+                      >
+                        <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 font-mono text-sm">
                           <span className="font-bold text-sky-600 dark:text-sky-400">
                             {field.name}
                           </span>
@@ -260,6 +315,14 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                           )}
                           <span className="text-muted-foreground mr-2">:</span>
                           {renderTypeLink(field.type)}
+                          {field.args.length > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="ml-2 h-5 rounded-sm text-[10px]"
+                            >
+                              {field.args.length} args
+                            </Badge>
+                          )}
                           {field.deprecationReason && (
                             <Badge
                               variant="destructive"
@@ -270,9 +333,30 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                           )}
                         </div>
                         {field.description && (
-                          <p className="text-sm text-muted-foreground mt-1 ml-4 pl-2 border-l-2 border-muted">
+                          <p className="text-sm text-muted-foreground mt-2 leading-5">
                             {field.description}
                           </p>
+                        )}
+                        {field.args.length > 0 && (
+                          <div className="mt-3 space-y-1 border-t pt-2">
+                            {field.args.map((arg) => (
+                              <div
+                                key={arg.name}
+                                className="flex flex-wrap items-center gap-1.5 text-xs"
+                              >
+                                <span className="font-mono text-orange-600 dark:text-orange-400">
+                                  {arg.name}
+                                </span>
+                                <span className="text-muted-foreground">:</span>
+                                {renderTypeLink(arg.type)}
+                                {arg.description && (
+                                  <span className="text-muted-foreground">
+                                    {arg.description}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}

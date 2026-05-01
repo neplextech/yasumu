@@ -24,9 +24,12 @@ import {
   Search,
   Braces,
   Info,
+  ListTree,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@yasumu/ui/lib/utils';
 import type { FieldNode, RootOperation } from '../../_hooks/use-query-builder';
+import { Badge } from '@yasumu/ui/components/badge';
 
 interface QueryBuilderProps {
   operations: RootOperation[];
@@ -53,6 +56,12 @@ export function QueryBuilder({
 }: QueryBuilderProps) {
   const [searchFilter, setSearchFilter] = useState('');
   const [copied, setCopied] = useState(false);
+  const selectedFieldCount = currentOperation
+    ? countSelectedFields(currentOperation.fields)
+    : 0;
+  const visibleFieldCount = currentOperation
+    ? countVisibleFields(currentOperation.fields, searchFilter.toLowerCase())
+    : 0;
 
   const handleCopy = useCallback(async () => {
     if (generatedQuery) {
@@ -70,16 +79,18 @@ export function QueryBuilder({
 
   if (operations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-4">
-        <Braces className="h-12 w-12 text-muted-foreground/30" />
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            No schema available
-          </p>
-          <p className="text-xs text-muted-foreground/70">
-            Click &quot;Introspect&quot; to fetch the schema from your GraphQL
-            endpoint, then use the query builder to construct queries visually.
-          </p>
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="max-w-sm text-center space-y-4">
+          <div className="mx-auto grid size-12 place-items-center rounded-md border bg-muted/30">
+            <Braces className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">No schema loaded</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Introspect the current endpoint to browse root operations, select
+              fields, and generate a query without leaving the editor.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -108,6 +119,16 @@ export function QueryBuilder({
             </TabsTrigger>
           ))}
         </TabsList>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Badge variant="outline" className="h-6 rounded-sm font-mono">
+            {selectedFieldCount} selected
+          </Badge>
+          {searchFilter && (
+            <Badge variant="secondary" className="h-6 rounded-sm font-mono">
+              {visibleFieldCount} matches
+            </Badge>
+          )}
+        </div>
         <div className="flex-1" />
         <div className="relative w-44">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -125,16 +146,37 @@ export function QueryBuilder({
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={60} minSize={30}>
             <ScrollArea className="h-full">
-              <div className="p-2">
+              <div className="p-2 space-y-2">
+                <div className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ListTree className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium capitalize">
+                        {activeOperation}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        Select fields and arguments to compose the operation.
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 {currentOperation && (
-                  <FieldTree
-                    fields={currentOperation.fields}
-                    path={[]}
-                    searchFilter={searchFilter.toLowerCase()}
-                    onToggleField={onToggleField}
-                    onToggleExpand={onToggleExpand}
-                    onSetArgValue={onSetArgValue}
-                  />
+                  <>
+                    {visibleFieldCount > 0 ? (
+                      <FieldTree
+                        fields={currentOperation.fields}
+                        path={[]}
+                        searchFilter={searchFilter.toLowerCase()}
+                        onToggleField={onToggleField}
+                        onToggleExpand={onToggleExpand}
+                        onSetArgValue={onSetArgValue}
+                      />
+                    ) : (
+                      <div className="rounded-md border border-dashed p-6 text-center text-xs text-muted-foreground">
+                        No fields match this filter.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </ScrollArea>
@@ -145,9 +187,12 @@ export function QueryBuilder({
           <ResizablePanel defaultSize={40} minSize={20}>
             <div className="flex flex-col h-full min-h-0">
               <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
-                <span className="text-xs text-muted-foreground font-medium">
-                  Generated Query
-                </span>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Generated Query
+                  </span>
+                </div>
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
@@ -176,7 +221,8 @@ export function QueryBuilder({
               </div>
               <ScrollArea className="flex-1">
                 <pre className="p-3 text-xs font-mono text-muted-foreground whitespace-pre-wrap">
-                  {generatedQuery || '# Select fields to build a query'}
+                  {generatedQuery ||
+                    '# Select fields on the left to build a query'}
                 </pre>
               </ScrollArea>
             </div>
@@ -187,19 +233,32 @@ export function QueryBuilder({
   );
 }
 
+function countSelectedFields(fields: FieldNode[]): number {
+  return fields.reduce(
+    (count, field) =>
+      count + (field.selected ? 1 : 0) + countSelectedFields(field.fields),
+    0,
+  );
+}
+
+function countVisibleFields(fields: FieldNode[], searchFilter: string): number {
+  return fields.reduce((count, field) => {
+    const matchesSearch =
+      !searchFilter || field.name.toLowerCase().includes(searchFilter);
+    const childCount = countVisibleFields(field.fields, searchFilter);
+
+    return count + (matchesSearch || childCount > 0 ? 1 : 0) + childCount;
+  }, 0);
+}
+
 // ─── Field documentation hover card (VS Code-like) ──────────────────────────
 
 function FieldDocCard({ field }: { field: FieldNode }) {
   const hasArgs = field.args.length > 0;
   const hasChildren = field.fields.length > 0;
 
-  // Build a signature like: fieldName(arg1: Type!, arg2: Type): ReturnType
-  const signature = hasArgs
-    ? `${field.name}(${field.args.map((a) => `${a.name}: ${a.type}`).join(', ')}): ${field.type}`
-    : `${field.name}: ${field.type}`;
-
   return (
-    <div className="max-w-xs space-y-2">
+    <div className="space-y-2">
       {/* Signature */}
       <div className="font-mono text-xs text-foreground bg-muted/50 rounded px-2 py-1.5 break-all leading-relaxed">
         {field.name}
@@ -246,7 +305,7 @@ function FieldDocCard({ field }: { field: FieldNode }) {
                 </span>
                 {arg.description && (
                   <span className="text-muted-foreground/70 truncate">
-                    &mdash; {arg.description}
+                    - {arg.description}
                   </span>
                 )}
               </div>
@@ -382,6 +441,19 @@ function FieldItem({
           {field.name}
         </span>
 
+        {hasArgs && (
+          <Badge
+            variant="outline"
+            className="h-5 rounded-sm px-1.5 text-[10px] font-mono text-muted-foreground"
+          >
+            {field.args.length} args
+          </Badge>
+        )}
+
+        <span className="text-[10px] font-mono text-muted-foreground/70 truncate max-w-32">
+          {field.type}
+        </span>
+
         {/* Spacer */}
         <div className="flex-1 shrink-0" />
 
@@ -396,7 +468,7 @@ function FieldItem({
             side="right"
             align="start"
             sideOffset={8}
-            className="p-3 w-full"
+            className="p-3 w-[340px]"
           >
             <FieldDocCard field={field} />
           </HoverCardContent>

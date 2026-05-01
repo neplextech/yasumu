@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import { YasumuScriptingLanguage } from '@yasumu/core';
 import type {
   GraphqlEntityData,
   GraphqlEntityRequestBody,
   GraphqlEntityUpdateOptions,
-  YasumuEmbeddedScript,
 } from '@yasumu/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -76,35 +74,6 @@ interface UseGraphqlEntityReturn {
   save: () => Promise<void>;
 }
 
-function createDefaultScript(): YasumuEmbeddedScript {
-  return {
-    language: YasumuScriptingLanguage.JavaScript,
-    code: '',
-  };
-}
-
-function createDefaultEntity(): GraphqlEntityData {
-  return {
-    id: '',
-    name: null,
-    url: null,
-    groupId: null,
-    requestHeaders: [],
-    requestParameters: [],
-    searchParameters: [],
-    requestBody: {
-      type: 'json',
-      value: { query: '', variables: '', operationName: '' },
-      metadata: {},
-    },
-    script: createDefaultScript(),
-    dependencies: [],
-    metadata: null,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-}
-
 export function useGraphqlEntity({
   entityId,
 }: UseGraphqlEntityOptions): UseGraphqlEntityReturn {
@@ -119,7 +88,10 @@ export function useGraphqlEntity({
   // GraphQL API accessor
   const graphql = workspace.graphql;
 
-  const queryKey = useMemo(() => ['graphql-entity', entityId], [entityId]);
+  const queryKey = useMemo(
+    () => ['graphql-entity', workspace.id, entityId],
+    [entityId, workspace.id],
+  );
 
   const {
     data: serverData,
@@ -148,15 +120,6 @@ export function useGraphqlEntity({
     };
   }, []);
 
-  // Only sync server data to local data on mount or when entityId changes
-  useEffect(() => {
-    if (serverData && isFetched) {
-      setLocalData(serverData);
-      pendingUpdates.current = {};
-    }
-  }, [serverData, isFetched, entityId]);
-
-  // Handle entityId change / reset
   useEffect(() => {
     pendingUpdates.current = {};
     if (saveTimeoutRef.current) {
@@ -171,9 +134,19 @@ export function useGraphqlEntity({
     if (cached) {
       setLocalData(cached);
     }
-    // Note: Don't set localData to null here - let the query fetch handle it
-    // This prevents flickering when switching entities
-  }, [entityId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entityId, queryClient, queryKey]);
+
+  useEffect(() => {
+    if (!serverData || !isFetched) return;
+
+    setLocalData((current) => {
+      if (current?.id === serverData.id) {
+        return current;
+      }
+
+      return serverData;
+    });
+  }, [serverData, isFetched]);
 
   const flushSave = useCallback(async () => {
     if (
@@ -244,11 +217,6 @@ export function useGraphqlEntity({
 
       setLocalData((prev) => {
         if (!prev) return prev;
-        const newBody = updateGraphqlBodyValue(prev.requestBody, updates);
-
-        // We need to read current requestBody to build the full update for pendingUpdates
-        // Since we are in the setState callback, 'prev' is the latest state BEFORE this update.
-        // But we need to make sure we accumulate properly.
         const pendingBody = updateGraphqlBodyValue(prev.requestBody, updates);
         pendingUpdates.current = {
           ...pendingUpdates.current,
@@ -257,7 +225,7 @@ export function useGraphqlEntity({
 
         return {
           ...prev,
-          requestBody: newBody,
+          requestBody: pendingBody,
         };
       });
 

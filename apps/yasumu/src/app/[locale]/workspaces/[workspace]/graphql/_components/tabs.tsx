@@ -1,17 +1,13 @@
 'use client';
 
+import { EntityRequestTabList } from '@/components/workspace/entity-request-tab-list';
 import { useGraphqlContext } from '../_providers/graphql-context';
 import { GraphqlRequestTabs as GraphqlTabList } from './request-tabs';
 
 export default function RequestTabList() {
-  const { history, removeFromHistory, entityId, setEntityId } =
-    useGraphqlContext();
-  const tabs = history.map((id) => ({
-    id,
-    active: id === entityId,
-    onSelect: () => setEntityId(id),
-    onClose: () => removeFromHistory(id),
-  }));
+  const historyState = useGraphqlContext();
 
-  return <GraphqlTabList tabs={tabs} />;
+  return (
+    <EntityRequestTabList historyState={historyState} Tabs={GraphqlTabList} />
+  );
 }

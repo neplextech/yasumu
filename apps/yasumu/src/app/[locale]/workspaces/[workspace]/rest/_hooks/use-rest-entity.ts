@@ -7,8 +7,6 @@ import {
   RestEntityRequestBody,
   RestEntityUpdateOptions,
   TabularPair,
-  YasumuEmbeddedScript,
-  YasumuScriptingLanguage,
 } from '@yasumu/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -31,33 +29,6 @@ interface UseRestEntityReturn {
   save: () => Promise<void>;
 }
 
-function createDefaultScript(): YasumuEmbeddedScript {
-  return {
-    language: YasumuScriptingLanguage.JavaScript,
-    code: '',
-  };
-}
-
-function createDefaultEntity(): RestEntityData {
-  return {
-    id: '',
-    name: null,
-    method: 'GET',
-    url: null,
-    groupId: null,
-    requestHeaders: [],
-    requestParameters: [],
-    searchParameters: [],
-    requestBody: null,
-    script: createDefaultScript(),
-    testScript: createDefaultScript(),
-    dependencies: [],
-    metadata: null,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-}
-
 export function useRestEntity({
   entityId,
 }: UseRestEntityOptions): UseRestEntityReturn {
@@ -69,7 +40,10 @@ export function useRestEntity({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
-  const queryKey = useMemo(() => ['rest-entity', entityId], [entityId]);
+  const queryKey = useMemo(
+    () => ['rest-entity', workspace.id, entityId],
+    [entityId, workspace.id],
+  );
 
   const {
     data: serverData,
@@ -99,13 +73,6 @@ export function useRestEntity({
   }, []);
 
   useEffect(() => {
-    if (serverData && isFetched) {
-      setLocalData(serverData);
-      pendingUpdates.current = {};
-    }
-  }, [serverData, isFetched, entityId]);
-
-  useEffect(() => {
     pendingUpdates.current = {};
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -119,9 +86,19 @@ export function useRestEntity({
     if (cached) {
       setLocalData(cached);
     }
-    // Note: Don't set localData to null here - let the query fetch handle it
-    // This prevents flickering when switching entities
-  }, [entityId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entityId, queryClient, queryKey]);
+
+  useEffect(() => {
+    if (!serverData || !isFetched) return;
+
+    setLocalData((current) => {
+      if (current?.id === serverData.id) {
+        return current;
+      }
+
+      return serverData;
+    });
+  }, [serverData, isFetched]);
 
   const flushSave = useCallback(async () => {
     if (!entityId || Object.keys(pendingUpdates.current).length === 0) return;

@@ -25,6 +25,12 @@
       "skillPath": "skills/.curated/nuqs/SKILL.md",
       "computedHash": "573a1b8ab42c339b6efc8ab55e720faf75e4902071bdc2f65c006972accfd551"
     },
+    "posthog-instrumentation": {
+      "source": "posthog/posthog-for-claude",
+      "sourceType": "github",
+      "skillPath": "skills/posthog-instrumentation/SKILL.md",
+      "computedHash": "a9a30a63accd756ef41009f987ac75812ab1e855b30ea5d6153e0fed16ebf22d"
+    },
     "react-useeffect": {
       "source": "softaworks/agent-toolkit",
       "sourceType": "github",

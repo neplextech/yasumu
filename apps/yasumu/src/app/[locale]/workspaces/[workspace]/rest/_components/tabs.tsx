@@ -1,17 +1,13 @@
 'use client';
 
+import { EntityRequestTabList } from '@/components/workspace/entity-request-tab-list';
 import { useRestContext } from '../_providers/rest-context';
 import { RequestTabs } from './request-tabs';
 
 export default function RequestTabList() {
-  const { history, removeFromHistory, entityId, setEntityId } =
-    useRestContext();
-  const tabs = history.map((id) => ({
-    id,
-    active: id === entityId,
-    onSelect: () => setEntityId(id),
-    onClose: () => removeFromHistory(id),
-  }));
+  const historyState = useRestContext();
 
-  return <RequestTabs tabs={tabs} />;
+  return (
+    <EntityRequestTabList historyState={historyState} Tabs={RequestTabs} />
+  );
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
+import { FileTreeSidebar } from '@/components/sidebars/file-tree';
 import {
   useActiveWorkspace,
   useYasumu,
@@ -10,29 +10,32 @@ import {
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { useRestContext } from '../_providers/rest-context';
-import { useFileTreeContext } from '../_providers/file-tree-context';
+import {
+  useFileTreeClipboardActions,
+  useFileTreeContext,
+} from '../_providers/file-tree-context';
 import { resolveHttpMethodIcon } from './http-methods';
 import type { RestTreeItem } from '@yasumu/core';
+import {
+  findFolderInWorkspaceTree,
+  mapWorkspaceTreeToFileTree,
+} from '@/components/workspace/file-tree-utils';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
-  const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const { setEntityId, removeFromHistory } = useRestContext();
-  const {
-    clipboard,
-    setClipboard,
-    clearClipboard,
-    selectedFolderId,
-    setSelectedFolderId,
-  } = useFileTreeContext();
+  const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } =
+    useFileTreeContext();
+  const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } =
+    useFileTreeClipboardActions();
 
   const {
     data: restEntities,
     isLoading: isLoadingRestEntities,
     refetch,
   } = useQuery({
-    queryKey: ['restEntities'],
+    queryKey: ['restEntities', workspace.id],
     queryFn: () => workspace.rest.listTree(),
   });
 
@@ -40,30 +43,16 @@ export function RestFileTree() {
     return refetch();
   });
 
-  const mapTreeToFileTree = (items: RestTreeItem[]): FileTreeItem[] => {
-    return items.map((item): FileTreeItem => {
-      if (item.type === 'folder') {
-        return {
-          id: item.id,
-          name: item.name ?? 'New Folder',
-          type: 'folder',
-          children: mapTreeToFileTree(item.children ?? []),
-        };
-      }
-      return {
-        id: item.id,
-        name: item.name ?? 'New Request',
-        type: 'file',
-        icon: resolveHttpMethodIcon(item.method, { short: false }),
-      };
-    });
-  };
-
-  useEffect(() => {
-    if (restEntities) {
-      setFileTree(mapTreeToFileTree(restEntities));
-    }
-  }, [restEntities]);
+  const fileTree = useMemo(
+    () =>
+      mapWorkspaceTreeToFileTree(restEntities ?? [], {
+        folderFallbackName: 'New Folder',
+        fileFallbackName: 'New Request',
+        resolveFileIcon: (item) =>
+          resolveHttpMethodIcon(item.method, { short: false }),
+      }),
+    [restEntities],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -101,21 +90,9 @@ export function RestFileTree() {
 
   const duplicateFolder = useCallback(
     async (id: string, targetParentId?: string | null) => {
-      const findFolderInTree = (
-        items: RestTreeItem[],
-        folderId: string,
-      ): RestTreeItem | null => {
-        for (const item of items) {
-          if (item.id === folderId) return item;
-          if (item.type === 'folder' && item.children) {
-            const found = findFolderInTree(item.children, folderId);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      const folder = restEntities ? findFolderInTree(restEntities, id) : null;
+      const folder = restEntities
+        ? findFolderInWorkspaceTree<RestTreeItem>(restEntities, id)
+        : null;
       if (!folder || folder.type !== 'folder') return;
 
       const duplicateFolderRecursive = async (
@@ -161,34 +138,6 @@ export function RestFileTree() {
       await refetchRestEntities();
     },
     [workspace.rest, restEntities],
-  );
-
-  const handleFileCopy = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'file', operation: 'copy' });
-    },
-    [setClipboard],
-  );
-
-  const handleFolderCopy = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'folder', operation: 'copy' });
-    },
-    [setClipboard],
-  );
-
-  const handleFileCut = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'file', operation: 'cut' });
-    },
-    [setClipboard],
-  );
-
-  const handleFolderCut = useCallback(
-    (id: string) => {
-      setClipboard({ id, type: 'folder', operation: 'cut' });
-    },
-    [setClipboard],
   );
 
   const handlePaste = useCallback(
@@ -246,7 +195,6 @@ export function RestFileTree() {
       onFolderSelect={setSelectedFolderId}
       onFileSelect={withErrorHandler(async (id: string) => {
         setEntityId(id);
-        await workspace.rest.upsertHistory(id);
       })}
       onFileCreate={withErrorHandler(
         async (name: string, parentId?: string | null) => {
