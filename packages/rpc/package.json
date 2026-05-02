@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsgo"
+    "build": "tsc"
   },
   "exports": {
     "deno": "./src/index.ts",

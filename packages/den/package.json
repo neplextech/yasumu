@@ -13,7 +13,7 @@
     "deno": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsgo"
+    "build": "tsc"
   },
   "license": "AGPL-3.0",
   "author": "Neplex",
