@@ -24,9 +24,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "resources/"
-    ],
+    "resources": ["resources/"],
     "createUpdaterArtifacts": true,
     "windows": {
       "nsis": {
