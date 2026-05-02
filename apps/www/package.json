@@ -14,7 +14,7 @@
     "next": "catalog:react",
     "react": "catalog:react",
     "react-dom": "catalog:react",
-    "react-icons": "^5.5.0",
+    "react-icons": "catalog:react",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "swr": "^2.3.8",

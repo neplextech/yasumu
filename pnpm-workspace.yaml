@@ -16,6 +16,7 @@ catalogs:
     next: ^16.2.4
     react: ^19.2.5
     react-dom: ^19.2.5
+    react-icons: ^5.5.0
   tailwind:
     '@tailwindcss/postcss': ^4
     tailwindcss: ^4
