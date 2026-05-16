@@ -847,7 +847,7 @@ async function executeRestTool(
   let testResult: ScriptExecutionResult<RestScriptContext> | null = null;
 
   if (script.code.trim()) {
-    const responseContext = createResponseContext(currentContext, response);
+    const responseContext = createResponseContext(currentContext, response!);
     postResponse = await executeRestScript(
       execute,
       workspaceId,

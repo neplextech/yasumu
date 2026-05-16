@@ -37,11 +37,11 @@ export async function startServer() {
   const server = Deno.serve({ port: 0 }, app.fetch);
   Yasumu.setRpcPort(server.addr.port);
 
-  const echoServerResult = await Deno.serve({ port: 0 }, echoServer.fetch);
+  const echoServerResult = Deno.serve({ port: 0 }, echoServer.fetch);
   Yasumu.setEchoServerPort(echoServerResult.addr.port);
 
   const mcpServer = createMcpServer(rpcServer);
-  const mcpServerResult = await Deno.serve({ port: 0 }, mcpServer.fetch);
+  const mcpServerResult = Deno.serve({ port: 0 }, mcpServer.fetch);
   Yasumu.setMcpServerPort(mcpServerResult.addr.port);
 
   console.log(

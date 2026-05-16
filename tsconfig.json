@@ -5,6 +5,6 @@
     "dist",
     "packages/tanxium",
     "packages/test",
-    "apps/yasumu/src-tauri"
-  ]
+    "apps/yasumu/src-tauri",
+  ],
 }
