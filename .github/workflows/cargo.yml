@@ -48,7 +48,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./apps/yasumu/src-tauri -> target"
+          workspaces: './apps/yasumu/src-tauri -> target'
           cache-on-failure: true
           shared-key: yasumu-check
 

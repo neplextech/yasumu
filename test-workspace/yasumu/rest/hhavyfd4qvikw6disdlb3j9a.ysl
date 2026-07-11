@@ -1,0 +1,22 @@
+@rest
+
+metadata {
+  name: "Yasumu MCP Test"
+  method: "POST"
+  id: "hhavyfd4qvikw6disdlb3j9a"
+  groupId: null
+}
+
+request {
+  url: "http://localhost:51513"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: {
+    type: "json"
+    content: "{\r\n  \"jsonrpc\": \"2.0\",\r\n  \"id\": 2,\r\n  \"method\": \"tools/call\",\r\n  \"params\": {\r\n    \"name\": \"rest_list\",\r\n    \"arguments\": {}\r\n  }\r\n}"
+  }
+}
+
+dependencies []
+

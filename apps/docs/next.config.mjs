@@ -6,8 +6,8 @@ const withMDX = createMDX();
 const config = {
   reactStrictMode: true,
   typescript: {
-    ignoreBuildErrors: true
-  }
+    ignoreBuildErrors: true,
+  },
 };
 
 export default withMDX(config);

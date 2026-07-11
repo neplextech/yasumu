@@ -349,44 +349,84 @@ function generateYasumuTypes(): string {
 }
 
 // ============================================================================
-// Node.js types bundler — recursively follows /// <reference path> directives
+// Node.js types collector — emits one entry per .d.ts file so Monaco can
+// process each file individually (avoids stalling on a single 2 MB blob).
+// Only node: specifier module declarations are kept — bare module names are
+// renamed to their node: equivalents and thin re-export wrappers are removed,
+// since Deno only supports node: imports.
 // ============================================================================
 
-function bundleNodeTypes(nodeTypesDir: string): string {
-  const visited = new Set<string>();
-  const chunks: string[] = [];
+function isBareSpecifier(s: string): boolean {
+  return !s.startsWith('node:') && !s.startsWith('.') && !s.startsWith('/') && !s.startsWith('ext:') && !s.startsWith('#');
+}
 
-  function processFile(filePath: string): void {
-    const normalized = path.normalize(filePath);
+function transformToNodeSpecifiers(content: string): string {
+  // Step 1: Remove thin "node:X" re-export wrappers (both CJS and ESM styles).
+  // CJS: declare module "node:X" { import Y = require("..."); export = Y; }
+  content = content.replace(
+    /\bdeclare module "node:[^"]*"\s*\{\s*import \w+ = require\("[^"]*"\);\s*export = \w+;\s*\}/gs,
+    '',
+  );
+  // ESM: declare module "node:X" { export * from "..."; }
+  content = content.replace(
+    /\bdeclare module "node:[^"]*"\s*\{\s*export \* from "[^"]*";\s*\}/gs,
+    '',
+  );
+
+  // Step 2: Rename bare module specifiers in import/export statements so that
+  // remaining thin wrappers (e.g. path/posix re-exporting path) keep working.
+  content = content.replace(/\bimport (\w+) = require\("([^"]+)"\)/g, (_, name, spec) =>
+    isBareSpecifier(spec) ? `import ${name} = require("node:${spec}")` : `import ${name} = require("${spec}")`,
+  );
+  content = content.replace(/\bexport \* from "([^"]+)"/g, (_, spec) =>
+    isBareSpecifier(spec) ? `export * from "node:${spec}"` : `export * from "${spec}"`,
+  );
+
+  // Step 3: Rename bare declare module "X" → declare module "node:X".
+  content = content.replace(/\bdeclare module "([^"]+)"/g, (_, name) =>
+    isBareSpecifier(name) ? `declare module "node:${name}"` : `declare module "${name}"`,
+  );
+
+  // Strip cross-package /// <reference types> (unresolvable in Monaco sandbox)
+  content = content.replace(/\/\/\/\s*<reference\s+types="[^"]*"\s*\/>\s*\n?/g, '');
+
+  return content.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function collectNodeTypeFiles(nodeTypesDir: string): Array<{ content: string; filePath: string }> {
+  const results: Array<{ content: string; filePath: string }> = [];
+  const visited = new Set<string>();
+
+  function addFile(absolutePath: string): void {
+    const normalized = path.normalize(absolutePath);
     if (visited.has(normalized)) return;
     visited.add(normalized);
-
     if (!fs.existsSync(normalized)) return;
 
-    let content = fs.readFileSync(normalized, 'utf-8');
+    const content = transformToNodeSpecifiers(fs.readFileSync(normalized, 'utf-8'));
+    if (!content) return; // skip empty files after transformation
 
-    // Follow /// <reference path="..."> first (depth-first, so deps come before current)
-    const refRe = /\/\/\/\s*<reference\s+path="([^"]+)"\s*\/>/g;
-    let m: RegExpExecArray | null;
-    while ((m = refRe.exec(content)) !== null) {
-      processFile(path.resolve(path.dirname(normalized), m[1]));
-    }
-
-    // Strip all /// <reference .../> directives from the content itself
-    content = content.replace(/\/\/\/\s*<reference\s+[^/]*\/>\s*\n?/g, '');
-
-    // Strip leading license comments to reduce noise (keep first occurrence)
-    if (chunks.length > 0) {
-      content = content.replace(/^\/\*[\s\S]*?\*\/\s*\n?/, '');
-    }
-
-    const trimmed = content.trim();
-    if (trimmed) chunks.push(trimmed);
+    const relativePath = path.relative(nodeTypesDir, normalized).replace(/\\/g, '/');
+    results.push({
+      content,
+      filePath: `file:///node_modules/@types/node/${relativePath}`,
+    });
   }
 
-  processFile(path.join(nodeTypesDir, 'index.d.ts'));
+  function walkDir(dir: string): void {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        walkDir(path.join(dir, entry.name));
+      } else if (entry.name.endsWith('.d.ts')) {
+        addFile(path.join(dir, entry.name));
+      }
+    }
+  }
 
-  return chunks.join('\n\n');
+  addFile(path.join(nodeTypesDir, 'index.d.ts'));
+  walkDir(nodeTypesDir);
+
+  return results;
 }
 
 // ============================================================================
@@ -490,15 +530,20 @@ function main() {
   const denoTypes = fs.readFileSync(DENO_TYPES_FILE, 'utf-8');
   console.log(`  ✓ ${(denoTypes.length / 1024).toFixed(1)} KB`);
 
-  // 3. Node.js types
-  console.log('\n[3/3] Bundling Node.js types from @types/node...');
+  // 3. Node.js types (one entry per .d.ts file)
+  console.log('\n[3/3] Collecting Node.js types from @types/node...');
   if (!fs.existsSync(NODE_TYPES_DIR)) {
     console.warn(`  ⚠ @types/node not found at ${NODE_TYPES_DIR}, skipping`);
   }
-  const nodeTypes = fs.existsSync(NODE_TYPES_DIR) ? bundleNodeTypes(NODE_TYPES_DIR) : '';
-  console.log(`  ✓ ${(nodeTypes.length / 1024).toFixed(1)} KB`);
+  const nodeTypeFiles = fs.existsSync(NODE_TYPES_DIR) ? collectNodeTypeFiles(NODE_TYPES_DIR) : [];
+  const nodeTotalKB = nodeTypeFiles.reduce((acc, f) => acc + f.content.length, 0) / 1024;
+  console.log(`  ✓ ${nodeTypeFiles.length} files, ${nodeTotalKB.toFixed(1)} KB total`);
 
   // Output
+  const nodeEntries = nodeTypeFiles
+    .map(({ content, filePath }) => `  {\n    content: ${JSON.stringify(content)},\n    filePath: ${JSON.stringify(filePath)},\n  }`)
+    .join(',\n');
+
   const output = `/* eslint-disable */
 // @ts-nocheck
 
@@ -513,22 +558,14 @@ export const YASUMU_TYPE_DEFINITIONS = [
   {
     content: ${JSON.stringify(denoTypes)},
     filePath: 'file:///lib.deno.d.ts',
-  },${
-    nodeTypes
-      ? `
-  {
-    content: ${JSON.stringify(nodeTypes)},
-    filePath: 'file:///node_modules/@types/node/index.d.ts',
-  },`
-      : ''
-  }
+  },${nodeEntries ? `\n${nodeEntries},` : ''}
 ] as const satisfies Array<{ content: string; filePath: string }>;
 `;
 
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, output, 'utf-8');
 
-  const totalKB = ((yasumuTypes.length + denoTypes.length + nodeTypes.length) / 1024).toFixed(1);
+  const totalKB = ((yasumuTypes.length + denoTypes.length + nodeTotalKB * 1024) / 1024).toFixed(1);
   console.log(`\n✓ Written to ${OUTPUT_FILE}`);
   console.log(`  Total type definitions: ${totalKB} KB`);
 }

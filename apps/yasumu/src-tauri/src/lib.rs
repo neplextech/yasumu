@@ -4,7 +4,7 @@ use deno_runtime::deno_core::ModuleSpecifier;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tauri::{Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub type VirtualModulesStore = Arc<Mutex<HashMap<String, String>>>;
 
@@ -110,7 +110,7 @@ pub fn run() {
             // Platform-specific configuration
             #[cfg(target_os = "macos")]
             let win_builder = win_builder
-                .title_bar_style(TitleBarStyle::Overlay)
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true);
 
             #[cfg(not(target_os = "macos"))]

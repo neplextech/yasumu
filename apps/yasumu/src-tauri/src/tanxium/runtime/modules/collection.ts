@@ -145,7 +145,7 @@ interface CacheEntry<V> {
   expiresAt: number | null;
 }
 
-export class Cache {
+export class YasumuCache {
   private _internalCache = new Collection<string, CacheEntry<any>>();
 
   public set<T>(key: string, value: T, ttlMs?: number) {

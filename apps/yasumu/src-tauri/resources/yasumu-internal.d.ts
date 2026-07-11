@@ -1,6 +1,8 @@
 declare module 'ext:core/ops' {
   export function op_send_renderer_event(event: string): void;
-  export function op_register_renderer_event_listener(callback: (event: string) => void): number;
+  export function op_register_renderer_event_listener(
+    callback: (event: string) => void,
+  ): number;
   export function op_get_resources_dir(): string;
   export function op_get_app_data_dir(): string;
   export function op_set_rpc_port(port: number): void;
@@ -11,6 +13,7 @@ declare module 'ext:core/ops' {
   export function op_register_virtual_module(key: string, code: string): void;
   export function op_unregister_virtual_module(key: string): void;
   export function op_unregister_all_virtual_modules(): void;
+  export function op_set_mcp_server_port(port: number): void;
   export function op_is_yasumu_dev_mode(): boolean;
   export function op_get_rpc_port(): number | null;
   export function op_show_confirmation_dialog_sync(

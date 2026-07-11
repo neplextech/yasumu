@@ -19,7 +19,7 @@ import {
 } from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 
 import { MessageQueue } from './message-queue.ts';
-import { Cache } from './modules/collection.ts';
+import { YasumuCache } from './modules/collection.ts';
 import { YasumuUI } from './ui.ts';
 import { rendererEventQueue, isWorkerEnvironment } from './utils.ts';
 import {
@@ -48,7 +48,7 @@ class Yasumu {
   /**
    * In-memory cache store
    */
-  public static readonly cache = new Cache();
+  public static readonly cache = new YasumuCache();
 
   /**
    * Yasumu message queue
