@@ -1,9 +1,10 @@
 name: Release
+
 on:
   workflow_dispatch:
   push:
     branches:
-      - 'release'
+      - release
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,25 +14,32 @@ jobs:
   release:
     permissions:
       contents: write
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+
+          - platform: ubuntu-22.04
             args: ''
-          - platform: 'ubuntu-22.04-arm'
+
+          - platform: ubuntu-22.04-arm
             args: ''
-          - platform: 'windows-latest'
+
+          - platform: windows-2022
             args: ''
-          - platform: 'windows-latest'
-            args: '--target aarch64-pc-windows-msvc'
+
+          - platform: windows-2022
+            args: --target aarch64-pc-windows-msvc
 
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 120
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,47 +53,54 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install Deno
         uses: denoland/setup-deno@v1
         with:
           deno-version: 2.9.2
 
-      - name: install Rust stable
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: |
-            ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-            ${{ matrix.platform == 'windows-latest' && matrix.args == '--target aarch64-pc-windows-msvc' && 'aarch64-pc-windows-msvc' || '' }}
+            ${{ startsWith(matrix.platform, 'macos-') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+            ${{ runner.os == 'Windows' && matrix.args == '--target aarch64-pc-windows-msvc' && 'aarch64-pc-windows-msvc' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './apps/yasumu/src-tauri -> target'
+          workspaces: ./apps/yasumu/src-tauri -> target
           cache-on-failure: true
           shared-key: yasumu-release
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
+      - name: Install Ubuntu dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+          sudo apt-get install -y \
+            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
 
-      - name: Setup MSVC developer environment (Windows only)
-        if: matrix.platform == 'windows-latest'
+      - name: Setup MSVC developer environment
+        if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile && pnpm --filter=tanxium deno install
 
       - name: Build packages
-        run: 'pnpm build:app'
+        run: pnpm build:app
         env:
           TURBO_TEAM: ${{ secrets.YASUMU_TURBO_TEAM }}
           TURBO_TOKEN: ${{ secrets.YASUMU_RELEASE_TURBO_TOKEN }}
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Build and publish Tauri release
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.YASUMU_RELEASE_TAURI_SIGNING_PRIVATE_KEY }}
@@ -93,10 +108,10 @@ jobs:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
         with:
-          projectPath: './apps/yasumu'
+          projectPath: ./apps/yasumu
           tagName: yasumu-v__VERSION__
-          releaseName: 'Yasumu v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseName: Yasumu v__VERSION__
+          releaseBody: See the assets to download this version and install.
           releaseDraft: true
           prerelease: false
-          args: '${{ matrix.args }} --config ./src-tauri/tauri.conf.json'
+          args: ${{ matrix.args }} --config ./src-tauri/tauri.conf.json
