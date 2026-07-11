@@ -1,0 +1,61 @@
+name: Cargo
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/yasumu/src-tauri/**'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+      - 'packages/test/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/yasumu/src-tauri/**'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+      - 'packages/test/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cargo:
+    name: Cargo Check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 2.9.2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./apps/yasumu/src-tauri -> target"
+          cache-on-failure: true
+          shared-key: yasumu-check
+
+      - name: Bundle @yasumu/test
+        run: deno run --unstable-bundle --allow-read --allow-write scripts/build.ts
+        working-directory: ./packages/test
+
+      - name: Cargo check
+        run: cargo check
+        working-directory: ./apps/yasumu/src-tauri
