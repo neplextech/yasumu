@@ -34,6 +34,6 @@
     "eslint-config-next": "catalog:react",
     "postcss": "^8.5.13",
     "tailwindcss": "catalog:tailwind",
-    "typescript": "catalog:build"
+    "typescript": "catalog:nextjs"
   }
 }

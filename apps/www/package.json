@@ -31,6 +31,6 @@
     "eslint": "^9",
     "eslint-config-next": "catalog:react",
     "tailwindcss": "catalog:tailwind",
-    "typescript": "catalog:build"
+    "typescript": "catalog:nextjs"
   }
 }

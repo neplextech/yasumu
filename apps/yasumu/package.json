@@ -78,7 +78,7 @@
     "eslint-config-next": "catalog:react",
     "tailwindcss": "catalog:tailwind",
     "transletta": "^0.0.3",
-    "typescript": "catalog:build",
+    "typescript": "catalog:nextjs",
     "typescript-legacy": "npm:typescript@^6"
   }
 }
