@@ -132,7 +132,7 @@ export function RestResponsePanel({
               </TabsList>
             </div>
             <TabsContent value="body" className="min-h-0 flex-1">
-              <BodyView response={response} />
+              <BodyView response={response} onSwitchToPreview={() => setActiveTab('preview')} />
             </TabsContent>
             <TabsContent value="headers" className="min-h-0 flex-1">
               <HeadersView headers={response.headers} />

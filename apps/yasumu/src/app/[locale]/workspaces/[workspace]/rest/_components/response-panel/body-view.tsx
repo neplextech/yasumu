@@ -3,7 +3,7 @@
 import { Button } from '@yasumu/ui/components/button';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Check, Copy } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BundledLanguage } from 'shiki/bundle/web';
 
 import { getContentType } from '@/components/responses/viewers';
@@ -14,6 +14,7 @@ import { formatBytes } from './utils';
 
 interface BodyViewProps {
   response: RestResponse;
+  onSwitchToPreview?: () => void;
 }
 
 function getLanguageFromContentType(contentType: string): BundledLanguage {
@@ -32,8 +33,14 @@ function getLanguageFromContentType(contentType: string): BundledLanguage {
   return 'md';
 }
 
-export function BodyView({ response }: BodyViewProps) {
+export function BodyView({ response, onSwitchToPreview }: BodyViewProps) {
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (response.bodyType === 'binary') {
+      onSwitchToPreview?.();
+    }
+  }, [response, onSwitchToPreview]);
 
   const { formatted, language } = useMemo(() => {
     if (response.bodyType !== 'text' || !response.textBody) {
@@ -80,7 +87,16 @@ export function BodyView({ response }: BodyViewProps) {
     return (
       <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-4">
         <p className="font-medium">Binary response</p>
-        <p className="text-sm">Size: {formatBytes(response.size)} - Use Preview tab to view</p>
+        <p className="text-sm">
+          Size: {formatBytes(response.size)} - Use{' '}
+          <button
+            onClick={onSwitchToPreview}
+            className="text-primary cursor-pointer underline underline-offset-2 hover:opacity-80"
+          >
+            Preview tab
+          </button>{' '}
+          to view
+        </p>
       </div>
     );
   }
