@@ -51,14 +51,19 @@ export function ConsoleView({ output }: ConsoleViewProps) {
   }
 
   return (
-    <ScrollArea className="h-full p-4">
-      <div className="space-y-1 font-mono text-sm">
+    <ScrollArea className="h-full p-4" data-allow-context-menu="true">
+      <div className="space-y-1 font-mono text-sm select-text">
         {output.map((entry, index) => (
-          <div key={index} className="flex gap-2">
-            <span className="text-muted-foreground shrink-0 text-xs">
+          <div key={index} className="flex gap-2 select-text">
+            <span className="text-muted-foreground shrink-0 text-xs select-text">
               [{formatTimestamp(entry.timestamp)}]
             </span>
-            <span className={cn('flex-1', getOutputTypeStyles(entry.type))}>
+            <span
+              className={cn(
+                'flex-1 select-text',
+                getOutputTypeStyles(entry.type),
+              )}
+            >
               {entry.message}
             </span>
           </div>

@@ -190,6 +190,8 @@ export function RestFileTree() {
       fileTree={fileTree}
       className="font-sans w-full"
       collapsible="none"
+      enableFileSearch
+      fileSearchPlaceholder="Search REST requests..."
       clipboard={clipboard}
       selectedFolderId={selectedFolderId}
       onFolderSelect={setSelectedFolderId}

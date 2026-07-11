@@ -25,10 +25,11 @@ export function CodeView({ content, language, className }: CodeViewProps) {
   };
 
   return (
-    <div className="relative h-full group flex-1 min-h-0">
+    <div className="relative h-full group flex-1 min-h-0 select-text">
       <ScrollArea className="h-full w-full">
         <pre
-          className={`text-sm font-mono bg-muted/50 p-4 rounded-md min-h-full whitespace-pre-wrap break-all ${
+          data-allow-context-menu="true"
+          className={`text-sm font-mono bg-muted/50 p-4 rounded-md min-h-full whitespace-pre-wrap break-all select-text ${
             className || ''
           }`}
         >

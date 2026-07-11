@@ -277,6 +277,8 @@ export function GraphqlFileTree() {
         fileTree={fileTree}
         className="font-sans w-full"
         collapsible="none"
+        enableFileSearch
+        fileSearchPlaceholder="Search GraphQL operations..."
         clipboard={clipboard}
         selectedFolderId={selectedFolderId}
         onFolderSelect={setSelectedFolderId}

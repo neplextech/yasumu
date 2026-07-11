@@ -95,7 +95,7 @@ export function BodyView({ response }: BodyViewProps) {
   }
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full select-text">
       <Button
         variant="ghost"
         size="icon"
@@ -104,11 +104,11 @@ export function BodyView({ response }: BodyViewProps) {
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </Button>
-      <ScrollArea className="h-full">
+      <ScrollArea className="h-full" data-allow-context-menu="true">
         <HighlightedCodeBlock
           language={language}
-          className="break-all"
-          codeClassName="break-all"
+          className="break-all select-text"
+          codeClassName="break-all select-text"
         >
           {formatted ?? ''}
         </HighlightedCodeBlock>

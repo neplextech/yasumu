@@ -1,4 +1,4 @@
-import { ChevronRight, File, Folder, RefreshCw } from 'lucide-react';
+import { ChevronRight, File, Folder, RefreshCw, Search } from 'lucide-react';
 import * as React from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -43,6 +43,15 @@ import { cn } from '@yasumu/ui/lib/utils';
 import { usePlatform } from '@/hooks/use-platform';
 import { useCopyToClipboard } from '@yasumu/ui/hooks/use-copy-to-clipboard';
 import { VscCollapseAll } from 'react-icons/vsc';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from '@yasumu/ui/components/command';
 
 export type ClipboardOperation = 'copy' | 'cut';
 
@@ -83,6 +92,37 @@ export interface FileTreeSidebarProps extends React.ComponentProps<
   onFolderSelect?: (id: string | null) => void;
   reloadTree?: () => void;
   additionalToolbarItems?: React.ReactNode;
+  enableFileSearch?: boolean;
+  fileSearchPlaceholder?: string;
+}
+
+interface SearchableFileTreeItem {
+  id: string;
+  name: string;
+  path: string;
+  icon?: React.ComponentType;
+}
+
+function flattenSearchableFiles(
+  items: FileTreeItem[],
+  parentPath = '',
+): SearchableFileTreeItem[] {
+  return items.flatMap((item) => {
+    const path = parentPath ? `${parentPath}/${item.name}` : item.name;
+
+    if (item.type === 'folder') {
+      return flattenSearchableFiles(item.children ?? [], path);
+    }
+
+    return [
+      {
+        id: item.id,
+        name: item.name,
+        path,
+        icon: item.icon,
+      },
+    ];
+  });
 }
 
 export function FileTreeSidebar({
@@ -106,6 +146,8 @@ export function FileTreeSidebar({
   onFolderSelect,
   reloadTree,
   additionalToolbarItems,
+  enableFileSearch = false,
+  fileSearchPlaceholder = 'Search files...',
   ...props
 }: FileTreeSidebarProps) {
   const tree = Array.isArray(fileTree) ? fileTree : [fileTree];
@@ -116,10 +158,15 @@ export function FileTreeSidebar({
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [newFileDialogOpen, setNewFileDialogOpen] = React.useState(false);
+  const [fileSearchOpen, setFileSearchOpen] = React.useState(false);
   const [openFolders, setOpenFolders] = React.useState<Set<string>>(new Set());
   const [isInitialized, setIsInitialized] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const { isMac } = usePlatform();
+  const searchableFiles = React.useMemo(
+    () => flattenSearchableFiles(tree),
+    [tree],
+  );
 
   // Initialize all folders as open on first render
   React.useEffect(() => {
@@ -217,6 +264,41 @@ export function FileTreeSidebar({
     [selectedItem, handleDelete],
   );
 
+  React.useEffect(() => {
+    if (!enableFileSearch) return;
+
+    const controller = new AbortController();
+
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+
+      return (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable ||
+        !!target.closest('[contenteditable="true"], .monaco-editor')
+      );
+    };
+
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (
+          !(event.metaKey || event.ctrlKey) ||
+          event.key.toLowerCase() !== 'f'
+        )
+          return;
+        if (isEditableTarget(event.target)) return;
+
+        event.preventDefault();
+        setFileSearchOpen(true);
+      },
+      { signal: controller.signal },
+    );
+
+    return () => controller.abort();
+  }, [enableFileSearch]);
+
   const [rootMenuOpen, setRootMenuOpen] = React.useState<
     'file' | 'folder' | null
   >(null);
@@ -271,6 +353,16 @@ export function FileTreeSidebar({
                     >
                       <File className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                     </CreateInputDialog>
+                    {enableFileSearch ? (
+                      <button
+                        type="button"
+                        onClick={() => setFileSearchOpen(true)}
+                        aria-label="Search files"
+                        title={`Search files (${isMac ? '⌘' : 'Ctrl+'}F)`}
+                      >
+                        <Search className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
+                      </button>
+                    ) : null}
                     {additionalToolbarItems}
                     <button onClick={() => reloadTree?.()}>
                       <RefreshCw className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
@@ -390,6 +482,51 @@ export function FileTreeSidebar({
         open={rootMenuOpen === 'folder'}
         onOpenChange={(isOpen) => setRootMenuOpen(isOpen ? 'folder' : null)}
       />
+
+      {enableFileSearch ? (
+        <CommandDialog
+          open={fileSearchOpen}
+          onOpenChange={setFileSearchOpen}
+          title="Search files"
+          description="Search workspace files in this module"
+        >
+          <CommandInput placeholder={fileSearchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>No files found.</CommandEmpty>
+            <CommandGroup heading="Files">
+              {searchableFiles.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.path} ${item.name}`}
+                    onSelect={() => {
+                      onFileSelect?.(item.id);
+                      setSelectedItem({
+                        id: item.id,
+                        type: 'file',
+                        name: item.name,
+                      });
+                      setFileSearchOpen(false);
+                    }}
+                  >
+                    {/* @ts-ignore */}
+                    {Icon && <Icon short />}
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate">{item.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {item.path}
+                      </span>
+                    </div>
+                    <CommandShortcut>{isMac ? '⌘' : 'Ctrl+'}F</CommandShortcut>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </CommandDialog>
+      ) : null}
     </Sidebar>
   );
 }
@@ -619,37 +756,45 @@ function Tree({
 
   useHotkeys(
     'mod+c',
-    () => {
+    (event) => {
+      if (!isSelected) return;
+      if (window.getSelection()?.toString()) return;
+      event.preventDefault();
       if (item.type === 'file') {
         onFileCopy?.(item.id);
       } else {
         onFolderCopy?.(item.id);
       }
     },
-    { preventDefault: true, enableOnFormTags: false },
-    [onFileCopy],
+    { preventDefault: false, enableOnFormTags: false },
+    [isSelected, item.id, item.type, onFileCopy, onFolderCopy],
   );
 
   useHotkeys(
     'mod+x',
-    () => {
+    (event) => {
+      if (!isSelected) return;
+      if (window.getSelection()?.toString()) return;
+      event.preventDefault();
       if (item.type === 'file') {
         onFileCut?.(item.id);
       } else {
         onFolderCut?.(item.id);
       }
     },
-    { preventDefault: true, enableOnFormTags: false },
-    [onFileCut],
+    { preventDefault: false, enableOnFormTags: false },
+    [isSelected, item.id, item.type, onFileCut, onFolderCut],
   );
 
   useHotkeys(
     'mod+v',
-    () => {
+    (event) => {
+      if (!isSelected || item.type !== 'folder') return;
+      event.preventDefault();
       onPasteItem?.(item.id);
     },
-    { preventDefault: true, enableOnFormTags: false },
-    [onPasteItem],
+    { preventDefault: false, enableOnFormTags: false },
+    [isSelected, item.type, onPasteItem],
   );
 
   if (item.type === 'file') {

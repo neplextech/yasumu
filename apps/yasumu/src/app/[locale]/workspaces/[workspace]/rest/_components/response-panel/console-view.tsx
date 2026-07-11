@@ -70,26 +70,26 @@ export function ConsoleView({ output }: ConsoleViewProps) {
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="p-3 space-y-1.5">
+    <ScrollArea className="h-full" data-allow-context-menu="true">
+      <div className="p-3 space-y-1.5 select-text">
         {output.map((entry, i) => {
           const config = typeConfig[entry.type];
           const Icon = config.icon;
 
           return (
-            <div key={i} className={'flex items-start gap-2'}>
+            <div key={i} className="flex items-start gap-2 select-text">
               <Icon className={cn('size-4 mt-0.5 shrink-0', config.color)} />
               <div className="flex-1 min-w-0">
                 <pre
                   className={cn(
-                    'text-sm font-mono whitespace-pre-wrap break-words',
+                    'text-sm font-mono whitespace-pre-wrap break-words select-text',
                     config.color,
                   )}
                 >
                   {entry.message}
                 </pre>
               </div>
-              <span className="text-[10px] text-muted-foreground shrink-0 font-mono mt-0.5">
+              <span className="text-[10px] text-muted-foreground shrink-0 font-mono mt-0.5 select-text">
                 {formatTime(entry.timestamp)}
               </span>
             </div>

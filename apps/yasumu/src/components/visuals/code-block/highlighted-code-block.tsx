@@ -25,10 +25,13 @@ export default function HighlightedCodeBlock({
 
   if (!nodes) {
     return (
-      <pre className={cn('p-4 text-sm', className)}>
+      <pre
+        data-allow-context-menu="true"
+        className={cn('p-4 text-sm select-text', className)}
+      >
         <code
           className={cn(
-            'text-foreground font-mono text-xs leading-relaxed whitespace-pre',
+            'text-foreground font-mono text-xs leading-relaxed whitespace-pre select-text',
             codeClassName,
           )}
         >
@@ -38,5 +41,12 @@ export default function HighlightedCodeBlock({
     );
   }
 
-  return <div className={cn('p-4 text-sm', className)}>{nodes}</div>;
+  return (
+    <div
+      data-allow-context-menu="true"
+      className={cn('p-4 text-sm select-text', className)}
+    >
+      {nodes}
+    </div>
+  );
 }
