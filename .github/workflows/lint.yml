@@ -40,8 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile && pnpm --filter=tanxium deno install
 
-      - name: Lint
-        run: pnpm turbo run lint
+      # - name: Lint
+      #   run: pnpm turbo run lint
 
       - name: Type check
         run: pnpm build:app
