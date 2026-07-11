@@ -357,7 +357,9 @@ function generateYasumuTypes(): string {
 // ============================================================================
 
 function isBareSpecifier(s: string): boolean {
-  return !s.startsWith('node:') && !s.startsWith('.') && !s.startsWith('/') && !s.startsWith('ext:') && !s.startsWith('#');
+  return (
+    !s.startsWith('node:') && !s.startsWith('.') && !s.startsWith('/') && !s.startsWith('ext:') && !s.startsWith('#')
+  );
 }
 
 function transformToNodeSpecifiers(content: string): string {
@@ -368,10 +370,7 @@ function transformToNodeSpecifiers(content: string): string {
     '',
   );
   // ESM: declare module "node:X" { export * from "..."; }
-  content = content.replace(
-    /\bdeclare module "node:[^"]*"\s*\{\s*export \* from "[^"]*";\s*\}/gs,
-    '',
-  );
+  content = content.replace(/\bdeclare module "node:[^"]*"\s*\{\s*export \* from "[^"]*";\s*\}/gs, '');
 
   // Step 2: Rename bare module specifiers in import/export statements so that
   // remaining thin wrappers (e.g. path/posix re-exporting path) keep working.
@@ -541,7 +540,10 @@ function main() {
 
   // Output
   const nodeEntries = nodeTypeFiles
-    .map(({ content, filePath }) => `  {\n    content: ${JSON.stringify(content)},\n    filePath: ${JSON.stringify(filePath)},\n  }`)
+    .map(
+      ({ content, filePath }) =>
+        `  {\n    content: ${JSON.stringify(content)},\n    filePath: ${JSON.stringify(filePath)},\n  }`,
+    )
     .join(',\n');
 
   const output = `/* eslint-disable */

@@ -12,7 +12,6 @@ import type {
 } from '@yasumu/common';
 
 import type { Workspace } from '../../workspace/workspace.js';
-
 import { GraphqlEntity } from './graphql.entity.js';
 
 export class GraphqlModule {

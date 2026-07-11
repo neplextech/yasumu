@@ -12,7 +12,6 @@ import type {
 } from '@yasumu/common';
 
 import type { Workspace } from '../../workspace/workspace.js';
-
 import { RestEntity } from './rest.entity.js';
 
 export class RestModule {

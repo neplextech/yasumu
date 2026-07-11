@@ -1,14 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import {
-  SiJavascript,
-  SiCss,
-  SiHtml5,
-  SiJson,
-  SiTypescript,
-  SiYaml,
-  SiReact,
-} from 'react-icons/si';
+import { SiJavascript, SiCss, SiHtml5, SiJson, SiTypescript, SiYaml, SiReact } from 'react-icons/si';
 import { BundledLanguage } from 'shiki/bundle/web';
 
 const languageIcons: Record<string, React.FC<{ className?: string }>> = {
@@ -22,17 +14,9 @@ const languageIcons: Record<string, React.FC<{ className?: string }>> = {
   'yml,yml': SiYaml,
 };
 
-export default function LanguageIcon({
-  language,
-  className,
-}: {
-  language: BundledLanguage;
-  className?: string;
-}) {
+export default function LanguageIcon({ language, className }: { language: BundledLanguage; className?: string }) {
   const Component = useMemo(() => {
-    const key = Object.keys(languageIcons).find((key) =>
-      key.split(',').includes(language.toLowerCase()),
-    );
+    const key = Object.keys(languageIcons).find((key) => key.split(',').includes(language.toLowerCase()));
     return key ? languageIcons[key] : null;
   }, [language]);
 
