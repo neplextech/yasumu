@@ -62,6 +62,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 2.9.2
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -71,6 +76,10 @@ jobs:
           workspaces: "./apps/yasumu/src-tauri -> target"
           cache-on-failure: true
           shared-key: yasumu-check
+
+      - name: Bundle @yasumu/test
+        run: deno run --unstable-bundle --allow-read --allow-write scripts/build.ts
+        working-directory: ./packages/test
 
       - name: Cargo check
         run: cargo check
