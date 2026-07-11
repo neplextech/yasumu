@@ -7,7 +7,8 @@ tags: javascript, regexp, optimization, memoization
 
 ## Hoist RegExp Creation
 
-Don't create RegExp inside render. Hoist to module scope or memoize with `useMemo()`.
+Don't create RegExp inside render. Hoist to module scope or memoize
+with `useMemo()`.
 
 **Incorrect (new RegExp every render):**
 
@@ -39,7 +40,7 @@ function Highlighter({ text, query }: Props) {
 Global regex (`/g`) has mutable `lastIndex` state:
 
 ```typescript
-const regex = /foo/g
-regex.test('foo')  // true, lastIndex = 3
-regex.test('foo')  // false, lastIndex = 0
+const regex = /foo/g;
+regex.test('foo'); // true, lastIndex = 3
+regex.test('foo'); // false, lastIndex = 0
 ```

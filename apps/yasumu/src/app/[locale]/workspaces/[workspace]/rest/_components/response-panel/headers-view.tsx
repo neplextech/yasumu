@@ -10,9 +10,7 @@ export function HeadersView({ headers }: HeadersViewProps) {
   const entries = Object.entries(headers);
 
   if (entries.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm p-4">No headers received</p>
-    );
+    return <p className="text-muted-foreground p-4 text-sm">No headers received</p>;
   }
 
   return (
@@ -21,18 +19,14 @@ export function HeadersView({ headers }: HeadersViewProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2 font-medium text-muted-foreground">
-                Name
-              </th>
-              <th className="text-left py-2 font-medium text-muted-foreground">
-                Value
-              </th>
+              <th className="text-muted-foreground py-2 text-left font-medium">Name</th>
+              <th className="text-muted-foreground py-2 text-left font-medium">Value</th>
             </tr>
           </thead>
           <tbody className="font-mono">
             {entries.map(([key, value]) => (
-              <tr key={key} className="border-b border-border/50">
-                <td className="py-2 pr-4 text-primary">{key}</td>
+              <tr key={key} className="border-border/50 border-b">
+                <td className="text-primary py-2 pr-4">{key}</td>
                 <td className="py-2 break-all">{value}</td>
               </tr>
             ))}

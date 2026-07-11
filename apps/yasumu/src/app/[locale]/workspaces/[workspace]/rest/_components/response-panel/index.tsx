@@ -1,24 +1,21 @@
 'use client';
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { useState } from 'react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
+
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuLogo from '@/components/visuals/yasumu-logo';
-import type { RestResponse } from '../../_lib/rest-request';
+
 import type { RequestPhase } from '../../_hooks/use-rest-request';
-import { ResponseStatusBar } from './response-status-bar';
-import { HeadersView } from './headers-view';
-import { CookiesView } from './cookies-view';
-import { BodyView } from './body-view';
-import { PreviewView } from './preview-view';
-import { ConsoleView } from './console-view';
-import { TestView, type TestResultItem } from './test-view';
 import type { ScriptOutputEntry } from '../../_hooks/use-rest-request';
+import type { RestResponse } from '../../_lib/rest-request';
+import { BodyView } from './body-view';
+import { ConsoleView } from './console-view';
+import { CookiesView } from './cookies-view';
+import { HeadersView } from './headers-view';
+import { PreviewView } from './preview-view';
+import { ResponseStatusBar } from './response-status-bar';
+import { TestView, type TestResultItem } from './test-view';
 
 interface RestResponsePanelProps {
   phase: RequestPhase;
@@ -47,17 +44,11 @@ export function RestResponsePanel({
   blobUrl,
   testResults,
 }: RestResponsePanelProps) {
-  const [activeTab, setActiveTab] = useState<'response' | 'preview'>(
-    'response',
-  );
+  const [activeTab, setActiveTab] = useState<'response' | 'preview'>('response');
 
-  if (
-    phase === 'pre-request-script' ||
-    phase === 'sending' ||
-    phase === 'post-response-script'
-  ) {
+  if (phase === 'pre-request-script' || phase === 'sending' || phase === 'post-response-script') {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-background/50">
+      <div className="bg-background/50 flex h-full flex-col items-center justify-center">
         <LoadingScreen message={phaseMessages[phase]} />
       </div>
     );
@@ -65,12 +56,12 @@ export function RestResponsePanel({
 
   if (phase === 'error' || (phase === 'cancelled' && !response)) {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-muted/5 text-center p-4">
+      <div className="bg-muted/5 flex h-full flex-col items-center justify-center p-4 text-center">
         <div className="space-y-2">
           <p className="text-destructive font-medium">
             {phase === 'cancelled' ? 'Request Cancelled' : 'Request Failed'}
           </p>
-          {error && <p className="text-sm text-muted-foreground">{error}</p>}
+          {error && <p className="text-muted-foreground text-sm">{error}</p>}
         </div>
       </div>
     );
@@ -78,7 +69,7 @@ export function RestResponsePanel({
 
   if (!response) {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-muted/5 text-muted-foreground gap-2 select-none">
+      <div className="bg-muted/5 text-muted-foreground flex h-full flex-col items-center justify-center gap-2 select-none">
         <div className="opacity-20 grayscale">
           <YasumuLogo width={64} height={64} />
         </div>
@@ -91,41 +82,41 @@ export function RestResponsePanel({
   const cookiesCount = response.cookies.length;
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="bg-background flex h-full flex-col">
       <ResponseStatusBar response={response} />
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as 'response' | 'preview')}
-        className="flex flex-col flex-1 min-h-0"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="px-1 flex-shrink-0 border-b">
-          <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
+        <div className="flex-shrink-0 border-b px-1">
+          <TabsList className="h-10 w-full justify-start gap-2 bg-transparent">
             <TabsTrigger value="response">Response</TabsTrigger>
             <TabsTrigger value="preview">Preview</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="response" className="flex-1 min-h-0">
-          <Tabs defaultValue="body" className="flex flex-col h-full">
-            <div className="px-1 flex-shrink-0 border-b">
-              <TabsList className="bg-transparent w-full justify-start gap-1">
+        <TabsContent value="response" className="min-h-0 flex-1">
+          <Tabs defaultValue="body" className="flex h-full flex-col">
+            <div className="flex-shrink-0 border-b px-1">
+              <TabsList className="w-full justify-start gap-1 bg-transparent">
                 <TabsTrigger value="body">Body</TabsTrigger>
                 <TabsTrigger value="headers">
                   Headers
-                  <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                  <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                     {headersCount}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="cookies">
                   Cookies
-                  <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                  <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                     {cookiesCount}
                   </span>
                 </TabsTrigger>
                 {scriptOutput.length > 0 && (
                   <TabsTrigger value="console">
                     Console
-                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                    <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                       {scriptOutput.length}
                     </span>
                   </TabsTrigger>
@@ -133,36 +124,36 @@ export function RestResponsePanel({
                 {testResults.length > 0 && (
                   <TabsTrigger value="tests">
                     Tests
-                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                    <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                       {testResults.length}
                     </span>
                   </TabsTrigger>
                 )}
               </TabsList>
             </div>
-            <TabsContent value="body" className="flex-1 min-h-0">
+            <TabsContent value="body" className="min-h-0 flex-1">
               <BodyView response={response} />
             </TabsContent>
-            <TabsContent value="headers" className="flex-1 min-h-0">
+            <TabsContent value="headers" className="min-h-0 flex-1">
               <HeadersView headers={response.headers} />
             </TabsContent>
-            <TabsContent value="cookies" className="flex-1 min-h-0">
+            <TabsContent value="cookies" className="min-h-0 flex-1">
               <CookiesView cookies={response.cookies} />
             </TabsContent>
             {scriptOutput.length > 0 && (
-              <TabsContent value="console" className="flex-1 min-h-0">
+              <TabsContent value="console" className="min-h-0 flex-1">
                 <ConsoleView output={scriptOutput} />
               </TabsContent>
             )}
             {testResults.length > 0 && (
-              <TabsContent value="tests" className="flex-1 min-h-0">
+              <TabsContent value="tests" className="min-h-0 flex-1">
                 <TestView results={testResults} />
               </TabsContent>
             )}
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="preview" className="flex-1 min-h-0">
+        <TabsContent value="preview" className="min-h-0 flex-1">
           <PreviewView response={response} blobUrl={blobUrl} />
         </TabsContent>
       </Tabs>

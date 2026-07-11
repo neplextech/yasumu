@@ -20,11 +20,7 @@ export interface FactoryProvider<T = any> {
   scope?: Scope;
 }
 
-export type Provider<T = any> =
-  | ClassProvider<T>
-  | ValueProvider<T>
-  | FactoryProvider<T>
-  | Type<T>;
+export type Provider<T = any> = ClassProvider<T> | ValueProvider<T> | FactoryProvider<T> | Type<T>;
 
 export enum Scope {
   DEFAULT = 0,

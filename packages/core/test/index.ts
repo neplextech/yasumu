@@ -1,4 +1,5 @@
 import { join } from 'path';
+
 import { createYasumu } from '../src/index.ts';
 import { server } from './server.js';
 

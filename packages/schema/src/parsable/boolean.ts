@@ -1,6 +1,6 @@
-import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParserError, type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
+import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParsable } from './parsable.js';
 
 export class YasumuSchemaParsableBoolean extends YasumuSchemaParsable<boolean> {
@@ -9,10 +9,7 @@ export class YasumuSchemaParsableBoolean extends YasumuSchemaParsable<boolean> {
   }
 
   canParse(parser: YasumuSchemaParser) {
-    return (
-      parser.check(YasumuSchemaTokenTypes.TRUE) ||
-      parser.check(YasumuSchemaTokenTypes.FALSE)
-    );
+    return parser.check(YasumuSchemaTokenTypes.TRUE) || parser.check(YasumuSchemaTokenTypes.FALSE);
   }
 
   parse(parser: YasumuSchemaParser) {

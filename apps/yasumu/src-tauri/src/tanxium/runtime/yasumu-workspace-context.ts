@@ -1,7 +1,4 @@
-import {
-  YasumuWorkspaceEnvironment,
-  type EnvironmentData,
-} from './yasumu-request.ts';
+import { YasumuWorkspaceEnvironment, type EnvironmentData } from './yasumu-request.ts';
 
 export interface YasumuWorkspaceData {
   id: string;
@@ -103,9 +100,7 @@ export interface YasumuEmail {
   updatedAt: number;
 }
 
-export type YasumuEmailFilter = (
-  email: YasumuEmail,
-) => boolean | Promise<boolean>;
+export type YasumuEmailFilter = (email: YasumuEmail) => boolean | Promise<boolean>;
 
 interface EmailEvent {
   workspaceId: string;
@@ -115,29 +110,23 @@ interface EmailEvent {
 export class YasumuEmailService {
   public constructor(private readonly workspace: YasumuWorkspace) {}
 
-  public awaitEmail(
-    filter: YasumuEmailFilter,
-    timeout?: number,
-  ): Promise<YasumuEmail> {
+  public awaitEmail(filter: YasumuEmailFilter, timeout?: number): Promise<YasumuEmail> {
     const { promise, reject, resolve } = Promise.withResolvers<YasumuEmail>();
 
-    const unsubscribe = Yasumu.queue.subscribe(
-      'yasumu:new-email',
-      async (event: EmailEvent) => {
-        try {
-          const { workspaceId, email } = event;
-          if (workspaceId !== this.workspace.id) return;
+    const unsubscribe = Yasumu.queue.subscribe('yasumu:new-email', async (event: EmailEvent) => {
+      try {
+        const { workspaceId, email } = event;
+        if (workspaceId !== this.workspace.id) return;
 
-          if (await filter(email)) {
-            unsubscribe();
-            resolve(email);
-          }
-        } catch (error) {
+        if (await filter(email)) {
           unsubscribe();
-          reject(error ?? new Error('Unknown error occurred'));
+          resolve(email);
         }
-      },
-    );
+      } catch (error) {
+        unsubscribe();
+        reject(error ?? new Error('Unknown error occurred'));
+      }
+    });
 
     if (timeout) {
       setTimeout(() => {

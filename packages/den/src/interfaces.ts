@@ -1,5 +1,5 @@
-import type { Type } from './types.js';
 import type { Provider, Token } from './di/types.js';
+import type { Type } from './types.js';
 
 export type { Type, Token };
 

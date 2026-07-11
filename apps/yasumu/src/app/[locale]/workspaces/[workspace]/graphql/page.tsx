@@ -1,38 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { Separator } from '@yasumu/ui/components/separator';
-import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
+
+import { useVariablePopover } from '@/components/inputs';
+import { useAppLayout } from '@/components/providers/app-layout-provider';
 import LoadingScreen from '@/components/visuals/loading-screen';
-import { useGraphqlContext } from './_providers/graphql-context';
-import { useGraphqlEntity } from './_hooks/use-graphql-entity';
-import { getGraphqlBodyValue } from './_hooks/use-graphql-entity';
-import { useGraphqlRequest } from './_hooks/use-graphql-request';
-import { useGraphqlIntrospection } from './_hooks/use-graphql-introspection';
-import { useQueryBuilder } from './_hooks/use-query-builder';
-import {
-  preloadGraphQLLanguage,
-  useMonacoGraphqlLanguage,
-} from './_lib/monaco-graphql-support';
-import { GraphqlUrlBar } from './_components/request-editor/graphql-url-bar';
+import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import { YasumuLayout } from '@/lib/constants/layout';
+
 import { GraphqlRequestTabs } from './_components/request-editor/graphql-request-tabs';
+import { GraphqlUrlBar } from './_components/request-editor/graphql-url-bar';
 import { GraphqlResponsePanel } from './_components/response-panel';
 import RequestTabList from './_components/tabs';
-import { useAppLayout } from '@/components/providers/app-layout-provider';
-import { YasumuLayout } from '@/lib/constants/layout';
-import { useVariablePopover } from '@/components/inputs';
-import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@yasumu/ui/components/resizable';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useGraphqlEntity } from './_hooks/use-graphql-entity';
+import { getGraphqlBodyValue } from './_hooks/use-graphql-entity';
+import { useGraphqlIntrospection } from './_hooks/use-graphql-introspection';
+import { useGraphqlRequest } from './_hooks/use-graphql-request';
+import { useQueryBuilder } from './_hooks/use-query-builder';
+import { preloadGraphQLLanguage, useMonacoGraphqlLanguage } from './_lib/monaco-graphql-support';
+import { useGraphqlContext } from './_providers/graphql-context';
 
-function tabularPairsToRecord(
-  pairs: TabularPair[] | undefined,
-): Record<string, { value: string; enabled: boolean }> {
+function tabularPairsToRecord(pairs: TabularPair[] | undefined): Record<string, { value: string; enabled: boolean }> {
   if (!pairs) return {};
   return pairs.reduce(
     (acc, pair) => {
@@ -49,30 +42,13 @@ export default function GraphqlPage() {
   const { entityId } = useGraphqlContext();
   const { layout } = useAppLayout();
   const { renderVariablePopover } = useVariablePopover();
-  const {
-    data,
-    isLoading,
-    error,
-    isSaving,
-    updateField,
-    updateBodyValue,
-    save,
-  } = useGraphqlEntity({
+  const { data, isLoading, error, isSaving, updateField, updateBodyValue, save } = useGraphqlEntity({
     entityId,
   });
-  const {
-    state: requestState,
-    execute,
-    cancel,
-  } = useGraphqlRequest({ entityId });
+  const { state: requestState, execute, cancel } = useGraphqlRequest({ entityId });
 
   // Introspection
-  const {
-    schema,
-    isLoading: isIntrospecting,
-    error: introspectionError,
-    introspect,
-  } = useGraphqlIntrospection();
+  const { schema, isLoading: isIntrospecting, error: introspectionError, introspect } = useGraphqlIntrospection();
 
   // Monaco GraphQL IntelliSense
   useMonacoGraphqlLanguage(schema);
@@ -95,10 +71,7 @@ export default function GraphqlPage() {
 
   // Path params
   const pathParams = useMemo(
-    () =>
-      data?.requestParameters
-        ? tabularPairsToRecord(data.requestParameters as TabularPair[])
-        : {},
+    () => (data?.requestParameters ? tabularPairsToRecord(data.requestParameters as TabularPair[]) : {}),
     [data?.requestParameters],
   );
 
@@ -179,17 +152,13 @@ export default function GraphqlPage() {
   const handleIntrospect = useCallback(async () => {
     if (!data?.url) return;
     const interpolatedHeaders = Object.fromEntries(
-      (data.requestHeaders || [])
-        .filter((h) => h.enabled && h.key)
-        .map((h) => [h.key, h.value]),
+      (data.requestHeaders || []).filter((h) => h.enabled && h.key).map((h) => [h.key, h.value]),
     );
     await introspect(data.url, interpolatedHeaders);
   }, [data?.url, data?.requestHeaders, introspect]);
 
   // Auto-introspection
-  const [lastIntrospectedUrl, setLastIntrospectedUrl] = useState<string | null>(
-    null,
-  );
+  const [lastIntrospectedUrl, setLastIntrospectedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data?.url || isIntrospecting) return;
@@ -216,7 +185,7 @@ export default function GraphqlPage() {
 
   if (!entityId) {
     return (
-      <main className="w-full h-screen relative grid place-items-center">
+      <main className="relative grid h-screen w-full place-items-center">
         <YasumuBackgroundArt message="Yasumu" />
       </main>
     );
@@ -228,10 +197,10 @@ export default function GraphqlPage() {
 
   if (error) {
     return (
-      <main className="w-full h-screen relative grid place-items-center">
-        <div className="text-center space-y-2">
+      <main className="relative grid h-screen w-full place-items-center">
+        <div className="space-y-2 text-center">
           <p className="text-destructive font-medium">Failed to load entity</p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
+          <p className="text-muted-foreground text-sm">{error.message}</p>
         </div>
       </main>
     );
@@ -276,8 +245,8 @@ export default function GraphqlPage() {
   );
 
   return (
-    <main className="w-full h-full flex flex-col overflow-hidden">
-      <div className="p-4 space-y-4 shrink-0">
+    <main className="flex h-full w-full flex-col overflow-hidden">
+      <div className="shrink-0 space-y-4 p-4">
         <RequestTabList />
         <GraphqlUrlBar
           url={data.url || ''}
@@ -292,10 +261,7 @@ export default function GraphqlPage() {
         />
       </div>
       <Separator />
-      <ResizablePanelGroup
-        direction={isClassicLayout ? 'vertical' : 'horizontal'}
-        className="flex-1 min-h-0"
-      >
+      <ResizablePanelGroup direction={isClassicLayout ? 'vertical' : 'horizontal'} className="min-h-0 flex-1">
         <ResizablePanel defaultSize={50} minSize={20}>
           {requestEditor}
         </ResizablePanel>

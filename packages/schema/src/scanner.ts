@@ -59,10 +59,7 @@ export class YasumuSchemaScanner {
     };
   }
 
-  readNumber(
-    value: string,
-    start: YasumuSchemaTokenSpanPosition,
-  ): YasumuSchemaToken {
+  readNumber(value: string, start: YasumuSchemaTokenSpanPosition): YasumuSchemaToken {
     while (YasumuSchemaUtils.isNumericChar(this.lexer.peek())) {
       value += this.lexer.advance();
     }
@@ -76,10 +73,7 @@ export class YasumuSchemaScanner {
     };
   }
 
-  readString(
-    delimiter: string,
-    start: YasumuSchemaTokenSpanPosition,
-  ): YasumuSchemaToken {
+  readString(delimiter: string, start: YasumuSchemaTokenSpanPosition): YasumuSchemaToken {
     let value = '';
     let escaped = false;
     let finished = false;
@@ -111,10 +105,7 @@ export class YasumuSchemaScanner {
             }
             code += this.lexer.advance();
           }
-          const parsed =
-            code.length === codeLength
-              ? YasumuSchemaUtils.maybeParseInt(code, 16)
-              : undefined;
+          const parsed = code.length === codeLength ? YasumuSchemaUtils.maybeParseInt(code, 16) : undefined;
           if (typeof parsed !== 'number') {
             return {
               type: YasumuSchemaTokenTypes.ILLEGAL,
@@ -134,10 +125,7 @@ export class YasumuSchemaScanner {
           while (!this.lexer.isEOF()) {
             code += this.lexer.advance();
           }
-          const parsed =
-            code.length === 2
-              ? YasumuSchemaUtils.maybeParseInt(code, 16)
-              : undefined;
+          const parsed = code.length === 2 ? YasumuSchemaUtils.maybeParseInt(code, 16) : undefined;
           if (typeof parsed !== 'number') {
             return {
               type: YasumuSchemaTokenTypes.ILLEGAL,
@@ -176,10 +164,7 @@ export class YasumuSchemaScanner {
     };
   }
 
-  readIdentifier(
-    value: string,
-    start: YasumuSchemaTokenSpanPosition,
-  ): YasumuSchemaToken {
+  readIdentifier(value: string, start: YasumuSchemaTokenSpanPosition): YasumuSchemaToken {
     while (YasumuSchemaUtils.isIdentifier(this.lexer.peek())) {
       value += this.lexer.advance();
     }

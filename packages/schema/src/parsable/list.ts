@@ -1,18 +1,13 @@
 import { type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
-import {
-  YasumuSchemaParsable,
-  type YasumuSchemaParsableToType,
-} from './parsable.js';
 import { YasumuSchemaTokenTypes } from '../tokens.js';
+import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
 
-export type _YasumuSchemaParsableListReturn<
-  T extends YasumuSchemaParsable<unknown>,
-> = YasumuSchemaParsableToType<T>[];
+export type _YasumuSchemaParsableListReturn<T extends YasumuSchemaParsable<unknown>> = YasumuSchemaParsableToType<T>[];
 
-export class YasumuSchemaParsableList<
-  E extends YasumuSchemaParsable<unknown>,
-> extends YasumuSchemaParsable<_YasumuSchemaParsableListReturn<E>> {
+export class YasumuSchemaParsableList<E extends YasumuSchemaParsable<unknown>> extends YasumuSchemaParsable<
+  _YasumuSchemaParsableListReturn<E>
+> {
   constructor(public readonly expect: E) {
     super();
   }
@@ -25,11 +20,7 @@ export class YasumuSchemaParsableList<
     const list: any[] = [];
     parser.consume(YasumuSchemaTokenTypes.LEFT_SQUARE_BRACKET);
     let proceed = true;
-    while (
-      proceed &&
-      !parser.isEOF() &&
-      !parser.check(YasumuSchemaTokenTypes.RIGHT_SQUARE_BRACKET)
-    ) {
+    while (proceed && !parser.isEOF() && !parser.check(YasumuSchemaTokenTypes.RIGHT_SQUARE_BRACKET)) {
       list.push(this.expect.parse(parser));
       proceed = parser.match(YasumuSchemaTokenTypes.COMMA) !== false;
     }
@@ -41,10 +32,7 @@ export class YasumuSchemaParsableList<
     return Array.isArray(value);
   }
 
-  serialize(
-    serializer: YasumuSchemaSerializer,
-    value: _YasumuSchemaParsableListReturn<E>,
-  ) {
+  serialize(serializer: YasumuSchemaSerializer, value: _YasumuSchemaParsableListReturn<E>) {
     if (value.length === 0) {
       return '[]';
     }

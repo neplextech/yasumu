@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - "release"
+      - 'release'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,18 +17,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest"
-            args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest"
-            args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04"
-            args: ""
-          - platform: "ubuntu-22.04-arm"
-            args: ""
-          - platform: "windows-latest"
-            args: ""
-          - platform: "windows-latest"
-            args: "--target aarch64-pc-windows-msvc"
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'ubuntu-22.04-arm'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+          - platform: 'windows-latest'
+            args: '--target aarch64-pc-windows-msvc'
 
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 60
@@ -45,7 +45,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install Deno
         uses: denoland/setup-deno@v1
@@ -62,7 +62,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./apps/yasumu/src-tauri -> target"
+          workspaces: './apps/yasumu/src-tauri -> target'
           cache-on-failure: true
           shared-key: yasumu-release
 
@@ -76,7 +76,7 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm --filter=tanxium deno install
 
       - name: Build packages
-        run: "pnpm build:app"
+        run: 'pnpm build:app'
         env:
           TURBO_TEAM: ${{ secrets.YASUMU_TURBO_TEAM }}
           TURBO_TOKEN: ${{ secrets.YASUMU_RELEASE_TURBO_TOKEN }}
@@ -89,10 +89,10 @@ jobs:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
         with:
-          projectPath: "./apps/yasumu"
+          projectPath: './apps/yasumu'
           tagName: yasumu-v__VERSION__
-          releaseName: "Yasumu v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseName: 'Yasumu v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
-          args: "${{ matrix.args }} --config ./src-tauri/tauri.conf.json"
+          args: '${{ matrix.args }} --config ./src-tauri/tauri.conf.json'

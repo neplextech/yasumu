@@ -2,10 +2,7 @@
 
 import posthog from 'posthog-js';
 
-export type AnalyticsProperties = Record<
-  string,
-  string | number | boolean | null | undefined
->;
+export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 
 let analyticsEnabled = false;
 
@@ -17,10 +14,7 @@ export function isAnalyticsEnabled() {
   return analyticsEnabled && !!(posthog as { __loaded?: boolean }).__loaded;
 }
 
-export function trackEvent(
-  event: string,
-  properties: AnalyticsProperties = {},
-) {
+export function trackEvent(event: string, properties: AnalyticsProperties = {}) {
   if (!isAnalyticsEnabled()) return;
   posthog.capture(event, {
     ...properties,
@@ -28,11 +22,7 @@ export function trackEvent(
   });
 }
 
-export function trackTiming(
-  event: string,
-  startedAt: number,
-  properties: AnalyticsProperties = {},
-) {
+export function trackTiming(event: string, startedAt: number, properties: AnalyticsProperties = {}) {
   trackEvent(event, {
     ...properties,
     duration_ms: Math.max(0, Math.round(performance.now() - startedAt)),

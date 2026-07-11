@@ -1,13 +1,13 @@
 /// <reference types="./internal.d.ts" />
 import { Console } from 'ext:deno_console/01_console.js';
+
 import { consoleEventQueue } from './utils.ts';
 
 const originalConsole = globalThis.console;
 
 // patch console to send messages to the renderer instead of the standard output
 globalThis.console = new Console((msg: string, level: number) => {
-  const lvl =
-    (<const>['log', 'debug', 'info', 'warn', 'error'])[level] ?? 'log';
+  const lvl = (<const>['log', 'debug', 'info', 'warn', 'error'])[level] ?? 'log';
 
   originalConsole[lvl]?.(msg);
 

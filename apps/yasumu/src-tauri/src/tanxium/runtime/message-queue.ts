@@ -22,10 +22,7 @@ export class MessageQueue {
           await handler(message);
         } catch (err) {
           // Prevent one handler's error from breaking others
-          console.error(
-            `[MessageQueue] Subscriber error on topic "${topic}":`,
-            err,
-          );
+          console.error(`[MessageQueue] Subscriber error on topic "${topic}":`, err);
         }
       }
     }

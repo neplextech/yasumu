@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
-import { join } from 'node:path';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 
 const iconsDir = join(import.meta.dirname, '..', 'src-tauri', 'icons');
 const iconsetDir = join(iconsDir, 'icon.iconset');
@@ -12,12 +12,7 @@ interface IconConfig {
   path: string;
 }
 
-const genConfig = (
-  width: number,
-  height: number,
-  name?: string,
-  ext = 'png',
-): IconConfig => {
+const genConfig = (width: number, height: number, name?: string, ext = 'png'): IconConfig => {
   return {
     width,
     height,

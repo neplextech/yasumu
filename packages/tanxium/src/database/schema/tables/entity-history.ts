@@ -1,4 +1,5 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
 import { commonColumns } from '../../common/index.ts';
 import { workspaces } from './workspaces.ts';
 

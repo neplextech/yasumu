@@ -2,7 +2,9 @@
 
 import { Button } from '@yasumu/ui/components/button';
 import { Loader2 } from 'lucide-react';
+
 import { InteropableInput } from '@/components/inputs';
+
 import IntrospectButton from '../introspect-button';
 
 interface GraphqlUrlBarProps {
@@ -38,8 +40,8 @@ export function GraphqlUrlBar({
   const isLoading = isSending || isIntrospecting;
 
   return (
-    <div className="flex gap-2 items-center">
-      <div className="flex-1 relative">
+    <div className="flex items-center gap-2">
+      <div className="relative flex-1">
         <InteropableInput
           placeholder="Enter GraphQL endpoint URL (e.g., https://api.example.com/graphql)"
           value={url}
@@ -50,32 +52,20 @@ export function GraphqlUrlBar({
           disabled={isLoading}
         />
         {isSaving && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="absolute top-1/2 right-2 -translate-y-1/2">
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
           </div>
         )}
       </div>
       {onIntrospect && (
-        <IntrospectButton
-          onClick={onIntrospect}
-          disabled={!url.trim() || isLoading}
-          isLoading={isIntrospecting}
-        />
+        <IntrospectButton onClick={onIntrospect} disabled={!url.trim() || isLoading} isLoading={isIntrospecting} />
       )}
       {isSending ? (
-        <Button
-          onClick={onCancel}
-          variant="destructive"
-          className="min-w-[100px]"
-        >
+        <Button onClick={onCancel} variant="destructive" className="min-w-[100px]">
           Cancel
         </Button>
       ) : (
-        <Button
-          onClick={onSend}
-          disabled={!url.trim()}
-          className="min-w-[100px]"
-        >
+        <Button onClick={onSend} disabled={!url.trim()} className="min-w-[100px]">
           Send
         </Button>
       )}

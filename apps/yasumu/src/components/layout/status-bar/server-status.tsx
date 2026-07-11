@@ -1,12 +1,7 @@
 'use client';
 
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@yasumu/ui/components/tooltip';
 import { cn } from '@yasumu/ui/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from '@yasumu/ui/components/tooltip';
 import { VscCircleFilled } from 'react-icons/vsc';
 
 export interface ServerStatusProps {
@@ -18,14 +13,7 @@ export interface ServerStatusProps {
   onOpen?: () => void;
 }
 
-export function ServerStatus({
-  label,
-  port,
-  icon: Icon,
-  active = false,
-  href,
-  onOpen,
-}: ServerStatusProps) {
+export function ServerStatus({ label, port, icon: Icon, active = false, href, onOpen }: ServerStatusProps) {
   const handleClick = () => {
     if (!href) return;
     onOpen?.();
@@ -37,21 +25,14 @@ export function ServerStatus({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            className="flex items-center gap-1.5 px-2 h-full hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+            className="hover:bg-muted/50 text-muted-foreground hover:text-foreground flex h-full items-center gap-1.5 px-2 transition-colors"
             onClick={handleClick}
             disabled={!href}
           >
             <Icon className="size-3.5" />
-            <span className="text-xs font-mono">
-              {port != null ? `${port}` : '—'}
-            </span>
+            <span className="font-mono text-xs">{port != null ? `${port}` : '—'}</span>
             <VscCircleFilled
-              className={cn(
-                'size-2',
-                active && port
-                  ? 'text-emerald-500'
-                  : 'text-muted-foreground/50',
-              )}
+              className={cn('size-2', active && port ? 'text-emerald-500' : 'text-muted-foreground/50')}
             />
           </button>
         </TooltipTrigger>

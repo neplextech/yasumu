@@ -1,22 +1,11 @@
-import ts from 'typescript-legacy';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import ts from 'typescript-legacy';
+
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
-const RUNTIME_DIR = path.join(
-  ROOT_DIR,
-  'src-tauri',
-  'src',
-  'tanxium',
-  'runtime',
-);
-const OUTPUT_FILE = path.join(
-  ROOT_DIR,
-  'src',
-  'lib',
-  'types',
-  'yasumu-typedef.ts',
-);
+const RUNTIME_DIR = path.join(ROOT_DIR, 'src-tauri', 'src', 'tanxium', 'runtime');
+const OUTPUT_FILE = path.join(ROOT_DIR, 'src', 'lib', 'types', 'yasumu-typedef.ts');
 const TYPES_DIR = path.join(import.meta.dirname, 'types');
 const DENO_TYPES_FILE = path.join(TYPES_DIR, 'deno', 'lib.deno.d.ts');
 const NODE_TYPES_DIR = path.join(ROOT_DIR, 'node_modules', '@types', 'node');
@@ -92,9 +81,7 @@ function stubVirtualPath(moduleName: string): string {
 
 function stubByVirtualPath(virtualPath: string): string | undefined {
   if (!virtualPath.startsWith(STUB_VIRTUAL_PREFIX)) return undefined;
-  const key = decodeURIComponent(
-    virtualPath.slice(STUB_VIRTUAL_PREFIX.length).replace(/\.d\.ts$/, ''),
-  );
+  const key = decodeURIComponent(virtualPath.slice(STUB_VIRTUAL_PREFIX.length).replace(/\.d\.ts$/, ''));
   return EXT_STUBS.get(key);
 }
 
@@ -118,13 +105,7 @@ function createCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
     return readFile0(fileName);
   };
 
-  host.resolveModuleNames = (
-    moduleNames,
-    containingFile,
-    _reused,
-    _ref,
-    opts,
-  ) => {
+  host.resolveModuleNames = (moduleNames, containingFile, _reused, _ref, opts) => {
     return moduleNames.map((name) => {
       if (EXT_STUBS.has(name)) {
         return {
@@ -133,8 +114,7 @@ function createCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
           extension: ts.Extension.Dts,
         } as ts.ResolvedModuleFull;
       }
-      return ts.resolveModuleName(name, containingFile, opts, host)
-        .resolvedModule;
+      return ts.resolveModuleName(name, containingFile, opts, host).resolvedModule;
     });
   };
 
@@ -175,9 +155,7 @@ function compileToDeclarations(fileNames: string[]): Map<string, string> {
       const normalized = path.normalize(d.file.fileName);
       if (!inputSet.has(normalized)) continue;
       const loc = `${path.basename(d.file.fileName)}:${d.file.getLineAndCharacterOfPosition(d.start ?? 0).line + 1}`;
-      console.warn(
-        `  [tsc] ${loc}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`,
-      );
+      console.warn(`  [tsc] ${loc}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
     }
   }
 
@@ -192,14 +170,8 @@ function makeAmbient(content: string): string {
   let r = content;
 
   // Remove all import statements (single and multi-line)
-  r = r.replace(
-    /^import\s+(?:type\s+)?\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*\n?/gm,
-    '',
-  );
-  r = r.replace(
-    /^import\s+[\w*]+(?:\s+as\s+\w+)?\s*(?:,\s*\{[^}]*\})?\s+from\s+['"][^'"]*['"];?\s*\n?/gm,
-    '',
-  );
+  r = r.replace(/^import\s+(?:type\s+)?\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*\n?/gm, '');
+  r = r.replace(/^import\s+[\w*]+(?:\s+as\s+\w+)?\s*(?:,\s*\{[^}]*\})?\s+from\s+['"][^'"]*['"];?\s*\n?/gm, '');
   r = r.replace(/^import\s+['"][^'"]*['"];?\s*\n?/gm, '');
 
   // export {} → remove
@@ -209,10 +181,7 @@ function makeAmbient(content: string): string {
   r = r.replace(/^export\s+declare\s+/gm, 'declare ');
 
   // export abstract class → declare abstract class, etc.
-  r = r.replace(
-    /^export\s+(abstract\s+class|class|interface|type|function|enum|const|let|var)\b/gm,
-    'declare $1',
-  );
+  r = r.replace(/^export\s+(abstract\s+class|class|interface|type|function|enum|const|let|var)\b/gm, 'declare $1');
 
   // export { X, Y } re-exports → remove
   r = r.replace(/^export\s+\{[^}]*\};?\s*\n?/gm, '');
@@ -235,12 +204,7 @@ function makeAmbient(content: string): string {
 
 function extractYasumuClass(bootstrapPath: string): string {
   const src = fs.readFileSync(bootstrapPath, 'utf-8');
-  const sourceFile = ts.createSourceFile(
-    bootstrapPath,
-    src,
-    ts.ScriptTarget.ESNext,
-    true,
-  );
+  const sourceFile = ts.createSourceFile(bootstrapPath, src, ts.ScriptTarget.ESNext, true);
 
   let classNode: ts.ClassDeclaration | undefined;
   ts.forEachChild(sourceFile, (node) => {
@@ -271,9 +235,7 @@ function extractYasumuClass(bootstrapPath: string): string {
   };
 
   const stripPublic = (mods: ts.NodeArray<ts.ModifierLike> | undefined) =>
-    mods?.filter((m) => m.kind !== ts.SyntaxKind.PublicKeyword) as
-      | ts.ModifierLike[]
-      | undefined;
+    mods?.filter((m) => m.kind !== ts.SyntaxKind.PublicKeyword) as ts.ModifierLike[] | undefined;
 
   const ambientMembers = classNode.members.filter(keepMember).map((m) => {
     if (ts.isMethodDeclaration(m)) {
@@ -289,28 +251,13 @@ function extractYasumuClass(bootstrapPath: string): string {
       );
     }
     if (ts.isConstructorDeclaration(m)) {
-      return factory.createConstructorDeclaration(
-        stripPublic(m.modifiers),
-        m.parameters,
-        undefined,
-      );
+      return factory.createConstructorDeclaration(stripPublic(m.modifiers), m.parameters, undefined);
     }
     if (ts.isGetAccessorDeclaration(m)) {
-      return factory.createGetAccessorDeclaration(
-        stripPublic(m.modifiers),
-        m.name,
-        m.parameters,
-        m.type,
-        undefined,
-      );
+      return factory.createGetAccessorDeclaration(stripPublic(m.modifiers), m.name, m.parameters, m.type, undefined);
     }
     if (ts.isSetAccessorDeclaration(m)) {
-      return factory.createSetAccessorDeclaration(
-        stripPublic(m.modifiers),
-        m.name,
-        m.parameters,
-        undefined,
-      );
+      return factory.createSetAccessorDeclaration(stripPublic(m.modifiers), m.name, m.parameters, undefined);
     }
     if (ts.isPropertyDeclaration(m)) {
       // Ambient declarations cannot have initializers; infer the type if not explicit.
@@ -318,17 +265,10 @@ function extractYasumuClass(bootstrapPath: string): string {
       if (!typeNode && m.initializer) {
         if (ts.isIdentifier(m.initializer)) {
           // e.g. `= YasumuUI` → `typeof YasumuUI`
-          typeNode = factory.createTypeQueryNode(
-            factory.createIdentifier(m.initializer.text),
-          );
-        } else if (
-          ts.isNewExpression(m.initializer) &&
-          ts.isIdentifier(m.initializer.expression)
-        ) {
+          typeNode = factory.createTypeQueryNode(factory.createIdentifier(m.initializer.text));
+        } else if (ts.isNewExpression(m.initializer) && ts.isIdentifier(m.initializer.expression)) {
           // e.g. `= new Cache()` → `Cache`
-          typeNode = factory.createTypeReferenceNode(
-            factory.createIdentifier(m.initializer.expression.text),
-          );
+          typeNode = factory.createTypeReferenceNode(factory.createIdentifier(m.initializer.expression.text));
         }
       }
       return factory.createPropertyDeclaration(
@@ -345,9 +285,7 @@ function extractYasumuClass(bootstrapPath: string): string {
   const declMods = [
     factory.createModifier(ts.SyntaxKind.DeclareKeyword),
     ...(classNode.modifiers?.filter(
-      (m) =>
-        m.kind !== ts.SyntaxKind.ExportKeyword &&
-        m.kind !== ts.SyntaxKind.DefaultKeyword,
+      (m) => m.kind !== ts.SyntaxKind.ExportKeyword && m.kind !== ts.SyntaxKind.DefaultKeyword,
     ) ?? []),
   ];
 
@@ -368,9 +306,7 @@ function extractYasumuClass(bootstrapPath: string): string {
 // ============================================================================
 
 function generateYasumuTypes(): string {
-  const exportFiles = RUNTIME_EXPORT_FILES.map((f) =>
-    path.join(RUNTIME_DIR, f),
-  ).filter((f) => fs.existsSync(f));
+  const exportFiles = RUNTIME_EXPORT_FILES.map((f) => path.join(RUNTIME_DIR, f)).filter((f) => fs.existsSync(f));
 
   // Include bootstrap.ts in compilation so globals like `unsafe` are visible
   const bootstrapPath = path.join(RUNTIME_DIR, 'bootstrap.ts');
@@ -404,9 +340,7 @@ function generateYasumuTypes(): string {
   parts.push('declare type unsafe = any;');
 
   // Yasumu module declarations
-  parts.push(
-    `declare module "yasumu:collection" {\n  export { Collection };\n}`,
-  );
+  parts.push(`declare module "yasumu:collection" {\n  export { Collection };\n}`);
 
   // Testing API types (hand-written, stable)
   parts.push(TESTING_API_TYPES.trim());
@@ -550,9 +484,7 @@ function main() {
   console.log('\n[2/3] Loading Deno types...');
   if (!fs.existsSync(DENO_TYPES_FILE)) {
     console.error(`  ✗ Deno types not found at ${DENO_TYPES_FILE}`);
-    console.error(
-      '  Run: cp scripts/deno.ts.txt scripts/types/deno/lib.deno.d.ts',
-    );
+    console.error('  Run: cp scripts/deno.ts.txt scripts/types/deno/lib.deno.d.ts');
     process.exit(1);
   }
   const denoTypes = fs.readFileSync(DENO_TYPES_FILE, 'utf-8');
@@ -563,9 +495,7 @@ function main() {
   if (!fs.existsSync(NODE_TYPES_DIR)) {
     console.warn(`  ⚠ @types/node not found at ${NODE_TYPES_DIR}, skipping`);
   }
-  const nodeTypes = fs.existsSync(NODE_TYPES_DIR)
-    ? bundleNodeTypes(NODE_TYPES_DIR)
-    : '';
+  const nodeTypes = fs.existsSync(NODE_TYPES_DIR) ? bundleNodeTypes(NODE_TYPES_DIR) : '';
   console.log(`  ✓ ${(nodeTypes.length / 1024).toFixed(1)} KB`);
 
   // Output
@@ -598,10 +528,7 @@ export const YASUMU_TYPE_DEFINITIONS = [
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, output, 'utf-8');
 
-  const totalKB = (
-    (yasumuTypes.length + denoTypes.length + nodeTypes.length) /
-    1024
-  ).toFixed(1);
+  const totalKB = ((yasumuTypes.length + denoTypes.length + nodeTypes.length) / 1024).toFixed(1);
   console.log(`\n✓ Written to ${OUTPUT_FILE}`);
   console.log(`  Total type definitions: ${totalKB} KB`);
 }

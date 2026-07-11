@@ -37,45 +37,37 @@ export const DownloadCard: React.FC<{
   };
 
   return (
-    <div className="bg-surface-dark border border-white/10 rounded-xl p-6 flex flex-col hover:border-white/20 transition-all duration-300 relative group overflow-hidden">
-      <div className="absolute top-0 right-0 p-24 bg-white/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="bg-surface-dark group relative flex flex-col overflow-hidden rounded-xl border border-white/10 p-6 transition-all duration-300 hover:border-white/20">
+      <div className="pointer-events-none absolute top-0 right-0 -mt-12 -mr-12 rounded-full bg-white/5 p-24 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100" />
 
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white border border-white/10 text-2xl shrink-0">
+      <div className="mb-4 flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-2xl text-white">
           {icon}
         </div>
         <div>
           <h3 className="text-xl font-bold text-white">{os}</h3>
-          <p className="text-xs text-text-secondary">{description}</p>
+          <p className="text-text-secondary text-xs">{description}</p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 relative z-10">
+      <div className="relative z-10 flex flex-col gap-2">
         {visibleOptions.map((opt, i) => (
           <div
             key={i}
             onClick={(e) => handleDownload(opt.url, e)}
-            className="bg-black/40 border border-white/5 rounded-lg px-3 py-2.5 hover:bg-white/5 transition-colors cursor-pointer group/btn"
+            className="group/btn cursor-pointer rounded-lg border border-white/5 bg-black/40 px-3 py-2.5 transition-colors hover:bg-white/5"
           >
-            <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-200 text-sm group-hover/btn:text-white truncate">
+                  <span className="truncate text-sm font-medium text-gray-200 group-hover/btn:text-white">
                     {opt.label}
                   </span>
-                  {opt.size && (
-                    <span className="text-[10px] text-gray-500 shrink-0">
-                      {formatBytes(opt.size)}
-                    </span>
-                  )}
+                  {opt.size && <span className="shrink-0 text-[10px] text-gray-500">{formatBytes(opt.size)}</span>}
                 </div>
-                {opt.note && (
-                  <span className="text-[10px] text-gray-500 block truncate">
-                    {opt.note}
-                  </span>
-                )}
+                {opt.note && <span className="block truncate text-[10px] text-gray-500">{opt.note}</span>}
               </div>
-              <MdDownload className="text-gray-500 text-base group-hover/btn:text-white shrink-0" />
+              <MdDownload className="shrink-0 text-base text-gray-500 group-hover/btn:text-white" />
             </div>
           </div>
         ))}
@@ -83,16 +75,10 @@ export const DownloadCard: React.FC<{
         {hasMore && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="cursor-pointer flex items-center justify-center gap-1 text-xs text-gray-400 hover:text-white py-2 transition-colors"
+            className="flex cursor-pointer items-center justify-center gap-1 py-2 text-xs text-gray-400 transition-colors hover:text-white"
           >
-            <span>
-              {expanded
-                ? 'Show less'
-                : `+${options.length - visibleCount} more`}
-            </span>
-            <MdExpandMore
-              className={`text-base transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-            />
+            <span>{expanded ? 'Show less' : `+${options.length - visibleCount} more`}</span>
+            <MdExpandMore className={`text-base transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
           </button>
         )}
       </div>

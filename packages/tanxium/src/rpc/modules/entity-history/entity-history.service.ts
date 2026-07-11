@@ -1,13 +1,11 @@
 import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import type {
-  EntityHistoryCreateOptions,
-  EntityHistoryListOptions,
-} from './types.ts';
 import { and, desc, eq } from 'drizzle-orm';
+
 import { entityHistory } from '../../../database/schema.ts';
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
+import type { EntityHistoryCreateOptions, EntityHistoryListOptions } from './types.ts';
 
 @Injectable()
 export class EntityHistoryService {
@@ -79,12 +77,7 @@ export class EntityHistoryService {
     const [result] = await db
       .select()
       .from(entityHistory)
-      .where(
-        and(
-          eq(entityHistory.id, id),
-          eq(entityHistory.workspaceId, workspaceId),
-        ),
-      )
+      .where(and(eq(entityHistory.id, id), eq(entityHistory.workspaceId, workspaceId)))
       .limit(1);
 
     if (!result) return null;
@@ -98,9 +91,7 @@ export class EntityHistoryService {
   public async getOrThrow(workspaceId: string, id: string) {
     const result = await this.get(workspaceId, id);
     if (!result) {
-      throw new NotFoundException(
-        `Entity history ${id} for workspace ${workspaceId} not found`,
-      );
+      throw new NotFoundException(`Entity history ${id} for workspace ${workspaceId} not found`);
     }
     return result;
   }
@@ -109,10 +100,7 @@ export class EntityHistoryService {
    * List all history entries for a workspace, optionally filtered by entity type.
    * Returns entries sorted by most recently accessed first.
    */
-  public async list(
-    workspaceId: string,
-    options: EntityHistoryListOptions = {},
-  ) {
+  public async list(workspaceId: string, options: EntityHistoryListOptions = {}) {
     const db = this.connection.getConnection();
     const { entityType, limit = 50 } = options;
 
@@ -151,12 +139,7 @@ export class EntityHistoryService {
 
     await db
       .delete(entityHistory)
-      .where(
-        and(
-          eq(entityHistory.workspaceId, workspaceId),
-          eq(entityHistory.entityId, entityId),
-        ),
-      );
+      .where(and(eq(entityHistory.workspaceId, workspaceId), eq(entityHistory.entityId, entityId)));
     await this.dispatchHistoryUpdate(workspaceId);
   }
 
@@ -170,10 +153,7 @@ export class EntityHistoryService {
 
     if (entityType) {
       conditions.push(
-        eq(
-          entityHistory.entityType,
-          entityType as 'rest' | 'graphql' | 'websocket' | 'socketio' | 'sse',
-        ),
+        eq(entityHistory.entityType, entityType as 'rest' | 'graphql' | 'websocket' | 'socketio' | 'sse'),
       );
     }
 

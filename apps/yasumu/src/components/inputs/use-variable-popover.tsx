@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+
 import { VariablePopoverContent } from './variable-popover-content';
 
 export function useVariablePopover() {

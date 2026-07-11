@@ -1,11 +1,9 @@
 'use client';
 
-import EnvironmentSelector from './environment-selector';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import {
-  RequestTabStrip,
-  type RequestTab,
-} from '@/components/workspace/request-tab-strip';
+import { RequestTabStrip, type RequestTab } from '@/components/workspace/request-tab-strip';
+
+import EnvironmentSelector from './environment-selector';
 import { resolveHttpMethodIcon } from './http-methods';
 
 export type { RequestTab };

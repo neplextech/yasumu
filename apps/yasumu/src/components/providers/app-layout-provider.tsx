@@ -1,13 +1,7 @@
 'use client';
+import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
+
 import { YasumuLayout } from '@/lib/constants/layout';
-import {
-  createContext,
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
 
 export interface AppLayoutContextData {
   layout: YasumuLayout;
@@ -23,11 +17,7 @@ export function AppLayoutProvider({ children }: React.PropsWithChildren) {
     localStorage.setItem('yasumu:layout', layout);
   }, [layout]);
 
-  return (
-    <AppLayoutContext.Provider value={{ layout, setLayout }}>
-      {children}
-    </AppLayoutContext.Provider>
-  );
+  return <AppLayoutContext.Provider value={{ layout, setLayout }}>{children}</AppLayoutContext.Provider>;
 }
 
 export function useAppLayout() {

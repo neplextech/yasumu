@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import { Button } from '@yasumu/ui/components/button';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Check, Copy } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
 import HighlightedCodeBlock from '@/components/visuals/code-block/highlighted-code-block';
 
 interface DataViewProps {
@@ -31,9 +32,7 @@ export function DataView({ data }: DataViewProps) {
   };
 
   if (data === null || data === undefined) {
-    return (
-      <p className="text-muted-foreground text-sm p-4">No data in response</p>
-    );
+    return <p className="text-muted-foreground p-4 text-sm">No data in response</p>;
   }
 
   return (
@@ -41,17 +40,13 @@ export function DataView({ data }: DataViewProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-2 right-4 z-10 h-7 w-7 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm"
+        className="text-muted-foreground hover:text-foreground bg-background/80 absolute top-2 right-4 z-10 h-7 w-7 backdrop-blur-sm"
         onClick={handleCopy}
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </Button>
       <ScrollArea className="h-full" data-allow-context-menu="true">
-        <HighlightedCodeBlock
-          language="json"
-          className="break-all select-text"
-          codeClassName="break-all select-text"
-        >
+        <HighlightedCodeBlock language="json" className="break-all select-text" codeClassName="break-all select-text">
           {formatted}
         </HighlightedCodeBlock>
       </ScrollArea>

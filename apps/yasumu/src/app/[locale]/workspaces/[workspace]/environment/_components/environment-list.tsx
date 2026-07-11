@@ -1,17 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import type { Environment, TabularPair } from '@yasumu/core';
 import { Button } from '@yasumu/ui/components/button';
-import { Check, Plus } from 'lucide-react';
-import { cn } from '@yasumu/ui/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@yasumu/ui/components/dialog';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -19,19 +9,19 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@yasumu/ui/components/context-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@yasumu/ui/components/dialog';
 import { Input } from '@yasumu/ui/components/input';
-import type { Environment, TabularPair } from '@yasumu/core';
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import { cn } from '@yasumu/ui/lib/utils';
+import { Check, Plus } from 'lucide-react';
+import { useState } from 'react';
 
 interface EnvironmentListProps {
   environments: Environment[];
   activeEnvironmentId?: string;
   selectedEnvironmentId?: string;
   onSelectEnvironment: (id: string) => void;
-  onAddEnvironment: (
-    name: string,
-    secrets?: TabularPair[],
-    variables?: TabularPair[],
-  ) => void;
+  onAddEnvironment: (name: string, secrets?: TabularPair[], variables?: TabularPair[]) => void;
   onDeleteEnvironment: (id: string) => void;
   onRenameEnvironment?: (id: string, name: string) => void;
   onDuplicateEnvironment?: (
@@ -86,18 +76,15 @@ export default function EnvironmentList({
     setActionInputValue('');
   };
 
-  const openContextDialog = (
-    type: 'rename' | 'duplicate',
-    env: Environment,
-  ) => {
+  const openContextDialog = (type: 'rename' | 'duplicate', env: Environment) => {
     setContextAction({ type, env });
     setActionInputValue(type === 'rename' ? env.name : `${env.name} (Copy)`);
   };
 
   return (
-    <div className="flex flex-col h-full border-r bg-background/50">
-      <div className="p-4 border-b bg-background">
-        <div className="flex items-center justify-between mb-4">
+    <div className="bg-background/50 flex h-full flex-col border-r">
+      <div className="bg-background border-b p-4">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Environments</h2>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -131,9 +118,9 @@ export default function EnvironmentList({
       <ScrollArea className="flex-1">
         <div className="p-2">
           {environments.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
+            <div className="text-muted-foreground p-8 text-center">
               <p className="text-sm">No environments</p>
-              <p className="text-xs mt-1">Create your first environment</p>
+              <p className="mt-1 text-xs">Create your first environment</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -149,30 +136,17 @@ export default function EnvironmentList({
                       )}
                       onClick={() => onSelectEnvironment(env.id)}
                     >
-                      <span className="text-sm font-medium flex items-center gap-2">
-                        {activeEnvironmentId === env.id && (
-                          <Check className="size-4" />
-                        )}
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        {activeEnvironmentId === env.id && <Check className="size-4" />}
                         {env.name}
                       </span>
                     </div>
                   </ContextMenuTrigger>
                   <ContextMenuContent className="w-48">
-                    <ContextMenuItem
-                      onClick={() => openContextDialog('rename', env)}
-                    >
-                      Rename
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      onClick={() => openContextDialog('duplicate', env)}
-                    >
-                      Duplicate
-                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => openContextDialog('rename', env)}>Rename</ContextMenuItem>
+                    <ContextMenuItem onClick={() => openContextDialog('duplicate', env)}>Duplicate</ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem
-                      variant="destructive"
-                      onClick={() => onDeleteEnvironment(env.id)}
-                    >
+                    <ContextMenuItem variant="destructive" onClick={() => onDeleteEnvironment(env.id)}>
                       Delete
                     </ContextMenuItem>
                   </ContextMenuContent>
@@ -195,9 +169,7 @@ export default function EnvironmentList({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {contextAction?.type === 'rename'
-                ? 'Rename Environment'
-                : 'Duplicate Environment'}
+              {contextAction?.type === 'rename' ? 'Rename Environment' : 'Duplicate Environment'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">

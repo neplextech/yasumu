@@ -1,15 +1,14 @@
-import { REST_CONTEXT_HANDLER } from '@/rpc/modules/rest/rest-script-preload.ts';
 import { GRAPHQL_CONTEXT_HANDLER } from '@/rpc/modules/graphql/graphql-script-preload.ts';
+import { REST_CONTEXT_HANDLER } from '@/rpc/modules/rest/rest-script-preload.ts';
+
+import { EMAIL_CONTEXT_HANDLER } from '../rpc/modules/email/email-script-preload.ts';
 import { TEST_CONTEXT_HANDLER } from './common/test-script-preload.ts';
 import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from './common/worker-heartbeat.ts';
-import { EMAIL_CONTEXT_HANDLER } from '../rpc/modules/email/email-script-preload.ts';
 
 // a pure function that the worker can use to generate its preload script
 // this function is stringified and sent to the worker at runtime
 // deno-lint-ignore no-explicit-any
-export type ScriptContextFunction<T extends any[] = [], R = any> = (
-  ...args: T
-) => R;
+export type ScriptContextFunction<T extends any[] = [], R = any> = (...args: T) => R;
 
 export interface BuiltContextExtractor {
   // deno-lint-ignore no-explicit-any
@@ -32,23 +31,13 @@ export interface ScriptContextExtractorResult {
 
 export interface ContextHandlerDefinition {
   type: string;
-  builder:
-    | string
-    | ScriptContextFunction<
-        [context: Record<string, unknown>],
-        ScriptContextBuilderResult
-      >;
+  builder: string | ScriptContextFunction<[context: Record<string, unknown>], ScriptContextBuilderResult>;
   extractor:
     | string
-    | ScriptContextFunction<
-        [result: unknown, builtContext: BuiltContextExtractor],
-        ScriptContextExtractorResult
-      >;
+    | ScriptContextFunction<[result: unknown, builtContext: BuiltContextExtractor], ScriptContextExtractorResult>;
 }
 
-export function generateWorkerPreload(
-  handlers: ContextHandlerDefinition[],
-): string {
+export function generateWorkerPreload(handlers: ContextHandlerDefinition[]): string {
   const handlerEntries = handlers
     .map(
       (h) => /* typescript */ `

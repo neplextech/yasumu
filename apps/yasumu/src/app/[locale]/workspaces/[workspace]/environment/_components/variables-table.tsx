@@ -1,19 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Input } from '@yasumu/ui/components/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
-import { Trash, Plus, Save } from 'lucide-react';
+import { Environment, TabularPair } from '@yasumu/core';
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { Environment, TabularPair } from '@yasumu/core';
+import { Input } from '@yasumu/ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
+import { Trash, Plus, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 import { parseEnvFormat } from './shared/env-parser';
 
 interface VariablesTableProps {
@@ -22,26 +16,15 @@ interface VariablesTableProps {
   onSave: (environment: Environment, variables: TabularPair[]) => void;
 }
 
-export default function VariablesTable({
-  environment,
-  variables,
-  onSave,
-}: VariablesTableProps) {
-  const [localVariables, setLocalVariables] =
-    useState<TabularPair[]>(variables);
+export default function VariablesTable({ environment, variables, onSave }: VariablesTableProps) {
+  const [localVariables, setLocalVariables] = useState<TabularPair[]>(variables);
 
   useEffect(() => {
     setLocalVariables(variables);
   }, [variables]);
 
-  const updateVariable = (
-    index: number,
-    field: keyof TabularPair,
-    value: string | boolean,
-  ) => {
-    const updated = localVariables.map((v, i) =>
-      i === index ? { ...v, [field]: value } : v,
-    );
+  const updateVariable = (index: number, field: keyof TabularPair, value: string | boolean) => {
+    const updated = localVariables.map((v, i) => (i === index ? { ...v, [field]: value } : v));
     setLocalVariables(updated);
   };
 
@@ -71,12 +54,8 @@ export default function VariablesTable({
     const parsed = parseEnvFormat(pastedText);
     if (parsed.length === 0) return;
 
-    const existingKeys = new Set(
-      localVariables.map((v) => v.key.trim().toLowerCase()),
-    );
-    const newPairs = parsed.filter(
-      (p) => !existingKeys.has(p.key.trim().toLowerCase()),
-    );
+    const existingKeys = new Set(localVariables.map((v) => v.key.trim().toLowerCase()));
+    const newPairs = parsed.filter((p) => !existingKeys.has(p.key.trim().toLowerCase()));
 
     if (newPairs.length > 0) {
       const updated = [...localVariables, ...newPairs];
@@ -101,9 +80,7 @@ export default function VariablesTable({
               <TableCell>
                 <Checkbox
                   checked={variable.enabled}
-                  onCheckedChange={(checked) =>
-                    updateVariable(index, 'enabled', checked === true)
-                  }
+                  onCheckedChange={(checked) => updateVariable(index, 'enabled', checked === true)}
                 />
               </TableCell>
               <TableCell>
@@ -119,9 +96,7 @@ export default function VariablesTable({
                 <Input
                   placeholder="Variable value"
                   value={variable.value}
-                  onChange={(e) =>
-                    updateVariable(index, 'value', e.target.value)
-                  }
+                  onChange={(e) => updateVariable(index, 'value', e.target.value)}
                   disabled={!variable.enabled}
                   className="font-mono"
                 />
@@ -141,11 +116,7 @@ export default function VariablesTable({
         </TableBody>
       </Table>
       <div className="flex items-center justify-between">
-        <Button
-          variant="link"
-          onClick={addVariable}
-          className="text-sm p-0 h-auto font-normal"
-        >
+        <Button variant="link" onClick={addVariable} className="h-auto p-0 text-sm font-normal">
           <Plus className="mr-1 h-3 w-3" /> Add new variable
         </Button>
         <Button onClick={handleSave} className="gap-2">

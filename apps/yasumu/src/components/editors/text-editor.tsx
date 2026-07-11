@@ -1,18 +1,9 @@
 'use client';
 
-import React, {
-  useRef,
-  useCallback,
-  useEffect,
-  useState,
-  useMemo,
-} from 'react';
-import Editor, {
-  loader,
-  type Monaco,
-  type OnMount,
-} from '@monaco-editor/react';
+import Editor, { loader, type Monaco, type OnMount } from '@monaco-editor/react';
 import { useTheme } from 'next-themes';
+import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
+
 import LoadingScreen from '../visuals/loading-screen';
 
 type IStandaloneCodeEditor = Parameters<OnMount>['0'];
@@ -78,13 +69,8 @@ export function getMonacoInstance(): Promise<Monaco> {
   return initPromise;
 }
 
-function registerTypeDefinitions(
-  monaco: Monaco,
-  typeDefinitions: TypeDefinition[] | TypeDefinition,
-) {
-  const defs = Array.isArray(typeDefinitions)
-    ? typeDefinitions
-    : [typeDefinitions];
+function registerTypeDefinitions(monaco: Monaco, typeDefinitions: TypeDefinition[] | TypeDefinition) {
+  const defs = Array.isArray(typeDefinitions) ? typeDefinitions : [typeDefinitions];
 
   for (let i = 0; i < defs.length; i++) {
     const def = defs[i];
@@ -181,7 +167,7 @@ export function TextEditor({
   if (!isMonacoReady) {
     return (
       <div
-        className={`relative flex-1 min-h-0 w-full overflow-hidden rounded-md border border-border bg-muted/30 ${className ?? ''}`}
+        className={`border-border bg-muted/30 relative min-h-0 w-full flex-1 overflow-hidden rounded-md border ${className ?? ''}`}
       >
         <LoadingScreen fullScreen />
       </div>
@@ -190,10 +176,10 @@ export function TextEditor({
 
   return (
     <div
-      className={`relative flex-1 min-h-0 w-full overflow-hidden rounded-md border border-border bg-muted/30 ${className ?? ''}`}
+      className={`border-border bg-muted/30 relative min-h-0 w-full flex-1 overflow-hidden rounded-md border ${className ?? ''}`}
     >
       {showPlaceholder && (
-        <div className="pointer-events-none absolute inset-0 z-10 p-3 pl-14 font-mono text-sm text-muted-foreground/50 whitespace-pre-wrap">
+        <div className="text-muted-foreground/50 pointer-events-none absolute inset-0 z-10 p-3 pl-14 font-mono text-sm whitespace-pre-wrap">
           {placeholder}
         </div>
       )}
@@ -215,9 +201,7 @@ export function TextEditor({
   );
 }
 
-export function preloadMonacoEditor(
-  typeDefinitions?: TypeDefinition[] | TypeDefinition,
-) {
+export function preloadMonacoEditor(typeDefinitions?: TypeDefinition[] | TypeDefinition) {
   getMonacoInstance().then((monaco) => {
     if (typeDefinitions) {
       registerTypeDefinitions(monaco, typeDefinitions);

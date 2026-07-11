@@ -14,7 +14,7 @@ export default function GraphqlTextEditor({
       onChange={onQueryChange}
       language="graphql"
       placeholder={
-        <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
+        <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
           <pre className="font-mono text-sm whitespace-pre-wrap">{`query GetUsers {
       users {
         id

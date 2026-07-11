@@ -1,23 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
+import { useEffect } from 'react';
+
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@yasumu/ui/components/resizable';
-import EmailList from './email-list';
-import EmailContent from './email-content';
 import LoadingScreen from '@/components/visuals/loading-screen';
 
+import EmailContent from './email-content';
+import EmailList from './email-list';
+
 export default function MailboxTab() {
-  const [selectedEmailId, setSelectedEmailId] = useQueryState(
-    'email',
-    parseAsString,
-  );
+  const [selectedEmailId, setSelectedEmailId] = useQueryState('email', parseAsString);
   const [filter, setFilter] = useQueryState<'all' | 'unread'>(
     'filter',
     parseAsStringEnum(['all', 'unread'] as const).withDefault('all'),
@@ -39,10 +34,7 @@ export default function MailboxTab() {
         search: searchQuery || undefined,
         sort: 'desc',
       }),
-    getNextPageParam: (lastPage) =>
-      lastPage.totalItems > lastPage.items.length
-        ? lastPage.items.length
-        : undefined,
+    getNextPageParam: (lastPage) => (lastPage.totalItems > lastPage.items.length ? lastPage.items.length : undefined),
     initialPageParam: 0,
     select: (data) => data.pages.flatMap((page) => page.items),
   });
@@ -87,11 +79,7 @@ export default function MailboxTab() {
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel defaultSize={70} minSize={50}>
-        {isLoading ? (
-          <LoadingScreen fullScreen />
-        ) : (
-          <EmailContent email={selectedEmail || null} />
-        )}
+        {isLoading ? <LoadingScreen fullScreen /> : <EmailContent email={selectedEmail || null} />}
       </ResizablePanel>
     </ResizablePanelGroup>
   );

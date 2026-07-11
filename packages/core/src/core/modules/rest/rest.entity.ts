@@ -1,10 +1,6 @@
+import type { HttpMethod, RestEntityData, RestEntityUpdateOptions, RestScriptContext } from '@yasumu/common';
+
 import type { RestModule } from './rest.js';
-import type {
-  HttpMethod,
-  RestEntityData,
-  RestEntityUpdateOptions,
-  RestScriptContext,
-} from '@yasumu/common';
 
 export class RestEntity {
   public constructor(
@@ -56,24 +52,18 @@ export class RestEntity {
     }
 
     const searchParameters = new URLSearchParams(
-      (this.data.searchParameters || [])
-        .filter((p) => p.enabled)
-        .map((parameter) => [parameter.key, parameter.value]),
+      (this.data.searchParameters || []).filter((p) => p.enabled).map((parameter) => [parameter.key, parameter.value]),
     );
 
     const url = new URL(this.data.url);
 
     url.search = searchParameters.toString();
 
-    const stringifiedUrl = url
-      .toString()
-      .replace(/\:([a-zA-Z0-9_]+)/g, (match, key) => {
-        const parameter = this.data.requestParameters?.find(
-          (p) => p.key === key && p.enabled,
-        );
+    const stringifiedUrl = url.toString().replace(/\:([a-zA-Z0-9_]+)/g, (match, key) => {
+      const parameter = this.data.requestParameters?.find((p) => p.key === key && p.enabled);
 
-        return parameter?.value ?? match;
-      });
+      return parameter?.value ?? match;
+    });
 
     return stringifiedUrl;
   }

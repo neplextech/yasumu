@@ -1,6 +1,8 @@
-import { commonColumns, json } from '../../common/index.ts';
-import { KeyValuePair } from '@/common/types.ts';
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+import { KeyValuePair } from '@/common/types.ts';
+
+import { commonColumns, json } from '../../common/index.ts';
 import { workspaces } from './workspaces.ts';
 
 export const environments = sqliteTable('environments', {

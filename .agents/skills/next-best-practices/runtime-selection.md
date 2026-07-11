@@ -2,7 +2,9 @@
 
 ## Use Node.js Runtime by Default
 
-Use the default Node.js runtime for new routes and pages. Only use Edge runtime if the project already uses it or there's a specific requirement.
+Use the default Node.js runtime for new routes and pages. Only use
+Edge runtime if the project already uses it or there's a specific
+requirement.
 
 ```tsx
 // Good: Default - no runtime config needed (uses Node.js)
@@ -32,6 +34,7 @@ export const runtime = 'edge'
 ## Detection
 
 **Before adding `runtime = 'edge'`**, check:
+
 1. Does the project already use Edge runtime?
 2. Is there a specific latency requirement?
 3. Are all dependencies Edge-compatible?

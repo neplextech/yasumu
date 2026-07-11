@@ -1,6 +1,3 @@
-import { Mutation, Query, Resolver } from '@yasumu/den';
-import { RestService } from './rest.service.ts';
-import { WorkspaceId } from '../common/decorators.ts';
 import type {
   ExecutableScript,
   RestEntityCreateOptions,
@@ -9,48 +6,34 @@ import type {
   RestScriptContext,
   ScriptExecutionResult,
 } from '@yasumu/common';
+import { Mutation, Query, Resolver } from '@yasumu/den';
 import { YasumuRpcService } from '@yasumu/rpc';
+
+import { WorkspaceId } from '../common/decorators.ts';
+import { RestService } from './rest.service.ts';
 
 @Resolver('rest')
 export class RestResolver implements YasumuRpcService<'rest'> {
   public constructor(private readonly restService: RestService) {}
 
   @Query()
-  public async list(
-    @WorkspaceId() workspaceId: string,
-  ): Promise<RestEntityData[]> {
-    return (await this.restService.list(
-      workspaceId,
-    )) as unknown as RestEntityData[];
+  public async list(@WorkspaceId() workspaceId: string): Promise<RestEntityData[]> {
+    return (await this.restService.list(workspaceId)) as unknown as RestEntityData[];
   }
 
   @Query()
   public async listTree(@WorkspaceId() workspaceId: string) {
-    return (await this.restService.listTree(
-      workspaceId,
-    )) as unknown as RestEntityData[];
+    return (await this.restService.listTree(workspaceId)) as unknown as RestEntityData[];
   }
 
   @Query()
-  public async get(
-    @WorkspaceId() workspaceId: string,
-    id: string,
-  ): Promise<RestEntityData> {
-    return (await this.restService.get(
-      workspaceId,
-      id,
-    )) as unknown as RestEntityData;
+  public async get(@WorkspaceId() workspaceId: string, id: string): Promise<RestEntityData> {
+    return (await this.restService.get(workspaceId, id)) as unknown as RestEntityData;
   }
 
   @Mutation()
-  public async create(
-    @WorkspaceId() workspaceId: string,
-    data: RestEntityCreateOptions,
-  ): Promise<RestEntityData> {
-    return (await this.restService.create(
-      workspaceId,
-      data,
-    )) as unknown as RestEntityData;
+  public async create(@WorkspaceId() workspaceId: string, data: RestEntityCreateOptions): Promise<RestEntityData> {
+    return (await this.restService.create(workspaceId, data)) as unknown as RestEntityData;
   }
 
   @Mutation()
@@ -59,11 +42,7 @@ export class RestResolver implements YasumuRpcService<'rest'> {
     id: string,
     data: Partial<RestEntityUpdateOptions>,
   ): Promise<RestEntityData> {
-    return (await this.restService.update(
-      workspaceId,
-      id,
-      data,
-    )) as unknown as RestEntityData;
+    return (await this.restService.update(workspaceId, id, data)) as unknown as RestEntityData;
   }
 
   @Mutation()

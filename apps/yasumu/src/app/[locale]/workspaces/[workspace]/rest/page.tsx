@@ -1,35 +1,27 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { TabularPair, RestEntityRequestBody, YasumuEmbeddedScript } from '@yasumu/core';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { Separator } from '@yasumu/ui/components/separator';
-import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
+
+import { useVariablePopover } from '@/components/inputs';
+import { useAppLayout } from '@/components/providers/app-layout-provider';
 import LoadingScreen from '@/components/visuals/loading-screen';
-import { useRestContext } from './_providers/rest-context';
-import { useRestEntity } from './_hooks/use-rest-entity';
-import { useRestRequest } from './_hooks/use-rest-request';
+import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import { YasumuLayout } from '@/lib/constants/layout';
+
 import { RequestUrlBar } from './_components/request-editor/request-url-bar';
 import { RestRequestTabs } from './_components/request-editor/rest-request-tabs';
 import { RestResponsePanel } from './_components/response-panel';
 import RequestTabList from './_components/tabs';
-import { useAppLayout } from '@/components/providers/app-layout-provider';
-import { YasumuLayout } from '@/lib/constants/layout';
-import { useVariablePopover } from '@/components/inputs';
-import type {
-  TabularPair,
-  RestEntityRequestBody,
-  YasumuEmbeddedScript,
-} from '@yasumu/core';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@yasumu/ui/components/resizable';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useRestEntity } from './_hooks/use-rest-entity';
+import { useRestRequest } from './_hooks/use-rest-request';
+import { useRestContext } from './_providers/rest-context';
 
-function tabularPairsToRecord(
-  pairs: TabularPair[] | undefined,
-): Record<string, { value: string; enabled: boolean }> {
+function tabularPairsToRecord(pairs: TabularPair[] | undefined): Record<string, { value: string; enabled: boolean }> {
   if (!pairs) return {};
   return pairs.reduce(
     (acc, pair) => {
@@ -46,16 +38,12 @@ export default function RestPage() {
   const { entityId } = useRestContext();
   const { layout } = useAppLayout();
   const { renderVariablePopover } = useVariablePopover();
-  const { data, isLoading, error, isSaving, updateField, save } = useRestEntity(
-    {
-      entityId,
-    },
-  );
+  const { data, isLoading, error, isSaving, updateField, save } = useRestEntity({
+    entityId,
+  });
   const { state: requestState, execute, cancel } = useRestRequest({ entityId });
 
-  const [pathParams, setPathParams] = useState<
-    Record<string, { value: string; enabled: boolean }>
-  >({});
+  const [pathParams, setPathParams] = useState<Record<string, { value: string; enabled: boolean }>>({});
 
   useEffect(() => {
     if (data?.requestParameters) {
@@ -158,7 +146,7 @@ export default function RestPage() {
 
   if (!entityId) {
     return (
-      <main className="w-full h-screen relative grid place-items-center">
+      <main className="relative grid h-screen w-full place-items-center">
         <YasumuBackgroundArt message="Yasumu" />
       </main>
     );
@@ -170,10 +158,10 @@ export default function RestPage() {
 
   if (error) {
     return (
-      <main className="w-full h-screen relative grid place-items-center">
-        <div className="text-center space-y-2">
+      <main className="relative grid h-screen w-full place-items-center">
+        <div className="space-y-2 text-center">
           <p className="text-destructive font-medium">Failed to load entity</p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
+          <p className="text-muted-foreground text-sm">{error.message}</p>
         </div>
       </main>
     );
@@ -208,8 +196,8 @@ export default function RestPage() {
   );
 
   return (
-    <main className="w-full h-full flex flex-col overflow-hidden">
-      <div className="p-4 space-y-4 flex-shrink-0">
+    <main className="flex h-full w-full flex-col overflow-hidden">
+      <div className="flex-shrink-0 space-y-4 p-4">
         <RequestTabList />
         <RequestUrlBar
           method={data.method}
@@ -224,10 +212,7 @@ export default function RestPage() {
         />
       </div>
       <Separator />
-      <ResizablePanelGroup
-        direction={isClassicLayout ? 'vertical' : 'horizontal'}
-        className="flex-1 min-h-0"
-      >
+      <ResizablePanelGroup direction={isClassicLayout ? 'vertical' : 'horizontal'} className="min-h-0 flex-1">
         <ResizablePanel defaultSize={50} minSize={20}>
           {requestEditor}
         </ResizablePanel>

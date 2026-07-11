@@ -35,6 +35,4 @@ export const HttpMethods = {
 /**
  * The type of the HTTP method.
  */
-export type HttpMethod =
-  | (typeof HttpMethods)[keyof typeof HttpMethods]
-  | (string & {});
+export type HttpMethod = (typeof HttpMethods)[keyof typeof HttpMethods] | (string & {});

@@ -1,19 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { Badge } from '@yasumu/ui/components/badge';
 import { Input } from '@yasumu/ui/components/input';
-import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
+import { Textarea } from '@yasumu/ui/components/textarea';
+import { useState } from 'react';
+
+import KeyValueTable from '@/components/tables/key-value-table';
+
 import ConnectButton from './_components/connect-button';
 import SendButton from './_components/send-button';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
-import { Textarea } from '@yasumu/ui/components/textarea';
-import { Badge } from '@yasumu/ui/components/badge';
 
 const mockMessage = 'Hello, WebSocket server!';
 
@@ -30,29 +27,19 @@ export default function WebsocketPage() {
   };
 
   return (
-    <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
-      <div className="flex gap-4 items-center">
+    <main className="flex h-full w-full flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex items-center gap-4">
         <Input placeholder="Enter WebSocket server URL (ws:// or wss://)" />
-        <ConnectButton
-          isConnected={isConnected}
-          onConnect={handleConnect}
-          onDisconnect={handleDisconnect}
-        />
-        <Badge variant={isConnected ? 'default' : 'outline'}>
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
+        <ConnectButton isConnected={isConnected} onConnect={handleConnect} onDisconnect={handleDisconnect} />
+        <Badge variant={isConnected ? 'default' : 'outline'}>{isConnected ? 'Connected' : 'Disconnected'}</Badge>
       </div>
       <Separator />
       <Tabs defaultValue="message">
         <TabsList>
           <TabsTrigger value="message">Message</TabsTrigger>
           <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="pre-connection-script">
-            Pre-connection Script
-          </TabsTrigger>
-          <TabsTrigger value="post-connection-script">
-            Post-connection Script
-          </TabsTrigger>
+          <TabsTrigger value="pre-connection-script">Pre-connection Script</TabsTrigger>
+          <TabsTrigger value="post-connection-script">Post-connection Script</TabsTrigger>
           <TabsTrigger value="tests">Tests</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -63,7 +50,7 @@ export default function WebsocketPage() {
               placeholder="Enter your message (plain text or JSON)..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="font-mono min-h-[200px]"
+              className="min-h-[200px] font-mono"
             />
           </div>
           <SendButton />

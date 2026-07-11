@@ -1,34 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useEffectEvent, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileTreeSidebar } from '@/components/sidebars/file-tree';
-import {
-  useActiveWorkspace,
-  useYasumu,
-} from '@/components/providers/workspace-provider';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import LoadingScreen from '@/components/visuals/loading-screen';
-import { useRestContext } from '../_providers/rest-context';
-import {
-  useFileTreeClipboardActions,
-  useFileTreeContext,
-} from '../_providers/file-tree-context';
-import { resolveHttpMethodIcon } from './http-methods';
 import type { RestTreeItem } from '@yasumu/core';
-import {
-  findFolderInWorkspaceTree,
-  mapWorkspaceTreeToFileTree,
-} from '@/components/workspace/file-tree-utils';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useCallback, useEffect, useEffectEvent, useMemo } from 'react';
+
+import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
+import { FileTreeSidebar } from '@/components/sidebars/file-tree';
+import LoadingScreen from '@/components/visuals/loading-screen';
+import { findFolderInWorkspaceTree, mapWorkspaceTreeToFileTree } from '@/components/workspace/file-tree-utils';
+
+import { useFileTreeClipboardActions, useFileTreeContext } from '../_providers/file-tree-context';
+import { useRestContext } from '../_providers/rest-context';
+import { resolveHttpMethodIcon } from './http-methods';
 
 export function RestFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
   const { setEntityId, removeFromHistory } = useRestContext();
-  const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } =
-    useFileTreeContext();
-  const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } =
-    useFileTreeClipboardActions();
+  const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } = useFileTreeContext();
+  const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } = useFileTreeClipboardActions();
 
   const {
     data: restEntities,
@@ -48,8 +39,7 @@ export function RestFileTree() {
       mapWorkspaceTreeToFileTree(restEntities ?? [], {
         folderFallbackName: 'New Folder',
         fileFallbackName: 'New Request',
-        resolveFileIcon: (item) =>
-          resolveHttpMethodIcon(item.method, { short: false }),
+        resolveFileIcon: (item) => resolveHttpMethodIcon(item.method, { short: false }),
       }),
     [restEntities],
   );
@@ -90,15 +80,10 @@ export function RestFileTree() {
 
   const duplicateFolder = useCallback(
     async (id: string, targetParentId?: string | null) => {
-      const folder = restEntities
-        ? findFolderInWorkspaceTree<RestTreeItem>(restEntities, id)
-        : null;
+      const folder = restEntities ? findFolderInWorkspaceTree<RestTreeItem>(restEntities, id) : null;
       if (!folder || folder.type !== 'folder') return;
 
-      const duplicateFolderRecursive = async (
-        sourceFolder: RestTreeItem,
-        parentId: string | null,
-      ): Promise<void> => {
+      const duplicateFolderRecursive = async (sourceFolder: RestTreeItem, parentId: string | null): Promise<void> => {
         if (sourceFolder.type !== 'folder') return;
 
         const newFolder = await workspace.rest.createEntityGroup({
@@ -130,10 +115,7 @@ export function RestFileTree() {
         }
       };
 
-      await duplicateFolderRecursive(
-        folder,
-        targetParentId !== undefined ? targetParentId : folder.parentId,
-      );
+      await duplicateFolderRecursive(folder, targetParentId !== undefined ? targetParentId : folder.parentId);
 
       await refetchRestEntities();
     },
@@ -188,7 +170,7 @@ export function RestFileTree() {
   return (
     <FileTreeSidebar
       fileTree={fileTree}
-      className="font-sans w-full"
+      className="w-full font-sans"
       collapsible="none"
       enableFileSearch
       fileSearchPlaceholder="Search REST requests..."
@@ -198,26 +180,22 @@ export function RestFileTree() {
       onFileSelect={withErrorHandler(async (id: string) => {
         setEntityId(id);
       })}
-      onFileCreate={withErrorHandler(
-        async (name: string, parentId?: string | null) => {
-          await workspace.rest.create({
-            name,
-            method: 'GET',
-            url: null,
-            groupId: parentId,
-            metadata: {},
-          });
-        },
-      )}
-      onFolderCreate={withErrorHandler(
-        async (name: string, parentId?: string | null) => {
-          await workspace.rest.createEntityGroup({
-            name,
-            parentId: parentId ?? null,
-            entityType: 'rest',
-          });
-        },
-      )}
+      onFileCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
+        await workspace.rest.create({
+          name,
+          method: 'GET',
+          url: null,
+          groupId: parentId,
+          metadata: {},
+        });
+      })}
+      onFolderCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
+        await workspace.rest.createEntityGroup({
+          name,
+          parentId: parentId ?? null,
+          entityType: 'rest',
+        });
+      })}
       onFileDelete={withErrorHandler(async (id: string) => {
         await workspace.rest.delete(id);
         removeFromHistory(id);

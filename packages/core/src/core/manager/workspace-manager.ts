@@ -1,10 +1,9 @@
-import type { Yasumu } from '@/yasumu.js';
-import { Workspace } from '../workspace/workspace.js';
-import type {
-  WorkspaceCreateOptions,
-  WorkspaceOpenOptions,
-} from '@yasumu/common';
+import type { WorkspaceCreateOptions, WorkspaceOpenOptions } from '@yasumu/common';
 import type { PartialWorkspace, WorkspaceData } from '@yasumu/common';
+
+import type { Yasumu } from '@/yasumu.js';
+
+import { Workspace } from '../workspace/workspace.js';
 
 /**
  * The manager for workspaces.
@@ -33,12 +32,8 @@ export class WorkspaceManager {
   public getActiveWorkspace(): Workspace | null;
   public getActiveWorkspace(throwIfNotFound: true): Workspace;
   public getActiveWorkspace(throwIfNotFound: false): Workspace | null;
-  public getActiveWorkspace(
-    throwIfNotFound: boolean = false,
-  ): Workspace | null {
-    const workspace = this.activeWorkspaceId
-      ? (this.workspaces.get(this.activeWorkspaceId) ?? null)
-      : null;
+  public getActiveWorkspace(throwIfNotFound: boolean = false): Workspace | null {
+    const workspace = this.activeWorkspaceId ? (this.workspaces.get(this.activeWorkspaceId) ?? null) : null;
 
     if (throwIfNotFound && !workspace) {
       throw new Error('Workspace not found');

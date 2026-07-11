@@ -1,21 +1,24 @@
 ---
 title: Ensure Compatible Next.js Version
 impact: CRITICAL
-impactDescription: prevents cryptic runtime errors from version mismatch
+impactDescription:
+  prevents cryptic runtime errors from version mismatch
 tags: setup, nextjs, version, compatibility, app-router
 ---
 
 ## Ensure Compatible Next.js Version
 
-nuqs requires specific Next.js versions depending on the router you use. Using incompatible versions causes runtime errors or missing functionality.
+nuqs requires specific Next.js versions depending on the router you
+use. Using incompatible versions causes runtime errors or missing
+functionality.
 
 **Version Requirements:**
 
-| Router | Minimum Next.js | Notes |
-|--------|-----------------|-------|
-| App Router | 14.2.0+ | Full support including streaming |
-| App Router (basic) | 14.0.0+ | Limited features |
-| Pages Router | 12.0.0+ | Full support |
+| Router             | Minimum Next.js | Notes                            |
+| ------------------ | --------------- | -------------------------------- |
+| App Router         | 14.2.0+         | Full support including streaming |
+| App Router (basic) | 14.0.0+         | Limited features                 |
+| Pages Router       | 12.0.0+         | Full support                     |
 
 **Check your version:**
 
@@ -62,6 +65,7 @@ pnpm add next@latest
 ```
 
 **Common symptoms of version mismatch:**
+
 - `useQueryState` returns undefined
 - URL doesn't update on state change
 - Hydration mismatches

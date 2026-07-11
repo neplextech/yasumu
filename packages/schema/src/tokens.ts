@@ -20,9 +20,7 @@ const YasumuSchemaTokenType = [
 
 export type YasumuSchemaTokenType = (typeof YasumuSchemaTokenType)[number];
 
-export const YasumuSchemaTokenTypes = YasumuSchemaUtils.enum(
-  YasumuSchemaTokenType,
-);
+export const YasumuSchemaTokenTypes = YasumuSchemaUtils.enum(YasumuSchemaTokenType);
 
 export interface YasumuSchemaTokenSpanPosition {
   line: number;

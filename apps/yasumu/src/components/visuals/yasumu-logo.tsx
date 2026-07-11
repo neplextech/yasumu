@@ -202,12 +202,7 @@ export default function YasumuLogo(props: React.SVGAttributes<SVGElement>) {
           c-23.154-0.098-114.842-3.374-191.111-76.444c-6.835-6.549-80.787-79.572-84.667-189.778
           C-0.493,251.867,0.977,236.444,2.455,225.78z"
         />
-        <path
-          fill="none"
-          stroke="#FFFFFF"
-          strokeMiterlimit={10}
-          d="M91.048,398.373"
-        />
+        <path fill="none" stroke="#FFFFFF" strokeMiterlimit={10} d="M91.048,398.373" />
         <path
           fill="url(#SVGID_2_)"
           d="M179.048,427.262

@@ -1,37 +1,21 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
-import { TextEditor } from '@/components/editors';
-import { Input } from '@yasumu/ui/components/input';
-import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { InteropableInput, useVariablePopover } from '@/components/inputs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
-import KeyValueTable, {
-  type KeyValuePair,
-} from '@/components/tables/key-value-table';
-import { BodyEditor } from './body-editor';
-import AuthEditor from './auth-editor';
-import type {
-  RestEntityRequestBody,
-  TabularPair,
-  YasumuEmbeddedScript,
-} from '@yasumu/core';
+import type { RestEntityRequestBody, TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
 import { YasumuScriptingLanguage } from '@yasumu/core';
-import { REQUEST_SCRIPT_PLACEHOLDER } from './common';
+import { Checkbox } from '@yasumu/ui/components/checkbox';
+import { Input } from '@yasumu/ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
+import { useCallback, useMemo } from 'react';
+
+import { TextEditor } from '@/components/editors';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
+import KeyValueTable, { type KeyValuePair } from '@/components/tables/key-value-table';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
+
+import AuthEditor from './auth-editor';
+import { BodyEditor } from './body-editor';
+import { REQUEST_SCRIPT_PLACEHOLDER } from './common';
 
 interface RestRequestTabsProps {
   searchParams: TabularPair[];
@@ -41,9 +25,7 @@ interface RestRequestTabsProps {
   script: YasumuEmbeddedScript;
   url: string;
   onSearchParamsChange: (params: TabularPair[]) => void;
-  onPathParamsChange: (
-    params: Record<string, { value: string; enabled: boolean }>,
-  ) => void;
+  onPathParamsChange: (params: Record<string, { value: string; enabled: boolean }>) => void;
   onHeadersChange: (headers: TabularPair[]) => void;
   onBodyChange: (body: { type: string; data: unknown } | null) => void;
   onScriptChange: (script: YasumuEmbeddedScript) => void;
@@ -103,12 +85,9 @@ export function RestRequestTabs({
   );
 
   return (
-    <Tabs
-      defaultValue="parameters"
-      className="flex-1 flex flex-col h-full min-h-0"
-    >
-      <div className="px-1 border-b flex-shrink-0">
-        <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
+    <Tabs defaultValue="parameters" className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-shrink-0 border-b px-1">
+        <TabsList className="h-10 w-full justify-start gap-2 bg-transparent">
           <TabsTrigger value="parameters">Parameters</TabsTrigger>
           <TabsTrigger value="headers">Headers</TabsTrigger>
           <TabsTrigger value="auth">Auth</TabsTrigger>
@@ -118,13 +97,11 @@ export function RestRequestTabs({
         </TabsList>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 min-h-0">
-        <TabsContent value="parameters" className="h-full mt-0 space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <TabsContent value="parameters" className="mt-0 h-full space-y-4">
           {hasPathParams && (
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground font-medium">
-                Path Parameters
-              </div>
+              <div className="text-muted-foreground text-sm font-medium">Path Parameters</div>
               <Table className="border">
                 <TableHeader>
                   <TableRow>
@@ -144,29 +121,16 @@ export function RestRequestTabs({
                         <TableCell>
                           <Checkbox
                             checked={param.enabled}
-                            onCheckedChange={(checked) =>
-                              handlePathParamChange(
-                                key,
-                                'enabled',
-                                checked === true,
-                              )
-                            }
+                            onCheckedChange={(checked) => handlePathParamChange(key, 'enabled', checked === true)}
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            value={key}
-                            disabled
-                            readOnly
-                            className="bg-muted font-mono text-sm"
-                          />
+                          <Input value={key} disabled readOnly className="bg-muted font-mono text-sm" />
                         </TableCell>
                         <TableCell>
                           <InteropableInput
                             value={param.value}
-                            onChange={(val) =>
-                              handlePathParamChange(key, 'value', val)
-                            }
+                            onChange={(val) => handlePathParamChange(key, 'value', val)}
                             onVariableClick={renderVariablePopover}
                             placeholder="Enter value"
                           />
@@ -180,9 +144,7 @@ export function RestRequestTabs({
           )}
 
           <div className="space-y-2">
-            <div className="text-sm text-muted-foreground font-medium">
-              Search Parameters
-            </div>
+            <div className="text-muted-foreground text-sm font-medium">Search Parameters</div>
             <KeyValueTable
               pairs={searchParams as KeyValuePair[]}
               onChange={(pairs) => onSearchParamsChange(pairs as TabularPair[])}
@@ -190,37 +152,30 @@ export function RestRequestTabs({
           </div>
         </TabsContent>
 
-        <TabsContent value="headers" className="h-full mt-0 space-y-2">
-          <div className="text-sm text-muted-foreground font-medium">
-            Request Headers
-          </div>
+        <TabsContent value="headers" className="mt-0 h-full space-y-2">
+          <div className="text-muted-foreground text-sm font-medium">Request Headers</div>
           <KeyValueTable
             pairs={headers as KeyValuePair[]}
             onChange={(pairs) => onHeadersChange(pairs as TabularPair[])}
           />
         </TabsContent>
 
-        <TabsContent value="auth" className="h-full mt-0">
+        <TabsContent value="auth" className="mt-0 h-full">
           <AuthEditor
             headers={headers as KeyValuePair[]}
             onChange={(pairs) => onHeadersChange(pairs as TabularPair[])}
           />
         </TabsContent>
 
-        <TabsContent value="body" className="h-full mt-0">
-          <BodyEditor
-            body={body ? { type: body.type, data: body.value } : null}
-            onChange={onBodyChange}
-          />
+        <TabsContent value="body" className="mt-0 h-full">
+          <BodyEditor body={body ? { type: body.type, data: body.value } : null} onChange={onBodyChange} />
         </TabsContent>
 
-        <TabsContent value="scripts" className="h-full mt-0">
-          <div className="flex flex-col gap-2 h-full min-h-0">
-            <div className="flex items-center justify-between flex-shrink-0">
-              <span className="text-sm text-muted-foreground font-medium">
-                Request Scripts
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
+        <TabsContent value="scripts" className="mt-0 h-full">
+          <div className="flex h-full min-h-0 flex-col gap-2">
+            <div className="flex flex-shrink-0 items-center justify-between">
+              <span className="text-muted-foreground text-sm font-medium">Request Scripts</span>
+              <span className="text-muted-foreground font-mono text-xs">
                 onRequest(req) · onResponse(req, res) · onTest(req, res)
               </span>
             </div>
@@ -229,18 +184,12 @@ export function RestRequestTabs({
               onChange={handleScriptCodeChange}
               typeDefinitions={YASUMU_TYPE_DEFINITIONS}
               placeholder={
-                <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
-                  <h1 className="font-bold underline">
-                    Edit to hide this example placeholder
-                  </h1>
+                <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
+                  <h1 className="font-bold underline">Edit to hide this example placeholder</h1>
                   <h1>Export onRequest to modify request before sending</h1>
-                  <h1>
-                    Export onResponse to process response after receiving export
-                  </h1>
+                  <h1>Export onResponse to process response after receiving export</h1>
                   <h1>Example:</h1>
-                  <pre className="font-mono text-sm whitespace-pre-wrap mt-4">
-                    {REQUEST_SCRIPT_PLACEHOLDER}
-                  </pre>
+                  <pre className="mt-4 font-mono text-sm whitespace-pre-wrap">{REQUEST_SCRIPT_PLACEHOLDER}</pre>
                 </div>
               }
             />

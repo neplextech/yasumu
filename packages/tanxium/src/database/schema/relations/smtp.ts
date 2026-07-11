@@ -1,7 +1,8 @@
 import { relations } from 'drizzle-orm';
+
 import { smtp } from '../tables/smtp.ts';
-import { workspaces } from '../tables/workspaces.ts';
 import { emails } from '../tables/smtp.ts';
+import { workspaces } from '../tables/workspaces.ts';
 
 export const smtpRelations = relations(smtp, ({ one, many }) => ({
   workspace: one(workspaces, {

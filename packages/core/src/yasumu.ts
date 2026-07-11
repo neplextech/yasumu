@@ -1,4 +1,3 @@
-import { WorkspaceManager } from './core/manager/workspace-manager.js';
 import {
   createYasumuRPC,
   type PlatformBridge,
@@ -6,6 +5,8 @@ import {
   type YasumuRpcContext,
   type RpcSubscriptionEvents,
 } from '@yasumu/rpc';
+
+import { WorkspaceManager } from './core/manager/workspace-manager.js';
 import type { YasumuEventHandlerInterface } from './events/common.js';
 import { YasumuEventBus } from './events/event-bus.js';
 
@@ -26,9 +27,7 @@ export interface YasumuOptions {
 /**
  * The interface for a subscription event.
  */
-export type SubscriptionEventPayload<
-  T extends RpcSubscriptionEvents = RpcSubscriptionEvents,
-> = {
+export type SubscriptionEventPayload<T extends RpcSubscriptionEvents = RpcSubscriptionEvents> = {
   /**
    * The event name.
    */
@@ -98,9 +97,7 @@ export class Yasumu {
    * Handles a subscription event.
    * @param payload The event payload.
    */
-  public async onSubscription(
-    payload: SubscriptionEventPayload,
-  ): Promise<void> {
+  public async onSubscription(payload: SubscriptionEventPayload): Promise<void> {
     const event = payload.event;
     const activeWorkspace = this.workspaces.getActiveWorkspace();
 

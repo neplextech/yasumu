@@ -1,37 +1,33 @@
-import { EventBus, Injectable, OnModuleInit } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { YslService } from './ysl.service.ts';
-import { WorkspaceSchema } from './schema/workspace.schema.ts';
-import { YasumuAnnotations } from './schema/constants.ts';
-import { WorkspaceData, YasumuScriptingLanguage } from '@yasumu/common';
-import { join, basename } from 'node:path';
 import { existsSync } from 'node:fs';
-import { RestService } from '../rest/rest.service.ts';
-import { GraphqlService } from '../graphql/graphql.service.ts';
-import { EntityGroupService } from '../entity-group/entity-group.service.ts';
-import { RestSchema } from './schema/rest.schema.ts';
-import { GraphqlSchema } from './schema/graphql.schema.ts';
-import { EnvironmentSchema } from './schema/environment.schema.ts';
-import { SmtpSchema } from './schema/smtp.schema.ts';
+import { join, basename } from 'node:path';
+
+import { WorkspaceData, YasumuScriptingLanguage } from '@yasumu/common';
+import { EventBus, Injectable, OnModuleInit } from '@yasumu/den';
 import { Infer } from '@yasumu/schema';
-import { isDefaultWorkspacePath } from '../../common/constants.ts';
-import { WorkspaceEvent } from '../common/events/workspace.event.ts';
-import { WorkspaceDiscoveryEvent } from '../common/events/workspace-discovery.event.ts';
-import { LockFileService } from './lock-file.service.ts';
-import { ConflictResolver } from './conflict-resolver.ts';
-import { EnvironmentsService } from '../environment/environment.service.ts';
-import { EmailService } from '../email/email.service.ts';
-import type { EntityType, SyncAction, SyncEntityState } from './types.ts';
-import {
-  restEntities,
-  graphqlEntities,
-  environments,
-  smtp,
-  entityGroups,
-  workspaces,
-} from '@/database/schema.ts';
 import { and, eq } from 'drizzle-orm';
+
 import { KeyedMutex } from '@/common/mutex.ts';
+import { restEntities, graphqlEntities, environments, smtp, entityGroups, workspaces } from '@/database/schema.ts';
+
+import { isDefaultWorkspacePath } from '../../common/constants.ts';
+import { WorkspaceDiscoveryEvent } from '../common/events/workspace-discovery.event.ts';
+import { WorkspaceEvent } from '../common/events/workspace.event.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
+import { EmailService } from '../email/email.service.ts';
+import { EntityGroupService } from '../entity-group/entity-group.service.ts';
+import { EnvironmentsService } from '../environment/environment.service.ts';
+import { GraphqlService } from '../graphql/graphql.service.ts';
+import { RestService } from '../rest/rest.service.ts';
+import { ConflictResolver } from './conflict-resolver.ts';
+import { LockFileService } from './lock-file.service.ts';
+import { YasumuAnnotations } from './schema/constants.ts';
+import { EnvironmentSchema } from './schema/environment.schema.ts';
+import { GraphqlSchema } from './schema/graphql.schema.ts';
+import { RestSchema } from './schema/rest.schema.ts';
+import { SmtpSchema } from './schema/smtp.schema.ts';
+import { WorkspaceSchema } from './schema/workspace.schema.ts';
+import type { EntityType, SyncAction, SyncEntityState } from './types.ts';
+import { YslService } from './ysl.service.ts';
 
 @Injectable()
 export class SynchronizationService implements OnModuleInit {
@@ -67,18 +63,12 @@ export class SynchronizationService implements OnModuleInit {
 
   private async findWorkspace(id: string): Promise<WorkspaceData | null> {
     const db = this.connection.getConnection();
-    const [result] = await db
-      .select()
-      .from(workspaces)
-      .where(eq(workspaces.id, id));
+    const [result] = await db.select().from(workspaces).where(eq(workspaces.id, id));
 
     return result ?? null;
   }
 
-  private getPath(
-    workspace: WorkspaceData,
-    target: 'workspace' | 'rest' | 'graphql' | 'environment' | 'smtp',
-  ) {
+  private getPath(workspace: WorkspaceData, target: 'workspace' | 'rest' | 'graphql' | 'environment' | 'smtp') {
     const root = join(workspace.path, 'yasumu');
     switch (target) {
       case 'workspace':
@@ -138,18 +128,10 @@ export class SynchronizationService implements OnModuleInit {
     dbContent: string | null,
     fileContent: string | null,
   ): Promise<{ action: SyncAction; state: SyncEntityState }> {
-    const lockEntry = await this.lockFileService.getEntry(
-      workspacePath,
-      entityType,
-      entityId,
-    );
+    const lockEntry = await this.lockFileService.getEntry(workspacePath, entityType, entityId);
 
-    const dbHash = dbContent
-      ? this.lockFileService.computeHash(dbContent)
-      : null;
-    const fileHash = fileContent
-      ? this.lockFileService.computeHash(fileContent)
-      : null;
+    const dbHash = dbContent ? this.lockFileService.computeHash(dbContent) : null;
+    const fileHash = fileContent ? this.lockFileService.computeHash(fileContent) : null;
     const lockHash = lockEntry?.hash ?? null;
 
     const state: SyncEntityState = {
@@ -202,18 +184,13 @@ export class SynchronizationService implements OnModuleInit {
     workspacePath: string,
     onComplete: (workspace: WorkspaceData | null) => Promise<void>,
   ) {
-    return await this.workspaceMutex.runExclusive(
-      `discover:${workspacePath}`,
-      async () => {
-        const workspace = await this.createWorkspaceFromFs(workspacePath);
-        return onComplete(workspace);
-      },
-    );
+    return await this.workspaceMutex.runExclusive(`discover:${workspacePath}`, async () => {
+      const workspace = await this.createWorkspaceFromFs(workspacePath);
+      return onComplete(workspace);
+    });
   }
 
-  private async createWorkspaceFromFs(
-    workspacePath: string,
-  ): Promise<WorkspaceData | null> {
+  private async createWorkspaceFromFs(workspacePath: string): Promise<WorkspaceData | null> {
     if (isDefaultWorkspacePath(workspacePath)) return null;
 
     const workspaceFile = join(workspacePath, 'yasumu', 'workspace.ysl');
@@ -278,10 +255,7 @@ export class SynchronizationService implements OnModuleInit {
       const parsed = this.yslService.deserialize(RestSchema, fileContent);
       const { metadata, request, script, test: _test } = parsed.blocks;
 
-      const groupId =
-        metadata.groupId && validGroupIds.has(metadata.groupId)
-          ? metadata.groupId
-          : null;
+      const groupId = metadata.groupId && validGroupIds.has(metadata.groupId) ? metadata.groupId : null;
 
       await db.insert(restEntities).values({
         id: metadata.id,
@@ -295,19 +269,12 @@ export class SynchronizationService implements OnModuleInit {
         searchParameters: request.searchParameters,
         requestBody: request.body
           ? {
-              type: request.body.type as
-                | 'json'
-                | 'text'
-                | 'binary'
-                | 'form-data'
-                | 'x-www-form-urlencoded',
+              type: request.body.type as 'json' | 'text' | 'binary' | 'form-data' | 'x-www-form-urlencoded',
               value: request.body.content ?? '',
               metadata: {},
             }
           : null,
-        script: script
-          ? { language: YasumuScriptingLanguage.JavaScript, code: script }
-          : null,
+        script: script ? { language: YasumuScriptingLanguage.JavaScript, code: script } : null,
       });
 
       await this.lockFileService.setEntry(
@@ -334,10 +301,7 @@ export class SynchronizationService implements OnModuleInit {
       const parsed = this.yslService.deserialize(GraphqlSchema, fileContent);
       const { metadata, request, script, test: _test } = parsed.blocks;
 
-      const groupId =
-        metadata.groupId && validGroupIds.has(metadata.groupId)
-          ? metadata.groupId
-          : null;
+      const groupId = metadata.groupId && validGroupIds.has(metadata.groupId) ? metadata.groupId : null;
 
       await db.insert(graphqlEntities).values({
         id: metadata.id,
@@ -350,19 +314,12 @@ export class SynchronizationService implements OnModuleInit {
         searchParameters: request.searchParameters,
         requestBody: request.body
           ? {
-              type: request.body.type as
-                | 'json'
-                | 'text'
-                | 'binary'
-                | 'form-data'
-                | 'x-www-form-urlencoded',
+              type: request.body.type as 'json' | 'text' | 'binary' | 'form-data' | 'x-www-form-urlencoded',
               value: request.body.content ?? '',
               metadata: {},
             }
           : null,
-        script: script
-          ? { language: YasumuScriptingLanguage.JavaScript, code: script }
-          : null,
+        script: script ? { language: YasumuScriptingLanguage.JavaScript, code: script } : null,
       });
 
       await this.lockFileService.setEntry(
@@ -383,10 +340,7 @@ export class SynchronizationService implements OnModuleInit {
       const fileContent = await this.readYslFile(filePath);
       if (!fileContent) continue;
 
-      const parsed = this.yslService.deserialize(
-        EnvironmentSchema,
-        fileContent,
-      );
+      const parsed = this.yslService.deserialize(EnvironmentSchema, fileContent);
       const { metadata, variables, secrets } = parsed.blocks;
 
       await db.insert(environments).values({
@@ -479,10 +433,7 @@ export class SynchronizationService implements OnModuleInit {
     );
   }
 
-  private async applyWorkspaceFromYsl(
-    workspace: WorkspaceData,
-    content: string,
-  ) {
+  private async applyWorkspaceFromYsl(workspace: WorkspaceData, content: string) {
     const parsed = this.yslService.deserialize(WorkspaceSchema, content);
     const db = this.connection.getConnection();
 
@@ -523,9 +474,7 @@ export class SynchronizationService implements OnModuleInit {
 
     for (const existingGroup of existingGroups) {
       if (!parsedGroupIds.has(existingGroup.id)) {
-        await db
-          .delete(entityGroups)
-          .where(eq(entityGroups.id, existingGroup.id));
+        await db.delete(entityGroups).where(eq(entityGroups.id, existingGroup.id));
       }
     }
   }
@@ -551,9 +500,7 @@ export class SynchronizationService implements OnModuleInit {
       processedIds.add(entityId);
 
       const existingEntity = existingEntities.find((e) => e.id === entityId);
-      const dbContent = existingEntity
-        ? this.serializeGraphqlContent(existingEntity)
-        : null;
+      const dbContent = existingEntity ? this.serializeGraphqlContent(existingEntity) : null;
 
       const { action, state } = await this.determineSyncAction(
         workspace.path,
@@ -575,12 +522,7 @@ export class SynchronizationService implements OnModuleInit {
       }
 
       if (resolvedAction === 'pull') {
-        await this.applyGraphqlEntityFromYsl(
-          workspace.id,
-          parsed,
-          existingIds.has(entityId),
-          validGroupIds,
-        );
+        await this.applyGraphqlEntityFromYsl(workspace.id, parsed, existingIds.has(entityId), validGroupIds);
       }
 
       await this.lockFileService.setEntry(
@@ -593,21 +535,11 @@ export class SynchronizationService implements OnModuleInit {
 
     for (const existingEntity of existingEntities) {
       if (!processedIds.has(existingEntity.id)) {
-        const lockEntry = await this.lockFileService.getEntry(
-          workspace.path,
-          'graphql',
-          existingEntity.id,
-        );
+        const lockEntry = await this.lockFileService.getEntry(workspace.path, 'graphql', existingEntity.id);
 
         if (lockEntry) {
-          await db
-            .delete(graphqlEntities)
-            .where(eq(graphqlEntities.id, existingEntity.id));
-          await this.lockFileService.removeEntry(
-            workspace.path,
-            'graphql',
-            existingEntity.id,
-          );
+          await db.delete(graphqlEntities).where(eq(graphqlEntities.id, existingEntity.id));
+          await this.lockFileService.removeEntry(workspace.path, 'graphql', existingEntity.id);
         }
       }
     }
@@ -634,9 +566,7 @@ export class SynchronizationService implements OnModuleInit {
       processedIds.add(entityId);
 
       const existingEntity = existingEntities.find((e) => e.id === entityId);
-      const dbContent = existingEntity
-        ? this.serializeRestContent(existingEntity)
-        : null;
+      const dbContent = existingEntity ? this.serializeRestContent(existingEntity) : null;
 
       const { action, state } = await this.determineSyncAction(
         workspace.path,
@@ -658,12 +588,7 @@ export class SynchronizationService implements OnModuleInit {
       }
 
       if (resolvedAction === 'pull') {
-        await this.applyRestEntityFromYsl(
-          workspace.id,
-          parsed,
-          existingIds.has(entityId),
-          validGroupIds,
-        );
+        await this.applyRestEntityFromYsl(workspace.id, parsed, existingIds.has(entityId), validGroupIds);
       }
 
       await this.lockFileService.setEntry(
@@ -676,21 +601,11 @@ export class SynchronizationService implements OnModuleInit {
 
     for (const existingEntity of existingEntities) {
       if (!processedIds.has(existingEntity.id)) {
-        const lockEntry = await this.lockFileService.getEntry(
-          workspace.path,
-          'rest',
-          existingEntity.id,
-        );
+        const lockEntry = await this.lockFileService.getEntry(workspace.path, 'rest', existingEntity.id);
 
         if (lockEntry) {
-          await db
-            .delete(restEntities)
-            .where(eq(restEntities.id, existingEntity.id));
-          await this.lockFileService.removeEntry(
-            workspace.path,
-            'rest',
-            existingEntity.id,
-          );
+          await db.delete(restEntities).where(eq(restEntities.id, existingEntity.id));
+          await this.lockFileService.removeEntry(workspace.path, 'rest', existingEntity.id);
         }
       }
     }
@@ -705,10 +620,7 @@ export class SynchronizationService implements OnModuleInit {
     const db = this.connection.getConnection();
     const { metadata, request, script, test } = parsed.blocks;
 
-    const groupId =
-      metadata.groupId && validGroupIds.has(metadata.groupId)
-        ? metadata.groupId
-        : null;
+    const groupId = metadata.groupId && validGroupIds.has(metadata.groupId) ? metadata.groupId : null;
 
     const data = {
       name: metadata.name,
@@ -720,29 +632,17 @@ export class SynchronizationService implements OnModuleInit {
       searchParameters: request.searchParameters,
       requestBody: request.body
         ? {
-            type: request.body.type as
-              | 'json'
-              | 'text'
-              | 'binary'
-              | 'form-data'
-              | 'x-www-form-urlencoded',
+            type: request.body.type as 'json' | 'text' | 'binary' | 'form-data' | 'x-www-form-urlencoded',
             value: request.body.content ?? '',
             metadata: {},
           }
         : null,
-      script: script
-        ? { language: YasumuScriptingLanguage.JavaScript, code: script }
-        : null,
-      testScript: test
-        ? { language: YasumuScriptingLanguage.JavaScript, code: test }
-        : null,
+      script: script ? { language: YasumuScriptingLanguage.JavaScript, code: script } : null,
+      testScript: test ? { language: YasumuScriptingLanguage.JavaScript, code: test } : null,
     };
 
     if (exists) {
-      await db
-        .update(restEntities)
-        .set(data)
-        .where(eq(restEntities.id, metadata.id));
+      await db.update(restEntities).set(data).where(eq(restEntities.id, metadata.id));
     } else {
       await db.insert(restEntities).values({
         id: metadata.id,
@@ -761,10 +661,7 @@ export class SynchronizationService implements OnModuleInit {
     const db = this.connection.getConnection();
     const { metadata, request, script, test: _test } = parsed.blocks;
 
-    const groupId =
-      metadata.groupId && validGroupIds.has(metadata.groupId)
-        ? metadata.groupId
-        : null;
+    const groupId = metadata.groupId && validGroupIds.has(metadata.groupId) ? metadata.groupId : null;
 
     const data = {
       name: metadata.name,
@@ -775,26 +672,16 @@ export class SynchronizationService implements OnModuleInit {
       searchParameters: request.searchParameters,
       requestBody: request.body
         ? {
-            type: request.body.type as
-              | 'json'
-              | 'text'
-              | 'binary'
-              | 'form-data'
-              | 'x-www-form-urlencoded',
+            type: request.body.type as 'json' | 'text' | 'binary' | 'form-data' | 'x-www-form-urlencoded',
             value: request.body.content ?? '',
             metadata: {},
           }
         : null,
-      script: script
-        ? { language: YasumuScriptingLanguage.JavaScript, code: script }
-        : null,
+      script: script ? { language: YasumuScriptingLanguage.JavaScript, code: script } : null,
     };
 
     if (exists) {
-      await db
-        .update(graphqlEntities)
-        .set(data)
-        .where(eq(graphqlEntities.id, metadata.id));
+      await db.update(graphqlEntities).set(data).where(eq(graphqlEntities.id, metadata.id));
     } else {
       await db.insert(graphqlEntities).values({
         id: metadata.id,
@@ -816,17 +703,12 @@ export class SynchronizationService implements OnModuleInit {
       const fileContent = await this.readYslFile(filePath);
       if (!fileContent) continue;
 
-      const parsed = this.yslService.deserialize(
-        EnvironmentSchema,
-        fileContent,
-      );
+      const parsed = this.yslService.deserialize(EnvironmentSchema, fileContent);
       const envId = parsed.blocks.metadata.id;
       processedIds.add(envId);
 
       const existingEnv = existingEnvs.find((e) => e.id === envId);
-      const dbContent = existingEnv
-        ? this.serializeEnvironmentContent(existingEnv)
-        : null;
+      const dbContent = existingEnv ? this.serializeEnvironmentContent(existingEnv) : null;
 
       const { action, state } = await this.determineSyncAction(
         workspace.path,
@@ -861,21 +743,11 @@ export class SynchronizationService implements OnModuleInit {
 
     for (const existingEnv of existingEnvs) {
       if (!processedIds.has(existingEnv.id)) {
-        const lockEntry = await this.lockFileService.getEntry(
-          workspace.path,
-          'environment',
-          existingEnv.id,
-        );
+        const lockEntry = await this.lockFileService.getEntry(workspace.path, 'environment', existingEnv.id);
 
         if (lockEntry) {
-          await db
-            .delete(environments)
-            .where(eq(environments.id, existingEnv.id));
-          await this.lockFileService.removeEntry(
-            workspace.path,
-            'environment',
-            existingEnv.id,
-          );
+          await db.delete(environments).where(eq(environments.id, existingEnv.id));
+          await this.lockFileService.removeEntry(workspace.path, 'environment', existingEnv.id);
         }
       }
     }
@@ -895,9 +767,7 @@ export class SynchronizationService implements OnModuleInit {
     const { metadata, variables, secrets: parsedSecrets } = parsed.blocks;
 
     const mergedSecrets = parsedSecrets.map((s) => {
-      const existingSecret = existingEnv?.secrets.find(
-        (es) => es.key === s.key,
-      );
+      const existingSecret = existingEnv?.secrets.find((es) => es.key === s.key);
       return {
         key: s.key,
         value: existingSecret?.value ?? '',
@@ -912,10 +782,7 @@ export class SynchronizationService implements OnModuleInit {
     };
 
     if (existingEnv) {
-      await db
-        .update(environments)
-        .set(data)
-        .where(eq(environments.id, metadata.id));
+      await db.update(environments).set(data).where(eq(environments.id, metadata.id));
     } else {
       await db.insert(environments).values({
         id: metadata.id,
@@ -985,14 +852,12 @@ export class SynchronizationService implements OnModuleInit {
             }
           : null,
       })
-      .where(
-        and(eq(smtp.workspaceId, workspaceId), eq(smtp.id, existingSmtp.id)),
-      );
+      .where(and(eq(smtp.workspaceId, workspaceId), eq(smtp.id, existingSmtp.id)));
   }
 
-  private topologicalSortGroups<
-    T extends { parentId: string | null | undefined },
-  >(entries: [string, T][]): [string, T][] {
+  private topologicalSortGroups<T extends { parentId: string | null | undefined }>(
+    entries: [string, T][],
+  ): [string, T][] {
     const sorted: [string, T][] = [];
     const visited = new Set<string>();
     const idSet = new Set(entries.map(([id]) => id));
@@ -1032,9 +897,7 @@ export class SynchronizationService implements OnModuleInit {
     url: string | null;
     groupId: string | null;
     requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
-    requestParameters:
-      | { key: string; value: string; enabled: boolean }[]
-      | null;
+    requestParameters: { key: string; value: string; enabled: boolean }[] | null;
     searchParameters: { key: string; value: string; enabled: boolean }[] | null;
     requestBody: { type: string; value: unknown } | null;
     script: { code: string } | null;
@@ -1071,9 +934,7 @@ export class SynchronizationService implements OnModuleInit {
     url: string | null;
     groupId: string | null;
     requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
-    requestParameters:
-      | { key: string; value: string; enabled: boolean }[]
-      | null;
+    requestParameters: { key: string; value: string; enabled: boolean }[] | null;
     searchParameters: { key: string; value: string; enabled: boolean }[] | null;
     requestBody: { type: string; value: unknown } | null;
     script: { code: string } | null;
@@ -1091,11 +952,7 @@ export class SynchronizationService implements OnModuleInit {
     });
   }
 
-  private serializeSmtpContent(smtpConfig: {
-    id: string;
-    port: number;
-    username: string | null;
-  }): string {
+  private serializeSmtpContent(smtpConfig: { id: string; port: number; username: string | null }): string {
     return JSON.stringify({
       id: smtpConfig.id,
       port: smtpConfig.port,
@@ -1104,9 +961,7 @@ export class SynchronizationService implements OnModuleInit {
   }
 
   private async pushWorkspaceToFs(workspace: WorkspaceData) {
-    const groups = await this.entityGroupService
-      .findAll(workspace.id)
-      .catch(() => []);
+    const groups = await this.entityGroupService.findAll(workspace.id).catch(() => []);
 
     const content = this.yslService.serialize(WorkspaceSchema, {
       annotation: YasumuAnnotations.Workspace,
@@ -1153,12 +1008,8 @@ export class SynchronizationService implements OnModuleInit {
       url: string | null;
       groupId: string | null;
       requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
-      requestParameters:
-        | { key: string; value: string; enabled: boolean }[]
-        | null;
-      searchParameters:
-        | { key: string; value: string; enabled: boolean }[]
-        | null;
+      requestParameters: { key: string; value: string; enabled: boolean }[] | null;
+      searchParameters: { key: string; value: string; enabled: boolean }[] | null;
       requestBody: { type: string; value: unknown } | null;
       script: { code: string } | null;
     },
@@ -1208,12 +1059,7 @@ export class SynchronizationService implements OnModuleInit {
     const restDir = this.getPath(workspace, 'rest');
     await this.ensurePath(restDir);
     await this.yslService.emit(content, join(restDir, `${entity.id}.ysl`));
-    await this.lockFileService.setEntry(
-      workspace.path,
-      'rest',
-      entity.id,
-      this.lockFileService.computeHash(content),
-    );
+    await this.lockFileService.setEntry(workspace.path, 'rest', entity.id, this.lockFileService.computeHash(content));
   }
 
   private async pushGraphqlEntityToFs(
@@ -1224,12 +1070,8 @@ export class SynchronizationService implements OnModuleInit {
       url: string | null;
       groupId: string | null;
       requestHeaders: { key: string; value: string; enabled: boolean }[] | null;
-      requestParameters:
-        | { key: string; value: string; enabled: boolean }[]
-        | null;
-      searchParameters:
-        | { key: string; value: string; enabled: boolean }[]
-        | null;
+      requestParameters: { key: string; value: string; enabled: boolean }[] | null;
+      searchParameters: { key: string; value: string; enabled: boolean }[] | null;
       requestBody: { type: string; value: unknown } | null;
       script: { code: string } | null;
     },
@@ -1326,10 +1168,7 @@ export class SynchronizationService implements OnModuleInit {
     );
   }
 
-  private async pushSmtpToFs(
-    workspace: WorkspaceData,
-    smtpConfig: typeof smtp.$inferSelect,
-  ) {
+  private async pushSmtpToFs(workspace: WorkspaceData, smtpConfig: typeof smtp.$inferSelect) {
     const content = this.yslService.serialize(SmtpSchema, {
       annotation: YasumuAnnotations.Smtp,
       blocks: {
@@ -1364,8 +1203,7 @@ export class SynchronizationService implements OnModuleInit {
 
       await this.loadWorkspaceFromFileSystem(workspace);
 
-      const refreshedWorkspace =
-        (await this.findWorkspace(workspaceId)) ?? workspace;
+      const refreshedWorkspace = (await this.findWorkspace(workspaceId)) ?? workspace;
 
       await this.pushWorkspaceToFs(refreshedWorkspace);
 
@@ -1385,11 +1223,7 @@ export class SynchronizationService implements OnModuleInit {
         await this.pushGraphqlEntityToFs(refreshedWorkspace, entity);
       }
 
-      await this.cleanupDeletedFiles(
-        refreshedWorkspace,
-        'graphql',
-        graphqlEntityIds,
-      );
+      await this.cleanupDeletedFiles(refreshedWorkspace, 'graphql', graphqlEntityIds);
 
       const envList = await this.environmentsService.list(workspaceId);
       const envIds = new Set(envList.map((e) => e.id));
@@ -1423,11 +1257,7 @@ export class SynchronizationService implements OnModuleInit {
         } catch {
           // ignore removal errors
         }
-        await this.lockFileService.removeEntry(
-          workspace.path,
-          entityType,
-          entityId,
-        );
+        await this.lockFileService.removeEntry(workspace.path, entityType, entityId);
       }
     }
   }

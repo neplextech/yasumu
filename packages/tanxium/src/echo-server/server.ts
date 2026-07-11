@@ -1,7 +1,8 @@
+import { setTimeout } from 'node:timers/promises';
+
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
-import { setTimeout } from 'node:timers/promises';
 
 export const echoServer = new Hono();
 
@@ -46,8 +47,7 @@ echoServer.use('*', async (c, next) => {
 // Specific Utilities
 echoServer.get('/ip', (c) => {
   // Try to get IP from headers usually provided by proxies
-  const ip =
-    c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '127.0.0.1';
+  const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '127.0.0.1';
   return c.json({ ip });
 });
 
@@ -55,10 +55,7 @@ echoServer.get('/ip', (c) => {
 echoServer.get('/basic-auth', (c) => {
   const auth = c.req.header('Authorization');
   if (!auth || !auth.startsWith('Basic ')) {
-    return c.json(
-      { authenticated: false, message: 'No Basic Auth header found' },
-      401,
-    );
+    return c.json({ authenticated: false, message: 'No Basic Auth header found' }, 401);
   }
   const [username, password] = atob(auth.split(' ')[1]).split(':');
   return c.json({ authenticated: true, user: username, pass: password });
@@ -67,10 +64,7 @@ echoServer.get('/basic-auth', (c) => {
 echoServer.get('/bearer-auth', (c) => {
   const auth = c.req.header('Authorization');
   if (!auth || !auth.startsWith('Bearer ')) {
-    return c.json(
-      { authenticated: false, message: 'No Bearer Token found' },
-      401,
-    );
+    return c.json({ authenticated: false, message: 'No Bearer Token found' }, 401);
   }
   const token = auth.split(' ')[1];
   return c.json({ authenticated: true, token });

@@ -7,7 +7,8 @@ tags: {prefix}, {technique}, {tool-if-mentioned}, {related-concepts}
 
 ## {Rule Title}
 
-{1-3 sentences explaining WHY this matters. Focus on performance/correctness implications.}
+{1-3 sentences explaining WHY this matters. Focus on
+performance/correctness implications.}
 
 **Incorrect ({what's wrong}):**
 
@@ -32,10 +33,12 @@ tags: {prefix}, {technique}, {tool-if-mentioned}, {related-concepts}
 ```
 
 **When NOT to use this pattern:**
+
 - {Exception 1}
 - {Exception 2}
 
 **Benefits:**
+
 - {Benefit 1}
 - {Benefit 2}
 

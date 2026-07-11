@@ -1,28 +1,22 @@
 'use client';
 
+import type { TestResult } from '@yasumu/core';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { useQueryState, parseAsStringEnum } from 'nuqs';
 import { useEffect } from 'react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
+
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuLogo from '@/components/visuals/yasumu-logo';
+
+import type { RequestPhase, ScriptOutputEntry } from '../../_hooks/use-graphql-request';
 import type { GraphqlResponse } from '../../_lib/graphql-request';
-import type {
-  RequestPhase,
-  ScriptOutputEntry,
-} from '../../_hooks/use-graphql-request';
-import { GraphqlResponseStatusBar } from './response-status-bar';
-import { HeadersView } from './headers-view';
+import { ConsoleView } from './console-view';
 import { DataView } from './data-view';
 import { ErrorsView } from './errors-view';
+import { HeadersView } from './headers-view';
 import { RawView } from './raw-view';
-import { ConsoleView } from './console-view';
+import { GraphqlResponseStatusBar } from './response-status-bar';
 import { TestView } from './test-view';
-import type { TestResult } from '@yasumu/core';
 
 interface GraphqlResponsePanelProps {
   phase: RequestPhase;
@@ -42,13 +36,7 @@ const phaseMessages: Record<RequestPhase, string> = {
   cancelled: '',
 };
 
-export function GraphqlResponsePanel({
-  phase,
-  response,
-  error,
-  scriptOutput,
-  testResults,
-}: GraphqlResponsePanelProps) {
+export function GraphqlResponsePanel({ phase, response, error, scriptOutput, testResults }: GraphqlResponsePanelProps) {
   const [activeTab, setActiveTab] = useQueryState(
     'responseView',
     parseAsStringEnum(['data', 'raw']).withDefault('data'),
@@ -56,13 +44,7 @@ export function GraphqlResponsePanel({
 
   const [subTab, setSubTab] = useQueryState(
     'responseDataView',
-    parseAsStringEnum([
-      'response',
-      'errors',
-      'headers',
-      'console',
-      'tests',
-    ]).withDefault('response'),
+    parseAsStringEnum(['response', 'errors', 'headers', 'console', 'tests']).withDefault('response'),
   );
 
   // Auto-focus logic
@@ -78,13 +60,9 @@ export function GraphqlResponsePanel({
     }
   }, [response, setActiveTab, setSubTab]);
 
-  if (
-    phase === 'pre-request-script' ||
-    phase === 'sending' ||
-    phase === 'post-response-script'
-  ) {
+  if (phase === 'pre-request-script' || phase === 'sending' || phase === 'post-response-script') {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-background/50">
+      <div className="bg-background/50 flex h-full flex-col items-center justify-center">
         <LoadingScreen message={phaseMessages[phase]} />
       </div>
     );
@@ -92,12 +70,12 @@ export function GraphqlResponsePanel({
 
   if (phase === 'error' || (phase === 'cancelled' && !response)) {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-muted/5 text-center p-4">
+      <div className="bg-muted/5 flex h-full flex-col items-center justify-center p-4 text-center">
         <div className="space-y-2">
           <p className="text-destructive font-medium">
             {phase === 'cancelled' ? 'Request Cancelled' : 'Request Failed'}
           </p>
-          {error && <p className="text-sm text-muted-foreground">{error}</p>}
+          {error && <p className="text-muted-foreground text-sm">{error}</p>}
         </div>
       </div>
     );
@@ -105,7 +83,7 @@ export function GraphqlResponsePanel({
 
   if (!response) {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-muted/5 text-muted-foreground gap-2 select-none">
+      <div className="bg-muted/5 text-muted-foreground flex h-full flex-col items-center justify-center gap-2 select-none">
         <div className="opacity-20 grayscale">
           <YasumuLogo width={64} height={64} />
         </div>
@@ -118,51 +96,47 @@ export function GraphqlResponsePanel({
   const errorsCount = response.errors?.length ?? 0;
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="bg-background flex h-full flex-col">
       <GraphqlResponseStatusBar response={response} />
       <Tabs
         value={activeTab || 'data'}
         onValueChange={(v) => setActiveTab(v as 'data' | 'raw')}
-        className="flex flex-col flex-1 min-h-0"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="px-1 shrink-0 border-b">
-          <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
+        <div className="shrink-0 border-b px-1">
+          <TabsList className="h-10 w-full justify-start gap-2 bg-transparent">
             <TabsTrigger value="data">Response</TabsTrigger>
             <TabsTrigger value="raw">Raw</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="data" className="flex-1 min-h-0">
+        <TabsContent value="data" className="min-h-0 flex-1">
           <Tabs
             value={subTab || 'response'}
-            onValueChange={(v) =>
-              setSubTab(
-                v as 'response' | 'errors' | 'headers' | 'console' | 'tests',
-              )
-            }
-            className="flex flex-col h-full"
+            onValueChange={(v) => setSubTab(v as 'response' | 'errors' | 'headers' | 'console' | 'tests')}
+            className="flex h-full flex-col"
           >
-            <div className="px-1 shrink-0 border-b">
-              <TabsList className="bg-transparent w-full justify-start gap-1">
+            <div className="shrink-0 border-b px-1">
+              <TabsList className="w-full justify-start gap-1 bg-transparent">
                 <TabsTrigger value="response">Data</TabsTrigger>
                 {errorsCount > 0 && (
                   <TabsTrigger value="errors">
                     Errors
-                    <span className="ml-1.5 text-[10px] text-destructive bg-destructive/10 px-1 py-0.5 rounded">
+                    <span className="text-destructive bg-destructive/10 ml-1.5 rounded px-1 py-0.5 text-[10px]">
                       {errorsCount}
                     </span>
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="headers">
                   Headers
-                  <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                  <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                     {headersCount}
                   </span>
                 </TabsTrigger>
                 {scriptOutput.length > 0 && (
                   <TabsTrigger value="console">
                     Console
-                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                    <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                       {scriptOutput.length}
                     </span>
                   </TabsTrigger>
@@ -170,38 +144,38 @@ export function GraphqlResponsePanel({
                 {testResults.length > 0 && (
                   <TabsTrigger value="tests">
                     Tests
-                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded">
+                    <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
                       {testResults.length}
                     </span>
                   </TabsTrigger>
                 )}
               </TabsList>
             </div>
-            <TabsContent value="response" className="flex-1 min-h-0">
+            <TabsContent value="response" className="min-h-0 flex-1">
               <DataView data={response.data} />
             </TabsContent>
             {errorsCount > 0 && (
-              <TabsContent value="errors" className="flex-1 min-h-0">
+              <TabsContent value="errors" className="min-h-0 flex-1">
                 <ErrorsView errors={response.errors} />
               </TabsContent>
             )}
-            <TabsContent value="headers" className="flex-1 min-h-0">
+            <TabsContent value="headers" className="min-h-0 flex-1">
               <HeadersView headers={response.headers} />
             </TabsContent>
             {scriptOutput.length > 0 && (
-              <TabsContent value="console" className="flex-1 min-h-0">
+              <TabsContent value="console" className="min-h-0 flex-1">
                 <ConsoleView output={scriptOutput} />
               </TabsContent>
             )}
             {testResults.length > 0 && (
-              <TabsContent value="tests" className="flex-1 min-h-0">
+              <TabsContent value="tests" className="min-h-0 flex-1">
                 <TestView results={testResults} />
               </TabsContent>
             )}
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="raw" className="flex-1 min-h-0">
+        <TabsContent value="raw" className="min-h-0 flex-1">
           <RawView rawBody={response.rawBody} />
         </TabsContent>
       </Tabs>

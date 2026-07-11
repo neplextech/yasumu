@@ -1,12 +1,5 @@
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
 import { parse } from 'set-cookie-parser';
 
 interface CookiesTableProps {
@@ -30,7 +23,7 @@ export function CookiesTable({ cookies }: CookiesTableProps) {
 
   if (cookies.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
         No cookies in this response
       </div>
     );
@@ -54,38 +47,19 @@ export function CookiesTable({ cookies }: CookiesTableProps) {
           <TableBody>
             {parsedCookies.map((cookie, i) => (
               <TableRow key={i}>
-                <TableCell
-                  className="font-medium max-w-[150px] truncate"
-                  title={cookie.name}
-                >
+                <TableCell className="max-w-[150px] truncate font-medium" title={cookie.name}>
                   {cookie.name}
                 </TableCell>
-                <TableCell
-                  className="font-mono text-sm max-w-[200px] truncate"
-                  title={cookie.value}
-                >
+                <TableCell className="max-w-[200px] truncate font-mono text-sm" title={cookie.value}>
                   {cookie.value}
                 </TableCell>
-                <TableCell className="text-sm max-w-[120px] truncate">
-                  {cookie.domain || '-'}
+                <TableCell className="max-w-[120px] truncate text-sm">{cookie.domain || '-'}</TableCell>
+                <TableCell className="max-w-[100px] truncate text-sm">{cookie.path || '-'}</TableCell>
+                <TableCell className="max-w-[150px] truncate text-sm" title={cookie.expires?.toString()}>
+                  {cookie.expires ? new Date(cookie.expires).toLocaleString() : '-'}
                 </TableCell>
-                <TableCell className="text-sm max-w-[100px] truncate">
-                  {cookie.path || '-'}
-                </TableCell>
-                <TableCell
-                  className="text-sm max-w-[150px] truncate"
-                  title={cookie.expires?.toString()}
-                >
-                  {cookie.expires
-                    ? new Date(cookie.expires).toLocaleString()
-                    : '-'}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {cookie.httpOnly ? '✓' : ''}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {cookie.secure ? '✓' : ''}
-                </TableCell>
+                <TableCell className="text-sm">{cookie.httpOnly ? '✓' : ''}</TableCell>
+                <TableCell className="text-sm">{cookie.secure ? '✓' : ''}</TableCell>
               </TableRow>
             ))}
           </TableBody>

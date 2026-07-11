@@ -6,12 +6,10 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@yasumu/ui/components/dropdown-menu';
-import {
-  YasumuLayout,
-  YasumuLayoutIcons,
-  YasumuLayoutList,
-} from '@/lib/constants/layout';
 import { VscLayout } from 'react-icons/vsc';
+
+import { YasumuLayout, YasumuLayoutIcons, YasumuLayoutList } from '@/lib/constants/layout';
+
 import { useAppLayout } from '../providers/app-layout-provider';
 
 export default function SidebarLayoutStyleSelector() {

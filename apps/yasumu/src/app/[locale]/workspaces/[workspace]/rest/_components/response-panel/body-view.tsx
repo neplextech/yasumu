@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import { Button } from '@yasumu/ui/components/button';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Check, Copy } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import type { BundledLanguage } from 'shiki/bundle/web';
-import type { RestResponse } from '../../_lib/rest-request';
+
 import { getContentType } from '@/components/responses/viewers';
-import { formatBytes } from './utils';
 import HighlightedCodeBlock from '@/components/visuals/code-block/highlighted-code-block';
+
+import type { RestResponse } from '../../_lib/rest-request';
+import { formatBytes } from './utils';
 
 interface BodyViewProps {
   response: RestResponse;
@@ -41,10 +43,7 @@ export function BodyView({ response }: BodyViewProps) {
     const contentType = getContentType(response.headers);
     const lang = getLanguageFromContentType(contentType);
 
-    if (
-      contentType.includes('application/json') ||
-      contentType.includes('+json')
-    ) {
+    if (contentType.includes('application/json') || contentType.includes('+json')) {
       try {
         return {
           formatted: JSON.stringify(JSON.parse(response.textBody), null, 2),
@@ -68,7 +67,7 @@ export function BodyView({ response }: BodyViewProps) {
   if (response.bodyTruncated) {
     const maxSize = response.bodyType === 'text' ? '5 MB' : '50 MB';
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-4">
+      <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-4">
         <p className="font-medium">Response body too large to display</p>
         <p className="text-sm">
           Size: {formatBytes(response.size)} (max: {maxSize})
@@ -79,19 +78,15 @@ export function BodyView({ response }: BodyViewProps) {
 
   if (response.bodyType === 'binary') {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-4">
+      <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-4">
         <p className="font-medium">Binary response</p>
-        <p className="text-sm">
-          Size: {formatBytes(response.size)} - Use Preview tab to view
-        </p>
+        <p className="text-sm">Size: {formatBytes(response.size)} - Use Preview tab to view</p>
       </div>
     );
   }
 
   if (!response.textBody) {
-    return (
-      <p className="text-muted-foreground text-sm p-4">Empty response body</p>
-    );
+    return <p className="text-muted-foreground p-4 text-sm">Empty response body</p>;
   }
 
   return (
@@ -99,7 +94,7 @@ export function BodyView({ response }: BodyViewProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-2 right-4 z-10 h-7 w-7 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm"
+        className="text-muted-foreground hover:text-foreground bg-background/80 absolute top-2 right-4 z-10 h-7 w-7 backdrop-blur-sm"
         onClick={handleCopy}
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

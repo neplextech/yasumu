@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@yasumu/ui/lib/utils';
+
 import type { RestResponse } from '../../_lib/rest-request';
 import { formatBytes, getStatusColor } from './utils';
 
@@ -10,15 +11,10 @@ interface ResponseStatusBarProps {
 
 export function ResponseStatusBar({ response }: ResponseStatusBarProps) {
   return (
-    <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted/30 text-sm">
+    <div className="bg-muted/30 flex items-center gap-4 border-b px-4 py-2 text-sm">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">Status:</span>
-        <span
-          className={cn(
-            'font-mono font-medium',
-            getStatusColor(response.status),
-          )}
-        >
+        <span className={cn('font-mono font-medium', getStatusColor(response.status))}>
           {response.status} {response.statusText}
         </span>
       </div>

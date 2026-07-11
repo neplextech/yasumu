@@ -1,6 +1,7 @@
 'use client';
-import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
 import { SiServerless } from 'react-icons/si';
+
+import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
 
 const SSEIcon = () => <SiServerless className="text-blue-500" />;
 
@@ -46,7 +47,7 @@ export function SseFileTree() {
   return (
     <FileTreeSidebar
       fileTree={FILE_TREE_ITEMS}
-      className="font-sans w-full"
+      className="w-full font-sans"
       collapsible="none"
       onFileCreate={() => {}}
     />

@@ -44,12 +44,8 @@ export async function startServer() {
   const mcpServerResult = Deno.serve({ port: 0 }, mcpServer.fetch);
   Yasumu.setMcpServerPort(mcpServerResult.addr.port);
 
-  console.log(
-    `Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`,
-  );
-  console.log(
-    `Yasumu MCP server started on http://127.0.0.1:${mcpServerResult.addr.port}`,
-  );
+  console.log(`Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`);
+  console.log(`Yasumu MCP server started on http://127.0.0.1:${mcpServerResult.addr.port}`);
 
   return {
     app,

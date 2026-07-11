@@ -88,30 +88,19 @@ export interface FailedExecutionResult {
 /**
  * The result of the script execution.
  */
-export type ScriptExecutionResultOrError =
-  | SuccessExecutionResult
-  | FailedExecutionResult;
+export type ScriptExecutionResultOrError = SuccessExecutionResult | FailedExecutionResult;
 
 /**
  * Checks if the result is a successful script execution result.
  */
-export function isSuccessExecutionResult(
-  result: unknown,
-): result is SuccessExecutionResult {
-  return (
-    typeof result === 'object' &&
-    result !== null &&
-    'success' in result &&
-    result.success === true
-  );
+export function isSuccessExecutionResult(result: unknown): result is SuccessExecutionResult {
+  return typeof result === 'object' && result !== null && 'success' in result && result.success === true;
 }
 
 /**
  * Checks if the result is a failed script execution result.
  */
-export function isFailedExecutionResult(
-  result: unknown,
-): result is FailedExecutionResult {
+export function isFailedExecutionResult(result: unknown): result is FailedExecutionResult {
   return !isSuccessExecutionResult(result);
 }
 

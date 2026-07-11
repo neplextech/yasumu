@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,16 +9,15 @@ import {
   CommandList,
   CommandShortcut,
 } from '@yasumu/ui/components/command';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import * as React from 'react';
+
+import { usePlatform } from '@/hooks/use-platform';
+
 import { useCommandPalette } from './command-context';
-import {
-  CommandCategories,
-  formatShortcutDisplay,
-  getCategoryPriority,
-} from './commands';
+import { CommandCategories, formatShortcutDisplay, getCategoryPriority } from './commands';
 import { ThemePickerDialog } from './theme-picker-dialog';
 import { BuiltinCommandsRegistrar } from './use-builtin-commands';
-import { usePlatform } from '@/hooks/use-platform';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 
 export function CommandPalette() {
   const { isOpen, setIsOpen, commands, activeSubDialog } = useCommandPalette();
@@ -111,8 +109,7 @@ export function CommandPalette() {
             // Exact match
             (pressedHotkey === cmd.shortcut.hotkey.toLowerCase() ||
               // Allow for "mod" mapping to "ctrl" on non-Mac if needed in the data
-              pressedHotkey.replace(/^mod/i, 'ctrl') ===
-                cmd.shortcut.hotkey.toLowerCase()),
+              pressedHotkey.replace(/^mod/i, 'ctrl') === cmd.shortcut.hotkey.toLowerCase()),
         );
         if (shortcut) {
           event.preventDefault();
@@ -156,18 +153,14 @@ export function CommandPalette() {
                   className="flex items-center gap-2"
                 >
                   {command.icon}
-                  <div className="flex flex-col flex-1">
+                  <div className="flex flex-1 flex-col">
                     <span>{command.name}</span>
                     {command.description && (
-                      <span className="text-xs text-muted-foreground">
-                        {command.description}
-                      </span>
+                      <span className="text-muted-foreground text-xs">{command.description}</span>
                     )}
                   </div>
                   {command.shortcut && (
-                    <CommandShortcut>
-                      {formatShortcutDisplay(command.shortcut, isMac)}
-                    </CommandShortcut>
+                    <CommandShortcut>{formatShortcutDisplay(command.shortcut, isMac)}</CommandShortcut>
                   )}
                 </CommandItem>
               ))}

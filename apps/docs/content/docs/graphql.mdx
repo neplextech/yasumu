@@ -1,6 +1,7 @@
 ---
 title: GraphQL
-description: Designing, testing, and debugging GraphQL APIs with Yasumu's
+description:
+  Designing, testing, and debugging GraphQL APIs with Yasumu's
   built-in GraphQL client.
 ---
 
@@ -14,8 +15,8 @@ build operations visually, and run requests — all without leaving
 Yasumu.
 
 <Callout type="info" title="Beta Feature">
-  The GraphQL module is currently in active development. Some features may
-  change as we iterate. Your feedback is welcome!
+  The GraphQL module is currently in active development. Some features
+  may change as we iterate. Your feedback is welcome!
 </Callout>
 
 ## Getting Started
@@ -142,8 +143,9 @@ schema from your endpoint. Introspection:
 - Unlocks the **Entity Importer** for bulk generation
 
 <Callout type="info" title="Auto-Introspection">
-  Yasumu automatically introspects the endpoint when you first enter a URL or
-  when it changes. You can also trigger it manually at any time.
+  Yasumu automatically introspects the endpoint when you first enter a
+  URL or when it changes. You can also trigger it manually at any
+  time.
 </Callout>
 
 ### Sending Requests
@@ -196,8 +198,8 @@ The Query Builder lets you construct queries visually — no need to
 write GraphQL syntax by hand.
 
 <Callout type="info" title="Schema Required">
-  The Query Builder requires a schema. Click **Introspect** first to fetch the
-  schema from your endpoint.
+  The Query Builder requires a schema. Click **Introspect** first to
+  fetch the schema from your endpoint.
 </Callout>
 
 ![graphql-query-builder](/graphql-query-builder.png)
@@ -395,9 +397,9 @@ The script editor includes TypeScript type definitions for
 autocomplete and error checking.
 
 <Callout type="info" title="Script Execution Order">
-  Scripts run in order: **onRequest** → HTTP request → **onResponse** →
-  **onTest**. If `onRequest` returns a mock response, the actual HTTP request is
-  skipped.
+  Scripts run in order: **onRequest** → HTTP request → **onResponse**
+  → **onTest**. If `onRequest` returns a mock response, the actual
+  HTTP request is skipped.
 </Callout>
 
 ## Entity Importer
@@ -455,8 +457,8 @@ automatically:
 </Steps>
 
 <Callout type="info" title="Non-Destructive">
-  The importer creates new entities — it never modifies or overwrites existing
-  ones.
+  The importer creates new entities — it never modifies or overwrites
+  existing ones.
 </Callout>
 
 ## Response Panel

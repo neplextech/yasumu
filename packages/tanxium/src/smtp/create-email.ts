@@ -1,23 +1,15 @@
-import type { SMTPServerDataStream } from 'smtp-server';
 import { simpleParser } from 'mailparser';
+import type { SMTPServerDataStream } from 'smtp-server';
+
 import { db } from '../database/index.ts';
 import { emails } from '../database/schema/tables/smtp.ts';
 
-export async function createEmail(
-  stream: SMTPServerDataStream,
-  workspaceId: string,
-  smtpId: string,
-) {
+export async function createEmail(stream: SMTPServerDataStream, workspaceId: string, smtpId: string) {
   const email = await simpleParser(stream);
 
   const mailFrom = email.from?.text;
-  const mailTo = Array.isArray(email.to)
-    ? email.to.map((t) => t.text).join(',')
-    : email.to?.text;
-  const mailCc =
-    (Array.isArray(email.cc)
-      ? email.cc.map((c) => c.text).join(',')
-      : email.cc?.text) || null;
+  const mailTo = Array.isArray(email.to) ? email.to.map((t) => t.text).join(',') : email.to?.text;
+  const mailCc = (Array.isArray(email.cc) ? email.cc.map((c) => c.text).join(',') : email.cc?.text) || null;
   const mailSubject = email.subject || '(No subject)';
   const mailHtml = email.html || '(No Body)';
   const mailText = email.text || '(No Body)';

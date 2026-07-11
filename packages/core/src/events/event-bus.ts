@@ -26,9 +26,7 @@ export class YasumuEventBus<T extends Record<keyof T, EventHandler>> {
     const promises: Promise<unknown>[] = [];
 
     if (handlers) {
-      promises.push(
-        ...[...handlers].map((handler) => Promise.resolve(handler(...args))),
-      );
+      promises.push(...[...handlers].map((handler) => Promise.resolve(handler(...args))));
     }
 
     if (this.onAnyEvent) {
@@ -49,11 +47,7 @@ export class YasumuEventBus<T extends Record<keyof T, EventHandler>> {
    * @param options  Options for the event listener.
    * @returns        A function to unregister the event handler.
    */
-  public on<K extends keyof T>(
-    event: K,
-    handler: T[K],
-    options?: EventOptions,
-  ): () => void {
+  public on<K extends keyof T>(event: K, handler: T[K], options?: EventOptions): () => void {
     if (options?.signal?.aborted) {
       return () => {};
     }
@@ -78,11 +72,7 @@ export class YasumuEventBus<T extends Record<keyof T, EventHandler>> {
    * @param options  Options for the event listener.
    * @returns        A function to unregister the event handler.
    */
-  public once<K extends keyof T>(
-    event: K,
-    handler: T[K],
-    options?: EventOptions,
-  ): () => void {
+  public once<K extends keyof T>(event: K, handler: T[K], options?: EventOptions): () => void {
     if (options?.signal?.aborted) {
       return () => {};
     }
@@ -111,9 +101,7 @@ export class YasumuEventBus<T extends Record<keyof T, EventHandler>> {
     const handlers = this.handlers.get(event);
     if (!handlers) return;
 
-    const newHandlers = handlers.filter(
-      (h) => h !== handler && (h as any).__originalHandler !== handler,
-    );
+    const newHandlers = handlers.filter((h) => h !== handler && (h as any).__originalHandler !== handler);
 
     if (newHandlers.length === 0) {
       this.handlers.delete(event);

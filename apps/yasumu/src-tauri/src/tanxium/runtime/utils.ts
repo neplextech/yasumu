@@ -1,6 +1,8 @@
-import { op_send_renderer_event } from 'ext:core/ops';
-import { createBufferedQueue } from './common.ts';
 import { isMainThread } from 'node:worker_threads';
+
+import { op_send_renderer_event } from 'ext:core/ops';
+
+import { createBufferedQueue } from './common.ts';
 
 export const isWorkerEnvironment = () =>
   !isMainThread ||

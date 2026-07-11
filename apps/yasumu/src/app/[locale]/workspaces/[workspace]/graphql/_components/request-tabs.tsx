@@ -2,10 +2,8 @@
 
 import EnvironmentSelector from '@/app/[locale]/workspaces/[workspace]/rest/_components/environment-selector';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import {
-  RequestTabStrip,
-  type RequestTab,
-} from '@/components/workspace/request-tab-strip';
+import { RequestTabStrip, type RequestTab } from '@/components/workspace/request-tab-strip';
+
 import { GraphqlIcon } from './graphql-icon';
 
 export type { RequestTab };

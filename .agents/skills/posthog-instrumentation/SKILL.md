@@ -1,11 +1,15 @@
 ---
 name: posthog-instrumentation
-description: Automatically add PostHog analytics instrumentation to code. Triggers when user asks to add tracking, instrument events, add analytics, or implement feature flags in their codebase.
+description:
+  Automatically add PostHog analytics instrumentation to code.
+  Triggers when user asks to add tracking, instrument events, add
+  analytics, or implement feature flags in their codebase.
 ---
 
 # PostHog Instrumentation Skill
 
-Help users add PostHog analytics, event tracking, and feature flags to their code.
+Help users add PostHog analytics, event tracking, and feature flags to
+their code.
 
 ## When to Use
 
@@ -23,9 +27,10 @@ Help users add PostHog analytics, event tracking, and feature flags to their cod
 ## Code Patterns
 
 ### JavaScript/TypeScript
+
 ```javascript
 // Event tracking
-posthog.capture('button_clicked', { button_name: 'signup' })
+posthog.capture('button_clicked', { button_name: 'signup' });
 
 // Feature flags
 if (posthog.isFeatureEnabled('new-feature')) {
@@ -33,10 +38,11 @@ if (posthog.isFeatureEnabled('new-feature')) {
 }
 
 // User identification
-posthog.identify(userId, { email: user.email })
+posthog.identify(userId, { email: user.email });
 ```
 
 ### Python
+
 ```python
 from posthog import Posthog
 posthog = Posthog(api_key='<ph_project_api_key>')
@@ -50,15 +56,16 @@ if posthog.feature_enabled('new-feature', 'user_123'):
 ```
 
 ### React
+
 ```jsx
-import { usePostHog } from 'posthog-js/react'
+import { usePostHog } from 'posthog-js/react';
 
 function MyComponent() {
-  const posthog = usePostHog()
+  const posthog = usePostHog();
 
   const handleClick = () => {
-    posthog.capture('button_clicked')
-  }
+    posthog.capture('button_clicked');
+  };
 }
 ```
 

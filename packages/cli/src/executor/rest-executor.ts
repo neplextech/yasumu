@@ -1,4 +1,5 @@
 import pc from 'picocolors';
+
 import type { RestEntity, Environment } from '../workspace/loader.js';
 import {
   ScriptExecutor,
@@ -63,10 +64,7 @@ export class RestExecutor {
     });
   }
 
-  async execute(
-    entity: RestEntity,
-    options: ExecutionOptions,
-  ): Promise<ExecutionResult> {
+  async execute(entity: RestEntity, options: ExecutionOptions): Promise<ExecutionResult> {
     const startTime = performance.now();
 
     try {
@@ -77,18 +75,9 @@ export class RestExecutor {
       let mockResponse: MockResponse | undefined;
 
       if (entity.script && !options.noScript) {
-        const scriptContext = buildScriptContext(
-          entity,
-          this.environment,
-          url,
-          headers,
-          body,
-        );
+        const scriptContext = buildScriptContext(entity, this.environment, url, headers, body);
 
-        const onRequestResult = await this.scriptExecutor.executeOnRequest(
-          entity.script,
-          scriptContext,
-        );
+        const onRequestResult = await this.scriptExecutor.executeOnRequest(entity.script, scriptContext);
 
         if (!onRequestResult.success) {
           scriptError = `onRequest: ${onRequestResult.error}`;
@@ -165,15 +154,10 @@ export class RestExecutor {
           },
         };
 
-        const onResponseResult = await this.scriptExecutor.executeOnResponse(
-          entity.script,
-          responseContext,
-        );
+        const onResponseResult = await this.scriptExecutor.executeOnResponse(entity.script, responseContext);
 
         if (!onResponseResult.success && options.verbose) {
-          console.log(
-            pc.yellow(`  ⚠ onResponse script error: ${onResponseResult.error}`),
-          );
+          console.log(pc.yellow(`  ⚠ onResponse script error: ${onResponseResult.error}`));
         }
       }
 
@@ -204,10 +188,7 @@ export class RestExecutor {
     if (entity.parameters.length > 0) {
       for (const param of entity.parameters) {
         if (param.enabled) {
-          url = url.replace(
-            `:${param.key}`,
-            encodeURIComponent(this.substituteVariables(param.value)),
-          );
+          url = url.replace(`:${param.key}`, encodeURIComponent(this.substituteVariables(param.value)));
         }
       }
     }
@@ -283,16 +264,9 @@ export function formatResult(result: ExecutionResult, verbose: boolean): void {
     console.log(pc.dim('  Body:'));
     try {
       const parsed = JSON.parse(result.body);
-      console.log(
-        pc.dim(
-          '    ' + JSON.stringify(parsed, null, 2).replace(/\n/g, '\n    '),
-        ),
-      );
+      console.log(pc.dim('    ' + JSON.stringify(parsed, null, 2).replace(/\n/g, '\n    ')));
     } catch {
-      const preview =
-        result.body.length > 200
-          ? result.body.slice(0, 200) + '...'
-          : result.body;
+      const preview = result.body.length > 200 ? result.body.slice(0, 200) + '...' : result.body;
       console.log(pc.dim('    ' + preview));
     }
   }

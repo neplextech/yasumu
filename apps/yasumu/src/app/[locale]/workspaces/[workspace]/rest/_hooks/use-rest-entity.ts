@@ -1,14 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import {
-  RestEntityData,
-  RestEntityRequestBody,
-  RestEntityUpdateOptions,
-  TabularPair,
-} from '@yasumu/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { RestEntityData, RestEntityRequestBody, RestEntityUpdateOptions, TabularPair } from '@yasumu/core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
 const DEBOUNCE_DELAY = 500;
 
@@ -21,17 +17,12 @@ interface UseRestEntityReturn {
   isLoading: boolean;
   error: Error | null;
   isSaving: boolean;
-  updateField: <K extends keyof RestEntityUpdateOptions>(
-    field: K,
-    value: RestEntityUpdateOptions[K],
-  ) => void;
+  updateField: <K extends keyof RestEntityUpdateOptions>(field: K, value: RestEntityUpdateOptions[K]) => void;
   updateFields: (fields: Partial<RestEntityUpdateOptions>) => void;
   save: () => Promise<void>;
 }
 
-export function useRestEntity({
-  entityId,
-}: UseRestEntityOptions): UseRestEntityReturn {
+export function useRestEntity({ entityId }: UseRestEntityOptions): UseRestEntityReturn {
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [localData, setLocalData] = useState<RestEntityData | null>(null);
@@ -40,10 +31,7 @@ export function useRestEntity({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
-  const queryKey = useMemo(
-    () => ['rest-entity', workspace.id, entityId],
-    [entityId, workspace.id],
-  );
+  const queryKey = useMemo(() => ['rest-entity', workspace.id, entityId], [entityId, workspace.id]);
 
   const {
     data: serverData,
@@ -148,10 +136,7 @@ export function useRestEntity({
   );
 
   const updateField = useCallback(
-    <K extends keyof RestEntityUpdateOptions>(
-      field: K,
-      value: RestEntityUpdateOptions[K],
-    ) => {
+    <K extends keyof RestEntityUpdateOptions>(field: K, value: RestEntityUpdateOptions[K]) => {
       updateFields({ [field]: value } as Partial<RestEntityUpdateOptions>);
     },
     [updateFields],

@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import { Environment } from '@yasumu/core';
 import { useCallback } from 'react';
+
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
 const QUERY_KEY = ['environments'] as const;
 
@@ -26,8 +27,7 @@ export function useUpdateEnvironments() {
       await queryClient.cancelQueries({
         queryKey: QUERY_KEY,
       });
-      const environments =
-        (await queryClient.getQueryData<Array<Environment>>(QUERY_KEY)) || [];
+      const environments = (await queryClient.getQueryData<Array<Environment>>(QUERY_KEY)) || [];
       await queryClient.setQueryData(QUERY_KEY, newEnvironments);
       return environments;
     },

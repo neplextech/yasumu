@@ -1,4 +1,5 @@
 import * as vm from 'node:vm';
+
 import type { Environment, RestEntity } from '../workspace/loader.js';
 
 export interface ScriptContext {
@@ -131,10 +132,7 @@ class YasumuResponse {
     return this._json;
   }
 
-  static fromContext(
-    context: ScriptContext,
-    env: YasumuWorkspaceEnvironment,
-  ): YasumuResponse | null {
+  static fromContext(context: ScriptContext, env: YasumuWorkspaceEnvironment): YasumuResponse | null {
     if (!context.response) return null;
     return new YasumuResponse(
       context.response.body,
@@ -162,28 +160,18 @@ const YasumuGlobal = {
     return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 11)}`;
   },
   ui: {
-    async showNotification(_opts: {
-      title: string;
-      message: string;
-      variant?: string;
-    }): Promise<void> {
+    async showNotification(_opts: { title: string; message: string; variant?: string }): Promise<void> {
       // No-op in CLI context
     },
   },
 };
 
 export class ScriptExecutor {
-  async executeOnRequest(
-    script: string,
-    context: ScriptContext,
-  ): Promise<ScriptResult> {
+  async executeOnRequest(script: string, context: ScriptContext): Promise<ScriptResult> {
     return this.executeScript(script, 'onRequest', context);
   }
 
-  async executeOnResponse(
-    script: string,
-    context: ScriptContext,
-  ): Promise<ScriptResult> {
+  async executeOnResponse(script: string, context: ScriptContext): Promise<ScriptResult> {
     return this.executeScript(script, 'onResponse', context);
   }
 
@@ -195,23 +183,17 @@ export class ScriptExecutor {
     transformed = transformed.replace(/interface\s+\w+\s*\{[^}]*\}/gs, '');
     transformed = transformed.replace(/type\s+\w+\s*=\s*[^;]+;/g, '');
 
-    transformed = transformed.replace(
-      /export\s+(async\s+)?function/g,
-      '$1function',
-    );
+    transformed = transformed.replace(/export\s+(async\s+)?function/g, '$1function');
     transformed = transformed.replace(/export\s+(const|let|var)\s+/g, '$1 ');
 
-    transformed = transformed.replace(
-      /function\s+(\w+)\s*\(([^)]*)\)/g,
-      (_match, fnName, params) => {
-        const cleanParams = params
-          .split(',')
-          .map((p: string) => p.split(':')[0].trim())
-          .filter(Boolean)
-          .join(', ');
-        return `function ${fnName}(${cleanParams})`;
-      },
-    );
+    transformed = transformed.replace(/function\s+(\w+)\s*\(([^)]*)\)/g, (_match, fnName, params) => {
+      const cleanParams = params
+        .split(',')
+        .map((p: string) => p.split(':')[0].trim())
+        .filter(Boolean)
+        .join(', ');
+      return `function ${fnName}(${cleanParams})`;
+    });
 
     transformed = transformed.replace(/<[^>]+>/g, '');
 
@@ -228,9 +210,7 @@ export class ScriptExecutor {
     try {
       const env = new YasumuWorkspaceEnvironment(context.environment);
       const req = new YasumuRequest(context, env);
-      const res = context.response
-        ? YasumuResponse.fromContext(context, env)
-        : null;
+      const res = context.response ? YasumuResponse.fromContext(context, env) : null;
 
       const transformedScript = this.transformScript(script);
 

@@ -1,6 +1,7 @@
 import { Module } from '@yasumu/den';
-import { EntityGroupService } from './entity-group.service.ts';
+
 import { EntityGroupResolver } from './entity-group.resolver.ts';
+import { EntityGroupService } from './entity-group.service.ts';
 
 @Module({
   imports: [],

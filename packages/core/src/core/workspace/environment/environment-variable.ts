@@ -23,11 +23,7 @@ export class EnvironmentVariable {
    * @param value The value of the environment variable.
    * @param enabled Whether the environment variable is enabled.
    */
-  public async set(
-    key: string,
-    value: string,
-    enabled?: boolean,
-  ): Promise<void> {
+  public async set(key: string, value: string, enabled?: boolean): Promise<void> {
     const pair: TabularPair = {
       key,
       value,

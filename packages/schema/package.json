@@ -2,19 +2,27 @@
   "name": "@yasumu/schema",
   "version": "0.0.2",
   "description": "Yasumu schema parser",
-  "main": "dist/index.js",
-  "types": "./dist/index.d.ts",
-  "type": "module",
+  "keywords": [
+    "yasumu"
+  ],
+  "homepage": "https://github.com/neplextech/yasumu#readme",
+  "bugs": {
+    "url": "https://github.com/neplextech/yasumu/issues"
+  },
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "build": "rimraf dist && tsc && tsc-alias",
-    "example": "tsx example/example.ts",
-    "example2": "tsx example/workspace.ts"
-  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     "deno": "./src/index.ts",
     "bun": "./src/index.ts",
@@ -23,19 +31,11 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "license": "AGPL-3.0",
-  "author": "Neplex",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/neplextech/yasumu.git"
+  "scripts": {
+    "build": "rimraf dist && tsc && tsc-alias",
+    "example": "tsx example/example.ts",
+    "example2": "tsx example/workspace.ts"
   },
-  "keywords": [
-    "yasumu"
-  ],
-  "bugs": {
-    "url": "https://github.com/neplextech/yasumu/issues"
-  },
-  "homepage": "https://github.com/neplextech/yasumu#readme",
   "devDependencies": {
     "@yasumu/shared": "workspace:*",
     "rimraf": "^6.0.1",

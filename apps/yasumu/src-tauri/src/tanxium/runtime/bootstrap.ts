@@ -1,6 +1,7 @@
 /// <reference types="./internal.d.ts" />
 import './patches.ts';
-import { YasumuUI } from './ui.ts';
+import { join } from 'node:path';
+
 import {
   op_get_resources_dir,
   op_get_app_data_dir,
@@ -16,7 +17,10 @@ import {
   op_get_rpc_port,
   op_unregister_all_virtual_modules,
 } from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
-import { join } from 'node:path';
+
+import { MessageQueue } from './message-queue.ts';
+import { Cache } from './modules/collection.ts';
+import { YasumuUI } from './ui.ts';
 import { rendererEventQueue, isWorkerEnvironment } from './utils.ts';
 import {
   YasumuRequest,
@@ -26,8 +30,6 @@ import {
   YasumuWorkspaceEnvironment,
 } from './yasumu-request.ts';
 import { YasumuWorkspace as YasumuWorkspaceType } from './yasumu-workspace-context.ts';
-import { Cache } from './modules/collection.ts';
-import { MessageQueue } from './message-queue.ts';
 
 let _resourceDir: string, _yasumuVersion: string, _appDataDir: string;
 
@@ -137,10 +139,7 @@ class Yasumu {
    */
   public static getResourcesDir() {
     if (!_resourceDir) {
-      _resourceDir = join(
-        Yasumu.stripVerbatimPath(op_get_resources_dir()),
-        'resources',
-      );
+      _resourceDir = join(Yasumu.stripVerbatimPath(op_get_resources_dir()), 'resources');
     }
 
     return _resourceDir;

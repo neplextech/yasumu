@@ -1,9 +1,10 @@
+import type { WorkspaceData } from '@yasumu/common';
+
 import { EnvironmentManager } from '../manager/environment-manager.js';
 import { WorkspaceManager } from '../manager/workspace-manager.js';
 import { EmailModule } from '../modules/email/email.js';
-import { RestModule } from '../modules/rest/rest.js';
 import { GraphqlModule } from '../modules/graphql/graphql.js';
-import type { WorkspaceData } from '@yasumu/common';
+import { RestModule } from '../modules/rest/rest.js';
 import { ExternalWorkspaceProvider } from './external-workspace-provider.js';
 
 /**

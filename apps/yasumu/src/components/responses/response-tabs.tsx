@@ -1,14 +1,10 @@
 'use client';
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
+
 import { CodeView } from './code-view';
-import { HeadersTable } from './headers-table';
 import { CookiesTable } from './cookies-table';
+import { HeadersTable } from './headers-table';
 
 interface ResponseTabsProps {
   prettyContent: string;
@@ -29,60 +25,57 @@ export function ResponseTabs({
   const cookiesCount = cookies.length;
 
   return (
-    <Tabs
-      defaultValue="pretty"
-      className="flex flex-col flex-1 overflow-hidden"
-    >
-      <div className="px-1 border-b">
-        <TabsList className="bg-transparent h-10 w-full justify-start gap-2 p-0 rounded-none">
+    <Tabs defaultValue="pretty" className="flex flex-1 flex-col overflow-hidden">
+      <div className="border-b px-1">
+        <TabsList className="h-10 w-full justify-start gap-2 rounded-none bg-transparent p-0">
           <TabsTrigger
             value="pretty"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
+            className="data-[state=active]:border-primary h-full rounded-none px-4 data-[state=active]:border-b-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             Body
           </TabsTrigger>
           <TabsTrigger
             value="headers"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
+            className="data-[state=active]:border-primary h-full rounded-none px-4 data-[state=active]:border-b-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             Headers{' '}
-            <span className="ml-2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+            <span className="text-muted-foreground bg-muted ml-2 rounded-full px-1.5 py-0.5 text-xs">
               {headersCount}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="cookies"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
+            className="data-[state=active]:border-primary h-full rounded-none px-4 data-[state=active]:border-b-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             Cookies{' '}
-            <span className="ml-2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+            <span className="text-muted-foreground bg-muted ml-2 rounded-full px-1.5 py-0.5 text-xs">
               {cookiesCount}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="raw"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-full"
+            className="data-[state=active]:border-primary h-full rounded-none px-4 data-[state=active]:border-b-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             Raw
           </TabsTrigger>
         </TabsList>
       </div>
 
-      <TabsContent value="pretty" className="flex-1 min-h-0 m-0 p-0">
+      <TabsContent value="pretty" className="m-0 min-h-0 flex-1 p-0">
         <CodeView content={prettyContent} language="json" />
       </TabsContent>
 
-      <TabsContent value="raw" className="flex-1 min-h-0 m-0 p-0">
+      <TabsContent value="raw" className="m-0 min-h-0 flex-1 p-0">
         <CodeView content={rawContent} />
       </TabsContent>
 
       {showHeaders && (
-        <TabsContent value="headers" className="flex-1 min-h-0 m-0 p-4">
+        <TabsContent value="headers" className="m-0 min-h-0 flex-1 p-4">
           <HeadersTable headers={headers} />
         </TabsContent>
       )}
 
-      <TabsContent value="cookies" className="flex-1 min-h-0 m-0 p-4">
+      <TabsContent value="cookies" className="m-0 min-h-0 flex-1 p-4">
         <CookiesTable cookies={cookies} />
       </TabsContent>
     </Tabs>

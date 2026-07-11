@@ -1,16 +1,6 @@
 'use client';
-import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
-import {
-  useEffect,
-  useEffectEvent,
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-} from 'react';
-import { toast } from '@yasumu/ui/components/sonner';
+import { check, Update } from '@tauri-apps/plugin-updater';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +11,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@yasumu/ui/components/alert-dialog';
-import { Progress } from '@yasumu/ui/components/progress';
-import { Copy, Loader2 } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
+import { Progress } from '@yasumu/ui/components/progress';
+import { toast } from '@yasumu/ui/components/sonner';
+import { Copy, Loader2 } from 'lucide-react';
+import { useEffect, useEffectEvent, createContext, useContext, useState, useCallback, useRef } from 'react';
 
 type UpdatePhase = 'idle' | 'downloading' | 'installing' | 'complete' | 'error';
 
@@ -64,18 +56,13 @@ export function UpdateDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {phase === 'error'
-              ? 'Update Failed'
-              : phase === 'complete'
-                ? 'Update Complete'
-                : 'Update Available'}
+            {phase === 'error' ? 'Update Failed' : phase === 'complete' ? 'Update Complete' : 'Update Available'}
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-4">
               {phase === 'idle' && (
                 <p>
-                  A new version <strong>{update.version}</strong> of Yasumu is
-                  available. You are currently on version{' '}
+                  A new version <strong>{update.version}</strong> of Yasumu is available. You are currently on version{' '}
                   <strong>{update.currentVersion}</strong>.
                 </p>
               )}
@@ -87,9 +74,8 @@ export function UpdateDialog({
                     Downloading update...
                   </p>
                   <Progress value={progress.percentage} className="h-2" />
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatBytes(progress.downloaded)} /{' '}
-                    {formatBytes(progress.total)} ({progress.percentage}%)
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {formatBytes(progress.downloaded)} / {formatBytes(progress.total)} ({progress.percentage}%)
                   </p>
                 </div>
               )}
@@ -101,20 +87,13 @@ export function UpdateDialog({
                 </p>
               )}
 
-              {phase === 'complete' && (
-                <p>
-                  Update installed successfully. The application will restart
-                  now.
-                </p>
-              )}
+              {phase === 'complete' && <p>Update installed successfully. The application will restart now.</p>}
 
               {phase === 'error' && (
                 <div className="space-y-2">
-                  <p className="text-destructive font-medium">
-                    Failed to update
-                  </p>
-                  <div className="rounded-md bg-destructive/10 p-3 text-xs font-mono max-h-32 overflow-y-auto">
-                    <pre className="whitespace-pre-wrap break-all text-destructive">
+                  <p className="text-destructive font-medium">Failed to update</p>
+                  <div className="bg-destructive/10 max-h-32 overflow-y-auto rounded-md p-3 font-mono text-xs">
+                    <pre className="text-destructive break-all whitespace-pre-wrap">
                       {error ?? 'Unknown error occurred'}
                     </pre>
                   </div>
@@ -127,18 +106,16 @@ export function UpdateDialog({
                       toast.success('Error copied to clipboard');
                     }}
                   >
-                    <Copy className="h-3 w-3 mr-2" />
+                    <Copy className="mr-2 h-3 w-3" />
                     Copy Error
                   </Button>
                 </div>
               )}
 
               {update.body && phase === 'idle' && (
-                <div className="mt-4 max-h-32 overflow-y-auto rounded-md bg-muted p-3 text-sm">
+                <div className="bg-muted mt-4 max-h-32 overflow-y-auto rounded-md p-3 text-sm">
                   <p className="mb-1 font-medium">Release Notes:</p>
-                  <p className="whitespace-pre-wrap text-muted-foreground">
-                    {update.body}
-                  </p>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{update.body}</p>
                 </div>
               )}
             </div>
@@ -150,14 +127,8 @@ export function UpdateDialog({
               {phase === 'error' ? 'Close' : 'Later'}
             </AlertDialogCancel>
           )}
-          {phase === 'idle' && (
-            <AlertDialogAction onClick={onContinue}>
-              Update Now
-            </AlertDialogAction>
-          )}
-          {phase === 'error' && (
-            <AlertDialogAction onClick={onContinue}>Retry</AlertDialogAction>
-          )}
+          {phase === 'idle' && <AlertDialogAction onClick={onContinue}>Update Now</AlertDialogAction>}
+          {phase === 'error' && <AlertDialogAction onClick={onContinue}>Retry</AlertDialogAction>}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -252,10 +223,7 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
           case 'Progress':
             downloadedRef.current += event.data.chunkLength;
             const total = contentLength || downloadedRef.current;
-            const percentage = Math.min(
-              Math.round((downloadedRef.current / total) * 100),
-              100,
-            );
+            const percentage = Math.min(Math.round((downloadedRef.current / total) * 100), 100);
             setProgress({
               downloaded: downloadedRef.current,
               total,

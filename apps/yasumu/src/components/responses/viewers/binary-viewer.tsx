@@ -8,16 +8,12 @@ interface BinaryViewerProps {
 
 export function BinaryViewer({ contentType }: BinaryViewerProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
-      <FileQuestion className="w-16 h-16 opacity-50" />
+    <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-4">
+      <FileQuestion className="h-16 w-16 opacity-50" />
       <div className="text-center">
         <p className="font-medium">Preview not available</p>
-        <p className="text-sm mt-1">
-          Previewing{' '}
-          <code className="bg-muted px-1 rounded">
-            {contentType || 'unknown type'}
-          </code>{' '}
-          is not supported
+        <p className="mt-1 text-sm">
+          Previewing <code className="bg-muted rounded px-1">{contentType || 'unknown type'}</code> is not supported
         </p>
       </div>
     </div>

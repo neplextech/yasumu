@@ -1,10 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { useTheme } from 'next-themes';
-import { useCustomTheme } from '@/components/providers/custom-theme-provider';
-import { YasumuThemes } from '@/lib/constants/themes';
-import type { YasumuThemeConfig } from '@/lib/types/theme';
 import {
   Command,
   CommandEmpty,
@@ -13,14 +8,15 @@ import {
   CommandItem,
   CommandList,
 } from '@yasumu/ui/components/command';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@yasumu/ui/components/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@yasumu/ui/components/dialog';
 import { Check, Moon, Palette, Sun, Monitor } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import * as React from 'react';
+
+import { useCustomTheme } from '@/components/providers/custom-theme-provider';
+import { YasumuThemes } from '@/lib/constants/themes';
+import type { YasumuThemeConfig } from '@/lib/types/theme';
+
 import { useCommandPalette } from './command-context';
 
 interface ThemeOption {
@@ -34,26 +30,21 @@ interface ThemeOption {
 export function ThemePickerDialog() {
   const { activeSubDialog, closeSubDialog, setIsOpen } = useCommandPalette();
   const { theme: currentNextTheme, setTheme } = useTheme();
-  const { allThemes, activeCustomTheme, setActiveCustomTheme } =
-    useCustomTheme();
+  const { allThemes, activeCustomTheme, setActiveCustomTheme } = useCustomTheme();
 
   const [originalTheme, setOriginalTheme] = React.useState<string | null>(null);
-  const [originalCustomTheme, setOriginalCustomTheme] = React.useState<
-    string | null
-  >(null);
+  const [originalCustomTheme, setOriginalCustomTheme] = React.useState<string | null>(null);
   const [confirmed, setConfirmed] = React.useState(false);
 
   const isOpen = activeSubDialog === 'theme-picker';
 
   const allThemeOptions = React.useMemo((): ThemeOption[] => {
-    const defaultThemes: ThemeOption[] = Object.entries(YasumuThemes).map(
-      ([key, t]) => ({
-        id: key,
-        name: t.name,
-        type: key as 'light' | 'dark' | 'system',
-        isDefault: true,
-      }),
-    );
+    const defaultThemes: ThemeOption[] = Object.entries(YasumuThemes).map(([key, t]) => ({
+      id: key,
+      name: t.name,
+      type: key as 'light' | 'dark' | 'system',
+      isDefault: true,
+    }));
 
     const customThemeOptions: ThemeOption[] = allThemes.map((t) => ({
       id: t.id,
@@ -69,9 +60,7 @@ export function ThemePickerDialog() {
   const themeOptionsMap = React.useMemo(() => {
     const map = new Map<string, ThemeOption>();
     for (const option of allThemeOptions) {
-      const value = option.isDefault
-        ? `${option.name} ${option.id}`
-        : `${option.name} ${option.id} ${option.type}`;
+      const value = option.isDefault ? `${option.name} ${option.id}` : `${option.name} ${option.id} ${option.type}`;
       map.set(value, option);
     }
     return map;
@@ -158,12 +147,8 @@ export function ThemePickerDialog() {
   );
 
   const defaultThemes = allThemeOptions.filter((t) => t.isDefault);
-  const darkThemes = allThemeOptions.filter(
-    (t) => !t.isDefault && t.type === 'dark',
-  );
-  const lightThemes = allThemeOptions.filter(
-    (t) => !t.isDefault && t.type === 'light',
-  );
+  const darkThemes = allThemeOptions.filter((t) => !t.isDefault && t.type === 'dark');
+  const lightThemes = allThemeOptions.filter((t) => !t.isDefault && t.type === 'light');
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -203,11 +188,9 @@ export function ThemePickerDialog() {
                     className="flex items-center gap-2"
                   >
                     {getIcon(option)}
-                    <div className="flex flex-col flex-1">
+                    <div className="flex flex-1 flex-col">
                       <span>{option.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {option.id}
-                      </span>
+                      <span className="text-muted-foreground font-mono text-xs">{option.id}</span>
                     </div>
                     {isSelected(option) && <Check className="size-4" />}
                   </CommandItem>
@@ -224,11 +207,9 @@ export function ThemePickerDialog() {
                     className="flex items-center gap-2"
                   >
                     {getIcon(option)}
-                    <div className="flex flex-col flex-1">
+                    <div className="flex flex-1 flex-col">
                       <span>{option.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {option.id}
-                      </span>
+                      <span className="text-muted-foreground font-mono text-xs">{option.id}</span>
                     </div>
                     {isSelected(option) && <Check className="size-4" />}
                   </CommandItem>

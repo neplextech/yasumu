@@ -1,19 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Input } from '@yasumu/ui/components/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
-import { Trash, Plus, Eye, EyeOff, Save } from 'lucide-react';
+import { Environment, TabularPair } from '@yasumu/core';
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { Environment, TabularPair } from '@yasumu/core';
+import { Input } from '@yasumu/ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
+import { Trash, Plus, Eye, EyeOff, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 import { parseEnvFormat } from './shared/env-parser';
 
 interface SecretsTableProps {
@@ -22,11 +16,7 @@ interface SecretsTableProps {
   onSave: (environment: Environment, secrets: TabularPair[]) => void;
 }
 
-export default function SecretsTable({
-  environment,
-  secrets,
-  onSave,
-}: SecretsTableProps) {
+export default function SecretsTable({ environment, secrets, onSave }: SecretsTableProps) {
   const [localSecrets, setLocalSecrets] = useState<TabularPair[]>(secrets);
   const [visibleIndices, setVisibleIndices] = useState<Set<number>>(new Set());
 
@@ -44,14 +34,8 @@ export default function SecretsTable({
     setVisibleIndices(newVisible);
   };
 
-  const updateSecret = (
-    index: number,
-    field: keyof TabularPair,
-    value: string | boolean,
-  ) => {
-    const updated = localSecrets.map((s, i) =>
-      i === index ? { ...s, [field]: value } : s,
-    );
+  const updateSecret = (index: number, field: keyof TabularPair, value: string | boolean) => {
+    const updated = localSecrets.map((s, i) => (i === index ? { ...s, [field]: value } : s));
     setLocalSecrets(updated);
   };
 
@@ -102,12 +86,8 @@ export default function SecretsTable({
     const parsed = parseEnvFormat(pastedText);
     if (parsed.length === 0) return;
 
-    const existingKeys = new Set(
-      localSecrets.map((s) => s.key.trim().toLowerCase()),
-    );
-    const newPairs = parsed.filter(
-      (p) => !existingKeys.has(p.key.trim().toLowerCase()),
-    );
+    const existingKeys = new Set(localSecrets.map((s) => s.key.trim().toLowerCase()));
+    const newPairs = parsed.filter((p) => !existingKeys.has(p.key.trim().toLowerCase()));
 
     if (newPairs.length > 0) {
       const updated = [...localSecrets, ...newPairs];
@@ -134,9 +114,7 @@ export default function SecretsTable({
                 <TableCell>
                   <Checkbox
                     checked={secret.enabled}
-                    onCheckedChange={(checked) =>
-                      updateSecret(index, 'enabled', checked === true)
-                    }
+                    onCheckedChange={(checked) => updateSecret(index, 'enabled', checked === true)}
                   />
                 </TableCell>
                 <TableCell>
@@ -154,9 +132,7 @@ export default function SecretsTable({
                       type={isVisible ? 'text' : 'password'}
                       placeholder="Secret value"
                       value={secret.value}
-                      onChange={(e) =>
-                        updateSecret(index, 'value', e.target.value)
-                      }
+                      onChange={(e) => updateSecret(index, 'value', e.target.value)}
                       disabled={!secret.enabled}
                       className="font-mono"
                     />
@@ -166,20 +142,12 @@ export default function SecretsTable({
                       onClick={() => toggleVisibility(index)}
                       disabled={!secret.enabled}
                     >
-                      {isVisible ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteSecret(index)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => deleteSecret(index)}>
                     <Trash className="h-4 w-4 text-red-500" />
                   </Button>
                 </TableCell>
@@ -189,11 +157,7 @@ export default function SecretsTable({
         </TableBody>
       </Table>
       <div className="flex items-center justify-between">
-        <Button
-          variant="link"
-          onClick={addSecret}
-          className="text-sm p-0 h-auto font-normal"
-        >
+        <Button variant="link" onClick={addSecret} className="h-auto p-0 text-sm font-normal">
           <Plus className="mr-1 h-3 w-3" /> Add new secret
         </Button>
         <Button onClick={handleSave} className="gap-2">

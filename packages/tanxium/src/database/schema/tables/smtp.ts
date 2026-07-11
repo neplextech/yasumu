@@ -1,7 +1,8 @@
+import { YasumuEmbeddedScript } from '@yasumu/common';
 import { sqliteTable, int, text, integer } from 'drizzle-orm/sqlite-core';
+
 import { commonColumns, json } from '../../common/index.ts';
 import { workspaces } from './workspaces.ts';
-import { YasumuEmbeddedScript } from '@yasumu/common';
 
 export const smtp = sqliteTable('smtp', {
   ...commonColumns(),

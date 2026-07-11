@@ -1,35 +1,22 @@
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useEffectEvent,
-  useState,
-  useRef,
-} from 'react';
-import { createClient } from '@/lib/api/tanxium.api';
 import { invoke } from '@tauri-apps/api/core';
 import { message } from '@tauri-apps/plugin-dialog';
 import { exit } from '@tauri-apps/plugin-process';
-import LoadingScreen from '../visuals/loading-screen';
-import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
 import { Workspace, Yasumu, createYasumu } from '@yasumu/core';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { toast } from '@yasumu/ui/components/sonner';
-import { trackEvent } from '@/lib/instrumentation/analytics';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useRouter, usePathname } from 'next/navigation';
+import React, { createContext, useContext, useEffect, useEffectEvent, useState, useRef } from 'react';
 
-const WORKSPACE_SECTIONS = [
-  'rest',
-  'graphql',
-  'socketio',
-  'websocket',
-  'sse',
-  'emails',
-  'environment',
-] as const;
+import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
+import { createClient } from '@/lib/api/tanxium.api';
+import { trackEvent } from '@/lib/instrumentation/analytics';
+import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
+
+import LoadingScreen from '../visuals/loading-screen';
+
+const WORKSPACE_SECTIONS = ['rest', 'graphql', 'socketio', 'websocket', 'sse', 'emails', 'environment'] as const;
 type WorkspaceSection = (typeof WORKSPACE_SECTIONS)[number];
 
 function isWorkspacePath(pathname: string): boolean {
@@ -90,28 +77,20 @@ export function ActiveWorkspaceGuard({
   const { currentWorkspaceId } = useYasumu();
 
   if (!currentWorkspaceId) {
-    return (
-      fallback ?? <LoadingScreen fullScreen message="No workspace found" />
-    );
+    return fallback ?? <LoadingScreen fullScreen message="No workspace found" />;
   }
 
   return children;
 }
 
-export default function WorkspaceProvider({
-  children,
-}: React.PropsWithChildren) {
+export default function WorkspaceProvider({ children }: React.PropsWithChildren) {
   const { setSelectedEnvironment, setEnvironments } = useEnvironmentStore();
   const [port, setPort] = useState<number | null>(null);
   const [echoServerPort, setEchoServerPort] = useState<number | null>(null);
   const [mcpServerPort, setMcpServerPort] = useState<number | null>(null);
-  const [client, setClient] = useState<ReturnType<typeof createClient> | null>(
-    null,
-  );
+  const [client, setClient] = useState<ReturnType<typeof createClient> | null>(null);
   const [yasumu, setYasumu] = useState<Yasumu | null>(null);
-  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(
-    null,
-  );
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
@@ -126,12 +105,8 @@ export default function WorkspaceProvider({
       try {
         const port = await invoke<number | null>('get_rpc_port');
         if (!port) throw new Error('Tanxium sent invalid port');
-        const echoServerPort = await invoke<number | null>(
-          'get_echo_server_port',
-        );
-        const mcpServerPort = await invoke<number | null>(
-          'get_mcp_server_port',
-        );
+        const echoServerPort = await invoke<number | null>('get_echo_server_port');
+        const mcpServerPort = await invoke<number | null>('get_mcp_server_port');
 
         const client = createClient(port);
         const yasumu = createYasumu({
@@ -157,10 +132,7 @@ export default function WorkspaceProvider({
               console.log({ command: command.command, json });
 
               if (!res.ok || !json || json.result === undefined) {
-                const error =
-                  json?.message ??
-                  json?.error?.message ??
-                  'Unknown error from RPC layer';
+                const error = json?.message ?? json?.error?.message ?? 'Unknown error from RPC layer';
                 throw new Error(error);
               }
 
@@ -195,8 +167,7 @@ export default function WorkspaceProvider({
               setSelectedEnvironment(env);
             },
             async onEnvironmentCreated(environment) {
-              const environments =
-                await environment.workspace.environments.list();
+              const environments = await environment.workspace.environments.list();
               setEnvironments(environments);
             },
             async onEnvironmentDeleted(workspace) {
@@ -204,8 +175,7 @@ export default function WorkspaceProvider({
               setEnvironments(environments);
             },
             async onEnvironmentUpdated(environment) {
-              const environments =
-                await environment.workspace.environments.list();
+              const environments = await environment.workspace.environments.list();
               setEnvironments(environments);
             },
           },
@@ -229,22 +199,16 @@ export default function WorkspaceProvider({
 
         return;
       } catch (error) {
-        console.error(
-          `[${attempt + 1}/5] Failed to discover the Tanxium server port:`,
-          error,
-        );
+        console.error(`[${attempt + 1}/5] Failed to discover the Tanxium server port:`, error);
       }
 
       await exponentialBackoff(attempt);
     }
 
-    await message(
-      `Failed to discover the Yasumu RPC port after ${attempt} attempts`,
-      {
-        kind: 'error',
-        title: 'Yasumu - Error',
-      },
-    );
+    await message(`Failed to discover the Yasumu RPC port after ${attempt} attempts`, {
+      kind: 'error',
+      title: 'Yasumu - Error',
+    });
 
     exit(1);
   };

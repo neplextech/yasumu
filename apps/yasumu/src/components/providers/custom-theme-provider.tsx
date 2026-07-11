@@ -1,11 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import type {
-  YasumuThemeConfig,
-  YasumuThemeVariables,
-} from '@/lib/types/theme';
+
 import { BUILTIN_THEMES } from '@/lib/constants/builtin-themes';
+import type { YasumuThemeConfig, YasumuThemeVariables } from '@/lib/types/theme';
 
 interface CustomThemeContextValue {
   customThemes: YasumuThemeConfig[];
@@ -18,18 +16,14 @@ interface CustomThemeContextValue {
   removeTheme: (themeId: string) => void;
 }
 
-const CustomThemeContext = React.createContext<CustomThemeContextValue | null>(
-  null,
-);
+const CustomThemeContext = React.createContext<CustomThemeContextValue | null>(null);
 
 const STORAGE_KEY = 'yasumu-custom-themes';
 const ACTIVE_THEME_KEY = 'yasumu-active-custom-theme';
 const STYLE_ELEMENT_ID = 'yasumu-custom-theme-styles';
 
 function applyThemeVariables(variables: YasumuThemeVariables | null): void {
-  let styleElement = document.getElementById(
-    STYLE_ELEMENT_ID,
-  ) as HTMLStyleElement | null;
+  let styleElement = document.getElementById(STYLE_ELEMENT_ID) as HTMLStyleElement | null;
 
   if (!variables) {
     if (styleElement) {
@@ -52,17 +46,9 @@ function applyThemeVariables(variables: YasumuThemeVariables | null): void {
   styleElement.textContent = `:root {\n  ${cssVariables}\n}`;
 }
 
-export function CustomThemeProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [customThemes, setCustomThemes] = React.useState<YasumuThemeConfig[]>(
-    [],
-  );
-  const [activeCustomTheme, setActiveCustomThemeState] = React.useState<
-    string | null
-  >(null);
+export function CustomThemeProvider({ children }: { children: React.ReactNode }) {
+  const [customThemes, setCustomThemes] = React.useState<YasumuThemeConfig[]>([]);
+  const [activeCustomTheme, setActiveCustomThemeState] = React.useState<string | null>(null);
   const [isInitialized, setIsInitialized] = React.useState(false);
 
   React.useEffect(() => {
@@ -92,10 +78,7 @@ export function CustomThemeProvider({
     }
   }, [customThemes, isInitialized]);
 
-  const allThemes = React.useMemo(
-    () => [...BUILTIN_THEMES, ...customThemes],
-    [customThemes],
-  );
+  const allThemes = React.useMemo(() => [...BUILTIN_THEMES, ...customThemes], [customThemes]);
 
   React.useEffect(() => {
     if (!isInitialized) return;
@@ -122,9 +105,7 @@ export function CustomThemeProvider({
 
   const loadThemesFromJson = React.useCallback((json: string) => {
     const parsed = JSON.parse(json);
-    const themes: YasumuThemeConfig[] = Array.isArray(parsed)
-      ? parsed
-      : (parsed.themes ?? []);
+    const themes: YasumuThemeConfig[] = Array.isArray(parsed) ? parsed : (parsed.themes ?? []);
     setCustomThemes((prev) => {
       const existingIds = new Set(prev.map((t) => t.id));
       const newThemes = themes.filter((t) => !existingIds.has(t.id));
@@ -162,22 +143,10 @@ export function CustomThemeProvider({
       addTheme,
       removeTheme,
     }),
-    [
-      customThemes,
-      allThemes,
-      activeCustomTheme,
-      setActiveCustomTheme,
-      loadThemesFromJson,
-      addTheme,
-      removeTheme,
-    ],
+    [customThemes, allThemes, activeCustomTheme, setActiveCustomTheme, loadThemesFromJson, addTheme, removeTheme],
   );
 
-  return (
-    <CustomThemeContext.Provider value={value}>
-      {children}
-    </CustomThemeContext.Provider>
-  );
+  return <CustomThemeContext.Provider value={value}>{children}</CustomThemeContext.Provider>;
 }
 
 export function useCustomTheme() {

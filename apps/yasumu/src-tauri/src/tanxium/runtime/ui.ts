@@ -1,5 +1,6 @@
-import { rendererEventQueue, isWorkerEnvironment } from './utils.ts';
 import { op_show_confirmation_dialog_sync } from 'ext:core/ops';
+
+import { rendererEventQueue, isWorkerEnvironment } from './utils.ts';
 
 export interface CreateYasumuNotification {
   /**
@@ -51,21 +52,13 @@ export class YasumuUI {
     throw new Error('YasumuUI is not a constructor');
   }
 
-  public static showConfirmationDialogSync(
-    dialog: CreateYasumuConfirmationDialog,
-  ) {
+  public static showConfirmationDialogSync(dialog: CreateYasumuConfirmationDialog) {
     // TODO: maybe allow workers to show confirmation dialogs?
     if (isWorkerEnvironment()) return false;
 
     const { title, message, yesLabel, noLabel, cancelLabel } = dialog;
 
-    return op_show_confirmation_dialog_sync(
-      title,
-      message,
-      yesLabel,
-      noLabel,
-      cancelLabel,
-    );
+    return op_show_confirmation_dialog_sync(title, message, yesLabel, noLabel, cancelLabel);
   }
 
   /**

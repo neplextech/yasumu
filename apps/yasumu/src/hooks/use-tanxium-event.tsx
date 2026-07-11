@@ -1,9 +1,10 @@
 'use client';
 import { event } from '@tauri-apps/api';
-import { useEffect } from 'react';
-import { toast } from '@yasumu/ui/components/sonner';
 import { invoke } from '@tauri-apps/api/core';
 import { EmailData, SubscriptionEventPayload } from '@yasumu/core';
+import { toast } from '@yasumu/ui/components/sonner';
+import { useEffect } from 'react';
+
 import { useConsoleStore } from '@/stores/console-store';
 
 export interface TanxiumEvent<T = unknown> {
@@ -26,10 +27,7 @@ export function useTanxiumEvent() {
           case 'console':
             {
               const _data = data.payload as { msg: string; level: number };
-              const levelToConsoleMap: Record<
-                number,
-                'log' | 'info' | 'warn' | 'error'
-              > = {
+              const levelToConsoleMap: Record<number, 'log' | 'info' | 'warn' | 'error'> = {
                 0: 'log',
                 2: 'info',
                 3: 'warn',
@@ -70,10 +68,7 @@ export function useTanxiumEvent() {
             console.log({ data });
             // TODO: handle other message types
             if (!(data.payload && typeof data.payload === 'object')) return;
-            if (
-              'type' in data.payload &&
-              data.payload.type === 'yasumu-subscription'
-            ) {
+            if ('type' in data.payload && data.payload.type === 'yasumu-subscription') {
               const messageData = data.payload as {
                 type: 'yasumu-subscription';
                 data: SubscriptionEventPayload;
@@ -84,11 +79,7 @@ export function useTanxiumEvent() {
               await globalThis.yasumu.onSubscription(messageData.data);
             }
 
-            if (
-              'event' in data.payload &&
-              data.payload.event === 'new-email' &&
-              'data' in data.payload
-            ) {
+            if ('event' in data.payload && data.payload.event === 'new-email' && 'data' in data.payload) {
               const messageData = data.payload.data as {
                 workspaceId: string;
                 newEmail: EmailData;
@@ -96,11 +87,7 @@ export function useTanxiumEvent() {
 
               if (!globalThis.yasumu) return;
 
-              globalThis.yasumu.events.emit(
-                'onNewEmail',
-                messageData.workspaceId,
-                messageData.newEmail,
-              );
+              globalThis.yasumu.events.emit('onNewEmail', messageData.workspaceId, messageData.newEmail);
             }
           }
         }

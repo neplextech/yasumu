@@ -1,12 +1,5 @@
 'use client';
 
-import {
-  useEnvironments,
-  useUpdateEnvironments,
-} from '@/app/[locale]/workspaces/[workspace]/environment/_hooks/useEnvironments';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import ErrorScreen from '@/components/visuals/error-screen';
-import LoadingScreen from '@/components/visuals/loading-screen';
 import { useQuery } from '@tanstack/react-query';
 import { Environment, TabularPair } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
@@ -15,19 +8,23 @@ import { toast } from '@yasumu/ui/components/sonner';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useEffectEvent } from 'react';
+
+import {
+  useEnvironments,
+  useUpdateEnvironments,
+} from '@/app/[locale]/workspaces/[workspace]/environment/_hooks/useEnvironments';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import ErrorScreen from '@/components/visuals/error-screen';
+import LoadingScreen from '@/components/visuals/loading-screen';
+
 import { useEnvironmentStore } from '../../_stores/environment-store';
 import EnvironmentList from './_components/environment-list';
 import SecretsTable from './_components/secrets-table';
 import VariablesTable from './_components/variables-table';
 
 export default function EnvironmentPage() {
-  const {
-    environments,
-    selectedEnvironment,
-    setSelectedEnvironment,
-    setEnvironments,
-    updateEnvironment,
-  } = useEnvironmentStore();
+  const { environments, selectedEnvironment, setSelectedEnvironment, setEnvironments, updateEnvironment } =
+    useEnvironmentStore();
   const workspace = useActiveWorkspace();
   const [currentEnvironmentId, setCurrentEnvironmentId] = useQueryState<string>(
     'environmentId',
@@ -39,22 +36,12 @@ export default function EnvironmentPage() {
     selectedEnvironmentId: selectedEnvironment?.id,
   });
 
-  const currentEnvironment = environments.find(
-    (env) => env.id === currentEnvironmentId,
-  );
+  const currentEnvironment = environments.find((env) => env.id === currentEnvironmentId);
 
-  const {
-    data: environmentsList,
-    refetch,
-    isError,
-    isLoading,
-  } = useEnvironments();
+  const { data: environmentsList, refetch, isError, isLoading } = useEnvironments();
   const updateEnvironments = useUpdateEnvironments();
 
-  const {
-    data: selectedEnvironmentData,
-    isLoading: isLoadingSelectedEnvironment,
-  } = useQuery({
+  const { data: selectedEnvironmentData, isLoading: isLoadingSelectedEnvironment } = useQuery({
     queryKey: ['currentEnvironment'],
     queryFn: () => workspace.environments.getActiveEnvironment(),
     staleTime: 0,
@@ -86,11 +73,7 @@ export default function EnvironmentPage() {
     updateCurrentEnvironment();
   }, [selectedEnvironmentData]);
 
-  const handleAddEnvironment = async (
-    name: string,
-    secrets?: TabularPair[],
-    variables?: TabularPair[],
-  ) => {
+  const handleAddEnvironment = async (name: string, secrets?: TabularPair[], variables?: TabularPair[]) => {
     const env = await workspace.environments.create({
       name,
       secrets,
@@ -140,10 +123,7 @@ export default function EnvironmentPage() {
     toast.success('Environment duplicated successfully');
   };
 
-  const onVariablesSave = async (
-    environment: Environment,
-    variables: TabularPair[],
-  ) => {
+  const onVariablesSave = async (environment: Environment, variables: TabularPair[]) => {
     await environment.update(
       {
         variables,
@@ -159,10 +139,7 @@ export default function EnvironmentPage() {
     toast.success('Variables saved successfully');
   };
 
-  const onSecretsSave = async (
-    environment: Environment,
-    secrets: TabularPair[],
-  ) => {
+  const onSecretsSave = async (environment: Environment, secrets: TabularPair[]) => {
     await environment.update(
       {
         secrets,
@@ -187,7 +164,7 @@ export default function EnvironmentPage() {
   }
 
   return (
-    <div className="flex h-full bg-background">
+    <div className="bg-background flex h-full">
       <div className="w-[280px] shrink-0">
         <EnvironmentList
           environments={environments}
@@ -200,30 +177,23 @@ export default function EnvironmentPage() {
           onDuplicateEnvironment={withErrorHandler(handleDuplicateEnvironment)}
         />
       </div>
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {currentEnvironment ? (
-          <div className="flex-1 overflow-auto p-6 space-y-6">
+          <div className="flex-1 space-y-6 overflow-auto p-6">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-xl font-semibold">
-                  {currentEnvironment.name}
-                </h2>
-                {selectedEnvironment?.id === currentEnvironmentId ? (
-                  <Badge variant="outline">Active</Badge>
-                ) : null}
+              <div className="mb-1 flex items-center gap-2">
+                <h2 className="text-xl font-semibold">{currentEnvironment.name}</h2>
+                {selectedEnvironment?.id === currentEnvironmentId ? <Badge variant="outline">Active</Badge> : null}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Manage variables and secrets for{' '}
-                <span className="font-semibold font-mono underline">
-                  {currentEnvironment.name}
-                </span>{' '}
-                environment
+                <span className="font-mono font-semibold underline">{currentEnvironment.name}</span> environment
               </p>
             </div>
             <Separator />
             <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Variables</h3>
+                <h3 className="mb-4 text-lg font-semibold">Variables</h3>
                 <VariablesTable
                   environment={currentEnvironment}
                   variables={currentEnvironment.variables.toJSON() || []}
@@ -232,7 +202,7 @@ export default function EnvironmentPage() {
               </div>
               <Separator />
               <div>
-                <h3 className="text-lg font-semibold mb-4">Secrets</h3>
+                <h3 className="mb-4 text-lg font-semibold">Secrets</h3>
                 <SecretsTable
                   environment={currentEnvironment}
                   secrets={currentEnvironment.secrets.toJSON() || []}
@@ -242,14 +212,10 @@ export default function EnvironmentPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="text-muted-foreground flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-lg font-medium mb-2">
-                No environment selected
-              </p>
-              <p className="text-sm">
-                Select or create an environment from the list
-              </p>
+              <p className="mb-2 text-lg font-medium">No environment selected</p>
+              <p className="text-sm">Select or create an environment from the list</p>
             </div>
           </div>
         )}

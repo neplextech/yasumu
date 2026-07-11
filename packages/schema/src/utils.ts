@@ -16,11 +16,7 @@ export class YasumuSchemaUtils {
       return false;
     }
     const codePoint = char.codePointAt(0)!;
-    return (
-      codePoint === 95 ||
-      (codePoint >= 65 && codePoint <= 90) ||
-      (codePoint >= 97 && codePoint <= 122)
-    );
+    return codePoint === 95 || (codePoint >= 65 && codePoint <= 90) || (codePoint >= 97 && codePoint <= 122);
   }
 
   static isIdentifier(char: string) {

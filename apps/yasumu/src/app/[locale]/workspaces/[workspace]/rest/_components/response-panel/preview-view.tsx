@@ -1,6 +1,5 @@
 'use client';
 
-import type { RestResponse } from '../../_lib/rest-request';
 import {
   ImageViewer,
   VideoViewer,
@@ -13,11 +12,10 @@ import {
   getContentType,
   categorizeContent,
 } from '@/components/responses/viewers';
+
+import type { RestResponse } from '../../_lib/rest-request';
+import { MAX_TEXT_BODY_SIZE, MAX_BINARY_BODY_SIZE } from '../../_lib/rest-request';
 import { formatBytes } from './utils';
-import {
-  MAX_TEXT_BODY_SIZE,
-  MAX_BINARY_BODY_SIZE,
-} from '../../_lib/rest-request';
 
 interface PreviewViewProps {
   response: RestResponse;
@@ -29,13 +27,10 @@ export function PreviewView({ response, blobUrl }: PreviewViewProps) {
   const category = categorizeContent(contentType);
 
   if (response.bodyTruncated) {
-    const maxSize =
-      response.bodyType === 'text'
-        ? formatBytes(MAX_TEXT_BODY_SIZE)
-        : formatBytes(MAX_BINARY_BODY_SIZE);
+    const maxSize = response.bodyType === 'text' ? formatBytes(MAX_TEXT_BODY_SIZE) : formatBytes(MAX_BINARY_BODY_SIZE);
 
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-4">
+      <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-4">
         <p className="font-medium">Response body too large to preview</p>
         <p className="text-sm">
           Size: {formatBytes(response.size)} (max: {maxSize})
@@ -46,8 +41,7 @@ export function PreviewView({ response, blobUrl }: PreviewViewProps) {
 
   const binaryFallback = <BinaryViewer contentType={contentType} />;
 
-  const withBlob = (render: (src: string) => JSX.Element) =>
-    blobUrl ? render(blobUrl) : binaryFallback;
+  const withBlob = (render: (src: string) => JSX.Element) => (blobUrl ? render(blobUrl) : binaryFallback);
 
   const withText = (render: (body: string) => JSX.Element) =>
     response.textBody ? render(response.textBody) : binaryFallback;

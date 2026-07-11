@@ -1,14 +1,7 @@
 'use client';
 
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
 
 interface HeadersViewProps {
   headers: Record<string, string>;
@@ -18,11 +11,7 @@ export function HeadersView({ headers }: HeadersViewProps) {
   const headerEntries = Object.entries(headers);
 
   if (headerEntries.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm p-4">
-        No headers in response
-      </p>
-    );
+    return <p className="text-muted-foreground p-4 text-sm">No headers in response</p>;
   }
 
   return (
@@ -37,12 +26,8 @@ export function HeadersView({ headers }: HeadersViewProps) {
         <TableBody>
           {headerEntries.map(([name, value]) => (
             <TableRow key={name}>
-              <TableCell className="font-mono text-sm font-medium">
-                {name}
-              </TableCell>
-              <TableCell className="font-mono text-sm text-muted-foreground break-all">
-                {value}
-              </TableCell>
+              <TableCell className="font-mono text-sm font-medium">{name}</TableCell>
+              <TableCell className="text-muted-foreground font-mono text-sm break-all">{value}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -5,9 +5,7 @@ export interface Subscription {
 export type Observer<T> = (value: T) => void | Promise<void>;
 
 export class Observable<T> {
-  constructor(
-    private readonly _subscribe: (observer: Observer<T>) => Subscription,
-  ) {}
+  constructor(private readonly _subscribe: (observer: Observer<T>) => Subscription) {}
 
   subscribe(observer: Observer<T>): Subscription {
     return this._subscribe(observer);

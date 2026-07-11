@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import type { GraphQLSchema } from 'graphql';
 import type { Monaco } from '@monaco-editor/react';
+import type { GraphQLSchema } from 'graphql';
+import { useEffect, useRef } from 'react';
+
 import { getMonacoInstance } from '@/components/editors/text-editor';
 
 let isGraphQLInitialized = false;
@@ -56,77 +57,71 @@ async function ensureGraphQLProviders(monaco: Monaco) {
     globalProviders.completion = null;
     globalProviders.hover = null;
 
-    const { getAutocompleteSuggestions, getHoverInformation, Position } =
-      await import('graphql-language-service');
+    const { getAutocompleteSuggestions, getHoverInformation, Position } = await import('graphql-language-service');
 
-    completionProviderDisposable =
-      monaco.languages.registerCompletionItemProvider('graphql', {
-        triggerCharacters: [' ', '\n', '{', '(', ':', '@'],
-        provideCompletionItems: (model, position) => {
-          if (!currentSchema) return { suggestions: [] };
+    completionProviderDisposable = monaco.languages.registerCompletionItemProvider('graphql', {
+      triggerCharacters: [' ', '\n', '{', '(', ':', '@'],
+      provideCompletionItems: (model, position) => {
+        if (!currentSchema) return { suggestions: [] };
 
-          try {
-            const suggestions = getAutocompleteSuggestions(
-              currentSchema,
-              model.getValue(),
-              new Position(position.lineNumber - 1, position.column - 1),
-            );
+        try {
+          const suggestions = getAutocompleteSuggestions(
+            currentSchema,
+            model.getValue(),
+            new Position(position.lineNumber - 1, position.column - 1),
+          );
 
-            const seen = new Set<string>();
-            const uniqueSuggestions = suggestions.filter((entry) => {
-              const key = `${entry.label}::${entry.insertText ?? ''}::${entry.kind ?? ''}`;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            });
+          const seen = new Set<string>();
+          const uniqueSuggestions = suggestions.filter((entry) => {
+            const key = `${entry.label}::${entry.insertText ?? ''}::${entry.kind ?? ''}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
 
-            return {
-              suggestions: uniqueSuggestions.map((entry) => ({
-                label: entry.label,
-                kind: entry.kind as monaco.languages.CompletionItemKind,
-                detail: entry.detail,
-                insertText: entry.insertText || entry.label,
-                insertTextRules:
-                  entry.insertTextFormat === 2
-                    ? monaco.languages.CompletionItemInsertTextRule
-                        .InsertAsSnippet
-                    : undefined,
-                sortText: entry.sortText,
-                filterText: entry.filterText,
-                documentation: markdownToString(entry.documentation),
-              })),
-            };
-          } catch {
-            return { suggestions: [] };
-          }
-        },
-      });
-
-    hoverProviderDisposable = monaco.languages.registerHoverProvider(
-      'graphql',
-      {
-        provideHover: (model, position) => {
-          if (!currentSchema) return null;
-
-          try {
-            const hover = getHoverInformation(
-              currentSchema,
-              model.getValue(),
-              new Position(position.lineNumber - 1, position.column - 1),
-            );
-
-            const text = markdownToString(hover);
-            if (!text) return null;
-
-            return {
-              contents: [{ value: text }],
-            };
-          } catch {
-            return null;
-          }
-        },
+          return {
+            suggestions: uniqueSuggestions.map((entry) => ({
+              label: entry.label,
+              kind: entry.kind as monaco.languages.CompletionItemKind,
+              detail: entry.detail,
+              insertText: entry.insertText || entry.label,
+              insertTextRules:
+                entry.insertTextFormat === 2
+                  ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+                  : undefined,
+              sortText: entry.sortText,
+              filterText: entry.filterText,
+              documentation: markdownToString(entry.documentation),
+            })),
+          };
+        } catch {
+          return { suggestions: [] };
+        }
       },
-    );
+    });
+
+    hoverProviderDisposable = monaco.languages.registerHoverProvider('graphql', {
+      provideHover: (model, position) => {
+        if (!currentSchema) return null;
+
+        try {
+          const hover = getHoverInformation(
+            currentSchema,
+            model.getValue(),
+            new Position(position.lineNumber - 1, position.column - 1),
+          );
+
+          const text = markdownToString(hover);
+          if (!text) return null;
+
+          return {
+            contents: [{ value: text }],
+          };
+        } catch {
+          return null;
+        }
+      },
+    });
 
     globalProviders.completion = completionProviderDisposable;
     globalProviders.hover = hoverProviderDisposable;

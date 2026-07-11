@@ -1,12 +1,10 @@
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@yasumu/ui/components/resizable';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
+
 import LayoutGroup from '@/components/layout/layout-group';
+
 import { RestFileTree } from './_components/rest-file-tree';
-import { RestContextProvider } from './_providers/rest-context';
 import { FileTreeContextProvider } from './_providers/file-tree-context';
+import { RestContextProvider } from './_providers/rest-context';
 
 export default function RestLayout({ children }: React.PropsWithChildren) {
   return (

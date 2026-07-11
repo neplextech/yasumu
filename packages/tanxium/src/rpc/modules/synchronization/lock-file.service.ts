@@ -1,14 +1,10 @@
-import { Injectable } from '@yasumu/den';
-import { join } from 'node:path';
-import { existsSync } from 'node:fs';
-import type {
-  LockFileData,
-  LockFileEntry,
-  EntityType,
-  SyncAction,
-  SyncEntityState,
-} from './types.ts';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { Injectable } from '@yasumu/den';
+
+import type { LockFileData, LockFileEntry, EntityType, SyncAction, SyncEntityState } from './types.ts';
 
 const LOCK_FILE_NAME = 'yasumu-lock.json';
 
@@ -62,10 +58,7 @@ export class LockFileService {
     }
 
     const content = JSON.stringify(data, null, 2);
-    const tempPath = join(
-      dirPath,
-      `${LOCK_FILE_NAME}.${Deno.pid}.${Date.now()}.tmp`,
-    );
+    const tempPath = join(dirPath, `${LOCK_FILE_NAME}.${Deno.pid}.${Date.now()}.tmp`);
 
     await Deno.writeTextFile(tempPath, content);
 
@@ -90,12 +83,7 @@ export class LockFileService {
     return data.entities[entityType]?.[entityId] ?? null;
   }
 
-  public async setEntry(
-    workspacePath: string,
-    entityType: EntityType,
-    entityId: string,
-    hash: string,
-  ): Promise<void> {
+  public async setEntry(workspacePath: string, entityType: EntityType, entityId: string, hash: string): Promise<void> {
     const data = await this.read(workspacePath);
 
     if (!data.entities[entityType]) {
@@ -110,11 +98,7 @@ export class LockFileService {
     await this.write(workspacePath, data);
   }
 
-  public async removeEntry(
-    workspacePath: string,
-    entityType: EntityType,
-    entityId: string,
-  ): Promise<void> {
+  public async removeEntry(workspacePath: string, entityType: EntityType, entityId: string): Promise<void> {
     const data = await this.read(workspacePath);
 
     if (data.entities[entityType]?.[entityId]) {

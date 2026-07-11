@@ -1,0 +1,60 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "arrowParens": "always",
+  "trailingComma": "all",
+  "semi": true,
+  "endOfLine": "lf",
+  "useTabs": false,
+  "jsxSingleQuote": false,
+  "bracketSpacing": true,
+  "embeddedLanguageFormatting": "auto",
+  "insertFinalNewline": true,
+  "sortPackageJson": true,
+  "sortImports": true,
+  "sortTailwindcss": true,
+  "overrides": [
+    {
+      "files": ["*.md", "*.mdx"],
+      "options": {
+        "proseWrap": "always",
+        "printWidth": 70
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules",
+    ".agents",
+    ".claude",
+    "yasumu-lock.json",
+    "dist",
+    "build",
+    "out",
+    ".next",
+    "**/public-modules",
+    "**/yasumu-server/index.js",
+    "README.md",
+    ".DS_Store",
+    ".vscode",
+    "pnpm-lock.yaml",
+    "npm-debug.log*",
+    "yarn-debug.log*",
+    "yarn-error.log*",
+    "pnpm-debug.log*",
+    ".env",
+    ".env.production",
+    ".env.*",
+    ".gitignore",
+    ".npmignore",
+    ".turbo",
+    "turbo-lint.log",
+    ".source",
+    "turbo/generators/templates/**/*.hbs",
+    "drizzle",
+    "builtin-themes.ts",
+    "i18n.d.ts",
+    "yasumu-typedef.ts"
+  ]
+}

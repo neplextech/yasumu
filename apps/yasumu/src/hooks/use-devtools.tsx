@@ -1,8 +1,8 @@
 'use client';
 
-import { useHotkeys } from 'react-hotkeys-hook';
 import { invoke } from '@tauri-apps/api/core';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 export default function useDevtools() {
   useHotkeys(

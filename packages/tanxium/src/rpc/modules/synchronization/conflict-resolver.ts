@@ -1,4 +1,5 @@
 import { Injectable } from '@yasumu/den';
+
 import type { SyncEntityState } from './types.ts';
 
 export interface ConflictResolution {

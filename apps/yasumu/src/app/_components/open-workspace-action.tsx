@@ -1,10 +1,12 @@
 'use client';
-import React from 'react';
-import ActionCard from './action-card';
-import { FolderOpen } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { useYasumu } from '@/components/providers/workspace-provider';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { FolderOpen } from 'lucide-react';
+import React from 'react';
+
+import { useYasumu } from '@/components/providers/workspace-provider';
+
+import ActionCard from './action-card';
 
 export default function OpenWorkspaceAction() {
   const { yasumu } = useYasumu();
@@ -25,9 +27,7 @@ export default function OpenWorkspaceAction() {
         if (!folder) return;
 
         await yasumu.workspaces.create({
-          name:
-            folder.replaceAll('\\', '/').split('/').pop() ??
-            'Untitled Workspace',
+          name: folder.replaceAll('\\', '/').split('/').pop() ?? 'Untitled Workspace',
           metadata: {
             path: folder,
           },

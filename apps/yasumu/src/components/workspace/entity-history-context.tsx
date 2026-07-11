@@ -1,20 +1,10 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useState,
-} from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { EntityHistoryData } from '@yasumu/core';
-import {
-  useActiveWorkspace,
-  useYasumu,
-} from '@/components/providers/workspace-provider';
+import { createContext, useCallback, useContext, useEffect, useEffectEvent, useMemo, useState } from 'react';
+
+import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
 import { trackEvent } from '@/lib/instrumentation/analytics';
 
 export type EntityHistoryScope = 'rest' | 'graphql';
@@ -34,9 +24,7 @@ interface EntityHistoryProviderProps extends React.PropsWithChildren {
   deleteHistory: (entityId: string) => Promise<void>;
 }
 
-const EntityHistoryContext = createContext<EntityHistoryContextData | null>(
-  null,
-);
+const EntityHistoryContext = createContext<EntityHistoryContextData | null>(null);
 
 export function EntityHistoryProvider({
   children,
@@ -49,10 +37,7 @@ export function EntityHistoryProvider({
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
-  const queryKey = useMemo(
-    () => ['entityHistory', workspace.id, scope] as const,
-    [scope, workspace.id],
-  );
+  const queryKey = useMemo(() => ['entityHistory', workspace.id, scope] as const, [scope, workspace.id]);
 
   const {
     data: historyData,
@@ -64,15 +49,11 @@ export function EntityHistoryProvider({
   });
 
   const history = useMemo(
-    () =>
-      historyData ? [...new Set(historyData.map((item) => item.entityId))] : [],
+    () => (historyData ? [...new Set(historyData.map((item) => item.entityId))] : []),
     [historyData],
   );
 
-  const entityId =
-    selectedEntityId && history.includes(selectedEntityId)
-      ? selectedEntityId
-      : (history[0] ?? null);
+  const entityId = selectedEntityId && history.includes(selectedEntityId) ? selectedEntityId : (history[0] ?? null);
 
   const refetchHistory = useEffectEvent(() => {
     return refetch();
@@ -138,15 +119,7 @@ export function EntityHistoryProvider({
 
       await deleteHistory(id);
     },
-    [
-      deleteHistory,
-      entityId,
-      history,
-      queryClient,
-      queryKey,
-      scope,
-      workspace.id,
-    ],
+    [deleteHistory, entityId, history, queryClient, queryKey, scope, workspace.id],
   );
 
   const setEntityId = useCallback(
@@ -175,20 +148,14 @@ export function EntityHistoryProvider({
     [entityId, history, isLoadingHistory, removeFromHistory, setEntityId],
   );
 
-  return (
-    <EntityHistoryContext.Provider value={value}>
-      {children}
-    </EntityHistoryContext.Provider>
-  );
+  return <EntityHistoryContext.Provider value={value}>{children}</EntityHistoryContext.Provider>;
 }
 
 export function useEntityHistoryContext() {
   const context = useContext(EntityHistoryContext);
 
   if (!context) {
-    throw new Error(
-      'useEntityHistoryContext() must be used within an <EntityHistoryProvider />',
-    );
+    throw new Error('useEntityHistoryContext() must be used within an <EntityHistoryProvider />');
   }
 
   return context;

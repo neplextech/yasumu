@@ -1,14 +1,12 @@
-import { Resolver, Query, Mutation } from '@yasumu/den';
-import { WorkspacesService } from './workspaces.service.ts';
 import type { WorkspaceCreateOptions, WorkspaceData } from '@yasumu/common';
-import { NotFoundException } from '../common/exceptions/http.exception.ts';
+import { Resolver, Query, Mutation } from '@yasumu/den';
 import { YasumuRpcService } from '@yasumu/rpc';
 
+import { NotFoundException } from '../common/exceptions/http.exception.ts';
+import { WorkspacesService } from './workspaces.service.ts';
+
 @Resolver('workspaces')
-export class WorkspacesResolver implements YasumuRpcService<
-  'workspaces',
-  true
-> {
+export class WorkspacesResolver implements YasumuRpcService<'workspaces', true> {
   public constructor(private readonly workspacesService: WorkspacesService) {}
 
   @Query()

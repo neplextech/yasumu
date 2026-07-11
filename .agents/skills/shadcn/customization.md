@@ -1,6 +1,7 @@
 # Customization & Theming
 
-Components reference semantic CSS variable tokens. Change the variables to change every component.
+Components reference semantic CSS variable tokens. Change the
+variables to change every component.
 
 ## Contents
 
@@ -18,14 +19,18 @@ Components reference semantic CSS variable tokens. Change the variables to chang
 ## How It Works
 
 1. CSS variables defined in `:root` (light) and `.dark` (dark mode).
-2. Tailwind maps them to utilities: `bg-primary`, `text-muted-foreground`, etc.
-3. Components use these utilities — changing a variable changes all components that reference it.
+2. Tailwind maps them to utilities: `bg-primary`,
+   `text-muted-foreground`, etc.
+3. Components use these utilities — changing a variable changes all
+   components that reference it.
 
 ---
 
 ## Color Variables
 
-Every color follows the `name` / `name-foreground` convention. The base variable is for backgrounds, `-foreground` is for text/icons on that background.
+Every color follows the `name` / `name-foreground` convention. The
+base variable is for backgrounds, `-foreground` is for text/icons on
+that background.
 
 | Variable                                     | Purpose                          |
 | -------------------------------------------- | -------------------------------- |
@@ -43,20 +48,22 @@ Every color follows the `name` / `name-foreground` convention. The base variable
 | `--sidebar-*`                                | Sidebar-specific colors          |
 | `--surface` / `--surface-foreground`         | Secondary surface                |
 
-Colors use OKLCH: `--primary: oklch(0.205 0 0)` where values are lightness (0–1), chroma (0 = gray), and hue (0–360).
+Colors use OKLCH: `--primary: oklch(0.205 0 0)` where values are
+lightness (0–1), chroma (0 = gray), and hue (0–360).
 
 ---
 
 ## Dark Mode
 
-Class-based toggle via `.dark` on the root element. In Next.js, use `next-themes`:
+Class-based toggle via `.dark` on the root element. In Next.js, use
+`next-themes`:
 
 ```tsx
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from 'next-themes';
 
 <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
   {children}
-</ThemeProvider>
+</ThemeProvider>;
 ```
 
 ---
@@ -86,7 +93,9 @@ Or edit CSS variables directly in `globals.css`.
 
 ## Adding Custom Colors
 
-Add variables to the file at `tailwindCssFile` from `npx shadcn@latest info` (typically `globals.css`). Never create a new CSS file for this.
+Add variables to the file at `tailwindCssFile` from
+`npx shadcn@latest info` (typically `globals.css`). Never create a new
+CSS file for this.
 
 ```css
 /* 1. Define in the global CSS file. */
@@ -108,7 +117,8 @@ Add variables to the file at `tailwindCssFile` from `npx shadcn@latest info` (ty
 }
 ```
 
-When `tailwindVersion` is `"v3"` (check via `npx shadcn@latest info`), register in `tailwind.config.js` instead:
+When `tailwindVersion` is `"v3"` (check via `npx shadcn@latest info`),
+register in `tailwind.config.js` instead:
 
 ```js
 // 2b. Register with Tailwind v3 (tailwind.config.js).
@@ -116,13 +126,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        warning: "oklch(var(--warning) / <alpha-value>)",
-        "warning-foreground":
-          "oklch(var(--warning-foreground) / <alpha-value>)",
+        warning: 'oklch(var(--warning) / <alpha-value>)',
+        'warning-foreground':
+          'oklch(var(--warning-foreground) / <alpha-value>)',
       },
     },
   },
-}
+};
 ```
 
 ```tsx
@@ -134,13 +144,16 @@ module.exports = {
 
 ## Border Radius
 
-`--radius` controls border radius globally. Components derive values from it (`rounded-lg` = `var(--radius)`, `rounded-md` = `calc(var(--radius) - 2px)`).
+`--radius` controls border radius globally. Components derive values
+from it (`rounded-lg` = `var(--radius)`, `rounded-md` =
+`calc(var(--radius) - 2px)`).
 
 ---
 
 ## Customizing Components
 
-See also: [rules/styling.md](./rules/styling.md) for Incorrect/Correct examples.
+See also: [rules/styling.md](./rules/styling.md) for Incorrect/Correct
+examples.
 
 Prefer these approaches in order:
 
@@ -172,22 +185,31 @@ warning: "bg-warning text-warning-foreground hover:bg-warning/90",
 Compose shadcn/ui primitives into higher-level components:
 
 ```tsx
-export function ConfirmDialog({ title, description, onConfirm, children }) {
+export function ConfirmDialog({
+  title,
+  description,
+  onConfirm,
+  children,
+}) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogDescription>
+            {description}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Confirm</AlertDialogAction>
+          <AlertDialogAction onClick={onConfirm}>
+            Confirm
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 ```
 
@@ -199,11 +221,13 @@ export function ConfirmDialog({ title, description, onConfirm, children }) {
 npx shadcn@latest add button --diff
 ```
 
-To preview exactly what would change before updating, use `--dry-run` and `--diff`:
+To preview exactly what would change before updating, use `--dry-run`
+and `--diff`:
 
 ```bash
 npx shadcn@latest add button --dry-run        # see all affected files
 npx shadcn@latest add button --diff button.tsx # see the diff for a specific file
 ```
 
-See [Updating Components in SKILL.md](./SKILL.md#updating-components) for the full smart merge workflow.
+See [Updating Components in SKILL.md](./SKILL.md#updating-components)
+for the full smart merge workflow.

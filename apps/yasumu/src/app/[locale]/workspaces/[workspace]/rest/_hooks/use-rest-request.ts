@@ -1,30 +1,21 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  useActiveWorkspace,
-  useYasumu,
-} from '@/components/providers/workspace-provider';
+import type { RestEntityData, RestScriptContext, TestResult } from '@yasumu/core';
+import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
+import { useCallback, useRef, useState } from 'react';
+
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
-import {
-  RestRequestController,
-  RestResponse,
-  type RestRequestOutcome,
-} from '../_lib/rest-request';
-import type {
-  RestEntityData,
-  RestScriptContext,
-  TestResult,
-} from '@yasumu/core';
+import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
 import {
   getContentType,
   categorizeContent,
   createBlobUrlFromBuffer,
   createBlobUrlFromText,
 } from '@/components/responses/viewers';
-import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
 import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
+
+import { RestRequestController, RestResponse, type RestRequestOutcome } from '../_lib/rest-request';
 
 export type RequestPhase =
   | 'idle'
@@ -35,14 +26,7 @@ export type RequestPhase =
   | 'error'
   | 'cancelled';
 
-export type ScriptOutputType =
-  | 'info'
-  | 'success'
-  | 'error'
-  | 'warning'
-  | 'test-pass'
-  | 'test-fail'
-  | 'test-skip';
+export type ScriptOutputType = 'info' | 'success' | 'error' | 'warning' | 'test-pass' | 'test-fail' | 'test-skip';
 
 export interface ScriptOutputEntry {
   message: string;
@@ -65,10 +49,7 @@ interface UseRestRequestOptions {
 
 interface UseRestRequestReturn {
   state: RequestState;
-  execute: (
-    entity: RestEntityData,
-    pathParams: Record<string, { value: string; enabled: boolean }>,
-  ) => Promise<void>;
+  execute: (entity: RestEntityData, pathParams: Record<string, { value: string; enabled: boolean }>) => Promise<void>;
   cancel: () => void;
   reset: () => void;
 }
@@ -88,10 +69,7 @@ function createResponseBlobUrl(response: RestResponse): string | null {
 
   const needsBlobUrl =
     !response.bodyTruncated &&
-    (category === 'image' ||
-      category === 'video' ||
-      category === 'audio' ||
-      category === 'pdf');
+    (category === 'image' || category === 'video' || category === 'audio' || category === 'pdf');
 
   if (!needsBlobUrl) return null;
 
@@ -104,9 +82,7 @@ function createResponseBlobUrl(response: RestResponse): string | null {
   return null;
 }
 
-export function useRestRequest({
-  entityId,
-}: UseRestRequestOptions): UseRestRequestReturn {
+export function useRestRequest({ entityId }: UseRestRequestOptions): UseRestRequestReturn {
   const workspace = useActiveWorkspace();
   const { echoServerPort } = useYasumu();
   const { interpolate } = useEnvironmentStore();
@@ -116,24 +92,15 @@ export function useRestRequest({
   const { selectedEnvironment } = useEnvironmentStore();
   const queryClient = useQueryClient();
 
-  const appendScriptOutput = useCallback(
-    (message: string, type: ScriptOutputType = 'info') => {
-      setState((prev) => ({
-        ...prev,
-        scriptOutput: [
-          ...prev.scriptOutput,
-          { message, type, timestamp: Date.now() },
-        ],
-      }));
-    },
-    [],
-  );
+  const appendScriptOutput = useCallback((message: string, type: ScriptOutputType = 'info') => {
+    setState((prev) => ({
+      ...prev,
+      scriptOutput: [...prev.scriptOutput, { message, type, timestamp: Date.now() }],
+    }));
+  }, []);
 
   const execute = useCallback(
-    async (
-      _entity: RestEntityData,
-      pathParams: Record<string, { value: string; enabled: boolean }>,
-    ) => {
+    async (_entity: RestEntityData, pathParams: Record<string, { value: string; enabled: boolean }>) => {
       if (!entityId) return;
 
       const startedAt = performance.now();
@@ -213,18 +180,11 @@ export function useRestRequest({
           appendScriptOutput('[Pre-Request] Executing script...', 'info');
 
           try {
-            const result = await workspace.rest.executeScript(
-              entityId,
-              entity.script,
-              currentContext,
-            );
+            const result = await workspace.rest.executeScript(entityId, entity.script, currentContext);
 
             if (result.result.success) {
               currentContext = result.context;
-              appendScriptOutput(
-                '[Pre-Request] Script completed successfully',
-                'success',
-              );
+              appendScriptOutput('[Pre-Request] Script completed successfully', 'success');
 
               if (result.result.result) {
                 const mockData = result.result.result as {
@@ -233,10 +193,7 @@ export function useRestRequest({
                   headers: Record<string, string>;
                   body: unknown;
                 };
-                const bodyStr =
-                  typeof mockData.body === 'string'
-                    ? mockData.body
-                    : JSON.stringify(mockData.body);
+                const bodyStr = typeof mockData.body === 'string' ? mockData.body : JSON.stringify(mockData.body);
                 mockResponse = {
                   status: mockData.status,
                   statusText: mockData.statusText,
@@ -249,16 +206,10 @@ export function useRestRequest({
                   size: new Blob([bodyStr]).size,
                   bodyTruncated: false,
                 };
-                appendScriptOutput(
-                  '[Pre-Request] Mock response returned, skipping HTTP request',
-                  'warning',
-                );
+                appendScriptOutput('[Pre-Request] Mock response returned, skipping HTTP request', 'warning');
               }
             } else {
-              appendScriptOutput(
-                `[Pre-Request] Script failed: ${result.result.error}`,
-                'error',
-              );
+              appendScriptOutput(`[Pre-Request] Script failed: ${result.result.error}`, 'error');
             }
           } catch (err) {
             appendScriptOutput(
@@ -286,9 +237,11 @@ export function useRestRequest({
             ...entity,
             url: currentContext.request.url,
             method: currentContext.request.method,
-            requestHeaders: Object.entries(currentContext.request.headers).map(
-              ([key, value]) => ({ key, value, enabled: true }),
-            ),
+            requestHeaders: Object.entries(currentContext.request.headers).map(([key, value]) => ({
+              key,
+              value,
+              enabled: true,
+            })),
             requestBody: currentContext.request.body
               ? { ...entity.requestBody!, value: currentContext.request.body }
               : entity.requestBody,
@@ -327,8 +280,7 @@ export function useRestRequest({
         }
 
         if (entity.script?.code?.trim()) {
-          const canSendBodyToScript =
-            !response.bodyTruncated && response.bodyType === 'text';
+          const canSendBodyToScript = !response.bodyTruncated && response.bodyType === 'text';
 
           setState((prev) => ({ ...prev, phase: 'post-response-script' }));
           appendScriptOutput('[Post-Response] Executing onResponse...', 'info');
@@ -350,17 +302,10 @@ export function useRestRequest({
           };
 
           try {
-            const result = await workspace.rest.executeScript(
-              entityId,
-              entity.script,
-              responseContext,
-            );
+            const result = await workspace.rest.executeScript(entityId, entity.script, responseContext);
 
             if (result.result.success) {
-              appendScriptOutput(
-                '[Post-Response] Script completed successfully',
-                'success',
-              );
+              appendScriptOutput('[Post-Response] Script completed successfully', 'success');
 
               if (selectedEnvironment && result.context.environment) {
                 const envData = result.context.environment;
@@ -376,10 +321,7 @@ export function useRestRequest({
                 });
               }
             } else {
-              appendScriptOutput(
-                `[Post-Response] Script failed: ${result.result.error}`,
-                'error',
-              );
+              appendScriptOutput(`[Post-Response] Script failed: ${result.result.error}`, 'error');
             }
           } catch (err) {
             appendScriptOutput(
@@ -390,8 +332,7 @@ export function useRestRequest({
         }
 
         if (entity.script?.code?.trim()) {
-          const canSendBodyToTest =
-            !response.bodyTruncated && response.bodyType === 'text';
+          const canSendBodyToTest = !response.bodyTruncated && response.bodyType === 'text';
 
           appendScriptOutput('[Test] Running tests...', 'info');
 
@@ -405,11 +346,7 @@ export function useRestRequest({
           };
 
           try {
-            const testResult = await workspace.rest.executeTest(
-              entityId,
-              entity.script,
-              testContext,
-            );
+            const testResult = await workspace.rest.executeTest(entityId, entity.script, testContext);
 
             if (testResult.result.success) {
               const results = testResult.result.result as {
@@ -420,46 +357,25 @@ export function useRestRequest({
                   ...prev,
                   testResults: results.testResults,
                 }));
-                const passed = results.testResults.filter(
-                  (r) => r.result === 'pass',
-                ).length;
-                const failed = results.testResults.filter(
-                  (r) => r.result === 'fail',
-                ).length;
-                const skipped = results.testResults.filter(
-                  (r) => r.result === 'skip',
-                ).length;
+                const passed = results.testResults.filter((r) => r.result === 'pass').length;
+                const failed = results.testResults.filter((r) => r.result === 'fail').length;
+                const skipped = results.testResults.filter((r) => r.result === 'skip').length;
 
                 if (failed > 0) {
-                  appendScriptOutput(
-                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
-                    'test-fail',
-                  );
+                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-fail');
                 } else if (skipped > 0 && passed === 0) {
-                  appendScriptOutput(
-                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
-                    'test-skip',
-                  );
+                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-skip');
                 } else {
-                  appendScriptOutput(
-                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
-                    'test-pass',
-                  );
+                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-pass');
                 }
               } else {
                 appendScriptOutput('[Test] No tests defined', 'info');
               }
             } else {
-              appendScriptOutput(
-                `[Test] Failed: ${testResult.result.error}`,
-                'error',
-              );
+              appendScriptOutput(`[Test] Failed: ${testResult.result.error}`, 'error');
             }
           } catch (err) {
-            appendScriptOutput(
-              `[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-              'error',
-            );
+            appendScriptOutput(`[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
           }
         }
 
@@ -487,15 +403,7 @@ export function useRestRequest({
         }
       }
     },
-    [
-      entityId,
-      workspace,
-      echoServerPort,
-      interpolate,
-      appendScriptOutput,
-      selectedEnvironment,
-      queryClient,
-    ],
+    [entityId, workspace, echoServerPort, interpolate, appendScriptOutput, selectedEnvironment, queryClient],
   );
 
   const cancel = useCallback(() => {

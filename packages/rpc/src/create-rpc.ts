@@ -10,10 +10,7 @@ const actions = ['$mutate', '$query'] as const;
  * @param context - The context of the RPC proxy.
  * @returns A new Yasumu RPC proxy.
  */
-export function createYasumuRPC(
-  platformBridge: PlatformBridge,
-  context: YasumuRpcContext,
-): YasumuRPC {
+export function createYasumuRPC(platformBridge: PlatformBridge, context: YasumuRpcContext): YasumuRPC {
   const commandSegments: string[] = [];
 
   const handler: ProxyHandler<YasumuRPC> = {

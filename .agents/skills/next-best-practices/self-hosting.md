@@ -13,7 +13,8 @@ module.exports = {
 };
 ```
 
-This creates a minimal `standalone` folder with only production dependencies:
+This creates a minimal `standalone` folder with only production
+dependencies:
 
 ```
 .next/
@@ -77,12 +78,19 @@ services:
   web:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '-q',
+          '--spider',
+          'http://localhost:3000/api/health',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -95,16 +103,18 @@ For traditional server deployments:
 ```js
 // ecosystem.config.js
 module.exports = {
-  apps: [{
-    name: 'nextjs',
-    script: '.next/standalone/server.js',
-    instances: 'max',
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000,
+  apps: [
+    {
+      name: 'nextjs',
+      script: '.next/standalone/server.js',
+      instances: 'max',
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
     },
-  }],
+  ],
 };
 ```
 
@@ -117,7 +127,8 @@ pm2 start ecosystem.config.js
 
 ### The Problem
 
-ISR (Incremental Static Regeneration) uses filesystem caching by default. This **breaks with multiple instances**:
+ISR (Incremental Static Regeneration) uses filesystem caching by
+default. This **breaks with multiple instances**:
 
 - Instance A regenerates page → saves to its local disk
 - Instance B serves stale page → doesn't see Instance A's cache
@@ -171,7 +182,7 @@ module.exports = class CacheHandler {
       await redis.setex(
         CACHE_PREFIX + key,
         ctx.revalidate,
-        JSON.stringify(cacheData)
+        JSON.stringify(cacheData),
       );
     } else {
       await redis.set(CACHE_PREFIX + key, JSON.stringify(cacheData));
@@ -189,7 +200,11 @@ module.exports = class CacheHandler {
 
 ```js
 // cache-handler.js
-const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} = require('@aws-sdk/client-s3');
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 const BUCKET = process.env.CACHE_BUCKET;
@@ -197,10 +212,12 @@ const BUCKET = process.env.CACHE_BUCKET;
 module.exports = class CacheHandler {
   async get(key) {
     try {
-      const response = await s3.send(new GetObjectCommand({
-        Bucket: BUCKET,
-        Key: `cache/${key}`,
-      }));
+      const response = await s3.send(
+        new GetObjectCommand({
+          Bucket: BUCKET,
+          Key: `cache/${key}`,
+        }),
+      );
       const body = await response.Body.transformToString();
       return JSON.parse(body);
     } catch (err) {
@@ -210,32 +227,34 @@ module.exports = class CacheHandler {
   }
 
   async set(key, data, ctx) {
-    await s3.send(new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: `cache/${key}`,
-      Body: JSON.stringify({
-        value: data,
-        lastModified: Date.now(),
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: `cache/${key}`,
+        Body: JSON.stringify({
+          value: data,
+          lastModified: Date.now(),
+        }),
+        ContentType: 'application/json',
       }),
-      ContentType: 'application/json',
-    }));
+    );
   }
 };
 ```
 
 ## What Works vs What Needs Setup
 
-| Feature | Single Instance | Multi-Instance | Notes |
-|---------|----------------|----------------|-------|
-| SSR | Yes | Yes | No special setup |
-| SSG | Yes | Yes | Built at deploy time |
-| ISR | Yes | Needs cache handler | Filesystem cache breaks |
-| Image Optimization | Yes | Yes | CPU-intensive, consider CDN |
-| Middleware | Yes | Yes | Runs on Node.js |
-| Edge Runtime | Limited | Limited | Some features Node-only |
-| `revalidatePath/Tag` | Yes | Needs cache handler | Must share cache |
-| `next/font` | Yes | Yes | Fonts bundled at build |
-| Draft Mode | Yes | Yes | Cookie-based |
+| Feature              | Single Instance | Multi-Instance      | Notes                       |
+| -------------------- | --------------- | ------------------- | --------------------------- |
+| SSR                  | Yes             | Yes                 | No special setup            |
+| SSG                  | Yes             | Yes                 | Built at deploy time        |
+| ISR                  | Yes             | Needs cache handler | Filesystem cache breaks     |
+| Image Optimization   | Yes             | Yes                 | CPU-intensive, consider CDN |
+| Middleware           | Yes             | Yes                 | Runs on Node.js             |
+| Edge Runtime         | Limited         | Limited             | Some features Node-only     |
+| `revalidatePath/Tag` | Yes             | Needs cache handler | Must share cache            |
+| `next/font`          | Yes             | Yes                 | Fonts bundled at build      |
+| Draft Mode           | Yes             | Yes                 | Cookie-based                |
 
 ## Image Optimization
 
@@ -244,6 +263,7 @@ Next.js Image Optimization works out of the box but is CPU-intensive.
 ### Option 1: Built-in (Simple)
 
 Works automatically, but consider:
+
 - Set `deviceSizes` and `imageSizes` in config to limit variants
 - Use `minimumCacheTTL` to reduce regeneration
 
@@ -274,7 +294,12 @@ module.exports = {
 ```js
 // lib/image-loader.js
 export default function cloudinaryLoader({ src, width, quality }) {
-  const params = ['f_auto', 'c_limit', `w_${width}`, `q_${quality || 'auto'}`];
+  const params = [
+    'f_auto',
+    'c_limit',
+    `w_${width}`,
+    `q_${quality || 'auto'}`,
+  ];
   return `https://res.cloudinary.com/demo/image/upload/${params.join(',')}${src}`;
 }
 ```
@@ -308,7 +333,8 @@ export async function GET() {
 
 ## OpenNext: Serverless Without Vercel
 
-[OpenNext](https://open-next.js.org/) adapts Next.js for AWS Lambda, Cloudflare Workers, etc.
+[OpenNext](https://open-next.js.org/) adapts Next.js for AWS Lambda,
+Cloudflare Workers, etc.
 
 ```bash
 npx create-sst@latest
@@ -317,6 +343,7 @@ npx @opennextjs/aws build
 ```
 
 Supports:
+
 - AWS Lambda + CloudFront
 - Cloudflare Workers
 - Netlify Functions
@@ -342,7 +369,8 @@ export async function GET() {
 
 ## Pre-Deployment Checklist
 
-1. **Build locally first**: `npm run build` - catch errors before deploy
+1. **Build locally first**: `npm run build` - catch errors before
+   deploy
 2. **Test standalone output**: `node .next/standalone/server.js`
 3. **Set `output: 'standalone'`** for Docker
 4. **Configure cache handler** for multi-instance ISR

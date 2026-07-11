@@ -1,28 +1,16 @@
 import { YasumuSchemaParsableBoolean } from './boolean.js';
 import { YasumuSchemaParsableCode } from './code.js';
-import {
-  YasumuSchemaParsableEnum,
-  type _YasumuSchemaParsableEnumExpect,
-} from './enum.js';
+import { YasumuSchemaParsableEnum, type _YasumuSchemaParsableEnumExpect } from './enum.js';
 import { YasumuSchemaParsableList } from './list.js';
 import { YasumuSchemaParsableNull } from './null.js';
 import { YasumuSchemaParsableNullable } from './nullable.js';
 import { YasumuSchemaParsableNumber } from './number.js';
-import {
-  YasumuSchemaParsableObject,
-  type _YasumuSchemaParsableObjectExpect,
-} from './object.js';
+import { YasumuSchemaParsableObject, type _YasumuSchemaParsableObjectExpect } from './object.js';
 import type { YasumuSchemaParsable } from './parsable.js';
 import { YasumuSchemaParsableRecord } from './record.js';
-import {
-  YasumuSchemaParsableScript,
-  type _YasumuSchemaParsableScriptExpect,
-} from './script.js';
+import { YasumuSchemaParsableScript, type _YasumuSchemaParsableScriptExpect } from './script.js';
 import { YasumuSchemaParsableString } from './string.js';
-import {
-  YasumuSchemaParsableUnion,
-  type _YasumuSchemaParsableUnionExpect,
-} from './union.js';
+import { YasumuSchemaParsableUnion, type _YasumuSchemaParsableUnionExpect } from './union.js';
 
 export class YasumuSchemaFactory {
   script<E extends _YasumuSchemaParsableScriptExpect>(expect: E) {

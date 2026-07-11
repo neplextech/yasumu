@@ -1,10 +1,7 @@
 'use client';
 
-import {
-  EntityHistoryProvider,
-  useEntityHistoryContext,
-} from '@/components/workspace/entity-history-context';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { EntityHistoryProvider, useEntityHistoryContext } from '@/components/workspace/entity-history-context';
 
 export function GraphqlContextProvider({ children }: React.PropsWithChildren) {
   const workspace = useActiveWorkspace();
@@ -14,12 +11,8 @@ export function GraphqlContextProvider({ children }: React.PropsWithChildren) {
     <EntityHistoryProvider
       scope="graphql"
       listHistory={() => graphql?.listHistory?.() ?? Promise.resolve([])}
-      upsertHistory={(entityId) =>
-        graphql?.upsertHistory?.(entityId) ?? Promise.resolve()
-      }
-      deleteHistory={(entityId) =>
-        graphql?.deleteHistory?.(entityId) ?? Promise.resolve()
-      }
+      upsertHistory={(entityId) => graphql?.upsertHistory?.(entityId) ?? Promise.resolve()}
+      deleteHistory={(entityId) => graphql?.deleteHistory?.(entityId) ?? Promise.resolve()}
     >
       {children}
     </EntityHistoryProvider>

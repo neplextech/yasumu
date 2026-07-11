@@ -56,8 +56,7 @@ function isTestResultArray(value: unknown): value is TestResult[] {
       ((item as TestResult).result === 'pass' ||
         (item as TestResult).result === 'fail' ||
         (item as TestResult).result === 'skip') &&
-      ((item as TestResult).error === null ||
-        typeof (item as TestResult).error === 'string') &&
+      ((item as TestResult).error === null || typeof (item as TestResult).error === 'string') &&
       typeof (item as TestResult).duration === 'number',
   );
 }
@@ -70,9 +69,7 @@ function extractTestResults(parsed: unknown): TestResult[] {
     return directTestResults;
   }
 
-  const extensionTestResults = (
-    parsed as { extensions?: { testResults?: unknown } }
-  ).extensions?.testResults;
+  const extensionTestResults = (parsed as { extensions?: { testResults?: unknown } }).extensions?.testResults;
 
   if (isTestResultArray(extensionTestResults)) {
     return extensionTestResults;
@@ -81,11 +78,7 @@ function extractTestResults(parsed: unknown): TestResult[] {
   return [];
 }
 
-function buildUrl(
-  baseUrl: string,
-  echoServerPort: number | null,
-  interpolate: (value: string) => string,
-): string {
+function buildUrl(baseUrl: string, echoServerPort: number | null, interpolate: (value: string) => string): string {
   let url = interpolate(baseUrl);
 
   if (echoServerPort) {
@@ -105,9 +98,7 @@ function buildUrl(
   return url;
 }
 
-function parseVariables(
-  variables: string | null,
-): Record<string, unknown> | null {
+function parseVariables(variables: string | null): Record<string, unknown> | null {
   if (!variables || !variables.trim()) {
     return null;
   }
@@ -119,9 +110,7 @@ function parseVariables(
   }
 }
 
-export async function executeGraphqlRequest(
-  options: GraphqlRequestOptions,
-): Promise<GraphqlRequestOutcome> {
+export async function executeGraphqlRequest(options: GraphqlRequestOptions): Promise<GraphqlRequestOutcome> {
   const {
     url: baseUrl,
     query,
@@ -231,9 +220,7 @@ export class GraphqlRequestController {
     return this.abortController !== null;
   }
 
-  async execute(
-    options: Omit<GraphqlRequestOptions, 'signal'>,
-  ): Promise<GraphqlRequestOutcome> {
+  async execute(options: Omit<GraphqlRequestOptions, 'signal'>): Promise<GraphqlRequestOutcome> {
     this.cancel();
     this.abortController = new AbortController();
 

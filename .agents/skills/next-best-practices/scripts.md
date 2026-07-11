@@ -4,16 +4,17 @@ Loading third-party scripts in Next.js.
 
 ## Use next/script
 
-Always use `next/script` instead of native `<script>` tags for better performance.
+Always use `next/script` instead of native `<script>` tags for better
+performance.
 
 ```tsx
 // Bad: Native script tag
-<script src="https://example.com/script.js"></script>
+<script src="https://example.com/script.js"></script>;
 
 // Good: Next.js Script component
-import Script from 'next/script'
+import Script from 'next/script';
 
-<Script src="https://example.com/script.js" />
+<Script src="https://example.com/script.js" />;
 ```
 
 ## Inline Scripts Need ID
@@ -35,7 +36,8 @@ Inline scripts require an `id` attribute for Next.js to track them.
 
 ## Don't Put Script in Head
 
-`next/script` should not be placed inside `next/head`. It handles its own positioning.
+`next/script` should not be placed inside `next/head`. It handles its
+own positioning.
 
 ```tsx
 // Bad: Script inside Head
@@ -100,7 +102,7 @@ export default function Layout({ children }) {
 ## Google Tag Manager
 
 ```tsx
-import { GoogleTagManager } from '@next/third-parties/google'
+import { GoogleTagManager } from '@next/third-parties/google';
 
 export default function Layout({ children }) {
   return (
@@ -108,7 +110,7 @@ export default function Layout({ children }) {
       <GoogleTagManager gtmId="GTM-XXXXX" />
       <body>{children}</body>
     </html>
-  )
+  );
 }
 ```
 
@@ -116,26 +118,26 @@ export default function Layout({ children }) {
 
 ```tsx
 // YouTube embed
-import { YouTubeEmbed } from '@next/third-parties/google'
+import { YouTubeEmbed } from '@next/third-parties/google';
 
-<YouTubeEmbed videoid="dQw4w9WgXcQ" />
+<YouTubeEmbed videoid="dQw4w9WgXcQ" />;
 
 // Google Maps
-import { GoogleMapsEmbed } from '@next/third-parties/google'
+import { GoogleMapsEmbed } from '@next/third-parties/google';
 
 <GoogleMapsEmbed
   apiKey="YOUR_API_KEY"
   mode="place"
   q="Brooklyn+Bridge,New+York,NY"
-/>
+/>;
 ```
 
 ## Quick Reference
 
-| Pattern | Issue | Fix |
-|---------|-------|-----|
-| `<script src="...">` | No optimization | Use `next/script` |
-| `<Script>` without id | Can't track inline scripts | Add `id` attribute |
-| `<Script>` inside `<Head>` | Wrong placement | Move outside Head |
-| Inline GA/GTM scripts | No optimization | Use `@next/third-parties` |
-| `strategy="beforeInteractive"` outside layout | Won't work | Only use in root layout |
+| Pattern                                       | Issue                      | Fix                       |
+| --------------------------------------------- | -------------------------- | ------------------------- |
+| `<script src="...">`                          | No optimization            | Use `next/script`         |
+| `<Script>` without id                         | Can't track inline scripts | Add `id` attribute        |
+| `<Script>` inside `<Head>`                    | Wrong placement            | Move outside Head         |
+| Inline GA/GTM scripts                         | No optimization            | Use `@next/third-parties` |
+| `strategy="beforeInteractive"` outside layout | Won't work                 | Only use in root layout   |

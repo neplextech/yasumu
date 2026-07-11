@@ -1,10 +1,7 @@
 'use client';
 
-import {
-  EntityHistoryProvider,
-  useEntityHistoryContext,
-} from '@/components/workspace/entity-history-context';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { EntityHistoryProvider, useEntityHistoryContext } from '@/components/workspace/entity-history-context';
 
 export function RestContextProvider({ children }: React.PropsWithChildren) {
   const workspace = useActiveWorkspace();

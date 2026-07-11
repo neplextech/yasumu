@@ -18,11 +18,7 @@ export default function Nepal({ className }: { className?: string }) {
           <circle r="1" />
           <g id="d">
             <g id="c">
-              <path
-                id="b"
-                d="M.195-.98 0-1.39l-.195.408"
-                transform="rotate(11.25)"
-              />
+              <path id="b" d="M.195-.98 0-1.39l-.195.408" transform="rotate(11.25)" />
               <use xlinkHref="#b" transform="rotate(22.5)" />
               <use xlinkHref="#b" transform="rotate(45)" />
             </g>

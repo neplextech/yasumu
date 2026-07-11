@@ -1,6 +1,7 @@
-import { create } from 'zustand';
-import { Environment } from '@yasumu/core';
 import { env } from 'process';
+
+import { Environment } from '@yasumu/core';
+import { create } from 'zustand';
 
 export interface EnvironmentStore {
   environments: Environment[];
@@ -8,10 +9,7 @@ export interface EnvironmentStore {
   setEnvironments: (environments: Environment[]) => void;
   setSelectedEnvironment: (environment: Environment | null) => void;
   interpolate: <T extends string | File>(str: T) => T;
-  updateEnvironment: (
-    envId: Environment['id'],
-    environment: Partial<Environment>,
-  ) => void;
+  updateEnvironment: (envId: Environment['id'], environment: Partial<Environment>) => void;
 }
 
 export const useEnvironmentStore = create<EnvironmentStore>((set, get) => ({
@@ -22,9 +20,7 @@ export const useEnvironmentStore = create<EnvironmentStore>((set, get) => ({
       return {
         environments,
         selectedEnvironment: store.selectedEnvironment
-          ? environments.find(
-              (env) => env.id === store.selectedEnvironment?.id,
-            ) || null
+          ? environments.find((env) => env.id === store.selectedEnvironment?.id) || null
           : null,
       };
     });
@@ -45,10 +41,7 @@ export const useEnvironmentStore = create<EnvironmentStore>((set, get) => ({
     });
   },
 
-  setSelectedEnvironment: (environment) =>
-    set({ selectedEnvironment: environment }),
+  setSelectedEnvironment: (environment) => set({ selectedEnvironment: environment }),
   interpolate: (str) =>
-    (typeof str !== 'string'
-      ? str
-      : (get().selectedEnvironment?.interpolate(str) ?? str)) as typeof str,
+    (typeof str !== 'string' ? str : (get().selectedEnvironment?.interpolate(str) ?? str)) as typeof str,
 }));

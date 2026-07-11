@@ -1,15 +1,11 @@
 'use client';
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
+
+import EmailScriptEditor from './_components/email-script-editor';
 import MailboxTab from './_components/mailbox-tab';
 import SettingsTab from './_components/settings-tab';
-import EmailScriptEditor from './_components/email-script-editor';
 
 export default function MailboxPage() {
   const [activeTab, setActiveTab] = useQueryState(
@@ -18,23 +14,23 @@ export default function MailboxPage() {
   );
 
   return (
-    <div className="flex h-full bg-background">
+    <div className="bg-background flex h-full">
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as 'mailbox' | 'settings')}
-        className="flex flex-col flex-1"
+        className="flex flex-1 flex-col"
       >
-        <div className="border-b bg-background/50 backdrop-blur px-6 py-3">
+        <div className="bg-background/50 border-b px-6 py-3 backdrop-blur">
           <TabsList>
             <TabsTrigger value="mailbox">Mailbox</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="scripts">Script</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="mailbox" className="flex-1 m-0 p-0 overflow-hidden">
+        <TabsContent value="mailbox" className="m-0 flex-1 overflow-hidden p-0">
           <MailboxTab />
         </TabsContent>
-        <TabsContent value="settings" className="flex-1 m-0 overflow-auto">
+        <TabsContent value="settings" className="m-0 flex-1 overflow-auto">
           <SettingsTab />
         </TabsContent>
         <TabsContent value="scripts" className="m-0">

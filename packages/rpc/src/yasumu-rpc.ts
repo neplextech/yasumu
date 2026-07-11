@@ -26,21 +26,13 @@ export type YasumuRpcCallType = 'mutation' | 'query';
 /**
  * Infer the parameters of a RPC command.
  */
-export type InferParameters<
-  T extends RpcMutation<unknown[], unknown> | RpcQuery<unknown[], unknown>,
-> =
-  T extends RpcMutation<infer Params, unknown>
-    ? Params
-    : T extends RpcQuery<infer Params, unknown>
-      ? Params
-      : never;
+export type InferParameters<T extends RpcMutation<unknown[], unknown> | RpcQuery<unknown[], unknown>> =
+  T extends RpcMutation<infer Params, unknown> ? Params : T extends RpcQuery<infer Params, unknown> ? Params : never;
 
 /**
  * Infer the return type of a RPC command.
  */
-export type InferReturnType<
-  T extends RpcMutation<unknown[], unknown> | RpcQuery<unknown[], unknown>,
-> =
+export type InferReturnType<T extends RpcMutation<unknown[], unknown> | RpcQuery<unknown[], unknown>> =
   T extends RpcMutation<unknown[], infer ReturnType>
     ? Awaited<ReturnType>
     : T extends RpcQuery<unknown[], infer ReturnType>
@@ -73,18 +65,14 @@ export type ExtractRpcTypes<T> =
       ? T
       : T[keyof T] extends never
         ? never
-        : T[keyof T] extends
-              | RpcMutation<unknown[], unknown>
-              | RpcQuery<unknown[], unknown>
+        : T[keyof T] extends RpcMutation<unknown[], unknown> | RpcQuery<unknown[], unknown>
           ? T[keyof T]
           : ExtractRpcTypes<T[keyof T]>;
 
 /**
  * A data object for a RPC command.
  */
-export interface RpcCommandData<
-  T extends YasumuRpcCommands = YasumuRpcCommands,
-> {
+export interface RpcCommandData<T extends YasumuRpcCommands = YasumuRpcCommands> {
   /**
    * The command to invoke.
    */
@@ -106,14 +94,13 @@ export interface RpcCommandData<
 /**
  * Converts path string such as `workspaces.create` into the corresponding value in the YasumuRPC interface.
  */
-export type ResolveRpcCommandValue<K extends YasumuRpcCommands> =
-  K extends `${infer T}.${infer U}`
-    ? T extends keyof YasumuRPC
-      ? U extends keyof YasumuRPC[T]
-        ? YasumuRPC[T][U]
-        : never
+export type ResolveRpcCommandValue<K extends YasumuRpcCommands> = K extends `${infer T}.${infer U}`
+  ? T extends keyof YasumuRPC
+    ? U extends keyof YasumuRPC[T]
+      ? YasumuRPC[T][U]
       : never
-    : never;
+    : never
+  : never;
 
 type ToCommandPathString<T extends keyof YasumuRPC> = T extends keyof YasumuRPC
   ? {

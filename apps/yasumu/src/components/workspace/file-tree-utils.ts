@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+
 import type { FileTreeItem } from '@/components/sidebars/file-tree';
 
 export interface WorkspaceTreeFolder<TItem> {
@@ -15,13 +16,9 @@ export interface WorkspaceTreeFile {
   type: 'file';
 }
 
-export type WorkspaceTreeItem<TItem> =
-  | WorkspaceTreeFolder<TItem>
-  | WorkspaceTreeFile;
+export type WorkspaceTreeItem<TItem> = WorkspaceTreeFolder<TItem> | WorkspaceTreeFile;
 
-export function mapWorkspaceTreeToFileTree<
-  TItem extends WorkspaceTreeItem<TItem>,
->(
+export function mapWorkspaceTreeToFileTree<TItem extends WorkspaceTreeItem<TItem>>(
   items: TItem[],
   options: {
     folderFallbackName: string;
@@ -48,13 +45,13 @@ export function mapWorkspaceTreeToFileTree<
   });
 }
 
-export function findFolderInWorkspaceTree<
-  TItem extends WorkspaceTreeItem<TItem>,
->(items: TItem[], folderId: string): Extract<TItem, { type: 'folder' }> | null {
+export function findFolderInWorkspaceTree<TItem extends WorkspaceTreeItem<TItem>>(
+  items: TItem[],
+  folderId: string,
+): Extract<TItem, { type: 'folder' }> | null {
   for (const item of items) {
     if (item.type === 'folder') {
-      if (item.id === folderId)
-        return item as Extract<TItem, { type: 'folder' }>;
+      if (item.id === folderId) return item as Extract<TItem, { type: 'folder' }>;
 
       const found = findFolderInWorkspaceTree(item.children ?? [], folderId);
       if (found) return found;

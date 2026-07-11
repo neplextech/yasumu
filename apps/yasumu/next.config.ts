@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
-import { createTransletta } from 'transletta/next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { createTransletta } from 'transletta/next';
 
 const isProd = process.env.NODE_ENV === 'production';
 const internalHost = process.env.TAURI_DEV_HOST || 'localhost';

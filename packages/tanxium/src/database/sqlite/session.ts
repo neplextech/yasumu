@@ -1,5 +1,6 @@
 // taken from https://github.com/mizchi/drizzle-orm/blob/256aae13b624eeb260e6530f4dd38c1308898a1f/drizzle-orm/src/node-sqlite/session.ts
 import type { DatabaseSync, StatementSync } from 'node:sqlite';
+
 import {
   entityKind,
   type Logger,
@@ -17,11 +18,7 @@ import type {
   SQLiteExecuteMethod,
   SQLiteTransactionConfig,
 } from 'drizzle-orm/sqlite-core';
-import {
-  SQLiteTransaction,
-  SQLitePreparedQuery as PreparedQueryBase,
-  SQLiteSession,
-} from 'drizzle-orm/sqlite-core';
+import { SQLiteTransaction, SQLitePreparedQuery as PreparedQueryBase, SQLiteSession } from 'drizzle-orm/sqlite-core';
 // @ts-ignore private api
 import { mapResultRow } from 'drizzle-orm/utils';
 
@@ -100,9 +97,7 @@ export class NodeSQLiteTransaction<
   TSchema extends TablesRelationalConfig,
 > extends SQLiteTransaction<'sync', NodeRunResult, TFullSchema, TSchema> {
   static override readonly [entityKind]: string = 'NodeSQLiteTransaction';
-  override transaction<T>(
-    transaction: (tx: NodeSQLiteTransaction<TFullSchema, TSchema>) => T,
-  ): T {
+  override transaction<T>(transaction: (tx: NodeSQLiteTransaction<TFullSchema, TSchema>) => T): T {
     const savepointName = `sp${this.nestedIndex}`;
     const tx = new NodeSQLiteTransaction(
       'sync',
@@ -129,9 +124,7 @@ export class NodeSQLiteTransaction<
   }
 }
 
-export class NodeSQLitePreparedQuery<
-  T extends PreparedQueryConfig = PreparedQueryConfig,
-> extends PreparedQueryBase<{
+export class NodeSQLitePreparedQuery<T extends PreparedQueryConfig = PreparedQueryConfig> extends PreparedQueryBase<{
   type: 'sync';
   run: NodeRunResult;
   all: T['all'];
@@ -155,10 +148,7 @@ export class NodeSQLitePreparedQuery<
 
   run(placeholderValues?: Record<string, unknown>): NodeRunResult {
     // deno-lint-ignore no-explicit-any
-    const params: any[] = fillPlaceholders(
-      this.query.params,
-      placeholderValues ?? {},
-    );
+    const params: any[] = fillPlaceholders(this.query.params, placeholderValues ?? {});
     this.logger.logQuery(this.query.sql, params);
     return this.stmt.run(...params);
   }
@@ -174,10 +164,7 @@ export class NodeSQLitePreparedQuery<
       customResultMapper,
     } = this;
     // deno-lint-ignore no-explicit-any
-    const params: any[] = fillPlaceholders(
-      query.params,
-      placeholderValues ?? {},
-    );
+    const params: any[] = fillPlaceholders(query.params, placeholderValues ?? {});
     logger.logQuery(query.sql, params);
 
     if (customResultMapper) {
@@ -185,10 +172,7 @@ export class NodeSQLitePreparedQuery<
       return customResultMapper(valuesResult) as T['all'];
     }
 
-    const rows: Record<string, unknown>[] = stmt.all(...params) as Record<
-      string,
-      unknown
-    >[];
+    const rows: Record<string, unknown>[] = stmt.all(...params) as Record<string, unknown>[];
     if (!fields) {
       return rows as T['all'];
     }
@@ -198,10 +182,7 @@ export class NodeSQLitePreparedQuery<
     }
     const valuesResult = rows.map((obj: Record<string, unknown>) => {
       return this.fields!.map((fieldInfo) => {
-        const key =
-          fieldInfo.path.length > 0
-            ? fieldInfo.path[fieldInfo.path.length - 1]
-            : undefined;
+        const key = fieldInfo.path.length > 0 ? fieldInfo.path[fieldInfo.path.length - 1] : undefined;
         return key !== undefined ? obj[key] : undefined;
       });
     });
@@ -212,10 +193,7 @@ export class NodeSQLitePreparedQuery<
 
   get(placeholderValues?: Record<string, unknown>): T['get'] {
     // deno-lint-ignore no-explicit-any
-    const params: any[] = fillPlaceholders(
-      this.query.params,
-      placeholderValues ?? {},
-    );
+    const params: any[] = fillPlaceholders(this.query.params, placeholderValues ?? {});
     this.logger.logQuery(this.query.sql, params);
     // @ts-expect-error types
     const { stmt, joinsNotNullableMap, customResultMapper } = this;
@@ -228,13 +206,8 @@ export class NodeSQLitePreparedQuery<
         return customResultMapper([]) as T['get'];
       }
       const rowValues = this.fields.map((fieldInfo) => {
-        const key =
-          fieldInfo.path.length > 0
-            ? fieldInfo.path[fieldInfo.path.length - 1]
-            : undefined;
-        return key !== undefined
-          ? (rowObj as Record<string, unknown>)[key]
-          : undefined;
+        const key = fieldInfo.path.length > 0 ? fieldInfo.path[fieldInfo.path.length - 1] : undefined;
+        return key !== undefined ? (rowObj as Record<string, unknown>)[key] : undefined;
       });
       return customResultMapper([rowValues]) as T['get'];
     }
@@ -242,38 +215,24 @@ export class NodeSQLitePreparedQuery<
       return rowObj as T['get'];
     }
     const rowValues = this.fields.map((fieldInfo) => {
-      const key =
-        fieldInfo.path.length > 0
-          ? fieldInfo.path[fieldInfo.path.length - 1]
-          : undefined;
-      return key !== undefined
-        ? (rowObj as Record<string, unknown>)[key]
-        : undefined;
+      const key = fieldInfo.path.length > 0 ? fieldInfo.path[fieldInfo.path.length - 1] : undefined;
+      return key !== undefined ? (rowObj as Record<string, unknown>)[key] : undefined;
     });
     return mapResultRow(this.fields, rowValues, joinsNotNullableMap);
   }
 
   values(placeholderValues?: Record<string, unknown>): T['values'] {
     // deno-lint-ignore no-explicit-any
-    const params: any[] = fillPlaceholders(
-      this.query.params,
-      placeholderValues ?? {},
-    );
+    const params: any[] = fillPlaceholders(this.query.params, placeholderValues ?? {});
     this.logger.logQuery(this.query.sql, params);
-    const rows: Record<string, unknown>[] = this.stmt.all(...params) as Record<
-      string,
-      unknown
-    >[];
+    const rows: Record<string, unknown>[] = this.stmt.all(...params) as Record<string, unknown>[];
     if (!this.fields) {
       // deno-lint-ignore no-explicit-any
       return rows as any;
     }
     return rows.map((obj: Record<string, unknown>) => {
       return this.fields!.map((fieldInfo) => {
-        const key =
-          fieldInfo.path.length > 0
-            ? fieldInfo.path[fieldInfo.path.length - 1]
-            : undefined;
+        const key = fieldInfo.path.length > 0 ? fieldInfo.path[fieldInfo.path.length - 1] : undefined;
         return key !== undefined ? obj[key] : undefined;
       });
     }) as T['values'];

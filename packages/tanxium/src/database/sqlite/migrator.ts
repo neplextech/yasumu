@@ -1,9 +1,10 @@
+import { sql } from 'drizzle-orm';
 // taken from https://github.com/mizchi/drizzle-orm/blob/256aae13b624eeb260e6530f4dd38c1308898a1f/drizzle-orm/src/node-sqlite/migrator.ts
 import type { MigrationConfig, MigrationMeta } from 'drizzle-orm/migrator';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
-import type { NodeSQLiteDatabase } from './driver.ts';
 import { TablesRelationalConfig } from 'drizzle-orm/relations';
-import { sql } from 'drizzle-orm';
+
+import type { NodeSQLiteDatabase } from './driver.ts';
 import { NodeSQLiteSession } from './session.ts';
 
 // probably .setReturnArrays or something needs to be set to get the original behavior
@@ -42,13 +43,7 @@ function migratePatch(
   const dbMigrations: [number, string, string][] = dbMigrationsValue
     ? Array.isArray(dbMigrationsValue)
       ? dbMigrationsValue
-      : [
-          [
-            dbMigrationsValue.id,
-            dbMigrationsValue.hash,
-            dbMigrationsValue.created_at.toString(),
-          ],
-        ]
+      : [[dbMigrationsValue.id, dbMigrationsValue.hash, dbMigrationsValue.created_at.toString()]]
     : [];
 
   const lastDbMigration = dbMigrations[0] ?? undefined;
@@ -56,10 +51,7 @@ function migratePatch(
 
   try {
     for (const migration of migrations) {
-      if (
-        !lastDbMigration ||
-        Number(lastDbMigration[2])! < migration.folderMillis
-      ) {
+      if (!lastDbMigration || Number(lastDbMigration[2])! < migration.folderMillis) {
         for (const stmt of migration.sql) {
           session.run(sql.raw(stmt));
         }

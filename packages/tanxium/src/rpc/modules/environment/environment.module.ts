@@ -1,7 +1,8 @@
 import { Module } from '@yasumu/den';
-import { EnvironmentsService } from './environment.service.ts';
-import { EnvironmentResolver } from './environment.resolver.ts';
+
 import { WorkspacesModule } from '../workspaces/workspaces.module.ts';
+import { EnvironmentResolver } from './environment.resolver.ts';
+import { EnvironmentsService } from './environment.service.ts';
 
 @Module({
   imports: [WorkspacesModule],

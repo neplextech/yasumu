@@ -1,8 +1,4 @@
-import {
-  INJECTABLE_METADATA,
-  INJECT_METADATA,
-  OPTIONAL_METADATA,
-} from '../constants.js';
+import { INJECTABLE_METADATA, INJECT_METADATA, OPTIONAL_METADATA } from '../constants.js';
 import type { Token, InjectableOptions } from './types.js';
 
 export function Injectable(options?: InjectableOptions): ClassDecorator {
@@ -12,11 +8,7 @@ export function Injectable(options?: InjectableOptions): ClassDecorator {
 }
 
 export function Inject(token: Token): ParameterDecorator & PropertyDecorator {
-  return ((
-    target: Object,
-    propertyKey: string | symbol | undefined,
-    parameterIndex?: number,
-  ) => {
+  return ((target: Object, propertyKey: string | symbol | undefined, parameterIndex?: number) => {
     if (typeof parameterIndex === 'number') {
       // Constructor parameter or Method parameter
       // If propertyKey is undefined, it's constructor

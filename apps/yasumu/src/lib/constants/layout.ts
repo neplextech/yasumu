@@ -9,9 +9,7 @@ export const YasumuLayout = {
 
 export type YasumuLayout = (typeof YasumuLayout)[keyof typeof YasumuLayout];
 
-export const YasumuLayoutList = Object.keys(YasumuLayout) as [
-  keyof typeof YasumuLayout,
-];
+export const YasumuLayoutList = Object.keys(YasumuLayout) as [keyof typeof YasumuLayout];
 
 export const YasumuLayoutIcons = {
   [YasumuLayout.Classic]: VscLayoutPanelRight,

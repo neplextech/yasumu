@@ -9,15 +9,10 @@ export interface ErrorScreenProps {
 
 export default function ErrorScreen({ fullScreen, message }: ErrorScreenProps) {
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center',
-        fullScreen && 'h-screen w-full overflow-hidden',
-      )}
-    >
+    <div className={cn('flex items-center justify-center', fullScreen && 'h-screen w-full overflow-hidden')}>
       <div className="flex flex-col items-center justify-center gap-2">
         <AlertCircle className="text-destructive" size={48} />
-        {message && <p className="text-sm text-center">{message}</p>}
+        {message && <p className="text-center text-sm">{message}</p>}
       </div>
     </div>
   );

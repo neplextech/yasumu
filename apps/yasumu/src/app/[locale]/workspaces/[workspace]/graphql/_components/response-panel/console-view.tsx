@@ -2,10 +2,8 @@
 
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { cn } from '@yasumu/ui/lib/utils';
-import type {
-  ScriptOutputEntry,
-  ScriptOutputType,
-} from '../../_hooks/use-graphql-request';
+
+import type { ScriptOutputEntry, ScriptOutputType } from '../../_hooks/use-graphql-request';
 
 interface ConsoleViewProps {
   output: ScriptOutputEntry[];
@@ -45,9 +43,7 @@ function formatTimestamp(timestamp: number): string {
 
 export function ConsoleView({ output }: ConsoleViewProps) {
   if (output.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm p-4">No console output</p>
-    );
+    return <p className="text-muted-foreground p-4 text-sm">No console output</p>;
   }
 
   return (
@@ -58,14 +54,7 @@ export function ConsoleView({ output }: ConsoleViewProps) {
             <span className="text-muted-foreground shrink-0 text-xs select-text">
               [{formatTimestamp(entry.timestamp)}]
             </span>
-            <span
-              className={cn(
-                'flex-1 select-text',
-                getOutputTypeStyles(entry.type),
-              )}
-            >
-              {entry.message}
-            </span>
+            <span className={cn('flex-1 select-text', getOutputTypeStyles(entry.type))}>{entry.message}</span>
           </div>
         ))}
       </div>

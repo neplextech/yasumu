@@ -1,4 +1,4 @@
-(function() {
+(function () {
   const WS_URL = 'ws://' + window.location.host;
   let ws = null;
   let eventQueue = [];
@@ -7,7 +7,7 @@
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
-      eventQueue.forEach(e => ws.send(JSON.stringify(e)));
+      eventQueue.forEach((e) => ws.send(JSON.stringify(e)));
       eventQueue = [];
     };
 
@@ -41,7 +41,7 @@
       type: 'click',
       text: target.textContent.trim(),
       choice: target.dataset.choice,
-      id: target.id || null
+      id: target.id || null,
     });
 
     // Update indicator bar (defer so toggleSelect runs first)
@@ -53,10 +53,14 @@
       if (selected.length === 0) {
         indicator.textContent = 'Click an option above, then return to the terminal';
       } else if (selected.length === 1) {
-        const label = selected[0].querySelector('h3, .content h3, .card-body h3')?.textContent?.trim() || selected[0].dataset.choice;
-        indicator.innerHTML = '<span class="selected-text">' + label + ' selected</span> — return to terminal to continue';
+        const label =
+          selected[0].querySelector('h3, .content h3, .card-body h3')?.textContent?.trim() ||
+          selected[0].dataset.choice;
+        indicator.innerHTML =
+          '<span class="selected-text">' + label + ' selected</span> — return to terminal to continue';
       } else {
-        indicator.innerHTML = '<span class="selected-text">' + selected.length + ' selected</span> — return to terminal to continue';
+        indicator.innerHTML =
+          '<span class="selected-text">' + selected.length + ' selected</span> — return to terminal to continue';
       }
     }, 0);
   });
@@ -64,11 +68,11 @@
   // Frame UI: selection tracking
   window.selectedChoice = null;
 
-  window.toggleSelect = function(el) {
+  window.toggleSelect = function (el) {
     const container = el.closest('.options') || el.closest('.cards');
     const multi = container && container.dataset.multiselect !== undefined;
     if (container && !multi) {
-      container.querySelectorAll('.option, .card').forEach(o => o.classList.remove('selected'));
+      container.querySelectorAll('.option, .card').forEach((o) => o.classList.remove('selected'));
     }
     if (multi) {
       el.classList.toggle('selected');
@@ -81,7 +85,7 @@
   // Expose API for explicit use
   window.brainstorm = {
     send: sendEvent,
-    choice: (value, metadata = {}) => sendEvent({ type: 'choice', value, ...metadata })
+    choice: (value, metadata = {}) => sendEvent({ type: 'choice', value, ...metadata }),
   };
 
   connect();

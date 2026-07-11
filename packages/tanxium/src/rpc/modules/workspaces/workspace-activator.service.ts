@@ -1,7 +1,9 @@
 import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { workspaces } from '@/database/schema.ts';
 import { eq } from 'drizzle-orm';
+
+import { workspaces } from '@/database/schema.ts';
+
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 
 @Injectable()
 export class WorkspaceActivatorService {

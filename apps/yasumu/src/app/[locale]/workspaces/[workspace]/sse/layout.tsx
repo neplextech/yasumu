@@ -1,7 +1,8 @@
 import LayoutGroup from '@/components/layout/layout-group';
 import { ResizableApplicationLayout } from '@/components/layout/resizable-layout';
-import { SseFileTree } from './_components/sse-file-tree';
+
 import OutputConsole from './_components/output-console';
+import { SseFileTree } from './_components/sse-file-tree';
 
 export default function SseLayout({ children }: React.PropsWithChildren) {
   return (

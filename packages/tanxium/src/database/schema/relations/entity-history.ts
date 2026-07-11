@@ -1,4 +1,5 @@
 import { relations } from 'drizzle-orm/relations';
+
 import { entityHistory } from '../tables/entity-history.ts';
 import { workspaces } from '../tables/workspaces.ts';
 

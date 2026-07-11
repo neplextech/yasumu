@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Badge } from '@yasumu/ui/components/badge';
 import { Button } from '@yasumu/ui/components/button';
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface Message {
   id: string;
@@ -69,43 +69,30 @@ export default function OutputConsole() {
   };
 
   return (
-    <div className="flex flex-col h-full border-t bg-background">
-      <div className="flex items-center justify-between px-4 py-2 border-b">
+    <div className="bg-background flex h-full flex-col border-t">
+      <div className="flex items-center justify-between border-b px-4 py-2">
         <span className="text-sm font-medium">Messages</span>
         <Button variant="ghost" size="sm">
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="mr-2 h-4 w-4" />
           Clear
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
+        <div className="space-y-4 p-4">
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className="border rounded-lg p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className={`${getTypeColor(message.type)} text-white`}>
-                  {message.type.toUpperCase()}
-                </Badge>
-                {message.event && (
-                  <Badge variant="outline">{message.event}</Badge>
-                )}
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {formatTimestamp(message.timestamp)}
-                </span>
+            <div key={message.id} className="bg-muted/30 hover:bg-muted/50 rounded-lg border p-3 transition-colors">
+              <div className="mb-2 flex items-center gap-2">
+                <Badge className={`${getTypeColor(message.type)} text-white`}>{message.type.toUpperCase()}</Badge>
+                {message.event && <Badge variant="outline">{message.event}</Badge>}
+                <span className="text-muted-foreground ml-auto text-xs">{formatTimestamp(message.timestamp)}</span>
               </div>
               {message.event && (
                 <div className="mb-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Event:
-                  </span>
-                  <span className="text-sm font-mono ml-2">
-                    {message.event}
-                  </span>
+                  <span className="text-muted-foreground text-xs font-medium">Event:</span>
+                  <span className="ml-2 font-mono text-sm">{message.event}</span>
                 </div>
               )}
-              <pre className="text-sm font-mono bg-background p-2 rounded border overflow-auto">
+              <pre className="bg-background overflow-auto rounded border p-2 font-mono text-sm">
                 <code>{formatData(message.data)}</code>
               </pre>
             </div>

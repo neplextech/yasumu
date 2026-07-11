@@ -1,20 +1,15 @@
 import { type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
-import {
-  YasumuSchemaParsable,
-  type YasumuSchemaParsableToType,
-} from './parsable.js';
 import { YasumuSchemaTokenTypes } from '../tokens.js';
+import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
 
-export type _YasumuSchemaParsableRecordReturn<
-  T extends YasumuSchemaParsable<unknown>,
-> = {
+export type _YasumuSchemaParsableRecordReturn<T extends YasumuSchemaParsable<unknown>> = {
   [K: string]: YasumuSchemaParsableToType<T>;
 };
 
-export class YasumuSchemaParsableRecord<
-  E extends YasumuSchemaParsable<unknown>,
-> extends YasumuSchemaParsable<_YasumuSchemaParsableRecordReturn<E>> {
+export class YasumuSchemaParsableRecord<E extends YasumuSchemaParsable<unknown>> extends YasumuSchemaParsable<
+  _YasumuSchemaParsableRecordReturn<E>
+> {
   constructor(public readonly expect: E) {
     super();
   }
@@ -27,10 +22,7 @@ export class YasumuSchemaParsableRecord<
     const object: Record<string, any> = {};
     const keys = new Set(Object.keys(this.expect));
     parser.consume(YasumuSchemaTokenTypes.LEFT_CURLY_BRACKET);
-    while (
-      !parser.isEOF() &&
-      !parser.check(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET)
-    ) {
+    while (!parser.isEOF() && !parser.check(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET)) {
       const identifier = parser.consume(YasumuSchemaTokenTypes.IDENTIFIER);
       parser.consume(YasumuSchemaTokenTypes.COLON);
       const value = this.expect.parse(parser);
@@ -45,10 +37,7 @@ export class YasumuSchemaParsableRecord<
     return typeof value === 'object';
   }
 
-  serialize(
-    serializer: YasumuSchemaSerializer,
-    value: _YasumuSchemaParsableRecordReturn<E>,
-  ) {
+  serialize(serializer: YasumuSchemaSerializer, value: _YasumuSchemaParsableRecordReturn<E>) {
     const keys = Object.keys(value);
     if (keys.length === 0) {
       return '{}';

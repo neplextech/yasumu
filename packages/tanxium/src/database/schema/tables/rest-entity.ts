@@ -1,11 +1,9 @@
-import { KeyValuePair } from '@/common/types.ts';
-import { commonColumns, json } from '../../common/index.ts';
+import { RestEntityMetadata, RestEntityRequestBody, YasumuEmbeddedScript } from '@yasumu/common';
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import {
-  RestEntityMetadata,
-  RestEntityRequestBody,
-  YasumuEmbeddedScript,
-} from '@yasumu/common';
+
+import { KeyValuePair } from '@/common/types.ts';
+
+import { commonColumns, json } from '../../common/index.ts';
 import { entityGroups } from './entity-group.ts';
 import { workspaces } from './workspaces.ts';
 
@@ -17,9 +15,7 @@ export const restEntities = sqliteTable('rest_entity', {
     .references(() => workspaces.id, { onDelete: 'cascade' }),
   method: text('method').notNull(),
   url: text('url'),
-  requestParameters: json<KeyValuePair[]>('requestParameters').$default(
-    () => [],
-  ),
+  requestParameters: json<KeyValuePair[]>('requestParameters').$default(() => []),
   searchParameters: json<KeyValuePair[]>('searchParameters').$default(() => []),
   requestHeaders: json<KeyValuePair[]>('requestHeaders').$default(() => []),
   requestBody: json<RestEntityRequestBody>('requestBody'),

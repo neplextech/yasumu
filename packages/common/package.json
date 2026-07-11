@@ -1,16 +1,19 @@
 {
   "name": "@yasumu/common",
-  "type": "module",
-  "description": "Yasumu common module",
   "version": "0.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "Yasumu common module",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsc"
-  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     "deno": "./src/index.ts",
     "bun": "./src/index.ts",
@@ -20,11 +23,8 @@
     "default": "./dist/index.js",
     "require": "./dist/index.js"
   },
-  "license": "AGPL-3.0",
-  "author": "Neplex",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/neplextech/yasumu.git"
+  "scripts": {
+    "build": "tsc"
   },
   "devDependencies": {
     "@yasumu/shared": "workspace:*",

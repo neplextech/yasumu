@@ -1,11 +1,9 @@
 'use client';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import React from 'react';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@yasumu/ui/components/resizable';
+
 import { YasumuLayout } from '@/lib/constants/layout';
+
 import { useAppLayout } from '../providers/app-layout-provider';
 
 export function ResizableApplicationLayout({

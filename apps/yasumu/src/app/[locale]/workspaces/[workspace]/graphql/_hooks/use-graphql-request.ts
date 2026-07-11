@@ -1,28 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  useActiveWorkspace,
-  useYasumu,
-} from '@/components/providers/workspace-provider';
-import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
-import {
-  GraphqlRequestController,
-  GraphqlResponse,
-} from '../_lib/graphql-request';
-import type {
-  GraphqlEntityData,
-  GraphqlScriptContext,
-  TestResult,
-} from '@yasumu/core';
-import { getGraphqlBodyValue } from './use-graphql-entity';
+import type { GraphqlEntityData, GraphqlScriptContext, TestResult } from '@yasumu/core';
 import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
+import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
 import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
-function extractTestResultsFromResponse(
-  response: GraphqlResponse,
-): TestResult[] {
+import { GraphqlRequestController, GraphqlResponse } from '../_lib/graphql-request';
+import { getGraphqlBodyValue } from './use-graphql-entity';
+
+function extractTestResultsFromResponse(response: GraphqlResponse): TestResult[] {
   return response.testResults ?? [];
 }
 
@@ -35,14 +25,7 @@ export type RequestPhase =
   | 'error'
   | 'cancelled';
 
-export type ScriptOutputType =
-  | 'info'
-  | 'success'
-  | 'error'
-  | 'warning'
-  | 'test-pass'
-  | 'test-fail'
-  | 'test-skip';
+export type ScriptOutputType = 'info' | 'success' | 'error' | 'warning' | 'test-pass' | 'test-fail' | 'test-skip';
 
 export interface ScriptOutputEntry {
   message: string;
@@ -77,9 +60,7 @@ const INITIAL_STATE: RequestState = {
   testResults: [],
 };
 
-export function useGraphqlRequest({
-  entityId,
-}: UseGraphqlRequestOptions): UseGraphqlRequestReturn {
+export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGraphqlRequestReturn {
   const workspace = useActiveWorkspace();
   const { echoServerPort } = useYasumu();
   const { interpolate } = useEnvironmentStore();
@@ -96,18 +77,12 @@ export function useGraphqlRequest({
 
   const graphql = workspace.graphql;
 
-  const appendScriptOutput = useCallback(
-    (message: string, type: ScriptOutputType = 'info') => {
-      setState((prev) => ({
-        ...prev,
-        scriptOutput: [
-          ...prev.scriptOutput,
-          { message, type, timestamp: Date.now() },
-        ],
-      }));
-    },
-    [],
-  );
+  const appendScriptOutput = useCallback((message: string, type: ScriptOutputType = 'info') => {
+    setState((prev) => ({
+      ...prev,
+      scriptOutput: [...prev.scriptOutput, { message, type, timestamp: Date.now() }],
+    }));
+  }, []);
 
   const execute = useCallback(
     async (_entity: GraphqlEntityData) => {
@@ -155,12 +130,8 @@ export function useGraphqlRequest({
           .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
       );
       const bodyValue = getGraphqlBodyValue(entity.requestBody);
-      const interpolatedQuery = bodyValue.query
-        ? interpolateValue(bodyValue.query)
-        : '';
-      const interpolatedVariables = bodyValue.variables
-        ? interpolateValue(bodyValue.variables)
-        : null;
+      const interpolatedQuery = bodyValue.query ? interpolateValue(bodyValue.query) : '';
+      const interpolatedVariables = bodyValue.variables ? interpolateValue(bodyValue.variables) : null;
 
       let currentContext: GraphqlScriptContext = {
         environment: selectedEnvironment?.toJSON() ?? null,
@@ -190,11 +161,7 @@ export function useGraphqlRequest({
           appendScriptOutput('[Pre-Request] Executing script...', 'info');
 
           try {
-            const result = await graphql.executeScript(
-              entityId,
-              entity.script,
-              currentContext,
-            );
+            const result = await graphql.executeScript(entityId, entity.script, currentContext);
 
             if (result.result.success) {
               currentContext = result.context;
@@ -202,10 +169,7 @@ export function useGraphqlRequest({
               interpolatedUrl = currentContext.request.url;
               interpolatedHeaders = currentContext.request.headers;
 
-              appendScriptOutput(
-                '[Pre-Request] Script completed successfully',
-                'success',
-              );
+              appendScriptOutput('[Pre-Request] Script completed successfully', 'success');
 
               if (result.result.result) {
                 const mockData = result.result.result as {
@@ -214,10 +178,7 @@ export function useGraphqlRequest({
                   headers: Record<string, string>;
                   body: unknown;
                 };
-                const bodyStr =
-                  typeof mockData.body === 'string'
-                    ? mockData.body
-                    : JSON.stringify(mockData.body);
+                const bodyStr = typeof mockData.body === 'string' ? mockData.body : JSON.stringify(mockData.body);
                 mockResponse = {
                   status: mockData.status,
                   statusText: mockData.statusText,
@@ -229,16 +190,10 @@ export function useGraphqlRequest({
                   size: new Blob([bodyStr]).size,
                   testResults: [],
                 };
-                appendScriptOutput(
-                  '[Pre-Request] Mock response returned, skipping HTTP request',
-                  'warning',
-                );
+                appendScriptOutput('[Pre-Request] Mock response returned, skipping HTTP request', 'warning');
               }
             } else {
-              appendScriptOutput(
-                `[Pre-Request] Script failed: ${result.result.error}`,
-                'error',
-              );
+              appendScriptOutput(`[Pre-Request] Script failed: ${result.result.error}`, 'error');
             }
           } catch (err) {
             appendScriptOutput(
@@ -309,17 +264,10 @@ export function useGraphqlRequest({
           };
 
           try {
-            const result = await graphql.executeScript(
-              entityId,
-              entity.script,
-              responseContext,
-            );
+            const result = await graphql.executeScript(entityId, entity.script, responseContext);
 
             if (result.result.success) {
-              appendScriptOutput(
-                '[Post-Response] Script completed successfully',
-                'success',
-              );
+              appendScriptOutput('[Post-Response] Script completed successfully', 'success');
 
               if (selectedEnvironment && result.context.environment) {
                 const envData = result.context.environment;
@@ -335,10 +283,7 @@ export function useGraphqlRequest({
                 });
               }
             } else {
-              appendScriptOutput(
-                `[Post-Response] Script failed: ${result.result.error}`,
-                'error',
-              );
+              appendScriptOutput(`[Post-Response] Script failed: ${result.result.error}`, 'error');
             }
           } catch (err) {
             appendScriptOutput(
@@ -362,11 +307,7 @@ export function useGraphqlRequest({
           };
 
           try {
-            const testResult = await graphql.executeTest(
-              entityId,
-              entity.script,
-              testContext,
-            );
+            const testResult = await graphql.executeTest(entityId, entity.script, testContext);
 
             if (testResult.result.success) {
               const results = testResult.result.result as {
@@ -377,35 +318,19 @@ export function useGraphqlRequest({
                   ...prev,
                   testResults: results.testResults,
                 }));
-                const passed = results.testResults.filter(
-                  (r) => r.result === 'pass',
-                ).length;
-                const failed = results.testResults.filter(
-                  (r) => r.result === 'fail',
-                ).length;
-                const skipped = results.testResults.filter(
-                  (r) => r.result === 'skip',
-                ).length;
+                const passed = results.testResults.filter((r) => r.result === 'pass').length;
+                const failed = results.testResults.filter((r) => r.result === 'fail').length;
+                const skipped = results.testResults.filter((r) => r.result === 'skip').length;
 
                 if (failed > 0) {
-                  appendScriptOutput(
-                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
-                    'test-fail',
-                  );
+                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-fail');
                 } else if (skipped > 0 && passed === 0) {
-                  appendScriptOutput(
-                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
-                    'test-skip',
-                  );
+                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-skip');
                 } else {
-                  appendScriptOutput(
-                    `[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`,
-                    'test-pass',
-                  );
+                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-pass');
                 }
               } else {
-                const responseTestResults =
-                  extractTestResultsFromResponse(response);
+                const responseTestResults = extractTestResultsFromResponse(response);
 
                 if (responseTestResults.length > 0) {
                   setState((prev) => ({
@@ -421,28 +346,18 @@ export function useGraphqlRequest({
                 }
               }
             } else {
-              appendScriptOutput(
-                `[Test] Failed: ${testResult.result.error}`,
-                'error',
-              );
+              appendScriptOutput(`[Test] Failed: ${testResult.result.error}`, 'error');
             }
           } catch (err) {
-            appendScriptOutput(
-              `[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-              'error',
-            );
+            appendScriptOutput(`[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
 
-            const responseTestResults =
-              extractTestResultsFromResponse(response);
+            const responseTestResults = extractTestResultsFromResponse(response);
             if (responseTestResults.length > 0) {
               setState((prev) => ({
                 ...prev,
                 testResults: responseTestResults,
               }));
-              appendScriptOutput(
-                `[Test] Loaded ${responseTestResults.length} test result(s) from response`,
-                'info',
-              );
+              appendScriptOutput(`[Test] Loaded ${responseTestResults.length} test result(s) from response`, 'info');
             }
           }
         } else {
@@ -452,10 +367,7 @@ export function useGraphqlRequest({
               ...prev,
               testResults: responseTestResults,
             }));
-            appendScriptOutput(
-              `[Test] Loaded ${responseTestResults.length} test result(s) from response`,
-              'info',
-            );
+            appendScriptOutput(`[Test] Loaded ${responseTestResults.length} test result(s) from response`, 'info');
           }
         }
 
@@ -482,15 +394,7 @@ export function useGraphqlRequest({
         }
       }
     },
-    [
-      entityId,
-      workspace,
-      echoServerPort,
-      interpolate,
-      appendScriptOutput,
-      selectedEnvironment,
-      queryClient,
-    ],
+    [entityId, workspace, echoServerPort, interpolate, appendScriptOutput, selectedEnvironment, queryClient],
   );
 
   const cancel = useCallback(() => {

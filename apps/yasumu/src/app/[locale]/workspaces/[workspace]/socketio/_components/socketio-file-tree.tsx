@@ -1,6 +1,7 @@
 'use client';
-import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
 import { SiSocketdotio } from 'react-icons/si';
+
+import { FileTreeItem, FileTreeSidebar } from '@/components/sidebars/file-tree';
 
 const FILE_TREE_ITEMS: FileTreeItem[] = [
   {
@@ -48,7 +49,7 @@ export function SocketioFileTree() {
   return (
     <FileTreeSidebar
       fileTree={FILE_TREE_ITEMS}
-      className="font-sans w-full"
+      className="w-full font-sans"
       collapsible="none"
       onFileCreate={() => {}}
     />

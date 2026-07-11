@@ -1,16 +1,10 @@
 'use client';
 
-import { Checkbox } from '@yasumu/ui/components/checkbox';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
-import { Trash, Plus } from 'lucide-react';
 import { Button } from '@yasumu/ui/components/button';
+import { Checkbox } from '@yasumu/ui/components/checkbox';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
+import { Trash, Plus } from 'lucide-react';
+
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
 
 export interface KeyValuePair {
@@ -20,43 +14,26 @@ export interface KeyValuePair {
   onChange?: (pair: KeyValuePair) => void;
 }
 
-export default function KeyValueTable(props: {
-  onChange?: (pairs: KeyValuePair[]) => void;
-  pairs?: KeyValuePair[];
-}) {
+export default function KeyValueTable(props: { onChange?: (pairs: KeyValuePair[]) => void; pairs?: KeyValuePair[] }) {
   const { renderVariablePopover } = useVariablePopover();
-  const pairs = props.pairs?.length
-    ? props.pairs
-    : [{ key: '', value: '', enabled: true }];
+  const pairs = props.pairs?.length ? props.pairs : [{ key: '', value: '', enabled: true }];
 
   const updatePairs = (newPairs: KeyValuePair[]) => {
     props.onChange?.(newPairs);
   };
 
   const addNewPair = (index = pairs.length) => {
-    const newPairs = [
-      ...pairs.slice(0, index),
-      { key: '', value: '', enabled: true },
-      ...pairs.slice(index),
-    ];
+    const newPairs = [...pairs.slice(0, index), { key: '', value: '', enabled: true }, ...pairs.slice(index)];
     updatePairs(newPairs);
   };
 
   const deletePair = (index: number) => {
     const newPairs = pairs.filter((_, i) => i !== index);
-    updatePairs(
-      newPairs.length ? newPairs : [{ key: '', value: '', enabled: true }],
-    );
+    updatePairs(newPairs.length ? newPairs : [{ key: '', value: '', enabled: true }]);
   };
 
-  const updatePair = (
-    index: number,
-    field: keyof KeyValuePair,
-    value: string | boolean,
-  ) => {
-    const newPairs = pairs.map((pair, i) =>
-      i === index ? { ...pair, [field]: value } : pair,
-    );
+  const updatePair = (index: number, field: keyof KeyValuePair, value: string | boolean) => {
+    const newPairs = pairs.map((pair, i) => (i === index ? { ...pair, [field]: value } : pair));
     updatePairs(newPairs);
   };
 
@@ -115,16 +92,9 @@ export default function KeyValueTable(props: {
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     checked={pair.enabled}
-                    onCheckedChange={(checked) =>
-                      updatePair(i, 'enabled', checked === true)
-                    }
+                    onCheckedChange={(checked) => updatePair(i, 'enabled', checked === true)}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deletePair(i)}
-                    disabled={pairs.length === 1}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => deletePair(i)} disabled={pairs.length === 1}>
                     <Trash className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
@@ -133,11 +103,7 @@ export default function KeyValueTable(props: {
           ))}
         </TableBody>
       </Table>
-      <Button
-        variant="link"
-        onClick={() => addNewPair()}
-        className="text-sm p-0 h-auto font-normal"
-      >
+      <Button variant="link" onClick={() => addNewPair()} className="h-auto p-0 text-sm font-normal">
         <Plus className="mr-1 h-3 w-3" /> Add new row
       </Button>
     </div>

@@ -1,20 +1,19 @@
 'use client';
 
-import {
-  useYasumu,
-  useActiveWorkspace,
-} from '../../providers/workspace-provider';
 import { useQuery } from '@tanstack/react-query';
-import { LuMail, LuRadio, LuServer } from 'react-icons/lu';
-import { ServerStatus } from './server-status';
-import { ConsoleButton } from './console-button';
-import { ConsoleSheet } from './console-sheet';
 import { useEffect, useEffectEvent } from 'react';
+import { LuMail, LuRadio, LuServer } from 'react-icons/lu';
 import { LuPlugZap } from 'react-icons/lu';
+
 import { trackEvent } from '@/lib/instrumentation/analytics';
 
+import { useYasumu, useActiveWorkspace } from '../../providers/workspace-provider';
+import { ConsoleButton } from './console-button';
+import { ConsoleSheet } from './console-sheet';
+import { ServerStatus } from './server-status';
+
 function StatusBarDivider() {
-  return <div className="w-px h-3 bg-border" />;
+  return <div className="bg-border h-3 w-px" />;
 }
 
 export function StatusBar() {
@@ -45,38 +44,21 @@ export function StatusBar() {
     <>
       <div
         data-id="yasumu-status-bar"
-        className="h-[22px] flex items-center justify-between bg-background border-t select-none shrink-0 text-xs"
+        className="bg-background flex h-[22px] shrink-0 items-center justify-between border-t text-xs select-none"
       >
-        <div className="flex items-center h-full">
-          <ServerStatus
-            label="RPC Server"
-            port={port}
-            icon={LuServer}
-            active={!!port}
-          />
+        <div className="flex h-full items-center">
+          <ServerStatus label="RPC Server" port={port} icon={LuServer} active={!!port} />
           <StatusBarDivider />
-          <ServerStatus
-            label="Echo Server"
-            port={echoServerPort}
-            icon={LuRadio}
-            active={!!echoServerPort}
-          />
+          <ServerStatus label="Echo Server" port={echoServerPort} icon={LuRadio} active={!!echoServerPort} />
           <StatusBarDivider />
-          <ServerStatus
-            label="SMTP Server"
-            port={smtpPort ?? null}
-            icon={LuMail}
-            active={!!smtpPort}
-          />
+          <ServerStatus label="SMTP Server" port={smtpPort ?? null} icon={LuMail} active={!!smtpPort} />
           <StatusBarDivider />
           <ServerStatus
             label="MCP Server"
             port={mcpServerPort}
             icon={LuPlugZap}
             active={!!mcpServerPort}
-            href={
-              mcpServerPort ? `http://127.0.0.1:${mcpServerPort}` : undefined
-            }
+            href={mcpServerPort ? `http://127.0.0.1:${mcpServerPort}` : undefined}
             onOpen={() =>
               trackEvent('mcp_status_opened', {
                 port_available: !!mcpServerPort,
@@ -84,7 +66,7 @@ export function StatusBar() {
             }
           />
         </div>
-        <div className="flex items-center h-full">
+        <div className="flex h-full items-center">
           <ConsoleButton />
         </div>
       </div>

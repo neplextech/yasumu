@@ -1,24 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
 import { Button } from '@yasumu/ui/components/button';
-import { Input } from '@yasumu/ui/components/input';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
+import { Input } from '@yasumu/ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { Trash, Plus } from 'lucide-react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
+import { useCallback, useMemo, useState } from 'react';
+
 import { TextEditor } from '@/components/editors';
 
 interface VariableEntry {
@@ -35,11 +24,7 @@ interface VariablesEditorProps {
 function parseVariablesToEntries(json: string): VariableEntry[] {
   try {
     const parsed = JSON.parse(json);
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-    ) {
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
       return Object.entries(parsed).map(([key, value]) => ({
         key,
         value: typeof value === 'string' ? value : JSON.stringify(value),
@@ -68,9 +53,7 @@ function entriesToJson(entries: VariableEntry[]): string {
 
 export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
   const [mode, setMode] = useState<'table' | 'json'>('table');
-  const [entries, setEntries] = useState<VariableEntry[]>(() =>
-    parseVariablesToEntries(variables),
-  );
+  const [entries, setEntries] = useState<VariableEntry[]>(() => parseVariablesToEntries(variables));
 
   const handleTableChange = useCallback(
     (newEntries: VariableEntry[]) => {
@@ -106,46 +89,34 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
   const removeEntry = useCallback(
     (index: number) => {
       const newEntries = entries.filter((_, i) => i !== index);
-      handleTableChange(
-        newEntries.length
-          ? newEntries
-          : [{ key: '', value: '', enabled: true }],
-      );
+      handleTableChange(newEntries.length ? newEntries : [{ key: '', value: '', enabled: true }]);
     },
     [entries, handleTableChange],
   );
 
   const updateEntry = useCallback(
     (index: number, field: keyof VariableEntry, value: string | boolean) => {
-      const newEntries = entries.map((entry, i) =>
-        i === index ? { ...entry, [field]: value } : entry,
-      );
+      const newEntries = entries.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry));
       handleTableChange(newEntries);
     },
     [entries, handleTableChange],
   );
 
   return (
-    <Tabs
-      value={mode}
-      onValueChange={handleModeSwitch}
-      className="h-full flex flex-col min-h-0"
-    >
-      <div className="flex items-center justify-between shrink-0">
-        <span className="text-sm text-muted-foreground font-medium">
-          Variables
-        </span>
+    <Tabs value={mode} onValueChange={handleModeSwitch} className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-between">
+        <span className="text-muted-foreground text-sm font-medium">Variables</span>
         <TabsList className="h-8">
-          <TabsTrigger value="table" className="text-xs px-3 h-6">
+          <TabsTrigger value="table" className="h-6 px-3 text-xs">
             Table
           </TabsTrigger>
-          <TabsTrigger value="json" className="text-xs px-3 h-6">
+          <TabsTrigger value="json" className="h-6 px-3 text-xs">
             JSON
           </TabsTrigger>
         </TabsList>
       </div>
 
-      <TabsContent value="table" className="flex-1 min-h-0 mt-2">
+      <TabsContent value="table" className="mt-2 min-h-0 flex-1">
         <div className="space-y-2">
           <Table className="border">
             <TableHeader>
@@ -162,64 +133,48 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
                   <TableCell>
                     <Checkbox
                       checked={entry.enabled}
-                      onCheckedChange={(checked) =>
-                        updateEntry(index, 'enabled', checked === true)
-                      }
+                      onCheckedChange={(checked) => updateEntry(index, 'enabled', checked === true)}
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       value={entry.key}
-                      onChange={(e) =>
-                        updateEntry(index, 'key', e.target.value)
-                      }
+                      onChange={(e) => updateEntry(index, 'key', e.target.value)}
                       placeholder="key"
-                      className="font-mono text-sm h-8"
+                      className="h-8 font-mono text-sm"
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       value={entry.value}
-                      onChange={(e) =>
-                        updateEntry(index, 'value', e.target.value)
-                      }
+                      onChange={(e) => updateEntry(index, 'value', e.target.value)}
                       placeholder="value"
-                      className="font-mono text-sm h-8"
+                      className="h-8 font-mono text-sm"
                     />
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => removeEntry(index)}
-                    >
-                      <Trash className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeEntry(index)}>
+                      <Trash className="text-muted-foreground h-3.5 w-3.5" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addEntry}
-            className="gap-1"
-          >
+          <Button variant="outline" size="sm" onClick={addEntry} className="gap-1">
             <Plus className="h-3.5 w-3.5" />
             Add Variable
           </Button>
         </div>
       </TabsContent>
 
-      <TabsContent value="json" className="flex-1 min-h-0 mt-2">
+      <TabsContent value="json" className="mt-2 min-h-0 flex-1">
         <TextEditor
           value={variables}
           onChange={handleJsonChange}
           language="json"
           placeholder={
-            <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
+            <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
               <pre className="font-mono text-sm whitespace-pre-wrap">{`{
   "userId": "123",
   "limit": 10

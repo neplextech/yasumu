@@ -1,7 +1,3 @@
-import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { and, eq, isNull } from 'drizzle-orm';
-import { entityHistory, graphqlEntities } from '@/database/schema.ts';
 import {
   ExecutableScript,
   GraphqlEntityCreateOptions,
@@ -9,9 +5,15 @@ import {
   GraphqlScriptContext,
   ScriptExecutionResult,
 } from '@yasumu/common';
+import { Injectable } from '@yasumu/den';
+import { and, eq, isNull } from 'drizzle-orm';
+
+import { entityHistory, graphqlEntities } from '@/database/schema.ts';
+
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
-import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
+import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { ScriptRuntimeService } from '../script-runtime/script-runtime.service.ts';
 import { GRAPHQL_CONTEXT_TYPE } from './graphql-script-preload.ts';
 
@@ -33,10 +35,7 @@ export class GraphqlService {
   public async list(workspaceId: string) {
     const db = this.connection.getConnection();
 
-    const result = await db
-      .select()
-      .from(graphqlEntities)
-      .where(eq(graphqlEntities.workspaceId, workspaceId));
+    const result = await db.select().from(graphqlEntities).where(eq(graphqlEntities.workspaceId, workspaceId));
 
     return result;
   }
@@ -47,12 +46,7 @@ export class GraphqlService {
     const result = await db
       .select()
       .from(graphqlEntities)
-      .where(
-        and(
-          eq(graphqlEntities.workspaceId, workspaceId),
-          isNull(graphqlEntities.groupId),
-        ),
-      );
+      .where(and(eq(graphqlEntities.workspaceId, workspaceId), isNull(graphqlEntities.groupId)));
 
     return result;
   }
@@ -63,17 +57,10 @@ export class GraphqlService {
     const [result] = await db
       .select()
       .from(graphqlEntities)
-      .where(
-        and(
-          eq(graphqlEntities.workspaceId, workspaceId),
-          eq(graphqlEntities.id, id),
-        ),
-      );
+      .where(and(eq(graphqlEntities.workspaceId, workspaceId), eq(graphqlEntities.id, id)));
 
     if (!result) {
-      throw new NotFoundException(
-        `Graphql entity ${id} for workspace ${workspaceId} not found`,
-      );
+      throw new NotFoundException(`Graphql entity ${id} for workspace ${workspaceId} not found`);
     }
 
     return result;
@@ -102,10 +89,7 @@ export class GraphqlService {
     return result;
   }
 
-  public async createBulk(
-    workspaceId: string,
-    items: GraphqlEntityCreateOptions[],
-  ) {
+  public async createBulk(workspaceId: string, items: GraphqlEntityCreateOptions[]) {
     const db = this.connection.getConnection();
 
     if (items.length === 0) return [];
@@ -129,22 +113,13 @@ export class GraphqlService {
     return results;
   }
 
-  public async update(
-    workspaceId: string,
-    id: string,
-    data: Partial<GraphqlEntityUpdateOptions>,
-  ) {
+  public async update(workspaceId: string, id: string, data: Partial<GraphqlEntityUpdateOptions>) {
     const db = this.connection.getConnection();
 
     const [result] = await db
       .update(graphqlEntities)
       .set(data)
-      .where(
-        and(
-          eq(graphqlEntities.id, id),
-          eq(graphqlEntities.workspaceId, workspaceId),
-        ),
-      )
+      .where(and(eq(graphqlEntities.id, id), eq(graphqlEntities.workspaceId, workspaceId)))
       .returning();
 
     if (data.name !== undefined || data.groupId !== undefined) {
@@ -159,22 +134,12 @@ export class GraphqlService {
 
     await db
       .delete(graphqlEntities)
-      .where(
-        and(
-          eq(graphqlEntities.id, id),
-          eq(graphqlEntities.workspaceId, workspaceId),
-        ),
-      );
+      .where(and(eq(graphqlEntities.id, id), eq(graphqlEntities.workspaceId, workspaceId)));
 
     // Delete associated history entry
     await db
       .delete(entityHistory)
-      .where(
-        and(
-          eq(entityHistory.entityId, id),
-          eq(entityHistory.workspaceId, workspaceId),
-        ),
-      );
+      .where(and(eq(entityHistory.entityId, id), eq(entityHistory.workspaceId, workspaceId)));
 
     await this.dispatchUpdate(workspaceId);
 

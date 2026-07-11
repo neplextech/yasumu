@@ -2,8 +2,10 @@
 
 import { Button } from '@yasumu/ui/components/button';
 import { Loader2 } from 'lucide-react';
-import HttpMethodSelector from '../http-methods-selector';
+
 import { InteropableInput } from '@/components/inputs';
+
+import HttpMethodSelector from '../http-methods-selector';
 
 interface RequestUrlBarProps {
   method: string;
@@ -36,9 +38,9 @@ export function RequestUrlBar({
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex items-center gap-2">
       <HttpMethodSelector onChange={onMethodChange} value={method} />
-      <div className="flex-1 relative">
+      <div className="relative flex-1">
         <InteropableInput
           placeholder="Enter a URL (e.g., https://api.example.com/users)"
           value={url}
@@ -49,25 +51,17 @@ export function RequestUrlBar({
           disabled={isSending}
         />
         {isSaving && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="absolute top-1/2 right-2 -translate-y-1/2">
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
           </div>
         )}
       </div>
       {isSending ? (
-        <Button
-          onClick={onCancel}
-          variant="destructive"
-          className="min-w-[100px]"
-        >
+        <Button onClick={onCancel} variant="destructive" className="min-w-[100px]">
           Cancel
         </Button>
       ) : (
-        <Button
-          onClick={onSend}
-          disabled={!url.trim()}
-          className="min-w-[100px]"
-        >
+        <Button onClick={onSend} disabled={!url.trim()} className="min-w-[100px]">
           Send
         </Button>
       )}

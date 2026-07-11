@@ -1,7 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import dynamic from 'next/dynamic';
 
 const PdfDocument = dynamic(() => import('./pdf-document'), { ssr: false });
 

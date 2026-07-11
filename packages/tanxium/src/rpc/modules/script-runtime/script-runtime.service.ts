@@ -1,20 +1,11 @@
+import { ExecutableScript, ScriptExecutionResult, YasumuScriptingLanguage } from '@yasumu/common';
 import { Injectable } from '@yasumu/den';
-import {
-  ExecutableScript,
-  ScriptExecutionResult,
-  YasumuScriptingLanguage,
-} from '@yasumu/common';
-import {
-  getGlobalScriptWorker,
-  terminateGlobalScriptWorker,
-} from '../../../workers/script-worker-manager.ts';
+
+import { getGlobalScriptWorker, terminateGlobalScriptWorker } from '../../../workers/script-worker-manager.ts';
 
 @Injectable()
 export class ScriptRuntimeService {
-  public async publishEvent<T = unknown>(
-    event: string,
-    data: T,
-  ): Promise<void> {
+  public async publishEvent<T = unknown>(event: string, data: T): Promise<void> {
     const worker = getGlobalScriptWorker();
     await worker.publishMessage(event, data);
   }
@@ -30,18 +21,10 @@ export class ScriptRuntimeService {
 
     const worker = getGlobalScriptWorker();
 
-    const moduleKey = worker.registerModule(
-      `${workspaceId}/${entity.entityId}`,
-      entity.script.code,
-    );
+    const moduleKey = worker.registerModule(`${workspaceId}/${entity.entityId}`, entity.script.code);
 
     try {
-      const response = await worker.execute<Context>(
-        moduleKey,
-        entity.invocationTarget,
-        contextType,
-        entity.context,
-      );
+      const response = await worker.execute<Context>(moduleKey, entity.invocationTarget, contextType, entity.context);
 
       return {
         context: response.context,

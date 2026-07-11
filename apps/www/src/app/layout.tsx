@@ -1,10 +1,11 @@
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/next';
+
 import '@yasumu/ui/globals.css';
 import './styles.css';
-import Navbar from '../components/navbar';
 import Footer from '../components/footer';
+import Navbar from '../components/navbar';
 
 const inter = Inter({
   variable: '--font-sans',
@@ -18,8 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Yasumu - The Modern API Laboratory',
-  description:
-    'A modern, free, and open-source API laboratory for designing and testing API workflows.',
+  description: 'A modern, free, and open-source API laboratory for designing and testing API workflows.',
   openGraph: {
     images: '/logo-dark-glow.png',
   },
@@ -52,12 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      suppressContentEditableWarning
-      className="dark"
-    >
+    <html lang="en" suppressHydrationWarning suppressContentEditableWarning className="dark">
       <head>
         <link rel="icon" href="/logo-dark-glow.png" />
         <link
@@ -66,9 +61,9 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-background-dark text-gray-100 font-sans selection:bg-primary selection:text-white`}
+        className={`${inter.variable} ${jetbrainsMono.variable} bg-background-dark selection:bg-primary font-sans text-gray-100 antialiased selection:text-white`}
       >
-        <div className="min-h-screen flex flex-col relative">
+        <div className="relative flex min-h-screen flex-col">
           <Navbar />
           <main className="grow">{children}</main>
           <Footer />

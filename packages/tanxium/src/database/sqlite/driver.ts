@@ -1,5 +1,7 @@
+import { Buffer } from 'node:buffer';
 // taken from https://github.com/mizchi/drizzle-orm/blob/256aae13b624eeb260e6530f4dd38c1308898a1f/drizzle-orm/src/node-sqlite/driver.ts
 import { DatabaseSync, type DatabaseSyncOptions } from 'node:sqlite';
+
 import {
   entityKind,
   DefaultLogger,
@@ -12,20 +14,16 @@ import {
   isConfig,
 } from 'drizzle-orm';
 import { BaseSQLiteDatabase, SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
+
 import { NodeSQLiteSession } from './session.ts';
-import { Buffer } from 'node:buffer';
 
 type NodeSQLitePath = string | Buffer | URL;
 type NodeSQLiteOptions = DatabaseSyncOptions;
-export type DrizzleNodeSQLiteConfig =
-  | ({ path: NodeSQLitePath } & NodeSQLiteOptions)
-  | NodeSQLitePath
-  | undefined;
+export type DrizzleNodeSQLiteConfig = ({ path: NodeSQLitePath } & NodeSQLiteOptions) | NodeSQLitePath | undefined;
 
 export class NodeSQLiteDatabase<
   TFullSchema extends Record<string, unknown> = Record<string, never>, // Full schema definition
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>, // Relational schema derived from Full schema
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>, // Relational schema derived from Full schema
 > extends BaseSQLiteDatabase<
   'sync',
   { changes: number | bigint; lastInsertRowid: number | bigint },
@@ -37,8 +35,7 @@ export class NodeSQLiteDatabase<
 
 function construct<
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >(
   client: DatabaseSync,
   config: DrizzleConfig<TFullSchema> = {}, // Config uses TFullSchema
@@ -55,28 +52,17 @@ function construct<
 
   let relationalSchema: RelationalSchemaConfig<TSchema> | undefined;
   if (config.schema) {
-    const tablesConfig = extractTablesRelationalConfig(
-      config.schema,
-      createTableRelationsHelpers,
-    );
+    const tablesConfig = extractTablesRelationalConfig(config.schema, createTableRelationsHelpers);
     relationalSchema = {
       fullSchema: config.schema,
       schema: tablesConfig.tables as TSchema,
       tableNamesMap: tablesConfig.tableNamesMap,
     };
   }
-  const session = new NodeSQLiteSession<TFullSchema, TSchema>(
-    client,
-    dialect,
-    relationalSchema,
-    { logger },
-  );
-  const db = new NodeSQLiteDatabase<TFullSchema, TSchema>(
-    'sync',
-    dialect,
-    session,
-    relationalSchema,
-  );
+  const session = new NodeSQLiteSession<TFullSchema, TSchema>(client, dialect, relationalSchema, {
+    logger,
+  });
+  const db = new NodeSQLiteDatabase<TFullSchema, TSchema>('sync', dialect, session, relationalSchema);
   // deno-lint-ignore no-explicit-any
   (<any>db).$client = client;
 
@@ -87,8 +73,7 @@ function construct<
 
 export function drizzle<
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >(
   ...params:
     | []
@@ -129,30 +114,20 @@ export function drizzle<
 
     if (connection && typeof connection === 'object' && 'path' in connection) {
       const { path, ...options } = connection;
-      return construct(
-        new DatabaseSync((path ?? ':memory:') as string, options),
-        drizzleConfig,
-      );
+      return construct(new DatabaseSync((path ?? ':memory:') as string, options), drizzleConfig);
     } else {
-      return construct(
-        new DatabaseSync((connection ?? ':memory:') as string),
-        drizzleConfig,
-      );
+      return construct(new DatabaseSync((connection ?? ':memory:') as string), drizzleConfig);
     }
   }
 
-  return construct(
-    params[0] as DatabaseSync,
-    params[1] as DrizzleConfig<TFullSchema> | undefined,
-  );
+  return construct(params[0] as DatabaseSync, params[1] as DrizzleConfig<TFullSchema> | undefined);
 }
 
 // deno-lint-ignore no-namespace
 export namespace drizzle {
   export function mock<
     TFullSchema extends Record<string, unknown> = Record<string, never>,
-    TSchema extends TablesRelationalConfig =
-      ExtractTablesWithRelations<TFullSchema>,
+    TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
   >(
     config?: DrizzleConfig<TFullSchema>,
   ): NodeSQLiteDatabase<TFullSchema, TSchema> & {

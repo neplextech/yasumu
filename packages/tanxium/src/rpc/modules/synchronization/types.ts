@@ -1,10 +1,4 @@
-export type EntityType =
-  | 'workspace'
-  | 'rest'
-  | 'graphql'
-  | 'environment'
-  | 'smtp'
-  | 'group';
+export type EntityType = 'workspace' | 'rest' | 'graphql' | 'environment' | 'smtp' | 'group';
 
 export interface LockFileEntry {
   hash: string;

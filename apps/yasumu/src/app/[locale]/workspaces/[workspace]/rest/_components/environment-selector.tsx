@@ -1,5 +1,4 @@
 'use client';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import { useQueries } from '@tanstack/react-query';
 import {
   Select,
@@ -13,15 +12,13 @@ import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { Plus, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId } from 'react';
+
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+
 import { useEnvironmentStore } from '../../../_stores/environment-store';
 
 export default function EnvironmentSelector() {
-  const {
-    environments,
-    selectedEnvironment,
-    setEnvironments,
-    setSelectedEnvironment,
-  } = useEnvironmentStore();
+  const { environments, selectedEnvironment, setEnvironments, setSelectedEnvironment } = useEnvironmentStore();
   const workspace = useActiveWorkspace();
   const router = useRouter();
   const nullId = useId();
@@ -74,13 +71,9 @@ export default function EnvironmentSelector() {
         }
       })}
     >
-      <SelectTrigger className="w-[180px] h-8">
+      <SelectTrigger className="h-8 w-[180px]">
         <SelectValue
-          placeholder={
-            isLoadingEnvironments || isLoadingSelectedEnvironment
-              ? 'Loading...'
-              : 'Select environment'
-          }
+          placeholder={isLoadingEnvironments || isLoadingSelectedEnvironment ? 'Loading...' : 'Select environment'}
         />
       </SelectTrigger>
       <SelectContent>
@@ -92,19 +85,13 @@ export default function EnvironmentSelector() {
                   {env.name}
                 </SelectItem>
               ))}
-              <SelectItem
-                value={nullId}
-                className="pl-2 text-blue-500 focus:text-blue-500"
-              >
+              <SelectItem value={nullId} className="pl-2 text-blue-500 focus:text-blue-500">
                 <Settings className="size-4" />
                 Manage environments
               </SelectItem>
             </>
           ) : (
-            <SelectItem
-              value={nullId}
-              className="pl-2 text-blue-500 focus:text-blue-500"
-            >
+            <SelectItem value={nullId} className="pl-2 text-blue-500 focus:text-blue-500">
               <Plus className="size-4" />
               Create new environment
             </SelectItem>

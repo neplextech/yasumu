@@ -1,13 +1,15 @@
 ---
 title: MCP Server
-description: Local Model Context Protocol server for automating Yasumu workspaces.
+description:
+  Local Model Context Protocol server for automating Yasumu
+  workspaces.
 ---
 
 # MCP Server
 
 <Callout type="info" title="Beta Feature">
-  The GraphQL module is currently in active development. Some features may
-  change as we iterate. Your feedback is welcome!
+  The GraphQL module is currently in active development. Some features
+  may change as we iterate. Your feedback is welcome!
 </Callout>
 
 Yasumu includes a local Model Context Protocol server that lets an MCP
@@ -50,8 +52,8 @@ The health endpoint is available at the same root path:
 GET http://127.0.0.1:<port>/
 ```
 
-Some MCP clients open an SSE stream before or after the Streamable HTTP
-connection. Yasumu supports that compatibility path:
+Some MCP clients open an SSE stream before or after the Streamable
+HTTP connection. Yasumu supports that compatibility path:
 
 ```http
 GET http://127.0.0.1:<port>/
@@ -186,13 +188,15 @@ Execution follows this order:
 1. Load the saved request from the selected workspace.
 2. Load the active environment.
 3. Interpolate request URL, headers, body, and path parameters.
-4. Run the request script `onRequest` handler when a script is present.
+4. Run the request script `onRequest` handler when a script is
+   present.
 5. Send the HTTP request, unless `onRequest` returns a mock response.
 6. Run the request script `onResponse` handler.
 7. Persist environment variable or secret changes made by the response
    script.
 8. Run the request script `onTest` handler.
-9. Return the request, response, lifecycle summaries, and test results.
+9. Return the request, response, lifecycle summaries, and test
+   results.
 
 ### Execute a Saved Request
 
@@ -370,7 +374,8 @@ The returned MCP payload marks this with `lifecycle.mocked: true`.
 
 ## REST Execution Response
 
-`rest_execute` returns a text MCP result containing JSON. The shape is:
+`rest_execute` returns a text MCP result containing JSON. The shape
+is:
 
 ```json
 {
@@ -473,18 +478,19 @@ only when the request includes `Accept: text/event-stream`.
 ### Invalid Content Type for SSE
 
 This usually means the client requested the health endpoint as normal
-HTTP instead of an SSE stream. Configure the client for Streamable HTTP
-and keep the URL at the root path.
+HTTP instead of an SSE stream. Configure the client for Streamable
+HTTP and keep the URL at the root path.
 
 ### Workspace Not Found
 
-Use `workspaces_list` first and pass the exact workspace id returned by
-Yasumu. Workspace names and folder names are accepted for convenience,
-but ids are the most predictable option.
+Use `workspaces_list` first and pass the exact workspace id returned
+by Yasumu. Workspace names and folder names are accepted for
+convenience, but ids are the most predictable option.
 
 ### Request Execution Fails
 
-Check the returned `error` field from `rest_execute`. Common causes are:
+Check the returned `error` field from `rest_execute`. Common causes
+are:
 
 - the saved request has no URL
 - a path parameter such as `:name` was not provided

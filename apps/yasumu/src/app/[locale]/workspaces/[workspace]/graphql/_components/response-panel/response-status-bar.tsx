@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@yasumu/ui/lib/utils';
+
 import type { GraphqlResponse } from '../../_lib/graphql-request';
 
 interface GraphqlResponseStatusBarProps {
@@ -26,21 +27,14 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export function GraphqlResponseStatusBar({
-  response,
-}: GraphqlResponseStatusBarProps) {
+export function GraphqlResponseStatusBar({ response }: GraphqlResponseStatusBarProps) {
   const hasErrors = response.errors && response.errors.length > 0;
 
   return (
-    <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted/30 text-sm">
+    <div className="bg-muted/30 flex items-center gap-4 border-b px-4 py-2 text-sm">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">Status:</span>
-        <span
-          className={cn(
-            'font-mono font-medium',
-            getStatusColor(response.status),
-          )}
-        >
+        <span className={cn('font-mono font-medium', getStatusColor(response.status))}>
           {response.status} {response.statusText}
         </span>
       </div>
@@ -54,7 +48,7 @@ export function GraphqlResponseStatusBar({
       </div>
       {hasErrors && (
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
+          <span className="bg-destructive/10 text-destructive rounded-full px-2 py-0.5 text-xs font-medium">
             {response.errors!.length} error
             {response.errors!.length > 1 ? 's' : ''}
           </span>

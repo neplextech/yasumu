@@ -1,11 +1,5 @@
 'use client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@yasumu/ui/components/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
 import { cn } from '@yasumu/ui/lib/utils';
 
 export const HttpMethods = [
@@ -23,10 +17,7 @@ export interface HttpMethodSelectorProps {
   onChange: (value: string) => void;
 }
 
-export default function HttpMethodSelector({
-  value,
-  onChange,
-}: HttpMethodSelectorProps) {
+export default function HttpMethodSelector({ value, onChange }: HttpMethodSelectorProps) {
   const currentMethod = HttpMethods.find((m) => m.name === value);
 
   return (
@@ -36,18 +27,12 @@ export default function HttpMethodSelector({
         onChange(value);
       }}
     >
-      <SelectTrigger
-        className={cn('w-[180px] font-mono font-bold', currentMethod?.color)}
-      >
+      <SelectTrigger className={cn('w-[180px] font-mono font-bold', currentMethod?.color)}>
         <SelectValue placeholder="Method" />
       </SelectTrigger>
       <SelectContent>
         {HttpMethods.map((method, index) => (
-          <SelectItem
-            key={index}
-            value={method.name}
-            className={cn('font-bold font-mono', method.color)}
-          >
+          <SelectItem key={index} value={method.name} className={cn('font-bold font-mono', method.color)}>
             {method.name}
           </SelectItem>
         ))}

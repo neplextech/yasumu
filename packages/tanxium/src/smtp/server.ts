@@ -1,6 +1,7 @@
-import { SMTPServer } from 'smtp-server';
-import { createEmail } from './create-email.ts';
 import { EmailData } from '@yasumu/common';
+import { SMTPServer } from 'smtp-server';
+
+import { createEmail } from './create-email.ts';
 
 export interface SmtpServerOptions {
   username?: string | null;
@@ -32,9 +33,7 @@ export function createSmtpServer(options: SmtpServerOptions) {
         if (
           options.password &&
           // @ts-expect-error CRAM-MD5 not typed
-          (auth.method === 'CRAM-MD5'
-            ? auth.validatePassword(options.password)
-            : options.password !== auth.password)
+          (auth.method === 'CRAM-MD5' ? auth.validatePassword(options.password) : options.password !== auth.password)
         ) {
           return callback(new Error('Invalid username or password'));
         }

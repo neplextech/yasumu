@@ -2,21 +2,15 @@ import Link from 'next/link';
 
 export function Footer() {
   return (
-    <footer className="border-t border-fd-border bg-fd-card py-12">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-start gap-6">
+    <footer className="border-fd-border bg-fd-card border-t py-12">
+      <div className="container mx-auto flex flex-col items-start justify-between gap-6 px-4 md:flex-row">
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <img
-              src="/logo-dark-glow.png"
-              alt="Yasumu Logo"
-              className="w-6 h-6 rounded-md"
-            />
-            <span className="font-bold text-lg">Yasumu</span>
+            <img src="/logo-dark-glow.png" alt="Yasumu Logo" className="h-6 w-6 rounded-md" />
+            <span className="text-lg font-bold">Yasumu</span>
           </Link>
-          <p className="text-fd-muted-foreground text-sm">
-            The modern API laboratory for developers.
-          </p>
-          <div className="text-fd-muted-foreground text-sm flex items-center gap-2 mt-2">
+          <p className="text-fd-muted-foreground text-sm">The modern API laboratory for developers.</p>
+          <div className="text-fd-muted-foreground mt-2 flex items-center gap-2 text-sm">
             <span>© {new Date().getFullYear()}</span>
             <a
               href="https://neplextech.com"

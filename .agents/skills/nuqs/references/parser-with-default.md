@@ -7,16 +7,18 @@ tags: parser, withDefault, null-safety, type-inference
 
 ## Use withDefault for Non-Nullable State
 
-Without `withDefault`, query state is always nullable (`T | null`). This forces null checks everywhere the value is used. Use `withDefault` to provide a fallback value and get non-nullable types.
+Without `withDefault`, query state is always nullable (`T | null`).
+This forces null checks everywhere the value is used. Use
+`withDefault` to provide a fallback value and get non-nullable types.
 
 **Incorrect (nullable state, null checks everywhere):**
 
 ```tsx
-'use client'
-import { useQueryState, parseAsInteger } from 'nuqs'
+'use client';
+import { useQueryState, parseAsInteger } from 'nuqs';
 
 export default function Counter() {
-  const [count, setCount] = useQueryState('count', parseAsInteger)
+  const [count, setCount] = useQueryState('count', parseAsInteger);
   // count is number | null
 
   return (
@@ -28,35 +30,36 @@ export default function Counter() {
         Increment
       </button>
     </div>
-  )
+  );
 }
 ```
 
 **Correct (non-nullable with default):**
 
 ```tsx
-'use client'
-import { useQueryState, parseAsInteger } from 'nuqs'
+'use client';
+import { useQueryState, parseAsInteger } from 'nuqs';
 
 export default function Counter() {
   const [count, setCount] = useQueryState(
     'count',
-    parseAsInteger.withDefault(0)
-  )
+    parseAsInteger.withDefault(0),
+  );
   // count is number (never null)
 
   return (
     <div>
       <p>Count: {count}</p>
-      <button onClick={() => setCount(c => c + 1)}>
+      <button onClick={() => setCount((c) => c + 1)}>
         Increment
       </button>
     </div>
-  )
+  );
 }
 ```
 
 **Benefits:**
+
 - TypeScript infers non-nullable type
 - No null coalescing needed
 - Functional updates work without null checks

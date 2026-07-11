@@ -8,17 +8,9 @@ interface IntrospectButtonProps {
   disabled?: boolean;
 }
 
-export default function IntrospectButton({
-  onClick,
-  isLoading,
-  disabled,
-}: IntrospectButtonProps) {
+export default function IntrospectButton({ onClick, isLoading, disabled }: IntrospectButtonProps) {
   return (
-    <Button
-      variant="outline"
-      onClick={onClick}
-      disabled={isLoading || disabled}
-    >
+    <Button variant="outline" onClick={onClick} disabled={isLoading || disabled}>
       <RotateCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
     </Button>
   );

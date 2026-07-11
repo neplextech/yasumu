@@ -1,6 +1,3 @@
-import { Mutation, Query, Resolver } from '@yasumu/den';
-import { GraphqlService } from './graphql.service.ts';
-import { WorkspaceId } from '../common/decorators.ts';
 import type {
   ExecutableScript,
   GraphqlEntityBulkCreateOptions,
@@ -10,37 +7,29 @@ import type {
   GraphqlScriptContext,
   ScriptExecutionResult,
 } from '@yasumu/common';
+import { Mutation, Query, Resolver } from '@yasumu/den';
 import { YasumuRpcService } from '@yasumu/rpc';
+
+import { WorkspaceId } from '../common/decorators.ts';
+import { GraphqlService } from './graphql.service.ts';
 
 @Resolver('graphql')
 export class GraphqlResolver implements YasumuRpcService<'graphql'> {
   public constructor(private readonly graphqlService: GraphqlService) {}
 
   @Query()
-  public async list(
-    @WorkspaceId() workspaceId: string,
-  ): Promise<GraphqlEntityData[]> {
-    return (await this.graphqlService.list(
-      workspaceId,
-    )) as unknown as GraphqlEntityData[];
+  public async list(@WorkspaceId() workspaceId: string): Promise<GraphqlEntityData[]> {
+    return (await this.graphqlService.list(workspaceId)) as unknown as GraphqlEntityData[];
   }
 
   @Query()
   public async listTree(@WorkspaceId() workspaceId: string) {
-    return (await this.graphqlService.listTree(
-      workspaceId,
-    )) as unknown as GraphqlEntityData[];
+    return (await this.graphqlService.listTree(workspaceId)) as unknown as GraphqlEntityData[];
   }
 
   @Query()
-  public async get(
-    @WorkspaceId() workspaceId: string,
-    id: string,
-  ): Promise<GraphqlEntityData> {
-    return (await this.graphqlService.get(
-      workspaceId,
-      id,
-    )) as unknown as GraphqlEntityData;
+  public async get(@WorkspaceId() workspaceId: string, id: string): Promise<GraphqlEntityData> {
+    return (await this.graphqlService.get(workspaceId, id)) as unknown as GraphqlEntityData;
   }
 
   @Mutation()
@@ -48,10 +37,7 @@ export class GraphqlResolver implements YasumuRpcService<'graphql'> {
     @WorkspaceId() workspaceId: string,
     data: GraphqlEntityCreateOptions,
   ): Promise<GraphqlEntityData> {
-    return (await this.graphqlService.create(
-      workspaceId,
-      data,
-    )) as unknown as GraphqlEntityData;
+    return (await this.graphqlService.create(workspaceId, data)) as unknown as GraphqlEntityData;
   }
 
   @Mutation()
@@ -59,10 +45,7 @@ export class GraphqlResolver implements YasumuRpcService<'graphql'> {
     @WorkspaceId() workspaceId: string,
     data: GraphqlEntityBulkCreateOptions,
   ): Promise<GraphqlEntityData[]> {
-    return (await this.graphqlService.createBulk(
-      workspaceId,
-      data.items,
-    )) as unknown as GraphqlEntityData[];
+    return (await this.graphqlService.createBulk(workspaceId, data.items)) as unknown as GraphqlEntityData[];
   }
 
   @Mutation()
@@ -71,11 +54,7 @@ export class GraphqlResolver implements YasumuRpcService<'graphql'> {
     id: string,
     data: Partial<GraphqlEntityUpdateOptions>,
   ): Promise<GraphqlEntityData> {
-    return (await this.graphqlService.update(
-      workspaceId,
-      id,
-      data,
-    )) as unknown as GraphqlEntityData;
+    return (await this.graphqlService.update(workspaceId, id, data)) as unknown as GraphqlEntityData;
   }
 
   @Mutation()

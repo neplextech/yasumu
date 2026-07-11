@@ -1,23 +1,17 @@
 'use client';
 
-import { useEffect, useEffectEvent, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { platform } from '@tauri-apps/plugin-os';
-import {
-  TbLayoutBottombarFilled,
-  TbLayoutSidebarRightFilled,
-} from 'react-icons/tb';
-import {
-  VscChromeClose,
-  VscChromeMaximize,
-  VscChromeMinimize,
-  VscChromeRestore,
-} from 'react-icons/vsc';
 import { cn } from '@yasumu/ui/lib/utils';
-import { useYasumu } from '../providers/workspace-provider';
-import { truncate } from '@/lib/utils/truncate';
-import { useAppLayout } from '../providers/app-layout-provider';
+import { useEffect, useEffectEvent, useState } from 'react';
+import { TbLayoutBottombarFilled, TbLayoutSidebarRightFilled } from 'react-icons/tb';
+import { VscChromeClose, VscChromeMaximize, VscChromeMinimize, VscChromeRestore } from 'react-icons/vsc';
+
 import { YasumuLayout } from '@/lib/constants/layout';
+import { truncate } from '@/lib/utils/truncate';
+
+import { useAppLayout } from '../providers/app-layout-provider';
+import { useYasumu } from '../providers/workspace-provider';
 
 export function TitleBar() {
   const [isMac, setIsMac] = useState(true);
@@ -67,83 +61,64 @@ export function TitleBar() {
   };
 
   const toggleSidebarState = () => {
-    setLayout((prev) =>
-      prev === YasumuLayout.Default
-        ? YasumuLayout.Classic
-        : YasumuLayout.Default,
-    );
+    setLayout((prev) => (prev === YasumuLayout.Default ? YasumuLayout.Classic : YasumuLayout.Default));
   };
 
   return (
     <div
-      className="h-[30px] flex items-center justify-between z-50 bg-background border-b select-none shrink-0"
+      className="bg-background z-50 flex h-[30px] shrink-0 items-center justify-between border-b select-none"
       data-tauri-drag-region
     >
       {/* Left Section */}
-      <div
-        className={cn('flex items-center h-full px-4', isMac && 'pl-[80px]')}
-        data-tauri-drag-region
-      >
+      <div className={cn('flex items-center h-full px-4', isMac && 'pl-[80px]')} data-tauri-drag-region>
         {isMac ? null : (
           <button
-            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            className="text-muted-foreground hover:text-foreground p-1 transition-colors"
             onClick={toggleSidebarState}
           >
-            {layout === YasumuLayout.Classic ? (
-              <TbLayoutBottombarFilled />
-            ) : (
-              <TbLayoutSidebarRightFilled />
-            )}
+            {layout === YasumuLayout.Classic ? <TbLayoutBottombarFilled /> : <TbLayoutSidebarRightFilled />}
           </button>
         )}
       </div>
 
       {/* Center Section - Title */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-muted-foreground pointer-events-none"
+        className="text-muted-foreground pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-medium"
         data-tauri-drag-region
       >
         {title}
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center h-full" data-tauri-drag-region>
+      <div className="flex h-full items-center" data-tauri-drag-region>
         {isMac ? (
           <div className="px-4">
             <button
-              className="text-muted-foreground hover:text-foreground transition-colors p-1"
+              className="text-muted-foreground hover:text-foreground p-1 transition-colors"
               onClick={toggleSidebarState}
             >
-              {layout === YasumuLayout.Classic ? (
-                <TbLayoutBottombarFilled />
-              ) : (
-                <TbLayoutSidebarRightFilled />
-              )}
+              {layout === YasumuLayout.Classic ? <TbLayoutBottombarFilled /> : <TbLayoutSidebarRightFilled />}
             </button>
           </div>
         ) : (
           <div className="flex h-full">
             <button
-              className="inline-flex items-center justify-center w-[46px] h-full hover:bg-muted transition-colors text-foreground"
+              className="hover:bg-muted text-foreground inline-flex h-full w-[46px] items-center justify-center transition-colors"
               onClick={handleMinimize}
             >
-              <VscChromeMinimize className="w-4 h-4" />
+              <VscChromeMinimize className="h-4 w-4" />
             </button>
             <button
-              className="inline-flex items-center justify-center w-[46px] h-full hover:bg-muted transition-colors text-foreground"
+              className="hover:bg-muted text-foreground inline-flex h-full w-[46px] items-center justify-center transition-colors"
               onClick={handleMaximize}
             >
-              {isMaximized ? (
-                <VscChromeRestore className="w-4 h-4" />
-              ) : (
-                <VscChromeMaximize className="w-4 h-4" />
-              )}
+              {isMaximized ? <VscChromeRestore className="h-4 w-4" /> : <VscChromeMaximize className="h-4 w-4" />}
             </button>
             <button
-              className="inline-flex items-center justify-center w-[46px] h-full hover:bg-destructive hover:text-destructive-foreground transition-colors text-foreground"
+              className="hover:bg-destructive hover:text-destructive-foreground text-foreground inline-flex h-full w-[46px] items-center justify-center transition-colors"
               onClick={handleClose}
             >
-              <VscChromeClose className="w-4 h-4" />
+              <VscChromeClose className="h-4 w-4" />
             </button>
           </div>
         )}

@@ -1,7 +1,7 @@
 'use client';
 
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Button } from '@yasumu/ui/components/button';
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 
@@ -25,11 +25,11 @@ export function CodeView({ content, language, className }: CodeViewProps) {
   };
 
   return (
-    <div className="relative h-full group flex-1 min-h-0 select-text">
+    <div className="group relative h-full min-h-0 flex-1 select-text">
       <ScrollArea className="h-full w-full">
         <pre
           data-allow-context-menu="true"
-          className={`text-sm font-mono bg-muted/50 p-4 rounded-md min-h-full whitespace-pre-wrap break-all select-text ${
+          className={`bg-muted/50 min-h-full rounded-md p-4 font-mono text-sm break-all whitespace-pre-wrap select-text ${
             className || ''
           }`}
         >
@@ -39,15 +39,11 @@ export function CodeView({ content, language, className }: CodeViewProps) {
       <Button
         variant="outline"
         size="icon"
-        className="absolute top-2 right-2 w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm"
+        className="bg-background/80 absolute top-2 right-2 h-8 w-8 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100"
         onClick={handleCopy}
         title="Copy to clipboard"
       >
-        {copied ? (
-          <Check className="h-4 w-4 text-green-500" />
-        ) : (
-          <Copy className="h-4 w-4" />
-        )}
+        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
       </Button>
     </div>
   );

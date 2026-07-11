@@ -1,10 +1,10 @@
 'use client';
 
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import { EmailData } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { cn } from '@yasumu/ui/lib/utils';
-import { EmailData } from '@yasumu/core';
 
 interface EmailListProps {
   emails: EmailData[];
@@ -33,21 +33,12 @@ const getColorFromEmail = (email: string) => {
     'bg-indigo-500',
     'bg-red-500',
   ];
-  const hash = email
-    .split('')
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = email.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
 };
 
-export default function EmailList({
-  emails,
-  selectedEmailId,
-  onSelectEmail,
-  filter,
-  onFilterChange,
-}: EmailListProps) {
-  const filteredEmails =
-    filter === 'unread' ? emails.filter((email) => email.unread) : emails;
+export default function EmailList({ emails, selectedEmailId, onSelectEmail, filter, onFilterChange }: EmailListProps) {
+  const filteredEmails = filter === 'unread' ? emails.filter((email) => email.unread) : emails;
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -71,13 +62,10 @@ export default function EmailList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="flex flex-col h-full border-r bg-background/50">
-        <div className="p-4 border-b bg-background">
-          <Tabs
-            value={filter}
-            onValueChange={(v) => onFilterChange(v as 'all' | 'unread')}
-          >
-            <TabsList className="w-full grid grid-cols-2">
+      <div className="bg-background/50 flex h-full flex-col border-r">
+        <div className="bg-background border-b p-4">
+          <Tabs value={filter} onValueChange={(v) => onFilterChange(v as 'all' | 'unread')}>
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="all" className="flex-1">
                 All
               </TabsTrigger>
@@ -94,10 +82,10 @@ export default function EmailList({
         </div>
         <div>
           {filteredEmails.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
+            <div className="text-muted-foreground p-12 text-center">
               <div className="mb-4">
                 <svg
-                  className="mx-auto h-12 w-12 text-muted-foreground/50"
+                  className="text-muted-foreground/50 mx-auto h-12 w-12"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -110,28 +98,19 @@ export default function EmailList({
                   />
                 </svg>
               </div>
-              <p className="text-sm font-medium">
-                {filter === 'unread' ? 'No unread emails' : 'No emails'}
-              </p>
-              <p className="text-xs mt-1">
-                {filter === 'unread'
-                  ? 'All caught up!'
-                  : 'Your mailbox is empty'}
-              </p>
+              <p className="text-sm font-medium">{filter === 'unread' ? 'No unread emails' : 'No emails'}</p>
+              <p className="mt-1 text-xs">{filter === 'unread' ? 'All caught up!' : 'Your mailbox is empty'}</p>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="divide-border/50 divide-y">
               {filteredEmails.map((email) => (
                 <button
                   key={email.id}
                   onClick={() => onSelectEmail(email.id)}
                   className={cn(
                     'w-full text-left p-4 hover:bg-muted/30 transition-all duration-150 border-l-2 border-transparent relative group',
-                    selectedEmailId === email.id &&
-                      'bg-muted/50 border-l-primary shadow-sm',
-                    email.unread &&
-                      selectedEmailId !== email.id &&
-                      'bg-accent/20',
+                    selectedEmailId === email.id && 'bg-muted/50 border-l-primary shadow-sm',
+                    email.unread && selectedEmailId !== email.id && 'bg-accent/20',
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -143,26 +122,22 @@ export default function EmailList({
                     >
                       {getInitials(email.from)}
                     </div>
-                    <div className="flex-1 min-w-0 space-y-1">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p
                             className={cn(
                               'text-sm break-words',
                               email.unread ? 'font-semibold' : 'font-medium',
-                              selectedEmailId === email.id
-                                ? 'text-foreground'
-                                : 'text-foreground/90',
+                              selectedEmailId === email.id ? 'text-foreground' : 'text-foreground/90',
                             )}
                           >
                             {email.from}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {email.unread && (
-                            <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                          )}
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        <div className="flex shrink-0 items-center gap-2">
+                          {email.unread && <div className="bg-primary h-2 w-2 shrink-0 rounded-full" />}
+                          <span className="text-muted-foreground text-xs whitespace-nowrap">
                             {formatTime(email.createdAt)}
                           </span>
                         </div>
@@ -170,18 +145,12 @@ export default function EmailList({
                       <p
                         className={cn(
                           'text-sm break-words',
-                          email.unread
-                            ? 'font-semibold text-foreground'
-                            : 'font-normal text-foreground/80',
+                          email.unread ? 'font-semibold text-foreground' : 'font-normal text-foreground/80',
                         )}
                       >
-                        {email.subject || (
-                          <span className="italic text-muted-foreground">
-                            (No subject)
-                          </span>
-                        )}
+                        {email.subject || <span className="text-muted-foreground italic">(No subject)</span>}
                       </p>
-                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed break-words">
+                      <p className="text-muted-foreground line-clamp-3 text-xs leading-relaxed break-words">
                         {email.text.slice(0, 150)}
                       </p>
                     </div>

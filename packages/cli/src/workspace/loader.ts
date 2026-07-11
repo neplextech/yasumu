@@ -1,11 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
 import { deserialize, type Infer } from '@yasumu/schema';
-import {
-  WorkspaceSchema,
-  RestSchema,
-  EnvironmentSchema,
-} from '../schemas/index.js';
+
+import { WorkspaceSchema, RestSchema, EnvironmentSchema } from '../schemas/index.js';
 
 export interface WorkspaceInfo {
   path: string;
@@ -137,22 +135,12 @@ export class WorkspaceLoader {
 
   findRestEntity(nameOrId: string): RestEntity | null {
     const entities = this.loadRestEntities();
-    return (
-      entities.find(
-        (e) =>
-          e.id === nameOrId || e.name.toLowerCase() === nameOrId.toLowerCase(),
-      ) ?? null
-    );
+    return entities.find((e) => e.id === nameOrId || e.name.toLowerCase() === nameOrId.toLowerCase()) ?? null;
   }
 
   findEnvironment(nameOrId: string): Environment | null {
     const environments = this.loadEnvironments();
-    return (
-      environments.find(
-        (e) =>
-          e.id === nameOrId || e.name.toLowerCase() === nameOrId.toLowerCase(),
-      ) ?? null
-    );
+    return environments.find((e) => e.id === nameOrId || e.name.toLowerCase() === nameOrId.toLowerCase()) ?? null;
   }
 }
 

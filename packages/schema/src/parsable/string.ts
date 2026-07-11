@@ -1,6 +1,6 @@
-import { YasumuSchemaTokenTypes } from '../tokens.js';
 import type { YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
+import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParsable } from './parsable.js';
 
 export class YasumuSchemaParsableString extends YasumuSchemaParsable<string> {

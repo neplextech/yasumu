@@ -1,20 +1,3 @@
-import { ChevronRight, File, Folder, RefreshCw, Search } from 'lucide-react';
-import * as React from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
-
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@yasumu/ui/components/collapsible';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuTrigger,
-} from '@yasumu/ui/components/context-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +8,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@yasumu/ui/components/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@yasumu/ui/components/collapsible';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from '@yasumu/ui/components/command';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
+} from '@yasumu/ui/components/context-menu';
 import {
   Sidebar,
   SidebarContent,
@@ -37,21 +38,17 @@ import {
   SidebarMenuSub,
   SidebarRail,
 } from '@yasumu/ui/components/sidebar';
-import { MdFolder } from 'react-icons/md';
-import { CreateInputDialog } from '../dialogs/create-input-dialog';
-import { cn } from '@yasumu/ui/lib/utils';
-import { usePlatform } from '@/hooks/use-platform';
 import { useCopyToClipboard } from '@yasumu/ui/hooks/use-copy-to-clipboard';
+import { cn } from '@yasumu/ui/lib/utils';
+import { ChevronRight, File, Folder, RefreshCw, Search } from 'lucide-react';
+import * as React from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { MdFolder } from 'react-icons/md';
 import { VscCollapseAll } from 'react-icons/vsc';
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandShortcut,
-} from '@yasumu/ui/components/command';
+
+import { usePlatform } from '@/hooks/use-platform';
+
+import { CreateInputDialog } from '../dialogs/create-input-dialog';
 
 export type ClipboardOperation = 'copy' | 'cut';
 
@@ -69,9 +66,7 @@ export interface FileTreeItem {
   type: 'folder' | 'file';
 }
 
-export interface FileTreeSidebarProps extends React.ComponentProps<
-  typeof Sidebar
-> {
+export interface FileTreeSidebarProps extends React.ComponentProps<typeof Sidebar> {
   fileTree: FileTreeItem[];
   onFileSelect?: (id: string) => void;
   onFileCreate?: (name: string, parentId?: string | null) => void;
@@ -103,10 +98,7 @@ interface SearchableFileTreeItem {
   icon?: React.ComponentType;
 }
 
-function flattenSearchableFiles(
-  items: FileTreeItem[],
-  parentPath = '',
-): SearchableFileTreeItem[] {
+function flattenSearchableFiles(items: FileTreeItem[], parentPath = ''): SearchableFileTreeItem[] {
   return items.flatMap((item) => {
     const path = parentPath ? `${parentPath}/${item.name}` : item.name;
 
@@ -163,10 +155,7 @@ export function FileTreeSidebar({
   const [isInitialized, setIsInitialized] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const { isMac } = usePlatform();
-  const searchableFiles = React.useMemo(
-    () => flattenSearchableFiles(tree),
-    [tree],
-  );
+  const searchableFiles = React.useMemo(() => flattenSearchableFiles(tree), [tree]);
 
   // Initialize all folders as open on first render
   React.useEffect(() => {
@@ -174,10 +163,7 @@ export function FileTreeSidebar({
       const getAllFolderIds = (items: FileTreeItem[]): string[] => {
         return items.flatMap((item) => {
           if (item.type === 'folder') {
-            return [
-              item.id,
-              ...(item.children ? getAllFolderIds(item.children) : []),
-            ];
+            return [item.id, ...(item.children ? getAllFolderIds(item.children) : [])];
           }
           return [];
         });
@@ -191,20 +177,17 @@ export function FileTreeSidebar({
     setOpenFolders(new Set());
   }, []);
 
-  const handleToggleFolder = React.useCallback(
-    (folderId: string, isOpen: boolean) => {
-      setOpenFolders((prev) => {
-        const next = new Set(prev);
-        if (isOpen) {
-          next.add(folderId);
-        } else {
-          next.delete(folderId);
-        }
-        return next;
-      });
-    },
-    [],
-  );
+  const handleToggleFolder = React.useCallback((folderId: string, isOpen: boolean) => {
+    setOpenFolders((prev) => {
+      const next = new Set(prev);
+      if (isOpen) {
+        next.add(folderId);
+      } else {
+        next.delete(folderId);
+      }
+      return next;
+    });
+  }, []);
 
   const handleItemSelect = React.useCallback(
     (id: string, type: 'file' | 'folder', name: string) => {
@@ -283,11 +266,7 @@ export function FileTreeSidebar({
     document.addEventListener(
       'keydown',
       (event) => {
-        if (
-          !(event.metaKey || event.ctrlKey) ||
-          event.key.toLowerCase() !== 'f'
-        )
-          return;
+        if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'f') return;
         if (isEditableTarget(event.target)) return;
 
         event.preventDefault();
@@ -299,9 +278,7 @@ export function FileTreeSidebar({
     return () => controller.abort();
   }, [enableFileSearch]);
 
-  const [rootMenuOpen, setRootMenuOpen] = React.useState<
-    'file' | 'folder' | null
-  >(null);
+  const [rootMenuOpen, setRootMenuOpen] = React.useState<'file' | 'folder' | null>(null);
 
   const handleClearSelection = React.useCallback(() => {
     setSelectedItem(null);
@@ -323,33 +300,23 @@ export function FileTreeSidebar({
     <Sidebar {...props} ref={sidebarRef}>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <SidebarContent
-            className="select-none h-full"
-            onClick={handleClearSelection}
-          >
+          <SidebarContent className="h-full select-none" onClick={handleClearSelection}>
             <SidebarGroup>
               <SidebarGroupLabel>
-                <div className="flex justify-between w-full">
+                <div className="flex w-full justify-between">
                   <div>Explorer</div>
-                  <div
-                    className="flex items-center gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <CreateInputDialog
                       title="Add new folder"
                       description="This will add a new folder"
-                      onSubmit={(name) =>
-                        onFolderCreate?.(name, selectedFolderId)
-                      }
+                      onSubmit={(name) => onFolderCreate?.(name, selectedFolderId)}
                     >
                       <Folder className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                     </CreateInputDialog>
                     <CreateInputDialog
                       title="Add new item"
                       description="This will add a new item"
-                      onSubmit={(name) =>
-                        onFileCreate?.(name, selectedFolderId)
-                      }
+                      onSubmit={(name) => onFileCreate?.(name, selectedFolderId)}
                     >
                       <File className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
                     </CreateInputDialog>
@@ -419,9 +386,7 @@ export function FileTreeSidebar({
               <ContextMenuSeparator />
               <ContextMenuItem inset onClick={() => onPasteItem?.(null)}>
                 Paste
-                <ContextMenuShortcut>
-                  {isMac ? '⌘' : 'Ctrl+'}V
-                </ContextMenuShortcut>
+                <ContextMenuShortcut>{isMac ? '⌘' : 'Ctrl+'}V</ContextMenuShortcut>
               </ContextMenuItem>
             </>
           )}
@@ -434,8 +399,7 @@ export function FileTreeSidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedItem?.type}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedItem?.name}"? This
-              action cannot be undone.
+              Are you sure you want to delete "{selectedItem?.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -515,9 +479,7 @@ export function FileTreeSidebar({
                     {Icon && <Icon short />}
                     <div className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate">{item.name}</span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {item.path}
-                      </span>
+                      <span className="text-muted-foreground truncate text-xs">{item.path}</span>
                     </div>
                     <CommandShortcut>{isMac ? '⌘' : 'Ctrl+'}F</CommandShortcut>
                   </CommandItem>
@@ -563,9 +525,7 @@ function MenuContent({
   isMac?: boolean;
 }) {
   const forFolder = type === 'folder';
-  const [open, setOpen] = React.useState<
-    'file' | 'folder' | 'rename' | 'delete' | null
-  >(null);
+  const [open, setOpen] = React.useState<'file' | 'folder' | 'rename' | 'delete' | null>(null);
   const copyToClipboard = useCopyToClipboard();
 
   const modKey = isMac ? '⌘' : 'Ctrl+';
@@ -628,26 +588,18 @@ function MenuContent({
           Rename
           <ContextMenuShortcut>{isMac ? '↩' : 'F2'}</ContextMenuShortcut>
         </ContextMenuItem>
-        <ContextMenuItem
-          inset
-          variant="destructive"
-          onClick={() => setOpen('delete')}
-        >
+        <ContextMenuItem inset variant="destructive" onClick={() => setOpen('delete')}>
           Delete
           <ContextMenuShortcut>{isMac ? '⌘⌫' : 'Del'}</ContextMenuShortcut>
         </ContextMenuItem>
       </ContextMenuContent>
 
-      <AlertDialog
-        open={open === 'delete'}
-        onOpenChange={(isOpen) => setOpen(isOpen ? 'delete' : null)}
-      >
+      <AlertDialog open={open === 'delete'} onOpenChange={(isOpen) => setOpen(isOpen ? 'delete' : null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {type}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{name}"? This action cannot be
-              undone.
+              Are you sure you want to delete "{name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -847,11 +799,7 @@ function Tree({
           <ContextMenuTrigger asChild>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
-                className={cn(
-                  'text-xs truncate',
-                  isSelected && 'bg-accent',
-                  isCut && 'opacity-50',
-                )}
+                className={cn('text-xs truncate', isSelected && 'bg-accent', isCut && 'opacity-50')}
                 onClick={() => onItemSelect?.(item.id, 'folder', name)}
               >
                 <ChevronRight className="transition-transform" />

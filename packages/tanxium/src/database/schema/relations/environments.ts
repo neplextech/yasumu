@@ -1,4 +1,5 @@
 import { relations } from 'drizzle-orm';
+
 import { environments } from '../tables/environments.ts';
 import { workspaces } from '../tables/workspaces.ts';
 

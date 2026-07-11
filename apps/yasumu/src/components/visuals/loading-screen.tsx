@@ -7,20 +7,12 @@ export interface LoadingScreenProps {
   message?: string;
 }
 
-export default function LoadingScreen({
-  fullScreen,
-  message,
-}: LoadingScreenProps) {
+export default function LoadingScreen({ fullScreen, message }: LoadingScreenProps) {
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center',
-        fullScreen && 'h-screen w-full overflow-hidden',
-      )}
-    >
+    <div className={cn('flex items-center justify-center', fullScreen && 'h-screen w-full overflow-hidden')}>
       <div className="flex flex-col items-center justify-center gap-2">
         <Loader2 className="animate-spin" size={48} />
-        {message && <p className="text-sm text-center">{message}</p>}
+        {message && <p className="text-center text-sm">{message}</p>}
       </div>
     </div>
   );

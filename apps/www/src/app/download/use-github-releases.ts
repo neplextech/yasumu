@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const GITHUB_RELEASES_URL =
-  'https://api.github.com/repos/neplextech/yasumu/releases';
+const GITHUB_RELEASES_URL = 'https://api.github.com/repos/neplextech/yasumu/releases';
 const CACHE_KEY = 'yasumu_github_releases_v2';
 const CACHE_DURATION = 1000 * 60 * 15;
 
@@ -84,9 +83,7 @@ function isCanaryRelease(tagName: string): boolean {
   return tagName.toLowerCase().includes('canary');
 }
 
-function categorizeAssets(
-  assets: GitHubAsset[],
-): Omit<DownloadAssets, 'tagName'> {
+function categorizeAssets(assets: GitHubAsset[]): Omit<DownloadAssets, 'tagName'> {
   const result: Omit<DownloadAssets, 'tagName'> = {
     macOS: [],
     windows: [],
@@ -136,9 +133,7 @@ function categorizeAssets(
         arch,
         sha256,
         label: `Debian (.deb)`,
-        note: archNote
-          ? `${archNote} — Ubuntu, Debian`
-          : 'Ubuntu, Debian, etc.',
+        note: archNote ? `${archNote} — Ubuntu, Debian` : 'Ubuntu, Debian, etc.',
       });
     } else if (name.endsWith('.appimage')) {
       result.linux.push({
@@ -160,13 +155,7 @@ function categorizeAssets(
   }
 
   const sortByArch = (a: DownloadAsset, b: DownloadAsset) => {
-    const order: Architecture[] = [
-      'universal',
-      'x64',
-      'arm64',
-      'x86',
-      'unknown',
-    ];
+    const order: Architecture[] = ['universal', 'x64', 'arm64', 'x86', 'unknown'];
     return order.indexOf(a.arch) - order.indexOf(b.arch);
   };
 
@@ -191,10 +180,7 @@ function processReleases(releases: GitHubRelease[]): ChannelReleases {
 
     if (result[channel] === null) {
       const categorized = categorizeAssets(release.assets);
-      const hasAssets =
-        categorized.macOS.length > 0 ||
-        categorized.windows.length > 0 ||
-        categorized.linux.length > 0;
+      const hasAssets = categorized.macOS.length > 0 || categorized.windows.length > 0 || categorized.linux.length > 0;
 
       if (hasAssets) {
         result[channel] = {
@@ -234,10 +220,7 @@ export function useGitHubReleases() {
           })();
 
           // If cache is still valid, use it and return early
-          if (
-            cachedData &&
-            Date.now() - cachedData.timestamp < CACHE_DURATION
-          ) {
+          if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
             setReleases(processReleases(cachedData.releases));
             setLoading(false);
             return;
@@ -252,9 +235,7 @@ export function useGitHubReleases() {
 
         if (!response.ok) {
           if (response.status === 403) {
-            throw new Error(
-              'GitHub API rate limit exceeded. Please try again later.',
-            );
+            throw new Error('GitHub API rate limit exceeded. Please try again later.');
           }
           throw new Error(`Failed to fetch releases: ${response.statusText}`);
         }
@@ -273,9 +254,7 @@ export function useGitHubReleases() {
         if (cachedData) {
           setReleases(processReleases(cachedData.releases));
         } else {
-          setError(
-            err instanceof Error ? err.message : 'Failed to fetch releases',
-          );
+          setError(err instanceof Error ? err.message : 'Failed to fetch releases');
         }
       } finally {
         setLoading(false);

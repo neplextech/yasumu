@@ -22,10 +22,7 @@ interface SettingsTabsProps {
   onTabChange: (tab: SettingsTab) => void;
 }
 
-export default function SettingsTabs({
-  activeTab,
-  onTabChange,
-}: SettingsTabsProps) {
+export default function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
   return (
     <nav className="flex flex-col gap-1" role="tablist">
       {TABS.map((tab) => {

@@ -1,17 +1,12 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import type {
-  YasumuThemeConfig,
-  YasumuThemeVariables,
-} from '../apps/yasumu/src/lib/types/theme.ts';
+
+import type { YasumuThemeConfig, YasumuThemeVariables } from '../apps/yasumu/src/lib/types/theme.ts';
 
 const isCompact = process.argv.includes('--compact');
 const themesDir = join(import.meta.dirname, 'presets');
 const outputDir = join(import.meta.dirname, 'output');
-const compactOutputFile = join(
-  import.meta.dirname,
-  '../apps/yasumu/src/lib/constants/builtin-themes.ts',
-);
+const compactOutputFile = join(import.meta.dirname, '../apps/yasumu/src/lib/constants/builtin-themes.ts');
 
 function parseThemeName(filename: string): string {
   const parts = basename(filename, '.css').split('.');
@@ -114,14 +109,8 @@ for (const themeFile of themeFiles) {
   outputThemes.push(lightTheme, darkTheme);
 
   if (!isCompact) {
-    writeFileSync(
-      join(outputDir, `${themeId}-light.json`),
-      JSON.stringify(lightTheme, null, 2),
-    );
-    writeFileSync(
-      join(outputDir, `${themeId}-dark.json`),
-      JSON.stringify(darkTheme, null, 2),
-    );
+    writeFileSync(join(outputDir, `${themeId}-light.json`), JSON.stringify(lightTheme, null, 2));
+    writeFileSync(join(outputDir, `${themeId}-dark.json`), JSON.stringify(darkTheme, null, 2));
     console.log(`Generated: ${themeId}-light.json, ${themeId}-dark.json`);
   }
 }
@@ -137,18 +126,11 @@ if (isCompact) {
       compactOutputFile,
       `/* eslint-disable */\n// @ts-nocheck\n\n\n${BANNER}\n\nimport type { YasumuThemeConfig } from '@/lib/types/theme';\n\nexport const BUILTIN_THEMES: YasumuThemeConfig[] = ${JSON.stringify(outputThemes)};\n`,
     );
-    console.log(
-      `Generated: ${compactOutputFile} (${outputThemes.length} themes)`,
-    );
+    console.log(`Generated: ${compactOutputFile} (${outputThemes.length} themes)`);
   } else {
-    writeFileSync(
-      join(outputDir, 'themes.json'),
-      JSON.stringify(outputThemes, null, 2),
-    );
+    writeFileSync(join(outputDir, 'themes.json'), JSON.stringify(outputThemes, null, 2));
     console.log(`Generated: themes.json (${outputThemes.length} themes)`);
   }
 }
 
-console.log(
-  `\nDone! Processed ${themeFiles.length} CSS files into ${outputThemes.length} theme configs.`,
-);
+console.log(`\nDone! Processed ${themeFiles.length} CSS files into ${outputThemes.length} theme configs.`);

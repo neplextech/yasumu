@@ -3,29 +3,29 @@ packages:
   - packages/*
 
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  '@swc/core': set this to true or false
-  core-js: set this to true or false
-  core-js-pure: set this to true or false
-  esbuild: set this to true or false
-  msw: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  '@parcel/watcher': false
+  '@swc/core': false
+  core-js: false
+  core-js-pure: false
+  esbuild: false
+  msw: false
+  sharp: false
+  unrs-resolver: false
 
 catalogs:
   build:
     '@types/node': ^24.6.2
     typescript: ^7.0.2
   react:
-    '@types/react': ^19.2.14
+    '@types/react': ^19.2.17
     '@types/react-dom': ^19.2.3
     '@vercel/analytics': ^1.6.1
     babel-plugin-react-compiler: ^1.0.0
-    eslint-config-next: 16.2.4
-    next: ^16.2.4
-    react: ^19.2.5
-    react-dom: ^19.2.5
-    react-icons: ^5.5.0
+    eslint-config-next: 16.2.10
+    next: ^16.2.10
+    react: ^19.2.7
+    react-dom: ^19.2.7
+    react-icons: ^5.7.0
   tailwind:
     '@tailwindcss/postcss': ^4
     tailwindcss: ^4

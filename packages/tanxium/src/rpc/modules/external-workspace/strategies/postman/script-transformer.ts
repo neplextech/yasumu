@@ -1,4 +1,5 @@
 import { YasumuEmbeddedScript, YasumuScriptingLanguage } from '@yasumu/common';
+
 import { PostmanEvent } from './types.ts';
 
 export class PostmanScriptTransformer {
@@ -33,9 +34,7 @@ export class PostmanScriptTransformer {
     const imports: string[] = [];
 
     if (preRequestCode.length) {
-      blocks.push(
-        `export function onRequest(req: YasumuRequest) {\n${this.indentCode(preRequestCode.join('\n'))}\n}`,
-      );
+      blocks.push(`export function onRequest(req: YasumuRequest) {\n${this.indentCode(preRequestCode.join('\n'))}\n}`);
     }
 
     if (responseCode.length) {
@@ -85,10 +84,7 @@ export class PostmanScriptTransformer {
     return { tests, pre: preLines.filter((l) => l.trim().length > 0) };
   }
 
-  private extractPmTestBlock(
-    lines: string[],
-    startIndex: number,
-  ): { code: string; endIndex: number } {
+  private extractPmTestBlock(lines: string[], startIndex: number): { code: string; endIndex: number } {
     let depth = 0;
     let started = false;
     let endIndex = startIndex;
@@ -124,9 +120,7 @@ export class PostmanScriptTransformer {
     );
 
     if (!bodyMatch) {
-      const fnBodyMatch = pmTestCode.match(
-        /pm\.test\s*\([^,]+,\s*function\s*\([^)]*\)\s*\{([\s\S]*)\}\s*\)\s*;?\s*$/,
-      );
+      const fnBodyMatch = pmTestCode.match(/pm\.test\s*\([^,]+,\s*function\s*\([^)]*\)\s*\{([\s\S]*)\}\s*\)\s*;?\s*$/);
       const body = fnBodyMatch ? fnBodyMatch[1].trim() : '';
       return this.wrapInYasumuTest(testName, body);
     }
@@ -136,11 +130,7 @@ export class PostmanScriptTransformer {
 
   private wrapInYasumuTest(name: string, body: string): string {
     const convertedBody = this.convertExpectations(body);
-    const maybeAsync = [' async ', 'async '].some((s) =>
-      convertedBody.includes(s),
-    )
-      ? 'async'
-      : '';
+    const maybeAsync = [' async ', 'async '].some((s) => convertedBody.includes(s)) ? 'async' : '';
 
     return `Deno.test(${JSON.stringify(name)}, ${maybeAsync}() => {\n${this.indentCode(convertedBody)}\n});`;
   }
@@ -148,63 +138,21 @@ export class PostmanScriptTransformer {
   private convertExpectations(code: string): string {
     let result = code;
 
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.eql\(([^)]+)\)/g,
-      'expect($1).toEqual($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.equal\(([^)]+)\)/g,
-      'expect($1).toBe($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.true/g,
-      'expect($1).toBe(true)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.false/g,
-      'expect($1).toBe(false)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.null/g,
-      'expect($1).toBeNull()',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.undefined/g,
-      'expect($1).toBeUndefined()',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.have\.property\(([^)]+)\)/g,
-      'expect($1).toHaveProperty($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.include\(([^)]+)\)/g,
-      'expect($1).toContain($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.have\.lengthOf\(([^)]+)\)/g,
-      'expect($1).toHaveLength($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.above\(([^)]+)\)/g,
-      'expect($1).toBeGreaterThan($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.below\(([^)]+)\)/g,
-      'expect($1).toBeLessThan($2)',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.exist/g,
-      'expect($1).toBeDefined()',
-    );
-    result = result.replace(
-      /pm\.expect\(([^)]+)\)\.to\.be\.ok/g,
-      'expect($1).toBeTruthy()',
-    );
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.eql\(([^)]+)\)/g, 'expect($1).toEqual($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.equal\(([^)]+)\)/g, 'expect($1).toBe($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.true/g, 'expect($1).toBe(true)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.false/g, 'expect($1).toBe(false)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.null/g, 'expect($1).toBeNull()');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.undefined/g, 'expect($1).toBeUndefined()');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.have\.property\(([^)]+)\)/g, 'expect($1).toHaveProperty($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.include\(([^)]+)\)/g, 'expect($1).toContain($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.have\.lengthOf\(([^)]+)\)/g, 'expect($1).toHaveLength($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.above\(([^)]+)\)/g, 'expect($1).toBeGreaterThan($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.below\(([^)]+)\)/g, 'expect($1).toBeLessThan($2)');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.exist/g, 'expect($1).toBeDefined()');
+    result = result.replace(/pm\.expect\(([^)]+)\)\.to\.be\.ok/g, 'expect($1).toBeTruthy()');
     result = result.replace(/pm\.expect\(([^)]+)\)\./g, 'expect($1).');
-    result = result.replaceAll(
-      'pm.response.to.have.status(',
-      'expect(res.status).toBe(',
-    );
+    result = result.replaceAll('pm.response.to.have.status(', 'expect(res.status).toBe(');
     result = result.replaceAll(
       /pm\.response\.to\.have\.header\(([^)]+)\)/g,
       'expect(res.headers.get($1)).toBeDefined()',
@@ -216,45 +164,18 @@ export class PostmanScriptTransformer {
   private convertPostmanScript(code: string): string {
     let converted = code;
 
-    converted = converted.replace(
-      /pm\.environment\.get\(([^)]+)\)/g,
-      'req.env.getSecret($1)',
-    );
-    converted = converted.replace(
-      /pm\.environment\.set\(([^,]+),\s*([^)]+)\)/g,
-      'req.env.setSecret($1, $2)',
-    );
-    converted = converted.replace(
-      /pm\.variables\.get\(([^)]+)\)/g,
-      'req.env.getVariable($1)',
-    );
-    converted = converted.replace(
-      /pm\.variables\.set\(([^,]+),\s*([^)]+)\)/g,
-      'req.env.setVariable($1, $2)',
-    );
-    converted = converted.replace(
-      /pm\.globals\.get\(([^)]+)\)/g,
-      'req.env.getVariable($1)',
-    );
-    converted = converted.replace(
-      /pm\.globals\.set\(([^,]+),\s*([^)]+)\)/g,
-      'req.env.setVariable($1, $2)',
-    );
-    converted = converted.replace(
-      /pm\.collectionVariables\.get\(([^)]+)\)/g,
-      'req.env.getVariable($1)',
-    );
-    converted = converted.replace(
-      /pm\.collectionVariables\.set\(([^,]+),\s*([^)]+)\)/g,
-      'req.env.setVariable($1, $2)',
-    );
+    converted = converted.replace(/pm\.environment\.get\(([^)]+)\)/g, 'req.env.getSecret($1)');
+    converted = converted.replace(/pm\.environment\.set\(([^,]+),\s*([^)]+)\)/g, 'req.env.setSecret($1, $2)');
+    converted = converted.replace(/pm\.variables\.get\(([^)]+)\)/g, 'req.env.getVariable($1)');
+    converted = converted.replace(/pm\.variables\.set\(([^,]+),\s*([^)]+)\)/g, 'req.env.setVariable($1, $2)');
+    converted = converted.replace(/pm\.globals\.get\(([^)]+)\)/g, 'req.env.getVariable($1)');
+    converted = converted.replace(/pm\.globals\.set\(([^,]+),\s*([^)]+)\)/g, 'req.env.setVariable($1, $2)');
+    converted = converted.replace(/pm\.collectionVariables\.get\(([^)]+)\)/g, 'req.env.getVariable($1)');
+    converted = converted.replace(/pm\.collectionVariables\.set\(([^,]+),\s*([^)]+)\)/g, 'req.env.setVariable($1, $2)');
 
     converted = converted.replace(/pm\.request\.url/g, 'req.url');
     converted = converted.replace(/pm\.request\.method/g, 'req.method');
-    converted = converted.replace(
-      /pm\.request\.headers\.get\(([^)]+)\)/g,
-      'req.headers.get($1)',
-    );
+    converted = converted.replace(/pm\.request\.headers\.get\(([^)]+)\)/g, 'req.headers.get($1)');
     converted = converted.replace(
       /pm\.request\.headers\.add\(\{[^}]*key:\s*([^,]+),\s*value:\s*([^}]+)\}\)/g,
       'req.headers.set($1, $2)',
@@ -263,10 +184,7 @@ export class PostmanScriptTransformer {
 
     converted = converted.replace(/pm\.response\.code/g, 'res.status');
     converted = converted.replace(/pm\.response\.status/g, 'res.statusText');
-    converted = converted.replace(
-      /pm\.response\.headers\.get\(([^)]+)\)/g,
-      'res.headers.get($1)',
-    );
+    converted = converted.replace(/pm\.response\.headers\.get\(([^)]+)\)/g, 'res.headers.get($1)');
     converted = converted.replace(/pm\.response\.json\(\)/g, 'res.json()');
     converted = converted.replace(/pm\.response\.text\(\)/g, 'res.text()');
     converted = converted.replace(/pm\.response\.responseTime/g, '0');

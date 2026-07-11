@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+
 import { yasumuRpcRoute } from './routes/yasumu-rpc.ts';
 
 export const app = new Hono()

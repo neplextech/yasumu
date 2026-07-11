@@ -1,13 +1,14 @@
 // @ts-ignore type issue
 import '@yasumu/ui/globals.css';
-import { JetBrains_Mono, Poppins } from 'next/font/google';
-import { Providers } from '@/components/providers';
-import { Toaster } from '@yasumu/ui/components/sonner';
-import LayoutGroup from '@/components/layout/layout-group';
 import { SidebarProvider } from '@yasumu/ui/components/sidebar';
-import { AppSidebar } from '@/components/sidebars/app-sidebar';
-import { TitleBar } from '@/components/layout/title-bar';
+import { Toaster } from '@yasumu/ui/components/sonner';
+import { JetBrains_Mono, Poppins } from 'next/font/google';
+
+import LayoutGroup from '@/components/layout/layout-group';
 import { StatusBar } from '@/components/layout/status-bar/index';
+import { TitleBar } from '@/components/layout/title-bar';
+import { Providers } from '@/components/providers';
+import { AppSidebar } from '@/components/sidebars/app-sidebar';
 
 const poppins = Poppins({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
@@ -31,11 +32,11 @@ export default async function RootLayout({
   return (
     <html suppressHydrationWarning suppressContentEditableWarning>
       <body
-        className={`${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased overflow-hidden h-screen w-screen flex flex-col`}
+        className={`${poppins.variable} ${jetbrainsMono.variable} flex h-screen w-screen flex-col overflow-hidden font-sans antialiased`}
       >
         <Providers>
           <TitleBar />
-          <div className="flex-1 min-h-0 w-full overflow-hidden">
+          <div className="min-h-0 w-full flex-1 overflow-hidden">
             <Toaster />
             <LayoutGroup>
               <SidebarProvider className="h-full min-h-0">

@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { type YasumuCommand } from './commands';
 import { useHotkeys } from 'react-hotkeys-hook';
+
+import { type YasumuCommand } from './commands';
 
 export type SubDialogType = 'theme-picker' | null;
 
@@ -18,18 +19,12 @@ interface CommandPaletteContextValue {
   closeSubDialog: () => void;
 }
 
-const CommandPaletteContext =
-  React.createContext<CommandPaletteContextValue | null>(null);
+const CommandPaletteContext = React.createContext<CommandPaletteContextValue | null>(null);
 
-export function CommandPaletteProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function CommandPaletteProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [commands, setCommands] = React.useState<YasumuCommand[]>([]);
-  const [activeSubDialog, setActiveSubDialog] =
-    React.useState<SubDialogType>(null);
+  const [activeSubDialog, setActiveSubDialog] = React.useState<SubDialogType>(null);
 
   const toggle = React.useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -77,31 +72,16 @@ export function CommandPaletteProvider({
       openSubDialog,
       closeSubDialog,
     }),
-    [
-      isOpen,
-      toggle,
-      commands,
-      registerCommand,
-      unregisterCommand,
-      activeSubDialog,
-      openSubDialog,
-      closeSubDialog,
-    ],
+    [isOpen, toggle, commands, registerCommand, unregisterCommand, activeSubDialog, openSubDialog, closeSubDialog],
   );
 
-  return (
-    <CommandPaletteContext.Provider value={value}>
-      {children}
-    </CommandPaletteContext.Provider>
-  );
+  return <CommandPaletteContext.Provider value={value}>{children}</CommandPaletteContext.Provider>;
 }
 
 export function useCommandPalette() {
   const context = React.useContext(CommandPaletteContext);
   if (!context) {
-    throw new Error(
-      'useCommandPalette must be used within a CommandPaletteProvider',
-    );
+    throw new Error('useCommandPalette must be used within a CommandPaletteProvider');
   }
   return context;
 }

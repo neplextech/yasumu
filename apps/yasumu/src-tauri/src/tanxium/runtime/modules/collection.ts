@@ -47,9 +47,7 @@ export class Collection<K = any, V = any> extends Map<K, V> {
    * @param predicate A function that tests each value in the collection.
    * @returns The first value that satisfies the predicate, or undefined if none do.
    */
-  public find<T>(
-    predicate: (value: V, key: K, collection: this) => boolean,
-  ): V | undefined {
+  public find<T>(predicate: (value: V, key: K, collection: this) => boolean): V | undefined {
     for (const [key, value] of this) {
       if (predicate(value, key, this)) {
         return value;
@@ -62,9 +60,7 @@ export class Collection<K = any, V = any> extends Map<K, V> {
    * @param predicate A function that tests each value in the collection.
    * @returns A new Collection containing the values that pass the test.
    */
-  public filter(
-    predicate: (value: V, key: K, collection: this) => boolean,
-  ): Collection<K, V> {
+  public filter(predicate: (value: V, key: K, collection: this) => boolean): Collection<K, V> {
     const results = new Collection<K, V>();
     for (const [key, value] of this) {
       if (predicate(value, key, this)) {
@@ -92,9 +88,7 @@ export class Collection<K = any, V = any> extends Map<K, V> {
    * @param predicate A function that tests each value in the collection.
    * @returns True if at least one value satisfies the predicate, otherwise false.
    */
-  public some(
-    predicate: (value: V, key: K, collection: this) => boolean,
-  ): boolean {
+  public some(predicate: (value: V, key: K, collection: this) => boolean): boolean {
     for (const [key, value] of this) {
       if (predicate(value, key, this)) {
         return true;
@@ -108,9 +102,7 @@ export class Collection<K = any, V = any> extends Map<K, V> {
    * @param predicate A function that tests each value in the collection.
    * @returns True if all values satisfy the predicate, otherwise false.
    */
-  public every(
-    predicate: (value: V, key: K, collection: this) => boolean,
-  ): boolean {
+  public every(predicate: (value: V, key: K, collection: this) => boolean): boolean {
     for (const [key, value] of this) {
       if (!predicate(value, key, this)) {
         return false;
@@ -125,10 +117,7 @@ export class Collection<K = any, V = any> extends Map<K, V> {
    * @param initialValue The initial value for the accumulator.
    * @returns The final accumulated value.
    */
-  public reduce<T>(
-    reducer: (accumulator: T, value: V, key: K, collection: this) => T,
-    initialValue: T,
-  ): T {
+  public reduce<T>(reducer: (accumulator: T, value: V, key: K, collection: this) => T, initialValue: T): T {
     let accumulator = initialValue;
     for (const [key, value] of this) {
       accumulator = reducer(accumulator, value, key, this);
@@ -206,9 +195,7 @@ export class Cache {
     this._internalCache.clear();
   }
 
-  public find<T>(
-    predicate: (value: any, key: string) => boolean,
-  ): T | undefined {
+  public find<T>(predicate: (value: any, key: string) => boolean): T | undefined {
     for (const [key, entry] of this._internalCache) {
       if (predicate(entry.value, key)) {
         if (entry.expiresAt && Date.now() > entry.expiresAt) {

@@ -58,7 +58,7 @@ export function GrpcFileTree() {
   return (
     <FileTreeSidebar
       fileTree={FILE_TREE_ITEMS}
-      className="font-sans w-full"
+      className="w-full font-sans"
       collapsible="none"
       onFileCreate={() => {}}
     />

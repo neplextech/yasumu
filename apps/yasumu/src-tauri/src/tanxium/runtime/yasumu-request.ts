@@ -1,19 +1,6 @@
-import {
-  YasumuWorkspace,
-  YasumuWorkspaceContextData,
-  YasumuWorkspaceData,
-} from './yasumu-workspace-context.ts';
+import { YasumuWorkspace, YasumuWorkspaceContextData, YasumuWorkspaceData } from './yasumu-workspace-context.ts';
 
-type HttpMethod =
-  | 'GET'
-  | 'POST'
-  | 'PUT'
-  | 'DELETE'
-  | 'PATCH'
-  | 'HEAD'
-  | 'OPTIONS'
-  | 'CONNECT'
-  | 'TRACE';
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | 'CONNECT' | 'TRACE';
 
 interface TabularPair {
   key: string;
@@ -55,16 +42,12 @@ export class YasumuWorkspaceEnvironment {
   private _modified: boolean = false;
 
   constructor(data: EnvironmentData | null) {
-    this._data = data
-      ? { ...data, variables: [...data.variables], secrets: [...data.secrets] }
-      : null;
+    this._data = data ? { ...data, variables: [...data.variables], secrets: [...data.secrets] } : null;
   }
 
   private _assertActive(): void {
     if (!this._data) {
-      throw new Error(
-        'No environment is currently active. Please select an environment first.',
-      );
+      throw new Error('No environment is currently active. Please select an environment first.');
     }
   }
 
@@ -82,9 +65,7 @@ export class YasumuWorkspaceEnvironment {
 
   getVariable(key: string): string | null {
     this._assertActive();
-    const variable = this._data!.variables.find(
-      (v) => v.key === key && v.enabled,
-    );
+    const variable = this._data!.variables.find((v) => v.key === key && v.enabled);
     return variable?.value ?? null;
   }
 
@@ -230,9 +211,7 @@ export class YasumuHeaders {
     return Object.entries(this._headers)[Symbol.iterator]();
   }
 
-  forEach(
-    callback: (value: string, key: string, parent: YasumuHeaders) => void,
-  ): void {
+  forEach(callback: (value: string, key: string, parent: YasumuHeaders) => void): void {
     for (const [key, value] of Object.entries(this._headers)) {
       callback(value, key, this);
     }
@@ -326,13 +305,7 @@ export class YasumuURLSearchParams {
     }
   }
 
-  forEach(
-    callback: (
-      value: string,
-      key: string,
-      parent: YasumuURLSearchParams,
-    ) => void,
-  ): void {
+  forEach(callback: (value: string, key: string, parent: YasumuURLSearchParams) => void): void {
     for (const [key, value] of this.entries()) {
       callback(value, key, this);
     }
@@ -471,18 +444,11 @@ export class YasumuResponse {
   private _ok: boolean;
   private _workspace: YasumuWorkspace;
 
-  constructor(
-    body?: unknown,
-    init?: YasumuResponseInit,
-    workspace?: YasumuWorkspaceContextData,
-  ) {
+  constructor(body?: unknown, init?: YasumuResponseInit, workspace?: YasumuWorkspaceContextData) {
     this._body = body ?? init?.body ?? null;
     this._status = init?.status ?? 200;
     this._statusText = init?.statusText ?? 'OK';
-    this._headers =
-      init?.headers instanceof YasumuHeaders
-        ? init.headers
-        : new YasumuHeaders(init?.headers);
+    this._headers = init?.headers instanceof YasumuHeaders ? init.headers : new YasumuHeaders(init?.headers);
     this._ok = this._status >= 200 && this._status < 300;
     this._workspace = new YasumuWorkspace({
       environment: workspace?.environment || null,
@@ -494,10 +460,7 @@ export class YasumuResponse {
     });
   }
 
-  static fromContext(
-    context: RestScriptContext,
-    workspace?: YasumuWorkspaceContextData,
-  ): YasumuResponse | null {
+  static fromContext(context: RestScriptContext, workspace?: YasumuWorkspaceContextData): YasumuResponse | null {
     if (!context.response) return null;
 
     return new YasumuResponse(

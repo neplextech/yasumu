@@ -1,6 +1,8 @@
 import { t } from '@yasumu/schema';
-import { YasumuAnnotations } from './constants.ts';
+
 import { EntityGroupEntityType } from '@/database/schema.ts';
+
+import { YasumuAnnotations } from './constants.ts';
 
 export const WorkspaceSchema = t.script({
   annotation: YasumuAnnotations.Workspace,

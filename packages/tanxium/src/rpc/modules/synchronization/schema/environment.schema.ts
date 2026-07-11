@@ -1,4 +1,5 @@
 import { t } from '@yasumu/schema';
+
 import { YasumuAnnotations } from './constants.ts';
 
 export const EnvironmentSchema = t.script({

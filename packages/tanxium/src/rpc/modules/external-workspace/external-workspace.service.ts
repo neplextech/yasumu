@@ -1,40 +1,28 @@
-import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import {
   ExternalWorkspaceExportOptions,
   ExternalWorkspaceImportOptions,
   ExternalWorkspaceImportStrategy,
 } from '@yasumu/common';
-import {
-  NotFoundException,
-  NotImplementedException,
-} from '../common/exceptions/http.exception.ts';
+import { Injectable } from '@yasumu/den';
+import { eq } from 'drizzle-orm';
+
+import { workspaces, entityGroups, restEntities, environments } from '../../../database/schema.ts';
+import { NotFoundException, NotImplementedException } from '../common/exceptions/http.exception.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { ExternalWorkspaceStrategy } from './strategies/common/external-workspace-strategy.ts';
-import { PostmanWorkspaceStrategy } from './strategies/postman/postman-workspace-strategy.ts';
 import {
   YasumuWorkspaceFormat,
   YasumuWorkspaceFormatEntityGroup,
 } from './strategies/common/yasumu-workspace-format.ts';
-import {
-  workspaces,
-  entityGroups,
-  restEntities,
-  environments,
-} from '../../../database/schema.ts';
-import { eq } from 'drizzle-orm';
+import { PostmanWorkspaceStrategy } from './strategies/postman/postman-workspace-strategy.ts';
 
 @Injectable()
 export class ExternalWorkspaceService {
-  private readonly strategies = new Map<
-    ExternalWorkspaceImportStrategy,
-    ExternalWorkspaceStrategy
-  >();
+  private readonly strategies = new Map<ExternalWorkspaceImportStrategy, ExternalWorkspaceStrategy>();
 
   public constructor(private readonly connection: TransactionalConnection) {}
 
-  private getStrategy(
-    strategy: ExternalWorkspaceImportStrategy,
-  ): ExternalWorkspaceStrategy {
+  private getStrategy(strategy: ExternalWorkspaceImportStrategy): ExternalWorkspaceStrategy {
     if (this.strategies.has(strategy)) {
       return this.strategies.get(strategy)!;
     }
@@ -47,10 +35,7 @@ export class ExternalWorkspaceService {
     }
   }
 
-  public async import(
-    workspaceId: string,
-    options: ExternalWorkspaceImportOptions,
-  ): Promise<boolean> {
+  public async import(workspaceId: string, options: ExternalWorkspaceImportOptions): Promise<boolean> {
     const strategy = this.getStrategy(options.strategy);
     const result = await strategy.import(options.content);
 
@@ -59,26 +44,15 @@ export class ExternalWorkspaceService {
     return true;
   }
 
-  public async export(
-    workspaceId: string,
-    options: ExternalWorkspaceExportOptions,
-  ): Promise<string> {
+  public async export(workspaceId: string, options: ExternalWorkspaceExportOptions): Promise<string> {
     await (void workspaceId, void options);
-    throw new NotImplementedException(
-      'Exporting external workspaces is not implemented yet',
-    );
+    throw new NotImplementedException('Exporting external workspaces is not implemented yet');
   }
 
-  private async importYasumuWorkspaceFormat(
-    workspaceId: string,
-    workspaceData: YasumuWorkspaceFormat,
-  ) {
+  private async importYasumuWorkspaceFormat(workspaceId: string, workspaceData: YasumuWorkspaceFormat) {
     const db = this.connection.getConnection();
 
-    const [workspace] = await db
-      .select()
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId));
+    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
 
     if (!workspace) {
       throw new NotFoundException('Workspace not found');
@@ -89,10 +63,7 @@ export class ExternalWorkspaceService {
     await this.importRestEntities(workspaceId, workspaceData.rest);
   }
 
-  private async importEnvironments(
-    workspaceId: string,
-    envs: YasumuWorkspaceFormat['environments'],
-  ) {
+  private async importEnvironments(workspaceId: string, envs: YasumuWorkspaceFormat['environments']) {
     if (envs.length === 0) return;
 
     const db = this.connection.getConnection();
@@ -111,10 +82,7 @@ export class ExternalWorkspaceService {
     }
   }
 
-  private async importEntityGroups(
-    workspaceId: string,
-    groups: YasumuWorkspaceFormatEntityGroup[],
-  ) {
+  private async importEntityGroups(workspaceId: string, groups: YasumuWorkspaceFormatEntityGroup[]) {
     if (groups.length === 0) return;
 
     const db = this.connection.getConnection();
@@ -135,9 +103,7 @@ export class ExternalWorkspaceService {
     }
   }
 
-  private topologicalSortGroups(
-    groups: YasumuWorkspaceFormatEntityGroup[],
-  ): YasumuWorkspaceFormatEntityGroup[] {
+  private topologicalSortGroups(groups: YasumuWorkspaceFormatEntityGroup[]): YasumuWorkspaceFormatEntityGroup[] {
     const sorted: YasumuWorkspaceFormatEntityGroup[] = [];
     const visited = new Set<string>();
     const groupMap = new Map<string, YasumuWorkspaceFormatEntityGroup>();
@@ -167,10 +133,7 @@ export class ExternalWorkspaceService {
     return sorted;
   }
 
-  private async importRestEntities(
-    workspaceId: string,
-    entities: YasumuWorkspaceFormat['rest'],
-  ) {
+  private async importRestEntities(workspaceId: string, entities: YasumuWorkspaceFormat['rest']) {
     if (entities.length === 0) return;
 
     const db = this.connection.getConnection();

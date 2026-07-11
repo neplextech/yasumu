@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { type } from '@tauri-apps/plugin-os';
+import { useState, useEffect } from 'react';
 
 interface PlatformInfo {
   platform: string;

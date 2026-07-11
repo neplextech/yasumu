@@ -1,15 +1,13 @@
 'use client';
 
+import { FileWarning, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
+
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { FileWarning, Loader2 } from 'lucide-react';
+import { Document, Page, pdfjs } from 'react-pdf';
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 const options = {
   cMapUrl: '/cmaps/',
@@ -38,21 +36,21 @@ export default function PdfDocument({ data }: PdfDocumentProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground p-8">
-        <FileWarning className="w-12 h-12 opacity-50" />
+      <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-4 p-8">
+        <FileWarning className="h-12 w-12 opacity-50" />
         <div className="text-center">
           <p className="font-medium">Failed to load PDF</p>
-          <p className="text-sm mt-1 text-destructive">{error}</p>
+          <p className="text-destructive mt-1 text-sm">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center p-4 gap-4">
+    <div className="flex flex-col items-center gap-4 p-4">
       {loading && (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div className="text-muted-foreground flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-sm">Loading PDF...</span>
         </div>
       )}
@@ -66,13 +64,7 @@ export default function PdfDocument({ data }: PdfDocumentProps) {
       >
         {numPages &&
           Array.from({ length: numPages }, (_, i) => (
-            <Page
-              key={i}
-              pageNumber={i + 1}
-              className="shadow-lg"
-              renderTextLayer
-              renderAnnotationLayer
-            />
+            <Page key={i} pageNumber={i + 1} className="shadow-lg" renderTextLayer renderAnnotationLayer />
           ))}
       </Document>
     </div>

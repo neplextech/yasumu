@@ -1,9 +1,12 @@
+import { HttpMethod, RestEntityRequestBody, TabularPair, YasumuEmbeddedScript } from '@yasumu/common';
+
 import {
-  HttpMethod,
-  RestEntityRequestBody,
-  TabularPair,
-  YasumuEmbeddedScript,
-} from '@yasumu/common';
+  YasumuWorkspaceFormat,
+  YasumuWorkspaceFormatEntityGroup,
+  YasumuWorkspaceFormatEnvironment,
+  YasumuWorkspaceFormatRest,
+} from '../common/yasumu-workspace-format.ts';
+import { PostmanScriptTransformer } from './script-transformer.ts';
 import type {
   PostmanAuth,
   PostmanBody,
@@ -12,56 +15,35 @@ import type {
   PostmanItem,
   PostmanUrlPath,
 } from './types.ts';
-import {
-  YasumuWorkspaceFormat,
-  YasumuWorkspaceFormatEntityGroup,
-  YasumuWorkspaceFormatEnvironment,
-  YasumuWorkspaceFormatRest,
-} from '../common/yasumu-workspace-format.ts';
-import { PostmanScriptTransformer } from './script-transformer.ts';
 import { looksLikeJson, prepend } from './utils.ts';
 
 export class PostmanCollectionImporter {
   private readonly scriptTransformer = new PostmanScriptTransformer();
 
-  public importCollection(
-    collection: PostmanCollection,
-  ): YasumuWorkspaceFormat {
+  public importCollection(collection: PostmanCollection): YasumuWorkspaceFormat {
     const entityGroups: YasumuWorkspaceFormatEntityGroup[] = [];
     const rest: YasumuWorkspaceFormatRest[] = [];
     const environments: YasumuWorkspaceFormatEnvironment[] = [];
 
-    const collectionVariables: TabularPair[] = (collection.variable ?? []).map(
-      (v) => ({
-        key: v.key,
-        value: v.value ?? '',
-        enabled: v.disabled !== true,
-      }),
-    );
+    const collectionVariables: TabularPair[] = (collection.variable ?? []).map((v) => ({
+      key: v.key,
+      value: v.value ?? '',
+      enabled: v.disabled !== true,
+    }));
 
     if (collectionVariables.length) {
       environments.push({
         id: Yasumu.cuid(),
-        name: collection.info?.name
-          ? `${collection.info.name} Variables`
-          : 'Imported Variables',
+        name: collection.info?.name ? `${collection.info.name} Variables` : 'Imported Variables',
         variables: collectionVariables,
         secrets: [],
       });
     }
 
-    const collectionScripts = this.scriptTransformer.extractScripts(
-      collection.event,
-    );
+    const collectionScripts = this.scriptTransformer.extractScripts(collection.event);
 
     if (collection.item) {
-      this.processItems(
-        collection.item,
-        null,
-        entityGroups,
-        rest,
-        collectionScripts,
-      );
+      this.processItems(collection.item, null, entityGroups, rest, collectionScripts);
     }
 
     return { environments, rest, entityGroups };
@@ -94,13 +76,7 @@ export class PostmanCollectionImporter {
           testScript: folderScripts.testScript ?? inheritedScripts.testScript,
         };
 
-        this.processItems(
-          item.item,
-          groupId,
-          entityGroups,
-          rest,
-          mergedScripts,
-        );
+        this.processItems(item.item, groupId, entityGroups, rest, mergedScripts);
       } else if (item.request) {
         rest.push(this.convertRequest(item, parentGroupId, inheritedScripts));
       }
@@ -119,9 +95,7 @@ export class PostmanCollectionImporter {
     const url = this.extractUrl(request.url);
     const method = this.normalizeMethod(request.method);
     const headers = this.extractHeaders(request.header, request.auth);
-    const { parameters, searchParameters } = this.extractParameters(
-      request.url,
-    );
+    const { parameters, searchParameters } = this.extractParameters(request.url);
     const body = this.extractBody(request.body);
     const itemScripts = this.scriptTransformer.extractScripts(item.event);
 
@@ -169,23 +143,12 @@ export class PostmanCollectionImporter {
     if (!method) return 'GET';
 
     const upper = method.toUpperCase();
-    const validMethods = [
-      'GET',
-      'POST',
-      'PUT',
-      'DELETE',
-      'PATCH',
-      'OPTIONS',
-      'HEAD',
-    ];
+    const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
 
     return validMethods.includes(upper) ? (upper as HttpMethod) : 'GET';
   }
 
-  private extractHeaders(
-    headers: PostmanHeader[] | undefined,
-    auth: PostmanAuth | undefined,
-  ): TabularPair[] {
+  private extractHeaders(headers: PostmanHeader[] | undefined, auth: PostmanAuth | undefined): TabularPair[] {
     if (!headers && !(auth?.basic?.length || auth?.bearer?.length)) return [];
 
     const baseHeaders =
@@ -257,16 +220,13 @@ export class PostmanCollectionImporter {
     return { parameters, searchParameters };
   }
 
-  private extractBody(
-    body: PostmanBody | undefined,
-  ): RestEntityRequestBody | null {
+  private extractBody(body: PostmanBody | undefined): RestEntityRequestBody | null {
     if (!body || !body.mode) return null;
 
     switch (body.mode) {
       case 'raw': {
         const language = body.options?.raw?.language;
-        const isJson =
-          language === 'json' || (body.raw && looksLikeJson(body.raw));
+        const isJson = language === 'json' || (body.raw && looksLikeJson(body.raw));
 
         return {
           type: isJson ? 'json' : 'text',

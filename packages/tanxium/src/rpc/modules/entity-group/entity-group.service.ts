@@ -1,31 +1,17 @@
-import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import {
-  EntityGroupCreateOptions,
-  EntityGroupUpdateOptions,
-  TreeViewOptions,
-} from './types.ts';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
-import {
-  entityGroups,
-  entityHistory,
-  restEntities,
-  graphqlEntities,
-} from '../../../database/schema.ts';
-import {
-  NotFoundException,
-  BadRequestException,
-} from '../common/exceptions/http.exception.ts';
-import { TanxiumService } from '../common/tanxium.service.ts';
 import { EntityGroupData } from '@yasumu/common';
+import { Injectable } from '@yasumu/den';
 import { RpcSubscriptionEvents } from '@yasumu/rpc';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+
+import { entityGroups, entityHistory, restEntities, graphqlEntities } from '../../../database/schema.ts';
+import { NotFoundException, BadRequestException } from '../common/exceptions/http.exception.ts';
+import { TanxiumService } from '../common/tanxium.service.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
+import { EntityGroupCreateOptions, EntityGroupUpdateOptions, TreeViewOptions } from './types.ts';
 
 @Injectable()
 export class EntityGroupService {
-  private static readonly entityTableMap: Record<
-    string,
-    typeof restEntities | typeof graphqlEntities
-  > = {
+  private static readonly entityTableMap: Record<string, typeof restEntities | typeof graphqlEntities> = {
     rest: restEntities,
     graphql: graphqlEntities,
   };
@@ -43,11 +29,7 @@ export class EntityGroupService {
     return table;
   }
 
-  private async locateGroupWithCommonParent(
-    name: string,
-    workspaceId: string,
-    parentId: string | null,
-  ) {
+  private async locateGroupWithCommonParent(name: string, workspaceId: string, parentId: string | null) {
     const db = this.connection.getConnection();
     const [result] = await db
       .select()
@@ -56,9 +38,7 @@ export class EntityGroupService {
         and(
           eq(entityGroups.name, name),
           eq(entityGroups.workspaceId, workspaceId),
-          parentId
-            ? eq(entityGroups.parentId, parentId)
-            : isNull(entityGroups.parentId),
+          parentId ? eq(entityGroups.parentId, parentId) : isNull(entityGroups.parentId),
         ),
       )
       .limit(1);
@@ -66,21 +46,14 @@ export class EntityGroupService {
   }
 
   private async dispatchUpdate(workspaceId: string, entityType: string) {
-    await this.tanxiumService.publishMessage(
-      `${entityType}-entity-updated` as keyof RpcSubscriptionEvents,
-      {
-        workspaceId,
-      },
-    );
+    await this.tanxiumService.publishMessage(`${entityType}-entity-updated` as keyof RpcSubscriptionEvents, {
+      workspaceId,
+    });
   }
 
   public async create(workspaceId: string, data: EntityGroupCreateOptions) {
     const db = this.connection.getConnection();
-    const maybeExisting = await this.locateGroupWithCommonParent(
-      data.name,
-      workspaceId,
-      data.parentId,
-    );
+    const maybeExisting = await this.locateGroupWithCommonParent(data.name, workspaceId, data.parentId);
 
     if (maybeExisting) {
       return maybeExisting;
@@ -105,9 +78,7 @@ export class EntityGroupService {
     const [result] = await db
       .select()
       .from(entityGroups)
-      .where(
-        and(eq(entityGroups.id, id), eq(entityGroups.workspaceId, workspaceId)),
-      )
+      .where(and(eq(entityGroups.id, id), eq(entityGroups.workspaceId, workspaceId)))
       .limit(1);
 
     if (!result) return null;
@@ -115,24 +86,14 @@ export class EntityGroupService {
     const childGroups = await db
       .select()
       .from(entityGroups)
-      .where(
-        and(
-          eq(entityGroups.parentId, id),
-          eq(entityGroups.workspaceId, workspaceId),
-        ),
-      );
+      .where(and(eq(entityGroups.parentId, id), eq(entityGroups.workspaceId, workspaceId)));
 
     // Fetch entities that belong to this group based on entity type
     const entityTable = this.getEntityTable(result.entityType);
     const entities = await db
       .select()
       .from(entityTable)
-      .where(
-        and(
-          eq(entityTable.groupId, id),
-          eq(entityTable.workspaceId, workspaceId),
-        ),
-      );
+      .where(and(eq(entityTable.groupId, id), eq(entityTable.workspaceId, workspaceId)));
 
     return {
       ...result,
@@ -144,28 +105,19 @@ export class EntityGroupService {
   public async getOrThrow(workspaceId: string, id: string) {
     const result = await this.get(workspaceId, id);
     if (!result) {
-      throw new NotFoundException(
-        `Entity group ${id} for workspace ${workspaceId} not found`,
-      );
+      throw new NotFoundException(`Entity group ${id} for workspace ${workspaceId} not found`);
     }
     return result;
   }
 
   public async findAll(workspaceId: string) {
     const db = this.connection.getConnection();
-    const result = await db
-      .select()
-      .from(entityGroups)
-      .where(eq(entityGroups.workspaceId, workspaceId));
+    const result = await db.select().from(entityGroups).where(eq(entityGroups.workspaceId, workspaceId));
 
     return result;
   }
 
-  public async update(
-    workspaceId: string,
-    id: string,
-    data: EntityGroupUpdateOptions,
-  ): Promise<EntityGroupData> {
+  public async update(workspaceId: string, id: string, data: EntityGroupUpdateOptions): Promise<EntityGroupData> {
     if (!data.name && !data.parentId) {
       throw new BadRequestException('At least one field is required');
     }
@@ -177,8 +129,7 @@ export class EntityGroupService {
       .update(entityGroups)
       .set({
         name: data.name ?? entityGroup.name,
-        parentId:
-          data.parentId === undefined ? entityGroup.parentId : data.parentId,
+        parentId: data.parentId === undefined ? entityGroup.parentId : data.parentId,
       })
       .where(eq(entityGroups.id, id))
       .returning();
@@ -197,9 +148,7 @@ export class EntityGroupService {
     // Remove entity history only if there are entities to delete
     const entityIds = Array.from(new Set(entities.map((entity) => entity.id)));
     if (entityIds.length > 0) {
-      await db
-        .delete(entityHistory)
-        .where(inArray(entityHistory.entityId, entityIds));
+      await db.delete(entityHistory).where(inArray(entityHistory.entityId, entityIds));
     }
 
     await this.dispatchUpdate(workspaceId, entityType);
@@ -220,19 +169,11 @@ export class EntityGroupService {
     const groups = await db
       .select()
       .from(entityGroups)
-      .where(
-        and(
-          eq(entityGroups.workspaceId, workspaceId),
-          eq(entityGroups.entityType, entityType),
-        ),
-      );
+      .where(and(eq(entityGroups.workspaceId, workspaceId), eq(entityGroups.entityType, entityType)));
 
     // Fetch entities for this workspace based on entity type
     const entityTable = this.getEntityTable(entityType);
-    const entities = await db
-      .select()
-      .from(entityTable)
-      .where(eq(entityTable.workspaceId, workspaceId));
+    const entities = await db.select().from(entityTable).where(eq(entityTable.workspaceId, workspaceId));
 
     // Define tree item types for frontend consumption
     type GroupTreeItem = (typeof groups)[number] & {

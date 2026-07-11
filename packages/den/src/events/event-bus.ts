@@ -9,9 +9,7 @@ export class EventBus {
   private observers = new Set<Observer<any>>();
 
   publish<T = any>(event: T): Promise<void[]> {
-    const promises = Array.from(this.observers).map((observer) =>
-      observer(event),
-    );
+    const promises = Array.from(this.observers).map((observer) => observer(event));
     return Promise.all(promises);
   }
 

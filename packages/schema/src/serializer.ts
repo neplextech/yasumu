@@ -1,7 +1,4 @@
-import type {
-  YasumuSchemaParsable,
-  YasumuSchemaParsableToType,
-} from './parsable.js';
+import type { YasumuSchemaParsable, YasumuSchemaParsableToType } from './parsable.js';
 import { YasumuSchemaUtils } from './utils.js';
 
 /**
@@ -12,10 +9,7 @@ export class YasumuSchemaSerializer {
   depth = 0;
   keyPath: string[] = [];
 
-  serialize<T extends YasumuSchemaParsable<unknown>>(
-    parsable: T,
-    value: YasumuSchemaParsableToType<T>,
-  ) {
+  serialize<T extends YasumuSchemaParsable<unknown>>(parsable: T, value: YasumuSchemaParsableToType<T>) {
     try {
       return parsable.serialize(this, value);
     } catch (err) {

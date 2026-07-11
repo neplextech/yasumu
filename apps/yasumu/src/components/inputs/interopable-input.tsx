@@ -1,12 +1,9 @@
 'use client';
 
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@yasumu/ui/components/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@yasumu/ui/components/popover';
 import { cn } from '@yasumu/ui/lib/utils';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 
 interface VariableSegment {
@@ -192,12 +189,7 @@ export function InteropableInput({
       const target = e.target as HTMLElement;
       if (target.closest('[data-slot="popover-trigger"]')) return;
       if (target.closest('[data-slot="popover-content"]')) return;
-      if (
-        document.querySelector(
-          '[data-state="open"][data-slot="popover-content"]',
-        )
-      )
-        return;
+      if (document.querySelector('[data-state="open"][data-slot="popover-content"]')) return;
       setIsEditing(true);
     },
     [disabled],
@@ -270,19 +262,12 @@ export function InteropableInput({
           );
         }
         return (
-          <span
-            key={`${segment.start}-${segment.end}`}
-            className="font-mono text-sm whitespace-pre"
-          >
+          <span key={`${segment.start}-${segment.end}`} className="font-mono text-sm whitespace-pre">
             {segment.content}
           </span>
         );
       })}
-      {!value && placeholder && (
-        <span className="text-muted-foreground font-mono text-sm">
-          {placeholder}
-        </span>
-      )}
+      {!value && placeholder && <span className="text-muted-foreground font-mono text-sm">{placeholder}</span>}
     </div>
   );
 }

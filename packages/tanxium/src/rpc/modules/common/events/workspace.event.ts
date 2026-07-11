@@ -1,4 +1,5 @@
 import { YasumuRpcContext } from '@yasumu/rpc';
+
 import { YasumuEvent } from './common.ts';
 
 export class WorkspaceEvent implements YasumuEvent {

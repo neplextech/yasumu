@@ -1,10 +1,7 @@
-import { YasumuSchemaTokenTypes } from '../tokens.js';
 import type { YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
-import {
-  YasumuSchemaParsable,
-  type YasumuSchemaParsableToType,
-} from './parsable.js';
+import { YasumuSchemaTokenTypes } from '../tokens.js';
+import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
 
 export class YasumuSchemaParsableNullable<
   E extends YasumuSchemaParsable<unknown>,
@@ -14,9 +11,7 @@ export class YasumuSchemaParsableNullable<
   }
 
   canParse(parser: YasumuSchemaParser) {
-    return (
-      parser.check(YasumuSchemaTokenTypes.NULL) || this.expect.canParse(parser)
-    );
+    return parser.check(YasumuSchemaTokenTypes.NULL) || this.expect.canParse(parser);
   }
 
   parse(parser: YasumuSchemaParser) {
@@ -27,17 +22,10 @@ export class YasumuSchemaParsableNullable<
   }
 
   canSerialize(serializer: YasumuSchemaSerializer, value: any) {
-    return (
-      value === undefined ||
-      value === null ||
-      this.expect.canSerialize(serializer, value)
-    );
+    return value === undefined || value === null || this.expect.canSerialize(serializer, value);
   }
 
-  serialize(
-    serializer: YasumuSchemaSerializer,
-    value: YasumuSchemaParsableToType<E>,
-  ) {
+  serialize(serializer: YasumuSchemaSerializer, value: YasumuSchemaParsableToType<E>) {
     if (value === undefined || value === null) {
       return 'null';
     }

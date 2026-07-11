@@ -40,16 +40,11 @@ export function getCategoryPriority(categoryId?: string): number {
   return category?.priority ?? 999;
 }
 
-export function createShortcutMatcher(
-  shortcut: CommandShortcut,
-): (...args: Parameters<HotkeyCallback>) => boolean {
+export function createShortcutMatcher(shortcut: CommandShortcut): (...args: Parameters<HotkeyCallback>) => boolean {
   return (_, { hotkey }) => hotkey.toString() === shortcut.hotkey;
 }
 
-export function formatShortcutDisplay(
-  shortcut: CommandShortcut,
-  isMac: boolean,
-): string {
+export function formatShortcutDisplay(shortcut: CommandShortcut, isMac: boolean): string {
   const keys = isMac ? shortcut.mac : shortcut.other;
   return keys.join('+');
 }

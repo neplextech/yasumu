@@ -2,23 +2,18 @@ async function setup() {
   try {
     if (process.env.NODE_ENV === 'development') return;
 
-    const { YASUMU_ANALYTICS_FLAG_KEY } =
-      await import('@/lib/constants/instrumentation');
+    const { YASUMU_ANALYTICS_FLAG_KEY } = await import('@/lib/constants/instrumentation');
     const { Store } = await import('@tauri-apps/plugin-store');
     const store = await Store.load('yasumu-config.json').catch(() => null);
 
-    const shouldTrack =
-      (await store
-        ?.get<boolean>(YASUMU_ANALYTICS_FLAG_KEY)
-        .catch(() => true)) ?? true;
+    const shouldTrack = (await store?.get<boolean>(YASUMU_ANALYTICS_FLAG_KEY).catch(() => true)) ?? true;
 
     if (!shouldTrack) return;
   } catch (e) {
     console.error(`Error reading the application configuration: ${e}`);
   }
 
-  const { setAnalyticsEnabled, trackEvent } =
-    await import('@/lib/instrumentation/analytics');
+  const { setAnalyticsEnabled, trackEvent } = await import('@/lib/instrumentation/analytics');
   const { default: posthog } = await import('posthog-js');
   const { app } = await import('@tauri-apps/api');
 
@@ -27,14 +22,13 @@ async function setup() {
     defaults: '2025-11-30',
   });
 
-  const [bundleType, identifier, version, tauriVersion, name] =
-    await Promise.all([
-      app.getBundleType(),
-      app.getIdentifier(),
-      app.getVersion(),
-      app.getTauriVersion(),
-      app.getName(),
-    ]).catch(() => []);
+  const [bundleType, identifier, version, tauriVersion, name] = await Promise.all([
+    app.getBundleType(),
+    app.getIdentifier(),
+    app.getVersion(),
+    app.getTauriVersion(),
+    app.getName(),
+  ]).catch(() => []);
 
   posthog.identify(undefined, {
     app_bundle_type: bundleType || 'unknown',

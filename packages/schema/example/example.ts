@@ -1,9 +1,4 @@
-import {
-  t,
-  serialize,
-  deserialize,
-  type YasumuSchemaParsableToType,
-} from '../src/index.js';
+import { t, serialize, deserialize, type YasumuSchemaParsableToType } from '../src/index.js';
 
 const script = `
 @Example
@@ -38,9 +33,7 @@ export const YasumuExampleScript = t.script({
     }),
     Request: t.object({
       url: t.string(),
-      params: t.nullable(
-        t.record(t.union(t.string(), t.number(), t.boolean(), t.null())),
-      ),
+      params: t.nullable(t.record(t.union(t.string(), t.number(), t.boolean(), t.null()))),
       headers: t.nullable(t.record(t.string())),
       body: t.nullable(
         t.object({

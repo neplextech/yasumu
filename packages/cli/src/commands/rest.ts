@@ -1,11 +1,10 @@
 import { Command } from 'commander';
 import pc from 'picocolors';
-import { WorkspaceLoader, resolveWorkspacePath } from '../workspace/loader.js';
-import { RestExecutor, formatResult } from '../executor/rest-executor.js';
 
-export const restCommand = new Command('rest').description(
-  'REST API operations',
-);
+import { RestExecutor, formatResult } from '../executor/rest-executor.js';
+import { WorkspaceLoader, resolveWorkspacePath } from '../workspace/loader.js';
+
+export const restCommand = new Command('rest').description('REST API operations');
 
 restCommand
   .command('run [target]')
@@ -32,9 +31,7 @@ restCommand
       const loader = new WorkspaceLoader(workspacePath);
 
       if (!loader.exists()) {
-        console.error(
-          pc.red(`No Yasumu workspace found at: ${workspacePath}/yasumu`),
-        );
+        console.error(pc.red(`No Yasumu workspace found at: ${workspacePath}/yasumu`));
         process.exit(1);
       }
 
@@ -59,9 +56,7 @@ restCommand
         }
         entitiesToRun = [entity];
       } else if (!options.all && !target) {
-        console.error(
-          pc.red('Please specify an entity name/id or use --all to run all'),
-        );
+        console.error(pc.red('Please specify an entity name/id or use --all to run all'));
         process.exit(1);
       }
 
@@ -86,11 +81,7 @@ restCommand
       if (!options.json) {
         console.log();
         console.log(
-          pc.bold(
-            pc.cyan(
-              `Running ${entitiesToRun.length} REST entit${entitiesToRun.length === 1 ? 'y' : 'ies'}...`,
-            ),
-          ),
+          pc.bold(pc.cyan(`Running ${entitiesToRun.length} REST entit${entitiesToRun.length === 1 ? 'y' : 'ies'}...`)),
         );
         if (environment) {
           console.log(pc.dim(`Using environment: ${environment.name}`));
@@ -178,9 +169,7 @@ restCommand
     const loader = new WorkspaceLoader(workspacePath);
 
     if (!loader.exists()) {
-      console.error(
-        pc.red(`No Yasumu workspace found at: ${workspacePath}/yasumu`),
-      );
+      console.error(pc.red(`No Yasumu workspace found at: ${workspacePath}/yasumu`));
       process.exit(1);
     }
 
@@ -221,9 +210,7 @@ restCommand
       if (entity.test) flags.push(pc.magenta('<test/>'));
       const flagStr = flags.length > 0 ? ` (${flags.join(', ')})` : '';
 
-      console.log(
-        `  ${methodColor(entity.method.padEnd(6))} ${pc.bold(entity.name)}${flagStr}`,
-      );
+      console.log(`  ${methodColor(entity.method.padEnd(6))} ${pc.bold(entity.name)}${flagStr}`);
       console.log(pc.dim(`         ${entity.url ?? '(no url)'}`));
       console.log(pc.dim(`         ID: ${entity.id}`));
       console.log();

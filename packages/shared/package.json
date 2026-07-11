@@ -2,19 +2,17 @@
   "name": "@yasumu/shared",
   "version": "0.1.0",
   "private": true,
-  "scripts": {},
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
   "files": [
     "src",
     "eslint-config",
     "tsconfig"
   ],
-  "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    },
-    "./eslint-config/*": "./eslint-config/*.js"
-  },
   "typesVersions": {
     "*": {
       "tsconfig/*": [
@@ -22,12 +20,14 @@
       ]
     }
   },
-  "license": "AGPL-3.0",
-  "author": "Neplex",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/neplextech/yasumu.git"
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./eslint-config/*": "./eslint-config/*.js"
   },
+  "scripts": {},
   "devDependencies": {
     "@next/eslint-plugin-next": "^15.4.5",
     "@typescript-eslint/eslint-plugin": "^8.39.0",

@@ -1,4 +1,10 @@
 import { Worker } from 'node:worker_threads';
+
+import { computeScriptHash, makeModuleKey } from './common/script-hash.ts';
+import {
+  SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
+  SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT,
+} from './common/worker-heartbeat.ts';
 import {
   ScriptExecutionRequest,
   ScriptExecutionResponse,
@@ -6,11 +12,6 @@ import {
   WorkerOutboundMessage,
   WorkerState,
 } from './types.ts';
-import {
-  SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
-  SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT,
-} from './common/worker-heartbeat.ts';
-import { computeScriptHash, makeModuleKey } from './common/script-hash.ts';
 
 export interface ScriptWorkerOptions {
   source: string;
@@ -21,10 +22,7 @@ const EXECUTION_TIMEOUT = 30_000;
 
 export class ScriptWorker {
   private worker: Worker | null = null;
-  private readonly pendingRequests = new Map<
-    string,
-    ScriptExecutionRequest<unknown>
-  >();
+  private readonly pendingRequests = new Map<string, ScriptExecutionRequest<unknown>>();
   private state: WorkerState = 'terminated';
   private lastHeartbeat = Date.now();
   private heartbeatCheckId: ReturnType<typeof setTimeout> | null = null;
@@ -110,9 +108,7 @@ export class ScriptWorker {
 
   private handleError(error: Error) {
     if (this.state === 'initializing') {
-      this.readyReject?.(
-        new Error(`Worker initialization failed: ${error.message}`),
-      );
+      this.readyReject?.(new Error(`Worker initialization failed: ${error.message}`));
     }
 
     for (const request of this.pendingRequests.values()) {
@@ -154,16 +150,11 @@ export class ScriptWorker {
 
       const elapsed = Date.now() - this.lastHeartbeat;
       if (elapsed >= SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT) {
-        this.terminateWithError(
-          'Worker heartbeat timeout - worker may be frozen',
-        );
+        this.terminateWithError('Worker heartbeat timeout - worker may be frozen');
         return;
       }
 
-      this.heartbeatCheckId = setTimeout(
-        check,
-        SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
-      );
+      this.heartbeatCheckId = setTimeout(check, SCRIPT_WORKER_HEARTBEAT_TIMEOUT);
     };
 
     this.heartbeatCheckId = setTimeout(check, SCRIPT_WORKER_HEARTBEAT_TIMEOUT);
@@ -187,10 +178,7 @@ export class ScriptWorker {
     return moduleKey;
   }
 
-  public async publishMessage<T = unknown>(
-    event: string,
-    data: T,
-  ): Promise<void> {
+  public async publishMessage<T = unknown>(event: string, data: T): Promise<void> {
     await this.ensureWorker();
     if (!this.worker) {
       throw new Error('Worker is not available');

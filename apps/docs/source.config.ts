@@ -1,9 +1,4 @@
-import {
-  defineConfig,
-  defineDocs,
-  frontmatterSchema,
-  metaSchema,
-} from 'fumadocs-mdx/config';
+import { defineConfig, defineDocs, frontmatterSchema, metaSchema } from 'fumadocs-mdx/config';
 import { z } from 'zod';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
@@ -27,9 +22,7 @@ export const blogs = defineDocs({
     schema: frontmatterSchema.extend(
       z.object({
         date: z.date(),
-        category: z
-          .enum(['announcement', 'tutorial', 'release', 'other'])
-          .default('other'),
+        category: z.enum(['announcement', 'tutorial', 'release', 'other']).default('other'),
       }).shape,
     ),
     postprocess: {

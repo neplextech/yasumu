@@ -1,11 +1,7 @@
 'use client';
 
-import { ChevronsUpDown, Home, Lock, Logs, Mail, Settings } from 'lucide-react';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@yasumu/ui/components/avatar';
+import { getVersion, getName, getTauriVersion } from '@tauri-apps/api/app';
+import { Avatar, AvatarFallback, AvatarImage } from '@yasumu/ui/components/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,23 +23,25 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@yasumu/ui/components/sidebar';
-import YasumuLogo from '@/components/visuals/yasumu-logo';
+import { Skeleton } from '@yasumu/ui/components/skeleton';
+import { cn } from '@yasumu/ui/lib/utils';
+import { ChevronsUpDown, Home, Lock, Logs, Mail, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import SidebarThemeSelector from './theme-selector';
-import { TbWorldWww } from 'react-icons/tb';
-import { SiDiscord, SiGithub, SiGraphql } from 'react-icons/si';
-import { YasumuSocials } from '@/lib/constants/socials';
-import SidebarLayoutStyleSelector from './layout-style-selector';
-import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import { useEffect, useState } from 'react';
-import { AppMenu } from './app-menu';
-import { useYasumu } from '../providers/workspace-provider';
-import { getVersion, getName, getTauriVersion } from '@tauri-apps/api/app';
-import { Skeleton } from '@yasumu/ui/components/skeleton';
-import { useUpdater } from '../providers/updater-provider';
-import { cn } from '@yasumu/ui/lib/utils';
 import { IoSync } from 'react-icons/io5';
+import { SiDiscord, SiGithub, SiGraphql } from 'react-icons/si';
+import { TbWorldWww } from 'react-icons/tb';
+
+import YasumuLogo from '@/components/visuals/yasumu-logo';
+import { YasumuSocials } from '@/lib/constants/socials';
+
+import { useUpdater } from '../providers/updater-provider';
+import { useYasumu } from '../providers/workspace-provider';
+import { AppMenu } from './app-menu';
+import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
+import SidebarLayoutStyleSelector from './layout-style-selector';
+import SidebarThemeSelector from './theme-selector';
 
 const data = {
   user: {
@@ -112,10 +110,7 @@ export function AppSidebar() {
   if (!currentWorkspaceId) return null;
 
   return (
-    <Sidebar
-      collapsible="none"
-      className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
-    >
+    <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -219,7 +214,7 @@ function SettingsDropdown({
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage alt={user.name} />
                 <AvatarFallback className="rounded-lg">
-                  <YasumuLogo className="size-4 dark:invert-0 invert" />
+                  <YasumuLogo className="size-4 invert dark:invert-0" />
                 </AvatarFallback>
               </Avatar>
               <AppInfo />
@@ -289,11 +284,7 @@ function AppInfo() {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const [name, version, tauriVersion] = await Promise.all([
-          getName(),
-          getVersion(),
-          getTauriVersion(),
-        ]);
+        const [name, version, tauriVersion] = await Promise.all([getName(), getVersion(), getTauriVersion()]);
 
         setInfo({ name, version, tauriVersion });
       } catch (e) {
@@ -309,7 +300,7 @@ function AppInfo() {
       {!info ? (
         <>
           <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-24 mt-1" />
+          <Skeleton className="mt-1 h-4 w-24" />
         </>
       ) : (
         <>

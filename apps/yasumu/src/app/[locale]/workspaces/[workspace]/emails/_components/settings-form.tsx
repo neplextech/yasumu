@@ -1,10 +1,11 @@
 'use client';
 
+import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
-import { Button } from '@yasumu/ui/components/button';
 import { toast } from '@yasumu/ui/components/sonner';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+
 import CodeBlock from '@/components/visuals/code-block/code-block';
 
 interface SettingsFormProps {
@@ -50,32 +51,26 @@ export default function SettingsForm({
   return (
     <div className="p-8">
       <div className="flex gap-8">
-        <div className="flex-1 max-w-xl border rounded-lg p-4">
-          <h3 className="text-2xl font-bold mb-2">SMTP Server Configuration</h3>
-          <p className="text-sm text-muted-foreground mb-8">
-            Configure your local SMTP server settings. This is a catch-all
-            mailbox for development purposes.
+        <div className="max-w-xl flex-1 rounded-lg border p-4">
+          <h3 className="mb-2 text-2xl font-bold">SMTP Server Configuration</h3>
+          <p className="text-muted-foreground mb-8 text-sm">
+            Configure your local SMTP server settings. This is a catch-all mailbox for development purposes.
           </p>
           {activePort && (
-            <div className="flex items-center gap-3 mb-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 rounded-lg">
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800/30 dark:bg-green-950/20">
               <div className="relative">
-                <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-                <div className="absolute inset-0 h-3 w-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-green-500 opacity-75"></div>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  SMTP Server Online
-                </p>
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">SMTP Server Online</p>
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  Running on port{' '}
-                  <span className="font-bold font-mono underline">
-                    {activePort}
-                  </span>
+                  Running on port <span className="font-mono font-bold underline">{activePort}</span>
                 </p>
               </div>
               <Button
                 variant="outline"
-                className="border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300"
                 onClick={withErrorHandler(async () => {
                   if (activePort == null) return;
                   await navigator.clipboard.writeText(`${activePort}`);
@@ -95,9 +90,7 @@ export default function SettingsForm({
                 value={username}
                 onChange={(e) => onUsernameChange(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Leave empty for catch-all mailbox
-              </p>
+              <p className="text-muted-foreground text-xs">Leave empty for catch-all mailbox</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password (Optional)</Label>
@@ -108,9 +101,7 @@ export default function SettingsForm({
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Authentication is optional for local development
-              </p>
+              <p className="text-muted-foreground text-xs">Authentication is optional for local development</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="port">Port</Label>
@@ -121,9 +112,7 @@ export default function SettingsForm({
                 value={port}
                 onChange={(e) => onPortChange(e.target.valueAsNumber)}
               />
-              <p className="text-xs text-muted-foreground">
-                Default port: 0 (random)
-              </p>
+              <p className="text-muted-foreground text-xs">Default port: 0 (random)</p>
             </div>
           </div>
           <Button onClick={onSave} className="mt-6">
@@ -131,15 +120,11 @@ export default function SettingsForm({
           </Button>
         </div>
 
-        <div className="flex-1 max-w-lg">
-          <CodeBlock
-            language="typescript"
-            title="nodemailer-example.ts"
-            iconClassName="text-blue-500 bg-white"
-          >
+        <div className="max-w-lg flex-1">
+          <CodeBlock language="typescript" title="nodemailer-example.ts" iconClassName="text-blue-500 bg-white">
             {snippet}
           </CodeBlock>
-          <p className="text-xs text-muted-foreground mt-3">
+          <p className="text-muted-foreground mt-3 text-xs">
             Use this snippet to send test emails to Yasumu&apos;s SMTP server.
           </p>
         </div>

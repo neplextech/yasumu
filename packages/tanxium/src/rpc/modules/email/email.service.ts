@@ -1,21 +1,17 @@
+import { EmailData, ExecutableScript, ListEmailOptions, PaginatedResult, SmtpConfig } from '@yasumu/common';
+import { EmailScriptContext } from '@yasumu/common';
 import { Injectable } from '@yasumu/den';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { emails, environments, smtp, workspaces } from '@/database/schema.ts';
 import { and, asc, count, desc, eq, or } from 'drizzle-orm';
-import {
-  EmailData,
-  ExecutableScript,
-  ListEmailOptions,
-  PaginatedResult,
-  SmtpConfig,
-} from '@yasumu/common';
 import { ilike } from 'drizzle-orm/sql';
+
+import { emails, environments, smtp, workspaces } from '@/database/schema.ts';
 import { createSmtpServer, SMTPServerInstance } from '@/smtp/server.ts';
+
+import { db } from '../../../database/index.ts';
 import { areDifferentByKeys, assertFound } from '../../common/utils.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 import { ScriptRuntimeService } from '../script-runtime/script-runtime.service.ts';
 import { EMAIL_CONTEXT_TYPE } from './email-script-preload.ts';
-import { EmailScriptContext } from '@yasumu/common';
-import { db } from '../../../database/index.ts';
 
 @Injectable()
 export class EmailService {
@@ -53,8 +49,7 @@ export class EmailService {
         console.error('Failed to close dead SMTP server', e);
         return Yasumu.ui.showNotification({
           title: 'Failed to close SMTP server',
-          message:
-            'Please try again later. If the problem persists, please restart the application.',
+          message: 'Please try again later. If the problem persists, please restart the application.',
           variant: 'error',
         });
       });
@@ -89,10 +84,7 @@ export class EmailService {
   public async getSmtp(workspaceId: string) {
     const db = this.connection.getConnection();
 
-    const [result] = await db
-      .select()
-      .from(smtp)
-      .where(eq(smtp.workspaceId, workspaceId));
+    const [result] = await db.select().from(smtp).where(eq(smtp.workspaceId, workspaceId));
 
     if (!result) {
       const [res] = await db
@@ -113,16 +105,10 @@ export class EmailService {
     const db = this.connection.getConnection();
     const smtp = await this.getSmtp(workspaceId);
 
-    await db
-      .delete(emails)
-      .where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
+    await db.delete(emails).where(and(eq(emails.smtpId, smtp.id), eq(emails.id, id)));
   }
 
-  public async getEmail(
-    workspaceId: string,
-    id: string,
-    markAsRead: boolean = true,
-  ): Promise<EmailData | null> {
+  public async getEmail(workspaceId: string, id: string, markAsRead: boolean = true): Promise<EmailData | null> {
     const db = this.connection.getConnection();
     const smtp = await this.getSmtp(workspaceId);
 
@@ -161,10 +147,7 @@ export class EmailService {
       unread != null ? eq(emails.unread, unread) : undefined,
     );
 
-    const [{ count: total }] = await db
-      .select({ count: count() })
-      .from(emails)
-      .where(where);
+    const [{ count: total }] = await db.select({ count: count() }).from(emails).where(where);
 
     const result = await db
       .select()
@@ -180,62 +163,41 @@ export class EmailService {
     } satisfies PaginatedResult<EmailData>;
   }
 
-  public async updateSmtpConfig(
-    workspaceId: string,
-    data: Partial<SmtpConfig>,
-  ) {
+  public async updateSmtpConfig(workspaceId: string, data: Partial<SmtpConfig>) {
     const db = this.connection.getConnection();
     const smtpData = await this.getSmtp(workspaceId);
 
-    const [updatedSmtpData] = await db
-      .update(smtp)
-      .set(data)
-      .where(eq(smtp.id, smtpData.id))
-      .returning();
+    const [updatedSmtpData] = await db.update(smtp).set(data).where(eq(smtp.id, smtpData.id)).returning();
 
     // kill the existing server if the config has changed
     // only applicable if the server is running
     if (
-      areDifferentByKeys(updatedSmtpData, smtpData, [
-        'password',
-        'username',
-        'port',
-      ]) &&
+      areDifferentByKeys(updatedSmtpData, smtpData, ['password', 'username', 'port']) &&
       this.servers.has(workspaceId)
     ) {
       await this.createSmtpServer(workspaceId, true).catch((e) => {
         console.error('Failed to create SMTP server', e);
         return Yasumu.ui.showNotification({
           title: 'Failed to create SMTP server',
-          message:
-            'Please try again later. If the problem persists, please restart the application.',
+          message: 'Please try again later. If the problem persists, please restart the application.',
           variant: 'error',
         });
       });
     }
   }
 
-  public async executeScript(
-    workspaceId: string,
-    emailOrId: EmailData | string,
-  ) {
+  public async executeScript(workspaceId: string, emailOrId: EmailData | string) {
     const smtp = await this.getSmtp(workspaceId);
 
     // script not configured
     if (!smtp.script?.code?.trim()) return;
 
-    const email =
-      typeof emailOrId === 'string'
-        ? await this.getEmail(workspaceId, emailOrId, false)
-        : emailOrId;
+    const email = typeof emailOrId === 'string' ? await this.getEmail(workspaceId, emailOrId, false) : emailOrId;
 
     // invalid email
     if (!email) return;
 
-    const [workspace] = await db
-      .select()
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId));
+    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
 
     assertFound(workspace, 'Workspace not found');
 
@@ -243,12 +205,7 @@ export class EmailService {
       ? await db
           .select()
           .from(environments)
-          .where(
-            and(
-              eq(environments.id, workspace.activeEnvironmentId),
-              eq(environments.workspaceId, workspaceId),
-            ),
-          )
+          .where(and(eq(environments.id, workspace.activeEnvironmentId), eq(environments.workspaceId, workspaceId)))
           .limit(1)
       : [];
 
@@ -278,20 +235,13 @@ export class EmailService {
       const [existingEnv] = await db
         .select()
         .from(environments)
-        .where(
-          and(
-            eq(environments.id, workspace.activeEnvironmentId ?? ''),
-            eq(environments.workspaceId, workspaceId),
-          ),
-        )
+        .where(and(eq(environments.id, workspace.activeEnvironmentId ?? ''), eq(environments.workspaceId, workspaceId)))
         .limit(1);
 
       if (!existingEnv) return;
 
       // Create maps for efficient lookup and merge (new values override existing)
-      const variablesMap = new Map(
-        existingEnv.variables.map((v) => [v.key, v]),
-      );
+      const variablesMap = new Map(existingEnv.variables.map((v) => [v.key, v]));
       for (const variable of result.context.environment.variables) {
         variablesMap.set(variable.key, variable);
       }
@@ -307,11 +257,7 @@ export class EmailService {
       await db
         .update(environments)
         .set({
-          metadata: Object.assign(
-            {},
-            existingEnv.metadata,
-            result.context.environment.metadata,
-          ),
+          metadata: Object.assign({}, existingEnv.metadata, result.context.environment.metadata),
           variables: mergedVariables,
           secrets: mergedSecrets,
           name: result.context.environment.name || existingEnv.name,

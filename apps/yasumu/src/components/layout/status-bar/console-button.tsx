@@ -1,14 +1,10 @@
 'use client';
 
-import { useConsoleStore } from '@/stores/console-store';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@yasumu/ui/components/tooltip';
 import { cn } from '@yasumu/ui/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from '@yasumu/ui/components/tooltip';
 import { VscTerminal } from 'react-icons/vsc';
+
+import { useConsoleStore } from '@/stores/console-store';
 
 export function ConsoleButton() {
   const { logs, setOpen } = useConsoleStore();
@@ -31,16 +27,8 @@ export function ConsoleButton() {
             <span className="text-xs">Console</span>
             {(errorCount > 0 || warnCount > 0) && (
               <div className="flex items-center gap-1">
-                {errorCount > 0 && (
-                  <span className="text-red-400 text-[10px] font-mono">
-                    {errorCount}
-                  </span>
-                )}
-                {warnCount > 0 && (
-                  <span className="text-amber-400 text-[10px] font-mono">
-                    {warnCount}
-                  </span>
-                )}
+                {errorCount > 0 && <span className="font-mono text-[10px] text-red-400">{errorCount}</span>}
+                {warnCount > 0 && <span className="font-mono text-[10px] text-amber-400">{warnCount}</span>}
               </div>
             )}
           </button>

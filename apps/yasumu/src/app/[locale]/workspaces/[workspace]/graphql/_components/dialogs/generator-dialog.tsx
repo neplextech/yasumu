@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@yasumu/ui/components/alert';
+import { Button } from '@yasumu/ui/components/button';
+import { Checkbox } from '@yasumu/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -7,32 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@yasumu/ui/components/dialog';
-import { Button } from '@yasumu/ui/components/button';
 import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
-import { Checkbox } from '@yasumu/ui/components/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@yasumu/ui/components/select';
-import { useGraphqlIntrospection } from '../../_hooks/use-graphql-introspection';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
+import { isObjectType, isLeafType, GraphQLField, isListType, isNonNullType, GraphQLType } from 'graphql';
 import { Wand2, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import {
-  isObjectType,
-  isLeafType,
-  GraphQLField,
-  isListType,
-  isNonNullType,
-  GraphQLType,
-} from 'graphql';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@yasumu/ui/components/alert';
+import { useState, useMemo } from 'react';
+
+import { useGraphqlIntrospection } from '../../_hooks/use-graphql-introspection';
 
 interface GeneratorDialogProps {
   open: boolean;
@@ -50,20 +34,10 @@ interface GeneratorDialogProps {
   ) => Promise<void>;
 }
 
-export function GeneratorDialog({
-  open,
-  onOpenChange,
-  folders,
-  onGenerate,
-}: GeneratorDialogProps) {
+export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: GeneratorDialogProps) {
   const [url, setUrl] = useState('');
   const [targetFolderId, setTargetFolderId] = useState<string>('root');
-  const {
-    introspect,
-    isLoading,
-    error: introspectionError,
-    schema,
-  } = useGraphqlIntrospection();
+  const { introspect, isLoading, error: introspectionError, schema } = useGraphqlIntrospection();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCount, setGeneratedCount] = useState<number | null>(null);
   const [includeQueries, setIncludeQueries] = useState(true);
@@ -86,10 +60,7 @@ export function GeneratorDialog({
         type: 'query' | 'mutation' | 'subscription';
       }[] = [];
 
-      const processType = (
-        type: any,
-        operationType: 'query' | 'mutation' | 'subscription',
-      ) => {
+      const processType = (type: any, operationType: 'query' | 'mutation' | 'subscription') => {
         if (!type) return;
         const fields = type.getFields();
         Object.values(fields).forEach((field: any) => {
@@ -114,11 +85,7 @@ export function GeneratorDialog({
         return true;
       });
 
-      await onGenerate(
-        url,
-        targetFolderId === 'root' ? null : targetFolderId,
-        filtered,
-      );
+      await onGenerate(url, targetFolderId === 'root' ? null : targetFolderId, filtered);
       setGeneratedCount(filtered.length);
       setTimeout(() => {
         onOpenChange(false);
@@ -147,9 +114,7 @@ export function GeneratorDialog({
             <Wand2 className="h-5 w-5 text-purple-500" />
             GraphQL Importer
           </DialogTitle>
-          <DialogDescription>
-            Automatically import entities from the given GraphQL URL.
-          </DialogDescription>
+          <DialogDescription>Automatically import entities from the given GraphQL URL.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
@@ -163,16 +128,8 @@ export function GeneratorDialog({
                 placeholder="https://api.example.com/graphql"
                 disabled={isLoading || isGenerating}
               />
-              <Button
-                onClick={handleIntrospect}
-                disabled={!url || isLoading || isGenerating}
-                variant="secondary"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Fetch'
-                )}
+              <Button onClick={handleIntrospect} disabled={!url || isLoading || isGenerating} variant="secondary">
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Fetch'}
               </Button>
             </div>
             {introspectionError && (
@@ -187,14 +144,8 @@ export function GeneratorDialog({
                 <CheckCircle2 className="h-4 w-4 stroke-green-600" />
                 <AlertTitle>Success</AlertTitle>
                 <AlertDescription>
-                  Schema loaded! Found{' '}
-                  {Object.keys(schema.getQueryType()?.getFields() || {}).length}{' '}
-                  queries,{' '}
-                  {
-                    Object.keys(schema.getMutationType()?.getFields() || {})
-                      .length
-                  }{' '}
-                  mutations.
+                  Schema loaded! Found {Object.keys(schema.getQueryType()?.getFields() || {}).length} queries,{' '}
+                  {Object.keys(schema.getMutationType()?.getFields() || {}).length} mutations.
                 </AlertDescription>
               </Alert>
             )}
@@ -202,11 +153,7 @@ export function GeneratorDialog({
 
           <div className="grid gap-2">
             <Label htmlFor="folder">Destination Folder</Label>
-            <Select
-              value={targetFolderId}
-              onValueChange={setTargetFolderId}
-              disabled={isLoading || isGenerating}
-            >
+            <Select value={targetFolderId} onValueChange={setTargetFolderId} disabled={isLoading || isGenerating}>
               <SelectTrigger>
                 <SelectValue placeholder="Select folder" />
               </SelectTrigger>
@@ -256,7 +203,7 @@ export function GeneratorDialog({
 
         <DialogFooter>
           {generatedCount !== null ? (
-            <div className="flex items-center text-green-600 gap-2 mr-auto font-medium">
+            <div className="mr-auto flex items-center gap-2 font-medium text-green-600">
               <CheckCircle2 className="h-4 w-4" />
               Generated {generatedCount} requests!
             </div>
@@ -281,31 +228,21 @@ function generateOperation(
   field: GraphQLField<any, any>,
   operationType: 'query' | 'mutation' | 'subscription',
 ): string {
-  const capitalize = (str: string) =>
-    str.charAt(0).toUpperCase() + str.slice(1);
+  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
   const operationName = capitalize(field.name);
 
-  const args =
-    field.args.length > 0
-      ? `(${field.args.map((arg) => `${arg.name}: $${arg.name}`).join(', ')})`
-      : '';
+  const args = field.args.length > 0 ? `(${field.args.map((arg) => `${arg.name}: $${arg.name}`).join(', ')})` : '';
 
   const varDefs =
-    field.args.length > 0
-      ? `(${field.args
-          .map((arg) => `$${arg.name}: ${arg.type.toString()}`)
-          .join(', ')})`
-      : '';
+    field.args.length > 0 ? `(${field.args.map((arg) => `$${arg.name}: ${arg.type.toString()}`).join(', ')})` : '';
 
   const returnType = getNamedType(field.type);
   let selectionSet = '';
 
   if (isObjectType(returnType)) {
     const subFields = Object.values(returnType.getFields());
-    const scalarFields = subFields.filter((f) =>
-      isLeafType(getNamedType(f.type)),
-    );
+    const scalarFields = subFields.filter((f) => isLeafType(getNamedType(f.type)));
 
     if (scalarFields.length > 0) {
       selectionSet = ` {

@@ -1,14 +1,20 @@
 {
   "name": "@yasumu/tanxium",
-  "private": true,
-  "type": "module",
-  "description": "JavaScript source for Yasumu's Tanxium JavaScript runtime",
   "version": "0.0.0",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "private": true,
+  "description": "JavaScript source for Yasumu's Tanxium JavaScript runtime",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
   "files": [
     "src"
   ],
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
     "build": "deno task bundle",
     "deno": "deno",
@@ -20,18 +26,12 @@
     "generate-schema": "deno --allow-read --allow-write ./scripts/generate-schema.ts",
     "lint": "deno lint"
   },
-  "license": "AGPL-3.0",
-  "author": "Neplex",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/neplextech/yasumu.git"
-  },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
     "@yasumu/common": "file:../../packages/common",
-    "@yasumu/rpc": "file:../../packages/rpc",
     "@yasumu/core": "file:../../packages/core",
     "@yasumu/den": "file:../../packages/den",
+    "@yasumu/rpc": "file:../../packages/rpc",
     "@yasumu/schema": "file:../../packages/schema",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
@@ -41,8 +41,8 @@
     "zod": "^4.4.1"
   },
   "devDependencies": {
-    "@types/node": "catalog:build",
     "@types/mailparser": "^3.4.6",
+    "@types/node": "catalog:build",
     "@types/smtp-server": "^3.5.13"
   }
 }

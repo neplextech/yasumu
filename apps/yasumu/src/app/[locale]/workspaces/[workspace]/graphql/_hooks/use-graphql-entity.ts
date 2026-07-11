@@ -1,13 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
-import type {
-  GraphqlEntityData,
-  GraphqlEntityRequestBody,
-  GraphqlEntityUpdateOptions,
-} from '@yasumu/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { GraphqlEntityData, GraphqlEntityRequestBody, GraphqlEntityUpdateOptions } from '@yasumu/core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
 const DEBOUNCE_DELAY = 500;
 
@@ -23,16 +20,13 @@ export interface GraphqlBodyValue {
 /**
  * Extract query/variables/operationName from a GraphQL entity's requestBody.
  */
-export function getGraphqlBodyValue(
-  requestBody: GraphqlEntityRequestBody | null | undefined,
-): GraphqlBodyValue {
+export function getGraphqlBodyValue(requestBody: GraphqlEntityRequestBody | null | undefined): GraphqlBodyValue {
   const defaultValue: GraphqlBodyValue = {
     query: '',
     variables: '',
     operationName: '',
   };
-  if (!requestBody?.value || typeof requestBody.value !== 'object')
-    return defaultValue;
+  if (!requestBody?.value || typeof requestBody.value !== 'object') return defaultValue;
   const val = requestBody.value as Partial<GraphqlBodyValue>;
   return {
     query: val.query || '',
@@ -65,18 +59,13 @@ interface UseGraphqlEntityReturn {
   isLoading: boolean;
   error: Error | null;
   isSaving: boolean;
-  updateField: <K extends keyof GraphqlEntityUpdateOptions>(
-    field: K,
-    value: GraphqlEntityUpdateOptions[K],
-  ) => void;
+  updateField: <K extends keyof GraphqlEntityUpdateOptions>(field: K, value: GraphqlEntityUpdateOptions[K]) => void;
   updateFields: (fields: Partial<GraphqlEntityUpdateOptions>) => void;
   updateBodyValue: (updates: Partial<GraphqlBodyValue>) => void;
   save: () => Promise<void>;
 }
 
-export function useGraphqlEntity({
-  entityId,
-}: UseGraphqlEntityOptions): UseGraphqlEntityReturn {
+export function useGraphqlEntity({ entityId }: UseGraphqlEntityOptions): UseGraphqlEntityReturn {
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [localData, setLocalData] = useState<GraphqlEntityData | null>(null);
@@ -88,10 +77,7 @@ export function useGraphqlEntity({
   // GraphQL API accessor
   const graphql = workspace.graphql;
 
-  const queryKey = useMemo(
-    () => ['graphql-entity', workspace.id, entityId],
-    [entityId, workspace.id],
-  );
+  const queryKey = useMemo(() => ['graphql-entity', workspace.id, entityId], [entityId, workspace.id]);
 
   const {
     data: serverData,
@@ -149,12 +135,7 @@ export function useGraphqlEntity({
   }, [serverData, isFetched]);
 
   const flushSave = useCallback(async () => {
-    if (
-      !entityId ||
-      !graphql ||
-      Object.keys(pendingUpdates.current).length === 0
-    )
-      return;
+    if (!entityId || !graphql || Object.keys(pendingUpdates.current).length === 0) return;
 
     const updates = { ...pendingUpdates.current };
     pendingUpdates.current = {};
@@ -202,10 +183,7 @@ export function useGraphqlEntity({
   );
 
   const updateField = useCallback(
-    <K extends keyof GraphqlEntityUpdateOptions>(
-      field: K,
-      value: GraphqlEntityUpdateOptions[K],
-    ) => {
+    <K extends keyof GraphqlEntityUpdateOptions>(field: K, value: GraphqlEntityUpdateOptions[K]) => {
       updateFields({ [field]: value } as Partial<GraphqlEntityUpdateOptions>);
     },
     [updateFields],

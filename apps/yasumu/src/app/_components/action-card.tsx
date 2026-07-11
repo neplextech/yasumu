@@ -1,6 +1,6 @@
 'use client';
-import Link from 'next/link';
 import { Card } from '@yasumu/ui/components/card';
+import Link from 'next/link';
 
 export default function ActionCard({
   icon: Icon,
@@ -24,7 +24,7 @@ export default function ActionCard({
           href={href as any}
           target={external ? '_blank' : undefined}
           rel={external ? 'noopener noreferrer' : undefined}
-          className="block group"
+          className="group block"
         >
           {props.children}
         </Link>
@@ -37,7 +37,7 @@ export default function ActionCard({
           e.preventDefault();
           onClick?.();
         }}
-        className="block group"
+        className="group block"
       >
         {props.children}
       </a>
@@ -46,20 +46,14 @@ export default function ActionCard({
 
   return (
     <Wrapper>
-      <Card className="hover:border-primary/50 transition-all duration-300 hover:shadow-md cursor-pointer group-hover:-translate-y-1">
-        <div className="flex items-center p-4 gap-4">
-          <div className="p-3 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+      <Card className="hover:border-primary/50 cursor-pointer transition-all duration-300 group-hover:-translate-y-1 hover:shadow-md">
+        <div className="flex items-center gap-4 p-4">
+          <div className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground shrink-0 rounded-md p-3 transition-colors">
             <Icon className="size-6" />
           </div>
           <div className="flex flex-col gap-1">
-            <h3 className="font-semibold text-base group-hover:text-primary transition-colors">
-              {title}
-            </h3>
-            {description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {description}
-              </p>
-            )}
+            <h3 className="group-hover:text-primary text-base font-semibold transition-colors">{title}</h3>
+            {description && <p className="text-muted-foreground line-clamp-2 text-sm">{description}</p>}
           </div>
         </div>
       </Card>

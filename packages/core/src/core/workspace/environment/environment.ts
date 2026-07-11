@@ -1,6 +1,7 @@
+import type { EnvironmentData, EnvironmentUpdateOptions } from '@yasumu/common';
+
 import type { EnvironmentManager } from '../../manager/environment-manager.js';
 import type { Workspace } from '../workspace.js';
-import type { EnvironmentData, EnvironmentUpdateOptions } from '@yasumu/common';
 import { EnvironmentVariable } from './environment-variable.js';
 
 export class Environment {
@@ -78,9 +79,7 @@ export class Environment {
     return result;
   }
 
-  private getInterpolationConfig(
-    target: string,
-  ): ['variable' | 'secret' | null, string] {
+  private getInterpolationConfig(target: string): ['variable' | 'secret' | null, string] {
     if (!target) return [null, ''];
     if (target.startsWith('variables.')) return ['variable', target.slice(10)];
     if (target.startsWith('secrets.')) return ['secret', target.slice(8)];

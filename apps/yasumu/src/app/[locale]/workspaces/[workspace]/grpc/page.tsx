@@ -1,18 +1,15 @@
 'use client';
 
-import { useState } from 'react';
 import { Input } from '@yasumu/ui/components/input';
-import KeyValueTable from '@/components/tables/key-value-table';
 import { Separator } from '@yasumu/ui/components/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
+import { Textarea } from '@yasumu/ui/components/textarea';
+import { useState } from 'react';
+
+import KeyValueTable from '@/components/tables/key-value-table';
+
 import SendButton from './_components/send-button';
 import ServiceMethodSelector from './_components/service-method-selector';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
-import { Textarea } from '@yasumu/ui/components/textarea';
 
 const mockServices = ['UserService', 'ProductService', 'OrderService'];
 const mockMethods = ['GetUser', 'CreateUser', 'UpdateUser', 'DeleteUser'];
@@ -29,8 +26,8 @@ export default function GrpcPage() {
   const [request, setRequest] = useState(mockRequest);
 
   return (
-    <main className="p-4 w-full h-full overflow-y-auto flex flex-col gap-4">
-      <div className="flex gap-4 items-center">
+    <main className="flex h-full w-full flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex items-center gap-4">
         <Input placeholder="Enter gRPC server URL" />
         <SendButton />
       </div>
@@ -49,12 +46,8 @@ export default function GrpcPage() {
           <TabsTrigger value="request">Request</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="protobuf">Protobuf</TabsTrigger>
-          <TabsTrigger value="pre-request-script">
-            Pre-request Script
-          </TabsTrigger>
-          <TabsTrigger value="post-response-script">
-            Post-response Script
-          </TabsTrigger>
+          <TabsTrigger value="pre-request-script">Pre-request Script</TabsTrigger>
+          <TabsTrigger value="post-response-script">Post-response Script</TabsTrigger>
           <TabsTrigger value="tests">Tests</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -65,7 +58,7 @@ export default function GrpcPage() {
               placeholder="Enter request body (JSON)..."
               value={request}
               onChange={(e) => setRequest(e.target.value)}
-              className="font-mono min-h-[200px]"
+              className="min-h-[200px] font-mono"
             />
           </div>
         </TabsContent>
@@ -75,7 +68,7 @@ export default function GrpcPage() {
         <TabsContent value="protobuf">
           <Textarea
             placeholder="Enter or paste your .proto file content here..."
-            className="font-mono min-h-[300px]"
+            className="min-h-[300px] font-mono"
             defaultValue={`syntax = "proto3";
 
 package user;

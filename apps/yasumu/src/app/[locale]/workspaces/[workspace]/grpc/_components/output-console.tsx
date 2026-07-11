@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { ResponseStatusBar, ResponseTabs } from '@/components/responses';
 
 const mockGrpcResponse = {
@@ -33,17 +34,13 @@ export default function OutputConsole() {
   const prettifiedJson = JSON.stringify(mockGrpcResponse.body, null, 2);
 
   return (
-    <div className="flex flex-col h-full border-t bg-background">
+    <div className="bg-background flex h-full flex-col border-t">
       <ResponseStatusBar
         status={mockGrpcResponse.status}
         statusText={mockGrpcResponse.statusText}
         time={mockGrpcResponse.time}
       />
-      <ResponseTabs
-        prettyContent={prettifiedJson}
-        rawContent={rawResponse}
-        headers={mockGrpcResponse.headers}
-      />
+      <ResponseTabs prettyContent={prettifiedJson} rawContent={rawResponse} headers={mockGrpcResponse.headers} />
     </div>
   );
 }

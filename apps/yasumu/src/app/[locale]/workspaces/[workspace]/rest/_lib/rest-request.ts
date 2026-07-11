@@ -1,9 +1,5 @@
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
-import type {
-  RestEntityData,
-  RestEntityRequestBody,
-  TabularPair,
-} from '@yasumu/core';
+import type { RestEntityData, RestEntityRequestBody, TabularPair } from '@yasumu/core';
 
 const ECHO_SERVER_DOMAIN = 'echo.yasumu.local';
 export const MAX_BINARY_BODY_SIZE = 10 * 1024 * 1024; // 10MB threshold for binary
@@ -70,9 +66,7 @@ function buildRequestBody(
       if (!headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
       }
-      return typeof value === 'string'
-        ? interpolate(value)
-        : JSON.stringify(value);
+      return typeof value === 'string' ? interpolate(value) : JSON.stringify(value);
 
     case 'text':
       if (!headers.has('Content-Type')) {
@@ -161,17 +155,10 @@ function buildUrl(
 
   try {
     const urlObj = new URL(url);
-    urlObj.pathname = replacePathParams(
-      urlObj.pathname,
-      pathParams,
-      interpolate,
-    );
+    urlObj.pathname = replacePathParams(urlObj.pathname, pathParams, interpolate);
     for (const param of searchParams) {
       if (param.enabled && param.key) {
-        urlObj.searchParams.append(
-          interpolate(param.key),
-          interpolate(param.value),
-        );
+        urlObj.searchParams.append(interpolate(param.key), interpolate(param.value));
       }
     }
     return urlObj.toString();
@@ -181,11 +168,7 @@ function buildUrl(
     if (pathStart !== -1) {
       const authority = url.slice(0, url.indexOf(withoutProtocol) + pathStart);
       const pathPortion = withoutProtocol.slice(pathStart);
-      const replacedPath = replacePathParams(
-        pathPortion,
-        pathParams,
-        interpolate,
-      );
+      const replacedPath = replacePathParams(pathPortion, pathParams, interpolate);
       url = authority + replacedPath;
     }
     return url;
@@ -194,17 +177,13 @@ function buildUrl(
 
 function extractCookies(headers: Headers): string[] {
   if ('getSetCookie' in headers && typeof headers.getSetCookie === 'function') {
-    return (
-      headers as unknown as { getSetCookie: () => string[] }
-    ).getSetCookie();
+    return (headers as unknown as { getSetCookie: () => string[] }).getSetCookie();
   }
   const setCookie = headers.get('set-cookie');
   return setCookie ? [setCookie] : [];
 }
 
-export async function executeRestRequest(
-  options: RestRequestOptions,
-): Promise<RestRequestOutcome> {
+export async function executeRestRequest(options: RestRequestOptions): Promise<RestRequestOutcome> {
   const { entity, pathParams, echoServerPort, interpolate, signal } = options;
 
   if (!entity.url) {
@@ -224,13 +203,7 @@ export async function executeRestRequest(
     }
 
     const body = buildRequestBody(entity.requestBody, headers, interpolate);
-    const url = buildUrl(
-      entity.url,
-      entity.searchParameters || [],
-      pathParams,
-      echoServerPort,
-      interpolate,
-    );
+    const url = buildUrl(entity.url, entity.searchParameters || [], pathParams, echoServerPort, interpolate);
 
     const start = performance.now();
     const response = await tauriFetch(url, {
@@ -308,9 +281,7 @@ export class RestRequestController {
     return this.abortController !== null;
   }
 
-  async execute(
-    options: Omit<RestRequestOptions, 'signal'>,
-  ): Promise<RestRequestOutcome> {
+  async execute(options: Omit<RestRequestOptions, 'signal'>): Promise<RestRequestOutcome> {
     this.cancel();
     this.abortController = new AbortController();
 

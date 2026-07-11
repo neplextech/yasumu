@@ -1,14 +1,16 @@
 {
   "name": "@yasumu/core",
-  "type": "module",
-  "description": "Yasumu core api",
   "version": "0.0.0",
+  "description": "Yasumu core api",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc && tsc-alias",
-    "test": "tsx test/index.ts"
-  },
   "exports": {
     "deno": "./src/index.ts",
     "node": "./dist/index.js",
@@ -17,11 +19,13 @@
     "require": "./dist/index.js",
     "types": "./dist/index.d.ts"
   },
-  "license": "AGPL-3.0",
-  "author": "Neplex",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/neplextech/yasumu.git"
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "test": "tsx test/index.ts"
+  },
+  "dependencies": {
+    "@yasumu/common": "workspace:*",
+    "@yasumu/rpc": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:build",
@@ -31,9 +35,5 @@
     "tsc-alias": "^1.8.16",
     "tsx": "^4.20.6",
     "typescript": "catalog:build"
-  },
-  "dependencies": {
-    "@yasumu/common": "workspace:*",
-    "@yasumu/rpc": "workspace:*"
   }
 }

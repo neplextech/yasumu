@@ -1,14 +1,11 @@
+import type { EnvironmentCreateOptions, EnvironmentData, EnvironmentUpdateOptions } from '@yasumu/common';
 import { Injectable } from '@yasumu/den';
-import type {
-  EnvironmentCreateOptions,
-  EnvironmentData,
-  EnvironmentUpdateOptions,
-} from '@yasumu/common';
-import { WorkspacesService } from '../workspaces/workspaces.service.ts';
-import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { environments, workspaces } from '../../../database/schema.ts';
 import { and, eq } from 'drizzle-orm';
+
+import { environments, workspaces } from '../../../database/schema.ts';
 import { NotFoundException } from '../common/exceptions/http.exception.ts';
+import { TransactionalConnection } from '../common/transactional-connection.service.ts';
+import { WorkspacesService } from '../workspaces/workspaces.service.ts';
 
 @Injectable()
 export class EnvironmentsService {
@@ -19,35 +16,21 @@ export class EnvironmentsService {
 
   public async list(workspaceId: string): Promise<EnvironmentData[]> {
     const db = this.connection.getConnection();
-    const result = await db
-      .select()
-      .from(environments)
-      .where(eq(environments.workspaceId, workspaceId));
+    const result = await db.select().from(environments).where(eq(environments.workspaceId, workspaceId));
 
     return result;
   }
 
-  public async get(
-    workspaceId: string,
-    environmentId: string,
-  ): Promise<EnvironmentData | null> {
+  public async get(workspaceId: string, environmentId: string): Promise<EnvironmentData | null> {
     const db = this.connection.getConnection();
     const [result] = await db
       .select()
       .from(environments)
-      .where(
-        and(
-          eq(environments.workspaceId, workspaceId),
-          eq(environments.id, environmentId),
-        ),
-      );
+      .where(and(eq(environments.workspaceId, workspaceId), eq(environments.id, environmentId)));
     return result ?? null;
   }
 
-  public async create(
-    workspaceId: string,
-    data: EnvironmentCreateOptions,
-  ): Promise<EnvironmentData> {
+  public async create(workspaceId: string, data: EnvironmentCreateOptions): Promise<EnvironmentData> {
     const db = this.connection.getConnection();
     const [result] = await db
       .insert(environments)
@@ -68,40 +51,21 @@ export class EnvironmentsService {
     const [result] = await db
       .update(environments)
       .set(data)
-      .where(
-        and(
-          eq(environments.workspaceId, workspaceId),
-          eq(environments.id, environmentId),
-        ),
-      )
+      .where(and(eq(environments.workspaceId, workspaceId), eq(environments.id, environmentId)))
       .returning();
     return result;
   }
 
-  public async delete(
-    workspaceId: string,
-    environmentId: string,
-  ): Promise<void> {
+  public async delete(workspaceId: string, environmentId: string): Promise<void> {
     const db = this.connection.getConnection();
     await db
       .delete(environments)
-      .where(
-        and(
-          eq(environments.workspaceId, workspaceId),
-          eq(environments.id, environmentId),
-        ),
-      );
+      .where(and(eq(environments.workspaceId, workspaceId), eq(environments.id, environmentId)));
   }
 
-  public async setActive(
-    workspaceId: string,
-    environmentId: string,
-  ): Promise<void> {
+  public async setActive(workspaceId: string, environmentId: string): Promise<void> {
     const db = this.connection.getConnection();
-    await db
-      .update(workspaces)
-      .set({ activeEnvironmentId: environmentId })
-      .where(eq(workspaces.id, workspaceId));
+    await db.update(workspaces).set({ activeEnvironmentId: environmentId }).where(eq(workspaces.id, workspaceId));
   }
 
   public async getActive(workspaceId: string): Promise<EnvironmentData | null> {

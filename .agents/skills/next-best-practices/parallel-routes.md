@@ -1,6 +1,8 @@
 # Parallel & Intercepting Routes
 
-Parallel routes render multiple pages in the same layout. Intercepting routes show a different UI when navigating from within your app vs direct URL access. Together they enable modal patterns.
+Parallel routes render multiple pages in the same layout. Intercepting
+routes show a different UI when navigating from within your app vs
+direct URL access. Together they enable modal patterns.
 
 ## File Structure
 
@@ -44,7 +46,8 @@ export default function RootLayout({
 
 ## Step 2: Default File (Critical!)
 
-**Every parallel route slot MUST have a `default.tsx`** to prevent 404s on hard navigation.
+**Every parallel route slot MUST have a `default.tsx`** to prevent
+404s on hard navigation.
 
 ```tsx
 // app/@modal/default.tsx
@@ -53,7 +56,8 @@ export default function Default() {
 }
 ```
 
-Without this file, refreshing any page will 404 because Next.js can't determine what to render in the `@modal` slot.
+Without this file, refreshing any page will 404 because Next.js can't
+determine what to render in the `@modal` slot.
 
 ## Step 3: Intercepting Route (Modal)
 
@@ -64,9 +68,9 @@ The `(.)` prefix intercepts routes at the same level.
 import { Modal } from '@/components/modal';
 
 export default async function PhotoModal({
-  params
+  params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
   const photo = await getPhoto(id);
@@ -84,9 +88,9 @@ export default async function PhotoModal({
 ```tsx
 // app/photos/[id]/page.tsx
 export default async function PhotoPage({
-  params
+  params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
   const photo = await getPhoto(id);
@@ -102,7 +106,8 @@ export default async function PhotoPage({
 
 ## Step 5: Modal Component with Correct Closing
 
-**Critical: Use `router.back()` to close modals, NOT `router.push()` or `<Link>`.**
+**Critical: Use `router.back()` to close modals, NOT `router.push()`
+or `<Link>`.**
 
 ```tsx
 // components/modal.tsx
@@ -127,11 +132,14 @@ export function Modal({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   // Close on overlay click
-  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) {
-      router.back(); // Correct
-    }
-  }, [router]);
+  const handleOverlayClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === overlayRef.current) {
+        router.back(); // Correct
+      }
+    },
+    [router],
+  );
 
   return (
     <div
@@ -156,11 +164,13 @@ export function Modal({ children }: { children: React.ReactNode }) {
 ### Why NOT `router.push('/')` or `<Link href="/">`?
 
 Using `push` or `Link` to "close" a modal:
+
 1. Adds a new history entry (back button shows modal again)
 2. Doesn't properly clear the intercepted route
 3. Can cause the modal to flash or persist unexpectedly
 
 `router.back()` correctly:
+
 1. Removes the intercepted route from history
 2. Returns to the previous page
 3. Properly unmounts the modal
@@ -169,23 +179,27 @@ Using `push` or `Link` to "close" a modal:
 
 Matchers match **route segments**, not filesystem paths:
 
-| Matcher | Matches | Example |
-|---------|---------|---------|
-| `(.)` | Same level | `@modal/(.)photos` intercepts `/photos` |
-| `(..)` | One level up | `@modal/(..)settings` from `/dashboard/@modal` intercepts `/settings` |
-| `(..)(..)` | Two levels up | Rarely used |
-| `(...)` | From root | `@modal/(...)photos` intercepts `/photos` from anywhere |
+| Matcher    | Matches       | Example                                                               |
+| ---------- | ------------- | --------------------------------------------------------------------- |
+| `(.)`      | Same level    | `@modal/(.)photos` intercepts `/photos`                               |
+| `(..)`     | One level up  | `@modal/(..)settings` from `/dashboard/@modal` intercepts `/settings` |
+| `(..)(..)` | Two levels up | Rarely used                                                           |
+| `(...)`    | From root     | `@modal/(...)photos` intercepts `/photos` from anywhere               |
 
-**Common mistake**: Thinking `(..)` means "parent folder" - it means "parent route segment".
+**Common mistake**: Thinking `(..)` means "parent folder" - it means
+"parent route segment".
 
 ## Handling Hard Navigation
 
-When users directly visit `/photos/123` (bookmark, refresh, shared link):
+When users directly visit `/photos/123` (bookmark, refresh, shared
+link):
+
 - The intercepting route is bypassed
 - The full `photos/[id]/page.tsx` renders
 - Modal doesn't appear (expected behavior)
 
-If you want the modal to appear on direct access too, you need additional logic:
+If you want the modal to appear on direct access too, you need
+additional logic:
 
 ```tsx
 // app/photos/[id]/page.tsx
@@ -208,7 +222,8 @@ export default async function PhotoPage({ params }) {
 
 ### 1. Missing `default.tsx` → 404 on Refresh
 
-Every `@slot` folder needs a `default.tsx` that returns `null` (or appropriate content).
+Every `@slot` folder needs a `default.tsx` that returns `null` (or
+appropriate content).
 
 ### 2. Modal Persists After Navigation
 
@@ -216,7 +231,8 @@ You're using `router.push()` instead of `router.back()`.
 
 ### 3. Nested Parallel Routes Need Defaults Too
 
-If you have `@modal` inside a route group, each level needs its own `default.tsx`:
+If you have `@modal` inside a route group, each level needs its own
+`default.tsx`:
 
 ```
 app/
@@ -230,8 +246,10 @@ app/
 ### 4. Intercepted Route Shows Wrong Content
 
 Check your matcher:
+
 - `(.)photos` intercepts `/photos` from the same route level
-- If your `@modal` is in `app/dashboard/@modal`, use `(.)photos` to intercept `/dashboard/photos`, not `/photos`
+- If your `@modal` is in `app/dashboard/@modal`, use `(.)photos` to
+  intercept `/dashboard/photos`, not `/photos`
 
 ### 5. TypeScript Errors with `params`
 
@@ -239,7 +257,11 @@ In Next.js 15+, `params` is a Promise:
 
 ```tsx
 // Correct
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
 }
 ```
@@ -272,7 +294,7 @@ export default async function Gallery() {
 
   return (
     <div className="grid grid-cols-3 gap-4">
-      {photos.map(photo => (
+      {photos.map((photo) => (
         <Link key={photo.id} href={`/photos/${photo.id}`}>
           <img src={photo.thumbnail} alt={photo.title} />
         </Link>
@@ -282,6 +304,5 @@ export default async function Gallery() {
 }
 ```
 
-Clicking a photo → Modal opens (intercepted)
-Direct URL → Full page renders
-Refresh while modal open → Full page renders
+Clicking a photo → Modal opens (intercepted) Direct URL → Full page
+renders Refresh while modal open → Full page renders

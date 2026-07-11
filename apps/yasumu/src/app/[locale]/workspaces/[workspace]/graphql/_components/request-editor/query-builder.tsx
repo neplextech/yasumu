@@ -1,35 +1,18 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { Badge } from '@yasumu/ui/components/badge';
 import { Button } from '@yasumu/ui/components/button';
-import { Input } from '@yasumu/ui/components/input';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@yasumu/ui/components/hover-card';
+import { Input } from '@yasumu/ui/components/input';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@yasumu/ui/components/resizable';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
-import {
-  HoverCard,
-  HoverCardTrigger,
-  HoverCardContent,
-} from '@yasumu/ui/components/hover-card';
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from '@yasumu/ui/components/resizable';
-import {
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Check,
-  Search,
-  Braces,
-  Info,
-  ListTree,
-  Sparkles,
-} from 'lucide-react';
 import { cn } from '@yasumu/ui/lib/utils';
+import { ChevronDown, ChevronRight, Copy, Check, Search, Braces, Info, ListTree, Sparkles } from 'lucide-react';
+import { useCallback, useState } from 'react';
+
 import type { FieldNode, RootOperation } from '../../_hooks/use-query-builder';
-import { Badge } from '@yasumu/ui/components/badge';
 
 interface QueryBuilderProps {
   operations: RootOperation[];
@@ -56,9 +39,7 @@ export function QueryBuilder({
 }: QueryBuilderProps) {
   const [searchFilter, setSearchFilter] = useState('');
   const [copied, setCopied] = useState(false);
-  const selectedFieldCount = currentOperation
-    ? countSelectedFields(currentOperation.fields)
-    : 0;
+  const selectedFieldCount = currentOperation ? countSelectedFields(currentOperation.fields) : 0;
   const visibleFieldCount = currentOperation
     ? countVisibleFields(currentOperation.fields, searchFilter.toLowerCase())
     : 0;
@@ -80,15 +61,15 @@ export function QueryBuilder({
   if (operations.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-8">
-        <div className="max-w-sm text-center space-y-4">
-          <div className="mx-auto grid size-12 place-items-center rounded-md border bg-muted/30">
-            <Braces className="h-6 w-6 text-muted-foreground" />
+        <div className="max-w-sm space-y-4 text-center">
+          <div className="bg-muted/30 mx-auto grid size-12 place-items-center rounded-md border">
+            <Braces className="text-muted-foreground h-6 w-6" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium">No schema loaded</p>
-            <p className="text-xs leading-5 text-muted-foreground">
-              Introspect the current endpoint to browse root operations, select
-              fields, and generate a query without leaving the editor.
+            <p className="text-muted-foreground text-xs leading-5">
+              Introspect the current endpoint to browse root operations, select fields, and generate a query without
+              leaving the editor.
             </p>
           </div>
         </div>
@@ -101,25 +82,19 @@ export function QueryBuilder({
   return (
     <Tabs
       value={activeOperation}
-      onValueChange={(v) =>
-        onActiveOperationChange(v as 'query' | 'mutation' | 'subscription')
-      }
-      className="flex flex-col h-full min-h-0 overflow-hidden"
+      onValueChange={(v) => onActiveOperationChange(v as 'query' | 'mutation' | 'subscription')}
+      className="flex h-full min-h-0 flex-col overflow-hidden"
     >
       {/* Toolbar */}
-      <div className="flex items-center gap-2 shrink-0 pb-2 border-b">
+      <div className="flex shrink-0 items-center gap-2 border-b pb-2">
         <TabsList className="h-8">
           {availableOps.map((op) => (
-            <TabsTrigger
-              key={op}
-              value={op}
-              className="text-xs px-3 h-6 capitalize"
-            >
+            <TabsTrigger key={op} value={op} className="h-6 px-3 text-xs capitalize">
               {op}
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-1 text-xs">
           <Badge variant="outline" className="h-6 rounded-sm font-mono">
             {selectedFieldCount} selected
           </Badge>
@@ -131,30 +106,28 @@ export function QueryBuilder({
         </div>
         <div className="flex-1" />
         <div className="relative w-44">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="Filter fields..."
-            className="h-8 text-xs pl-7"
+            className="h-8 pl-7 text-xs"
           />
         </div>
       </div>
 
       {/* Resizable split: fields explorer | query preview */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={60} minSize={30}>
             <ScrollArea className="h-full">
-              <div className="p-2 space-y-2">
-                <div className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ListTree className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="space-y-2 p-2">
+                <div className="bg-muted/20 flex items-center justify-between rounded-md border px-3 py-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ListTree className="text-muted-foreground h-4 w-4 shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-xs font-medium capitalize">
-                        {activeOperation}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground truncate">
+                      <div className="text-xs font-medium capitalize">{activeOperation}</div>
+                      <div className="text-muted-foreground truncate text-[11px]">
                         Select fields and arguments to compose the operation.
                       </div>
                     </div>
@@ -172,7 +145,7 @@ export function QueryBuilder({
                         onSetArgValue={onSetArgValue}
                       />
                     ) : (
-                      <div className="rounded-md border border-dashed p-6 text-center text-xs text-muted-foreground">
+                      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-center text-xs">
                         No fields match this filter.
                       </div>
                     )}
@@ -185,13 +158,11 @@ export function QueryBuilder({
           <ResizableHandle withHandle />
 
           <ResizablePanel defaultSize={40} minSize={20}>
-            <div className="flex flex-col h-full min-h-0">
-              <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="flex shrink-0 items-center justify-between border-b px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Generated Query
-                  </span>
+                  <Sparkles className="text-muted-foreground h-3.5 w-3.5" />
+                  <span className="text-muted-foreground text-xs font-medium">Generated Query</span>
                 </div>
                 <div className="flex gap-1">
                   <Button
@@ -202,16 +173,12 @@ export function QueryBuilder({
                     disabled={!generatedQuery}
                     title="Copy to clipboard"
                   >
-                    {copied ? (
-                      <Check className="h-3 w-3" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
+                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-6 text-xs px-2"
+                    className="h-6 px-2 text-xs"
                     onClick={handleApply}
                     disabled={!generatedQuery}
                   >
@@ -220,9 +187,8 @@ export function QueryBuilder({
                 </div>
               </div>
               <ScrollArea className="flex-1">
-                <pre className="p-3 text-xs font-mono text-muted-foreground whitespace-pre-wrap">
-                  {generatedQuery ||
-                    '# Select fields on the left to build a query'}
+                <pre className="text-muted-foreground p-3 font-mono text-xs whitespace-pre-wrap">
+                  {generatedQuery || '# Select fields on the left to build a query'}
                 </pre>
               </ScrollArea>
             </div>
@@ -234,17 +200,12 @@ export function QueryBuilder({
 }
 
 function countSelectedFields(fields: FieldNode[]): number {
-  return fields.reduce(
-    (count, field) =>
-      count + (field.selected ? 1 : 0) + countSelectedFields(field.fields),
-    0,
-  );
+  return fields.reduce((count, field) => count + (field.selected ? 1 : 0) + countSelectedFields(field.fields), 0);
 }
 
 function countVisibleFields(fields: FieldNode[], searchFilter: string): number {
   return fields.reduce((count, field) => {
-    const matchesSearch =
-      !searchFilter || field.name.toLowerCase().includes(searchFilter);
+    const matchesSearch = !searchFilter || field.name.toLowerCase().includes(searchFilter);
     const childCount = countVisibleFields(field.fields, searchFilter);
 
     return count + (matchesSearch || childCount > 0 ? 1 : 0) + childCount;
@@ -260,7 +221,7 @@ function FieldDocCard({ field }: { field: FieldNode }) {
   return (
     <div className="space-y-2">
       {/* Signature */}
-      <div className="font-mono text-xs text-foreground bg-muted/50 rounded px-2 py-1.5 break-all leading-relaxed">
+      <div className="text-foreground bg-muted/50 rounded px-2 py-1.5 font-mono text-xs leading-relaxed break-all">
         {field.name}
         {hasArgs && (
           <span className="text-muted-foreground">
@@ -281,33 +242,21 @@ function FieldDocCard({ field }: { field: FieldNode }) {
       </div>
 
       {/* Description */}
-      {field.description && (
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {field.description}
-        </p>
-      )}
+      {field.description && <p className="text-muted-foreground text-xs leading-relaxed">{field.description}</p>}
 
       {/* Parameters */}
       {hasArgs && (
         <div className="space-y-1">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-            Parameters
-          </div>
+          <div className="text-muted-foreground/60 text-[10px] font-semibold tracking-wider uppercase">Parameters</div>
           <div className="space-y-0.5">
             {field.args.map((arg) => (
               <div key={arg.name} className="flex gap-1.5 text-xs">
-                <span className="font-mono text-foreground shrink-0">
+                <span className="text-foreground shrink-0 font-mono">
                   {arg.name}
                   {arg.required && <span className="text-destructive">*</span>}
                 </span>
-                <span className="font-mono text-blue-400 shrink-0">
-                  {arg.type}
-                </span>
-                {arg.description && (
-                  <span className="text-muted-foreground/70 truncate">
-                    - {arg.description}
-                  </span>
-                )}
+                <span className="shrink-0 font-mono text-blue-400">{arg.type}</span>
+                {arg.description && <span className="text-muted-foreground/70 truncate">- {arg.description}</span>}
               </div>
             ))}
           </div>
@@ -315,16 +264,10 @@ function FieldDocCard({ field }: { field: FieldNode }) {
       )}
 
       {/* Return type info */}
-      <div className="flex items-center gap-1.5 text-xs pt-0.5 border-t border-border/50">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-          Returns
-        </span>
+      <div className="border-border/50 flex items-center gap-1.5 border-t pt-0.5 text-xs">
+        <span className="text-muted-foreground/60 text-[10px] font-semibold tracking-wider uppercase">Returns</span>
         <span className="font-mono text-green-400">{field.type}</span>
-        {hasChildren && (
-          <span className="text-muted-foreground/50">
-            ({field.fields.length} fields)
-          </span>
-        )}
+        {hasChildren && <span className="text-muted-foreground/50">({field.fields.length} fields)</span>}
       </div>
     </div>
   );
@@ -351,12 +294,9 @@ function FieldTree({
     <div className="space-y-px">
       {fields.map((field, index) => {
         const currentPath = [...path, index];
-        const matchesSearch =
-          !searchFilter || field.name.toLowerCase().includes(searchFilter);
+        const matchesSearch = !searchFilter || field.name.toLowerCase().includes(searchFilter);
 
-        const childMatches = field.fields.some((f) =>
-          f.name.toLowerCase().includes(searchFilter),
-        );
+        const childMatches = field.fields.some((f) => f.name.toLowerCase().includes(searchFilter));
 
         if (!matchesSearch && !childMatches) return null;
 
@@ -398,7 +338,7 @@ function FieldItem({
   const depth = path.length;
 
   return (
-    <div className="min-w-0 w-full">
+    <div className="w-full min-w-0">
       <div
         className={cn(
           'flex items-center gap-1 py-0.5 rounded-sm hover:bg-muted/50 group min-w-0',
@@ -408,14 +348,11 @@ function FieldItem({
       >
         {/* Expand/collapse chevron */}
         {hasChildren ? (
-          <button
-            onClick={() => onToggleExpand(path)}
-            className="p-0.5 rounded hover:bg-muted shrink-0"
-          >
+          <button onClick={() => onToggleExpand(path)} className="hover:bg-muted shrink-0 rounded p-0.5">
             {field.expanded ? (
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              <ChevronDown className="text-muted-foreground h-3 w-3" />
             ) : (
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <ChevronRight className="text-muted-foreground h-3 w-3" />
             )}
           </button>
         ) : (
@@ -433,26 +370,19 @@ function FieldItem({
         <span
           className={cn(
             'text-xs font-mono truncate min-w-0',
-            field.selected
-              ? 'text-foreground font-medium'
-              : 'text-muted-foreground',
+            field.selected ? 'text-foreground font-medium' : 'text-muted-foreground',
           )}
         >
           {field.name}
         </span>
 
         {hasArgs && (
-          <Badge
-            variant="outline"
-            className="h-5 rounded-sm px-1.5 text-[10px] font-mono text-muted-foreground"
-          >
+          <Badge variant="outline" className="text-muted-foreground h-5 rounded-sm px-1.5 font-mono text-[10px]">
             {field.args.length} args
           </Badge>
         )}
 
-        <span className="text-[10px] font-mono text-muted-foreground/70 truncate max-w-32">
-          {field.type}
-        </span>
+        <span className="text-muted-foreground/70 max-w-32 truncate font-mono text-[10px]">{field.type}</span>
 
         {/* Spacer */}
         <div className="flex-1 shrink-0" />
@@ -460,16 +390,11 @@ function FieldItem({
         {/* Docs hover card trigger */}
         <HoverCard openDelay={200} closeDelay={100}>
           <HoverCardTrigger asChild>
-            <button className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity shrink-0">
-              <Info className="h-3 w-3 text-muted-foreground/60" />
+            <button className="hover:bg-muted shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <Info className="text-muted-foreground/60 h-3 w-3" />
             </button>
           </HoverCardTrigger>
-          <HoverCardContent
-            side="right"
-            align="start"
-            sideOffset={8}
-            className="p-3 w-[340px]"
-          >
+          <HoverCardContent side="right" align="start" sideOffset={8} className="w-[340px] p-3">
             <FieldDocCard field={field} />
           </HoverCardContent>
         </HoverCard>
@@ -477,13 +402,10 @@ function FieldItem({
 
       {/* Inline argument inputs when field is selected */}
       {field.selected && hasArgs && (
-        <div
-          className="py-1 space-y-1"
-          style={{ paddingLeft: `${depth * 14 + 34}px`, paddingRight: 8 }}
-        >
+        <div className="space-y-1 py-1" style={{ paddingLeft: `${depth * 14 + 34}px`, paddingRight: 8 }}>
           {field.args.map((arg) => (
-            <div key={arg.name} className="flex items-center gap-2 min-w-0">
-              <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+            <div key={arg.name} className="flex min-w-0 items-center gap-2">
+              <span className="text-muted-foreground shrink-0 font-mono text-[10px]">
                 {arg.name}
                 {arg.required && <span className="text-destructive">*</span>}
               </span>
@@ -491,7 +413,7 @@ function FieldItem({
                 value={field.argValues[arg.name] ?? ''}
                 onChange={(e) => onSetArgValue(path, arg.name, e.target.value)}
                 placeholder={`${arg.type}${arg.defaultValue !== undefined ? ` = ${JSON.stringify(arg.defaultValue)}` : ''}`}
-                className="h-6 text-xs font-mono flex-1 min-w-0"
+                className="h-6 min-w-0 flex-1 font-mono text-xs"
               />
             </div>
           ))}

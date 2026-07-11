@@ -1,36 +1,24 @@
-import { DocumentationView } from './documentation-view';
-import { useCallback, useMemo } from 'react';
-import { useQueryState, parseAsStringEnum } from 'nuqs';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@yasumu/ui/components/tabs';
-import { TextEditor } from '@/components/editors';
-import { Input } from '@yasumu/ui/components/input';
-import { Checkbox } from '@yasumu/ui/components/checkbox';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@yasumu/ui/components/table';
-import KeyValueTable, {
-  type KeyValuePair,
-} from '@/components/tables/key-value-table';
-import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
 import { YasumuScriptingLanguage } from '@yasumu/core';
-import { GRAPHQL_SCRIPT_PLACEHOLDER } from './common';
-import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
-import { VariablesEditor } from './variables-editor';
-import { QueryBuilder } from './query-builder';
+import { Checkbox } from '@yasumu/ui/components/checkbox';
+import { Input } from '@yasumu/ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import type { GraphQLSchema } from 'graphql';
+import { useQueryState, parseAsStringEnum } from 'nuqs';
+import { useCallback, useMemo } from 'react';
+
+import { TextEditor } from '@/components/editors';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
+import KeyValueTable, { type KeyValuePair } from '@/components/tables/key-value-table';
+import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
+
 import type { RootOperation } from '../../_hooks/use-query-builder';
+import { GRAPHQL_SCRIPT_PLACEHOLDER } from './common';
+import { DocumentationView } from './documentation-view';
 import GraphqlTextEditor from './graphql-text-editor';
+import { QueryBuilder } from './query-builder';
+import { VariablesEditor } from './variables-editor';
 
 interface GraphqlRequestTabsProps {
   query: string;
@@ -50,19 +38,11 @@ interface GraphqlRequestTabsProps {
   onHeadersChange: (headers: TabularPair[]) => void;
   onScriptChange: (script: YasumuEmbeddedScript) => void;
   onSearchParamsChange: (params: TabularPair[]) => void;
-  onPathParamsChange: (
-    params: Record<string, { value: string; enabled: boolean }>,
-  ) => void;
-  onQueryBuilderActiveOperationChange: (
-    op: 'query' | 'mutation' | 'subscription',
-  ) => void;
+  onPathParamsChange: (params: Record<string, { value: string; enabled: boolean }>) => void;
+  onQueryBuilderActiveOperationChange: (op: 'query' | 'mutation' | 'subscription') => void;
   onQueryBuilderToggleField: (path: number[]) => void;
   onQueryBuilderToggleExpand: (path: number[]) => void;
-  onQueryBuilderSetArgValue: (
-    path: number[],
-    argName: string,
-    value: string,
-  ) => void;
+  onQueryBuilderSetArgValue: (path: number[], argName: string, value: string) => void;
 }
 
 function extractPathParamKeys(url: string): string[] {
@@ -138,34 +118,22 @@ export function GraphqlRequestTabs({
 
   const [requestTab, setRequestTab] = useQueryState(
     'requestTab',
-    parseAsStringEnum([
-      'query',
-      'variables',
-      'parameters',
-      'headers',
-      'scripts',
-    ]).withDefault('query'),
+    parseAsStringEnum(['query', 'variables', 'parameters', 'headers', 'scripts']).withDefault('query'),
   );
 
   const [querySubTab, setQuerySubTab] = useQueryState(
     'queryView',
-    parseAsStringEnum(['editor', 'query-builder', 'docs']).withDefault(
-      'editor',
-    ),
+    parseAsStringEnum(['editor', 'query-builder', 'docs']).withDefault('editor'),
   );
 
   return (
     <Tabs
       value={requestTab || 'query'}
-      onValueChange={(v) =>
-        setRequestTab(
-          v as 'query' | 'variables' | 'parameters' | 'headers' | 'scripts',
-        )
-      }
-      className="flex-1 flex flex-col h-full min-h-0"
+      onValueChange={(v) => setRequestTab(v as 'query' | 'variables' | 'parameters' | 'headers' | 'scripts')}
+      className="flex h-full min-h-0 flex-1 flex-col"
     >
-      <div className="px-1 border-b shrink-0">
-        <TabsList className="bg-transparent h-10 w-full justify-start gap-2">
+      <div className="shrink-0 border-b px-1">
+        <TabsList className="h-10 w-full justify-start gap-2 bg-transparent">
           <TabsTrigger value="query">Query</TabsTrigger>
           <TabsTrigger value="variables">Variables</TabsTrigger>
           <TabsTrigger value="parameters">Params</TabsTrigger>
@@ -174,14 +142,14 @@ export function GraphqlRequestTabs({
         </TabsList>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 min-h-0">
-        <TabsContent value="query" className="h-full mt-0">
-          <div className="flex flex-col h-full min-h-0">
-            <div className="flex items-center gap-1 mb-2 shrink-0">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <TabsContent value="query" className="mt-0 h-full">
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="mb-2 flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => setQuerySubTab('editor')}
-                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'editor'
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -192,7 +160,7 @@ export function GraphqlRequestTabs({
               <button
                 type="button"
                 onClick={() => setQuerySubTab('query-builder')}
-                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'query-builder'
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -203,7 +171,7 @@ export function GraphqlRequestTabs({
               <button
                 type="button"
                 onClick={() => setQuerySubTab('docs')}
-                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'docs'
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -214,11 +182,8 @@ export function GraphqlRequestTabs({
             </div>
 
             {querySubTab === 'editor' && (
-              <div className="flex flex-col gap-2 flex-1 min-h-0">
-                <GraphqlTextEditor
-                  query={query}
-                  onQueryChange={onQueryChange}
-                />
+              <div className="flex min-h-0 flex-1 flex-col gap-2">
+                <GraphqlTextEditor query={query} onQueryChange={onQueryChange} />
               </div>
             )}
 
@@ -237,23 +202,21 @@ export function GraphqlRequestTabs({
             )}
 
             {querySubTab === 'docs' && (
-              <div className="h-full flex flex-col min-h-0">
+              <div className="flex h-full min-h-0 flex-col">
                 <DocumentationView schema={schema} />
               </div>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="variables" className="h-full mt-0">
+        <TabsContent value="variables" className="mt-0 h-full">
           <VariablesEditor variables={variables} onChange={onVariablesChange} />
         </TabsContent>
 
-        <TabsContent value="parameters" className="h-full mt-0 space-y-4">
+        <TabsContent value="parameters" className="mt-0 h-full space-y-4">
           {hasPathParams && (
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground font-medium">
-                Path Parameters
-              </div>
+              <div className="text-muted-foreground text-sm font-medium">Path Parameters</div>
               <Table className="border">
                 <TableHeader>
                   <TableRow>
@@ -273,29 +236,16 @@ export function GraphqlRequestTabs({
                         <TableCell>
                           <Checkbox
                             checked={param.enabled}
-                            onCheckedChange={(checked) =>
-                              handlePathParamChange(
-                                key,
-                                'enabled',
-                                checked === true,
-                              )
-                            }
+                            onCheckedChange={(checked) => handlePathParamChange(key, 'enabled', checked === true)}
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            value={key}
-                            disabled
-                            readOnly
-                            className="bg-muted font-mono text-sm"
-                          />
+                          <Input value={key} disabled readOnly className="bg-muted font-mono text-sm" />
                         </TableCell>
                         <TableCell>
                           <InteropableInput
                             value={param.value}
-                            onChange={(val) =>
-                              handlePathParamChange(key, 'value', val)
-                            }
+                            onChange={(val) => handlePathParamChange(key, 'value', val)}
                             onVariableClick={renderVariablePopover}
                             placeholder="Enter value"
                           />
@@ -309,9 +259,7 @@ export function GraphqlRequestTabs({
           )}
 
           <div className="space-y-2">
-            <div className="text-sm text-muted-foreground font-medium">
-              Search Parameters
-            </div>
+            <div className="text-muted-foreground text-sm font-medium">Search Parameters</div>
             <KeyValueTable
               pairs={searchParams as KeyValuePair[]}
               onChange={(pairs) => onSearchParamsChange(pairs as TabularPair[])}
@@ -319,23 +267,19 @@ export function GraphqlRequestTabs({
           </div>
         </TabsContent>
 
-        <TabsContent value="headers" className="h-full mt-0 space-y-2">
-          <div className="text-sm text-muted-foreground font-medium">
-            Request Headers
-          </div>
+        <TabsContent value="headers" className="mt-0 h-full space-y-2">
+          <div className="text-muted-foreground text-sm font-medium">Request Headers</div>
           <KeyValueTable
             pairs={headers as KeyValuePair[]}
             onChange={(pairs) => onHeadersChange(pairs as TabularPair[])}
           />
         </TabsContent>
 
-        <TabsContent value="scripts" className="h-full mt-0">
-          <div className="flex flex-col gap-2 h-full min-h-0">
-            <div className="flex items-center justify-between shrink-0">
-              <span className="text-sm text-muted-foreground font-medium">
-                Request Scripts
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
+        <TabsContent value="scripts" className="mt-0 h-full">
+          <div className="flex h-full min-h-0 flex-col gap-2">
+            <div className="flex shrink-0 items-center justify-between">
+              <span className="text-muted-foreground text-sm font-medium">Request Scripts</span>
+              <span className="text-muted-foreground font-mono text-xs">
                 onRequest(req) · onResponse(req, res) · onTest(req, res)
               </span>
             </div>
@@ -344,16 +288,12 @@ export function GraphqlRequestTabs({
               onChange={handleScriptCodeChange}
               typeDefinitions={YASUMU_TYPE_DEFINITIONS}
               placeholder={
-                <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
-                  <h1 className="font-bold underline">
-                    Edit to hide this example placeholder
-                  </h1>
+                <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
+                  <h1 className="font-bold underline">Edit to hide this example placeholder</h1>
                   <h1>Export onRequest to modify request before sending</h1>
                   <h1>Export onResponse to process response after receiving</h1>
                   <h1>Example:</h1>
-                  <pre className="font-mono text-sm whitespace-pre-wrap mt-4">
-                    {GRAPHQL_SCRIPT_PLACEHOLDER}
-                  </pre>
+                  <pre className="mt-4 font-mono text-sm whitespace-pre-wrap">{GRAPHQL_SCRIPT_PLACEHOLDER}</pre>
                 </div>
               }
             />

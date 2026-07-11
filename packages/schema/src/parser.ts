@@ -1,13 +1,6 @@
+import type { YasumuSchemaParsable, YasumuSchemaParsableToType } from './parsable.js';
 import { YasumuSchemaScanner } from './scanner.js';
-import {
-  type YasumuSchemaToken,
-  type YasumuSchemaTokenType,
-  YasumuSchemaTokenTypes,
-} from './tokens.js';
-import type {
-  YasumuSchemaParsable,
-  YasumuSchemaParsableToType,
-} from './parsable.js';
+import { type YasumuSchemaToken, type YasumuSchemaTokenType, YasumuSchemaTokenTypes } from './tokens.js';
 
 export class YasumuSchemaParser {
   currentToken = DUMMY_TOKEN;

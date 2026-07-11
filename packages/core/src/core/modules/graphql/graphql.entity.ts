@@ -1,10 +1,6 @@
+import type { HttpMethod, GraphqlEntityData, GraphqlEntityUpdateOptions, GraphqlScriptContext } from '@yasumu/common';
+
 import type { GraphqlModule } from './graphql.js';
-import type {
-  HttpMethod,
-  GraphqlEntityData,
-  GraphqlEntityUpdateOptions,
-  GraphqlScriptContext,
-} from '@yasumu/common';
 
 export class GraphqlEntity {
   public constructor(
@@ -32,9 +28,7 @@ export class GraphqlEntity {
     return this.update({ url });
   }
 
-  public async update(
-    data: Partial<GraphqlEntityUpdateOptions>,
-  ): Promise<this> {
+  public async update(data: Partial<GraphqlEntityUpdateOptions>): Promise<this> {
     const result = await this.graphql.update(this.id, data);
     Object.assign(this.data, result);
     return this;
@@ -50,24 +44,18 @@ export class GraphqlEntity {
     }
 
     const searchParameters = new URLSearchParams(
-      (this.data.searchParameters || [])
-        .filter((p) => p.enabled)
-        .map((parameter) => [parameter.key, parameter.value]),
+      (this.data.searchParameters || []).filter((p) => p.enabled).map((parameter) => [parameter.key, parameter.value]),
     );
 
     const url = new URL(this.data.url);
 
     url.search = searchParameters.toString();
 
-    const stringifiedUrl = url
-      .toString()
-      .replace(/\:([a-zA-Z0-9_]+)/g, (match, key) => {
-        const parameter = this.data.requestParameters?.find(
-          (p) => p.key === key && p.enabled,
-        );
+    const stringifiedUrl = url.toString().replace(/\:([a-zA-Z0-9_]+)/g, (match, key) => {
+      const parameter = this.data.requestParameters?.find((p) => p.key === key && p.enabled);
 
-        return parameter?.value ?? match;
-      });
+      return parameter?.value ?? match;
+    });
 
     return stringifiedUrl;
   }

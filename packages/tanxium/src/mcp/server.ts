@@ -1,4 +1,3 @@
-import { Hono } from 'hono';
 import {
   YasumuScriptingLanguage,
   type EnvironmentData,
@@ -11,6 +10,8 @@ import {
   type YasumuEmbeddedScript,
 } from '@yasumu/common';
 import type { DenApplication } from '@yasumu/den';
+import { Hono } from 'hono';
+
 import { runInTransaction } from '../database/index.ts';
 
 const MAX_BINARY_BODY_SIZE = 10 * 1024 * 1024;
@@ -73,9 +74,7 @@ type RestExecutionResponse = {
   bodyTruncated: boolean;
 };
 
-type RestRequestOutcome =
-  | { response: RestExecutionResponse; error: null }
-  | { response: null; error: string };
+type RestRequestOutcome = { response: RestExecutionResponse; error: null } | { response: null; error: string };
 
 type ScriptSummary = {
   success: boolean;
@@ -95,8 +94,7 @@ function textResult(value: unknown) {
     content: [
       {
         type: 'text',
-        text:
-          typeof value === 'string' ? value : JSON.stringify(value, null, 2),
+        text: typeof value === 'string' ? value : JSON.stringify(value, null, 2),
       },
     ],
   };
@@ -106,10 +104,7 @@ function isNotification(request: JsonRpcRequest) {
   return !Object.hasOwn(request, 'id');
 }
 
-function jsonRpcResult(
-  id: JsonRpcRequest['id'],
-  result: unknown,
-): JsonRpcResponse {
+function jsonRpcResult(id: JsonRpcRequest['id'], result: unknown): JsonRpcResponse {
   return {
     jsonrpc: '2.0',
     id: id ?? null,
@@ -117,11 +112,7 @@ function jsonRpcResult(
   };
 }
 
-function jsonRpcError(
-  id: JsonRpcRequest['id'],
-  code: number,
-  message: string,
-): JsonRpcResponse {
+function jsonRpcError(id: JsonRpcRequest['id'], code: number, message: string): JsonRpcResponse {
   return {
     jsonrpc: '2.0',
     id: id ?? null,
@@ -198,12 +189,9 @@ async function findWorkspaceByReference(
 
   return (
     workspaces.find((workspace) => {
-      const candidates = [
-        workspace.id,
-        workspace.name,
-        workspace.path,
-        getPathName(workspace.path),
-      ].map(normalizeWorkspaceReference);
+      const candidates = [workspace.id, workspace.name, workspace.path, getPathName(workspace.path)].map(
+        normalizeWorkspaceReference,
+      );
 
       return candidates.includes(normalizedReference);
     }) ?? null
@@ -211,8 +199,7 @@ async function findWorkspaceByReference(
 }
 
 async function resolveWorkspaceId(rpcServer: DenApplication, input: ToolInput) {
-  const explicit =
-    optionalString(input, 'workspaceId') ?? optionalString(input, 'workspace');
+  const explicit = optionalString(input, 'workspaceId') ?? optionalString(input, 'workspace');
 
   if (explicit) {
     const workspace = await findWorkspaceByReference(rpcServer, explicit);
@@ -246,9 +233,7 @@ function optionalBoolean(input: ToolInput, key: string) {
 
 function optionalNumber(input: ToolInput, key: string) {
   const value = input[key];
-  return typeof value === 'number' && Number.isFinite(value)
-    ? value
-    : undefined;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -289,17 +274,11 @@ function normalizeVariables(value: unknown) {
   }
 
   return new Map(
-    Object.entries(value).map(([key, entry]) => [
-      key,
-      entry === null || entry === undefined ? '' : String(entry),
-    ]),
+    Object.entries(value).map(([key, entry]) => [key, entry === null || entry === undefined ? '' : String(entry)]),
   );
 }
 
-function buildInterpolationMap(
-  environment: EnvironmentData | null,
-  overrides: unknown,
-) {
+function buildInterpolationMap(environment: EnvironmentData | null, overrides: unknown) {
   const values = new Map<string, string>();
 
   for (const pair of environment?.variables ?? []) {
@@ -340,10 +319,7 @@ function getWorkspaceContext(workspace: WorkspaceReference) {
   };
 }
 
-function buildRequestHeaders(
-  pairs: TabularPair[] | undefined,
-  interpolate: (value: string) => string,
-) {
+function buildRequestHeaders(pairs: TabularPair[] | undefined, interpolate: (value: string) => string) {
   return Object.fromEntries(
     (pairs ?? [])
       .filter((pair) => pair.enabled && pair.key)
@@ -380,9 +356,7 @@ function buildScript(input: ToolInput, entity: RestEntityData) {
   } satisfies YasumuEmbeddedScript;
 }
 
-function summarizeScriptResult(
-  result: ScriptExecutionResult<RestScriptContext> | null,
-): ScriptSummary | null {
+function summarizeScriptResult(result: ScriptExecutionResult<RestScriptContext> | null): ScriptSummary | null {
   if (!result) {
     return null;
   }
@@ -456,9 +430,7 @@ function replacePathParams(
 ) {
   return pathname.replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, (match, key) => {
     const param = pathParams[key];
-    return param?.enabled && param.value
-      ? encodeURIComponent(interpolate(param.value))
-      : match;
+    return param?.enabled && param.value ? encodeURIComponent(interpolate(param.value)) : match;
   });
 }
 
@@ -518,9 +490,7 @@ function buildRequestBody(
     if (!headers.has('content-type')) {
       headers.set('content-type', 'application/json');
     }
-    return typeof value === 'string'
-      ? interpolate(value)
-      : JSON.stringify(value);
+    return typeof value === 'string' ? interpolate(value) : JSON.stringify(value);
   }
 
   if (type === 'text') {
@@ -597,9 +567,7 @@ async function executeHttpRequest(
       const responseHeaders = Object.fromEntries(response.headers.entries());
       const contentType = response.headers.get('content-type') ?? '';
       const contentLength = response.headers.get('content-length');
-      const declaredSize = contentLength
-        ? Number.parseInt(contentLength, 10)
-        : 0;
+      const declaredSize = contentLength ? Number.parseInt(contentLength, 10) : 0;
       const isText = isTextContentType(contentType);
       const maxSize = isText ? MAX_TEXT_BODY_SIZE : MAX_BINARY_BODY_SIZE;
       let textBody: string | null = null;
@@ -658,15 +626,9 @@ function createMockResponse(value: unknown): RestExecutionResponse | null {
   }
 
   const status = typeof value.status === 'number' ? value.status : 200;
-  const statusText =
-    typeof value.statusText === 'string' ? value.statusText : 'OK';
+  const statusText = typeof value.statusText === 'string' ? value.statusText : 'OK';
   const headers = isRecord(value.headers)
-    ? Object.fromEntries(
-        Object.entries(value.headers).map(([key, entry]) => [
-          key,
-          String(entry),
-        ]),
-      )
+    ? Object.fromEntries(Object.entries(value.headers).map(([key, entry]) => [key, String(entry)]))
     : {};
   const body =
     typeof value.body === 'string'
@@ -688,26 +650,18 @@ function createMockResponse(value: unknown): RestExecutionResponse | null {
   };
 }
 
-function createResponseContext(
-  context: RestScriptContext,
-  response: RestExecutionResponse,
-): RestScriptContext {
+function createResponseContext(context: RestScriptContext, response: RestExecutionResponse): RestScriptContext {
   return {
     ...context,
     response: {
       status: response.status,
       headers: response.headers,
-      body:
-        !response.bodyTruncated && response.bodyType === 'text'
-          ? (response.textBody ?? '')
-          : null,
+      body: !response.bodyTruncated && response.bodyType === 'text' ? (response.textBody ?? '') : null,
     },
   };
 }
 
-function getTestResults(
-  result: ScriptExecutionResult<RestScriptContext> | null,
-) {
+function getTestResults(result: ScriptExecutionResult<RestScriptContext> | null) {
   const output = result?.result.success ? result.result.result : null;
   if (!isRecord(output) || !Array.isArray(output.testResults)) {
     return [];
@@ -715,37 +669,24 @@ function getTestResults(
   return output.testResults as TestResult[];
 }
 
-async function executeRestTool(
-  execute: RpcExecute,
-  rpcServer: DenApplication,
-  input: ToolInput,
-) {
+async function executeRestTool(execute: RpcExecute, rpcServer: DenApplication, input: ToolInput) {
   const workspaceId = await resolveWorkspaceId(rpcServer, input);
   const id = requireString(input, 'id');
   const timeoutMs = optionalNumber(input, 'timeoutMs') ?? 30_000;
   const pathParams = normalizePathParams(input.pathParams);
-  const entity = (await execute(
-    'rest.get',
-    [id],
-    workspaceId,
-  )) as RestEntityData | null;
+  const entity = (await execute('rest.get', [id], workspaceId)) as RestEntityData | null;
 
   if (!entity) {
     throw new Error(`REST request "${id}" was not found.`);
   }
-  const workspace = (await findWorkspaceByReference(
-    rpcServer,
-    workspaceId,
-  )) ?? {
+  const workspace = (await findWorkspaceByReference(rpcServer, workspaceId)) ?? {
     id: workspaceId,
     name: workspaceId,
     path: workspaceId,
   };
-  const environment = (await execute(
-    'environments.getActive',
-    [],
-    workspaceId,
-  ).catch(() => null)) as EnvironmentData | null;
+  const environment = (await execute('environments.getActive', [], workspaceId).catch(
+    () => null,
+  )) as EnvironmentData | null;
   const values = buildInterpolationMap(environment, input.variables);
   const interpolate = createInterpolator(values);
   const script = buildScript(input, entity);
@@ -776,14 +717,7 @@ async function executeRestTool(
   let mocked = false;
 
   if (script.code.trim()) {
-    preRequest = await executeRestScript(
-      execute,
-      workspaceId,
-      id,
-      script,
-      'onRequest',
-      currentContext,
-    );
+    preRequest = await executeRestScript(execute, workspaceId, id, script, 'onRequest', currentContext);
 
     if (preRequest.result.success) {
       currentContext = preRequest.context;
@@ -797,12 +731,13 @@ async function executeRestTool(
       ...entity,
       url: currentContext.request.url,
       method: currentContext.request.method,
-      requestHeaders: Object.entries(currentContext.request.headers).map(
-        ([key, value]) => ({ key, value, enabled: true }),
-      ),
+      requestHeaders: Object.entries(currentContext.request.headers).map(([key, value]) => ({
+        key,
+        value,
+        enabled: true,
+      })),
       requestBody:
-        currentContext.request.body !== null &&
-        currentContext.request.body !== undefined
+        currentContext.request.body !== null && currentContext.request.body !== undefined
           ? {
               ...(entity.requestBody ?? {
                 type: 'text' as const,
@@ -813,13 +748,7 @@ async function executeRestTool(
           : entity.requestBody,
     };
 
-    const outcome = await executeHttpRequest(
-      modifiedEntity,
-      pathParams,
-      input.queryParams,
-      timeoutMs,
-      interpolate,
-    );
+    const outcome = await executeHttpRequest(modifiedEntity, pathParams, input.queryParams, timeoutMs, interpolate);
 
     if (outcome.error) {
       return {
@@ -848,14 +777,7 @@ async function executeRestTool(
 
   if (script.code.trim()) {
     const responseContext = createResponseContext(currentContext, response!);
-    postResponse = await executeRestScript(
-      execute,
-      workspaceId,
-      id,
-      script,
-      'onResponse',
-      responseContext,
-    );
+    postResponse = await executeRestScript(execute, workspaceId, id, script, 'onResponse', responseContext);
 
     if (postResponse.result.success && postResponse.context.environment) {
       await execute(
@@ -872,14 +794,7 @@ async function executeRestTool(
       ).catch(() => null);
     }
 
-    testResult = await executeRestScript(
-      execute,
-      workspaceId,
-      id,
-      script,
-      'onTest',
-      responseContext,
-    );
+    testResult = await executeRestScript(execute, workspaceId, id, script, 'onTest', responseContext);
   }
 
   return {
@@ -926,13 +841,9 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
     action: string,
     payload: unknown[],
     type: 'query' | 'mutation' = 'query',
-  ) =>
-    execute(action, payload, await resolveWorkspaceId(rpcServer, input), type);
+  ) => execute(action, payload, await resolveWorkspaceId(rpcServer, input), type);
 
-  const objectSchema = (
-    properties: Record<string, unknown>,
-    required: string[] = [],
-  ): JsonSchemaObject => ({
+  const objectSchema = (properties: Record<string, unknown>, required: string[] = []): JsonSchemaObject => ({
     type: 'object',
     properties,
     required,
@@ -949,10 +860,7 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
       name: 'workspaces_list',
       description: 'List recent Yasumu workspaces.',
       inputSchema: objectSchema({ take: { type: 'number' } }),
-      call: (input) =>
-        execute('workspaces.list', [
-          { take: typeof input.take === 'number' ? input.take : 20 },
-        ]),
+      call: (input) => execute('workspaces.list', [{ take: typeof input.take === 'number' ? input.take : 20 }]),
     },
     {
       name: 'workspaces_active',
@@ -975,12 +883,8 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
     {
       name: 'rest_get',
       description: 'Get a REST request by id.',
-      inputSchema: objectSchema(
-        { workspaceId: workspaceReferenceProperty, id: { type: 'string' } },
-        ['id'],
-      ),
-      call: (input) =>
-        workspaceAware(input, 'rest.get', [requireString(input, 'id')]),
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty, id: { type: 'string' } }, ['id']),
+      call: (input) => workspaceAware(input, 'rest.get', [requireString(input, 'id')]),
     },
     {
       name: 'rest_create',
@@ -1021,13 +925,7 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
         },
         ['id', 'data'],
       ),
-      call: (input) =>
-        workspaceAware(
-          input,
-          'rest.update',
-          [requireString(input, 'id'), input.data ?? {}],
-          'mutation',
-        ),
+      call: (input) => workspaceAware(input, 'rest.update', [requireString(input, 'id'), input.data ?? {}], 'mutation'),
     },
     {
       name: 'rest_update_script',
@@ -1067,8 +965,7 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
           id: { type: 'string' },
           pathParams: {
             type: 'object',
-            description:
-              'Path parameters by name. Values can be strings or { value, enabled } objects.',
+            description: 'Path parameters by name. Values can be strings or { value, enabled } objects.',
           },
           queryParams: {
             type: 'object',
@@ -1076,8 +973,7 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
           },
           variables: {
             type: 'object',
-            description:
-              'Temporary interpolation variables for this execution. They override the active environment.',
+            description: 'Temporary interpolation variables for this execution. They override the active environment.',
           },
           timeoutMs: {
             type: 'number',
@@ -1085,13 +981,11 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
           },
           script: {
             type: 'string',
-            description:
-              'Optional JavaScript lifecycle script to use for this run.',
+            description: 'Optional JavaScript lifecycle script to use for this run.',
           },
           persistScript: {
             type: 'boolean',
-            description:
-              'When script is provided, persist it on the saved request before execution.',
+            description: 'When script is provided, persist it on the saved request before execution.',
           },
         },
         ['id'],
@@ -1101,17 +995,8 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
     {
       name: 'rest_delete',
       description: 'Delete a REST request by id.',
-      inputSchema: objectSchema(
-        { workspaceId: workspaceReferenceProperty, id: { type: 'string' } },
-        ['id'],
-      ),
-      call: (input) =>
-        workspaceAware(
-          input,
-          'rest.delete',
-          [requireString(input, 'id')],
-          'mutation',
-        ),
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty, id: { type: 'string' } }, ['id']),
+      call: (input) => workspaceAware(input, 'rest.delete', [requireString(input, 'id')], 'mutation'),
     },
     {
       name: 'graphql_list',
@@ -1122,12 +1007,8 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
     {
       name: 'graphql_get',
       description: 'Get a GraphQL request by id.',
-      inputSchema: objectSchema(
-        { workspaceId: workspaceReferenceProperty, id: { type: 'string' } },
-        ['id'],
-      ),
-      call: (input) =>
-        workspaceAware(input, 'graphql.get', [requireString(input, 'id')]),
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty, id: { type: 'string' } }, ['id']),
+      call: (input) => workspaceAware(input, 'graphql.get', [requireString(input, 'id')]),
     },
     {
       name: 'graphql_create',
@@ -1167,39 +1048,20 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
         ['id', 'data'],
       ),
       call: (input) =>
-        workspaceAware(
-          input,
-          'graphql.update',
-          [requireString(input, 'id'), input.data ?? {}],
-          'mutation',
-        ),
+        workspaceAware(input, 'graphql.update', [requireString(input, 'id'), input.data ?? {}], 'mutation'),
     },
     {
       name: 'graphql_delete',
       description: 'Delete a GraphQL request by id.',
-      inputSchema: objectSchema(
-        { workspaceId: workspaceReferenceProperty, id: { type: 'string' } },
-        ['id'],
-      ),
-      call: (input) =>
-        workspaceAware(
-          input,
-          'graphql.delete',
-          [requireString(input, 'id')],
-          'mutation',
-        ),
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty, id: { type: 'string' } }, ['id']),
+      call: (input) => workspaceAware(input, 'graphql.delete', [requireString(input, 'id')], 'mutation'),
     },
     {
       name: 'synchronization_synchronize',
       description: 'Synchronize the active or provided workspace with disk.',
       inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty }),
       call: async (input) =>
-        execute(
-          'synchronization.synchronize',
-          [],
-          await resolveWorkspaceId(rpcServer, input),
-          'mutation',
-        ),
+        execute('synchronization.synchronize', [], await resolveWorkspaceId(rpcServer, input), 'mutation'),
     },
   ];
 }
@@ -1208,13 +1070,9 @@ export function createMcpServer(rpcServer: DenApplication) {
   const tools = createTools(rpcServer);
   const toolMap = new Map(tools.map((tool) => [tool.name, tool]));
 
-  const processRequest = async (
-    request: JsonRpcRequest,
-  ): Promise<JsonRpcResponse | null> => {
+  const processRequest = async (request: JsonRpcRequest): Promise<JsonRpcResponse | null> => {
     if (!request.method) {
-      return isNotification(request)
-        ? null
-        : jsonRpcError(request.id, -32600, 'Invalid request');
+      return isNotification(request) ? null : jsonRpcError(request.id, -32600, 'Invalid request');
     }
 
     if (isNotification(request)) {
@@ -1223,9 +1081,7 @@ export function createMcpServer(rpcServer: DenApplication) {
 
     if (request.method === 'initialize') {
       const requestedProtocol =
-        typeof request.params?.protocolVersion === 'string'
-          ? request.params.protocolVersion
-          : '2025-03-26';
+        typeof request.params?.protocolVersion === 'string' ? request.params.protocolVersion : '2025-03-26';
 
       return jsonRpcResult(request.id, {
         protocolVersion: requestedProtocol,
@@ -1255,20 +1111,13 @@ export function createMcpServer(rpcServer: DenApplication) {
         return jsonRpcError(request.id, -32602, 'Tool name is required');
       }
       const tool = toolMap.get(name);
-      if (!tool)
-        return jsonRpcError(request.id, -32602, `Unknown tool: ${name}`);
+      if (!tool) return jsonRpcError(request.id, -32602, `Unknown tool: ${name}`);
 
       let result: unknown;
       try {
-        result = await tool.call(
-          input && typeof input === 'object' ? (input as ToolInput) : {},
-        );
+        result = await tool.call(input && typeof input === 'object' ? (input as ToolInput) : {});
       } catch (error) {
-        return jsonRpcError(
-          request.id,
-          -32602,
-          error instanceof Error ? error.message : String(error),
-        );
+        return jsonRpcError(request.id, -32602, error instanceof Error ? error.message : String(error));
       }
 
       return jsonRpcResult(request.id, textResult(result));
@@ -1305,14 +1154,12 @@ export function createMcpServer(rpcServer: DenApplication) {
     })
     .post('/', async (c) => {
       try {
-        const payload = (await c.req.json()) as
-          | JsonRpcRequest
-          | JsonRpcRequest[];
+        const payload = (await c.req.json()) as JsonRpcRequest | JsonRpcRequest[];
 
         if (Array.isArray(payload)) {
-          const responses = (
-            await Promise.all(payload.map((request) => processRequest(request)))
-          ).filter((response): response is JsonRpcResponse => !!response);
+          const responses = (await Promise.all(payload.map((request) => processRequest(request)))).filter(
+            (response): response is JsonRpcResponse => !!response,
+          );
 
           if (responses.length === 0) {
             return c.body(null, 202);
@@ -1326,18 +1173,10 @@ export function createMcpServer(rpcServer: DenApplication) {
           return c.body(null, 202);
         }
 
-        const status =
-          'error' in response && response.error.code === -32601 ? 404 : 200;
+        const status = 'error' in response && response.error.code === -32601 ? 404 : 200;
         return c.json(response, status);
       } catch (error) {
-        return c.json(
-          jsonRpcError(
-            null,
-            -32000,
-            error instanceof Error ? error.message : String(error),
-          ),
-          500,
-        );
+        return c.json(jsonRpcError(null, -32000, error instanceof Error ? error.message : String(error)), 500);
       }
     });
 }

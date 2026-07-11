@@ -1,25 +1,20 @@
 import { YasumuSchemaParserError, type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
-import {
-  YasumuSchemaParsable,
-  type YasumuSchemaParsableToType,
-} from './parsable.js';
 import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParsableNullable } from './nullable.js';
+import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
 
 export type _YasumuSchemaParsableObjectExpect = {
   [K: string]: YasumuSchemaParsable<unknown>;
 };
 
-export type _YasumuSchemaParsableObjectReturn<
-  T extends _YasumuSchemaParsableObjectExpect,
-> = {
+export type _YasumuSchemaParsableObjectReturn<T extends _YasumuSchemaParsableObjectExpect> = {
   [K in keyof T]: YasumuSchemaParsableToType<T[K]>;
 };
 
-export class YasumuSchemaParsableObject<
-  E extends _YasumuSchemaParsableObjectExpect,
-> extends YasumuSchemaParsable<_YasumuSchemaParsableObjectReturn<E>> {
+export class YasumuSchemaParsableObject<E extends _YasumuSchemaParsableObjectExpect> extends YasumuSchemaParsable<
+  _YasumuSchemaParsableObjectReturn<E>
+> {
   constructor(public readonly expect: E) {
     super();
   }
@@ -32,10 +27,7 @@ export class YasumuSchemaParsableObject<
     const object: Record<string, any> = {};
     const keys = new Set(Object.keys(this.expect));
     parser.consume(YasumuSchemaTokenTypes.LEFT_CURLY_BRACKET);
-    while (
-      !parser.isEOF() &&
-      !parser.check(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET)
-    ) {
+    while (!parser.isEOF() && !parser.check(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET)) {
       const [key, value] = this.parseEntry(parser);
       object[key] = value;
       keys.delete(key);
@@ -45,9 +37,7 @@ export class YasumuSchemaParsableObject<
       const nullable = this.expect[x] instanceof YasumuSchemaParsableNullable;
       if (!nullable && !(x in object)) {
         const { line, column } = end.span.start;
-        throw new YasumuSchemaParserError(
-          `Missing required object key '${x}' (at line ${line}, column ${column})`,
-        );
+        throw new YasumuSchemaParserError(`Missing required object key '${x}' (at line ${line}, column ${column})`);
       }
       object[x] ??= null;
     }
@@ -59,9 +49,7 @@ export class YasumuSchemaParsableObject<
     const parsable = this.expect[identifier.value];
     if (!parsable) {
       const { line, column } = identifier.span.start;
-      throw new YasumuSchemaParserError(
-        `Unexpected block '${identifier.value}' (at line ${line}, column ${column})`,
-      );
+      throw new YasumuSchemaParserError(`Unexpected block '${identifier.value}' (at line ${line}, column ${column})`);
     }
     parser.consume(YasumuSchemaTokenTypes.COLON);
     const value = parsable.parse(parser);
@@ -72,10 +60,7 @@ export class YasumuSchemaParsableObject<
     return typeof value === 'object';
   }
 
-  serialize(
-    serializer: YasumuSchemaSerializer,
-    value: _YasumuSchemaParsableObjectReturn<E>,
-  ) {
+  serialize(serializer: YasumuSchemaSerializer, value: _YasumuSchemaParsableObjectReturn<E>) {
     const keys = Object.keys(this.expect);
     if (keys.length === 0) {
       return '{}';

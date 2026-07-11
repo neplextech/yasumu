@@ -1,7 +1,8 @@
 'use client';
-import { invoke } from '@tauri-apps/api/core';
 import { event } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useState, useEffect } from 'react';
+
 import { PermissionPrompt } from '../dialogs/permission-prompt-dialog';
 
 export interface PermissionPromptEvent {
@@ -17,24 +18,17 @@ export interface PermissionPromptEvent {
   };
 }
 
-export function PermissionPromptProvider({
-  children,
-}: React.PropsWithChildren) {
-  const [pendingPrompts, setPendingPrompts] = useState<PermissionPromptEvent[]>(
-    [],
-  );
+export function PermissionPromptProvider({ children }: React.PropsWithChildren) {
+  const [pendingPrompts, setPendingPrompts] = useState<PermissionPromptEvent[]>([]);
 
   useEffect(() => {
-    const permissionPromptHandler = event.listen<PermissionPromptEvent>(
-      'permission-prompt',
-      async (event) => {
-        try {
-          setPendingPrompts((p) => [...p, event.payload]);
-        } catch (error) {
-          console.error('Failed to parse permission prompt event', error);
-        }
-      },
-    );
+    const permissionPromptHandler = event.listen<PermissionPromptEvent>('permission-prompt', async (event) => {
+      try {
+        setPendingPrompts((p) => [...p, event.payload]);
+      } catch (error) {
+        console.error('Failed to parse permission prompt event', error);
+      }
+    });
 
     return () => {
       permissionPromptHandler.then((remove) => remove());
@@ -68,12 +62,7 @@ export function PermissionPromptProvider({
   return (
     <>
       {/* Sequentially render the permission prompts until all are resolved */}
-      {nextPrompt && (
-        <PermissionPrompt
-          event={nextPrompt}
-          onConfirm={handlePermissionResponse}
-        />
-      )}
+      {nextPrompt && <PermissionPrompt event={nextPrompt} onConfirm={handlePermissionResponse} />}
       {children}
     </>
   );

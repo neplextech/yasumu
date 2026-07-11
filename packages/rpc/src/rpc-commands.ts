@@ -1,11 +1,4 @@
 import type {
-  ExtractRpcTypes,
-  InferParameters,
-  InferReturnType,
-  RpcMutation,
-  RpcQuery,
-} from './yasumu-rpc.js';
-import type {
   WorkspaceCreateOptions,
   WorkspaceData,
   RestEntityData,
@@ -36,10 +29,9 @@ import type {
   GraphqlScriptContext,
 } from '@yasumu/common';
 
-type ExecuteScriptCommand<Context> = RpcMutation<
-  [entity: ExecutableScript<Context>],
-  ScriptExecutionResult<Context>
->;
+import type { ExtractRpcTypes, InferParameters, InferReturnType, RpcMutation, RpcQuery } from './yasumu-rpc.js';
+
+type ExecuteScriptCommand<Context> = RpcMutation<[entity: ExecutableScript<Context>], ScriptExecutionResult<Context>>;
 
 /**
  * The Yasumu RPC interface.
@@ -116,10 +108,7 @@ export interface YasumuRPC {
      * @param id The ID of the rest entity.
      * @param data The data for the rest entity.
      */
-    update: RpcMutation<
-      [id: string, data: Partial<RestEntityUpdateOptions>],
-      RestEntityData
-    >;
+    update: RpcMutation<[id: string, data: Partial<RestEntityUpdateOptions>], RestEntityData>;
     /**
      * Rest entity deletion command.
      * @param id The ID of the rest entity.
@@ -145,10 +134,7 @@ export interface YasumuRPC {
      * Graphql bulk entity creation command.
      * @param data The data for the bulk graphql entity creation.
      */
-    createBulk: RpcMutation<
-      [data: GraphqlEntityBulkCreateOptions],
-      GraphqlEntityData[]
-    >;
+    createBulk: RpcMutation<[data: GraphqlEntityBulkCreateOptions], GraphqlEntityData[]>;
     /**
      * Graphql entity retrieval command.
      * @param id The ID of the graphql entity.
@@ -169,10 +155,7 @@ export interface YasumuRPC {
      * @param id The ID of the graphql entity.
      * @param data The data for the graphql entity.
      */
-    update: RpcMutation<
-      [id: string, data: Partial<GraphqlEntityUpdateOptions>],
-      GraphqlEntityData
-    >;
+    update: RpcMutation<[id: string, data: Partial<GraphqlEntityUpdateOptions>], GraphqlEntityData>;
     /**
      * Graphql entity deletion command.
      * @param id The ID of the graphql entity.
@@ -200,10 +183,7 @@ export interface YasumuRPC {
      * @param id The ID of the entity group.
      * @param data The data for the entity group.
      */
-    update: RpcMutation<
-      [id: string, data: Partial<EntityGroupUpdateOptions>],
-      EntityGroupData
-    >;
+    update: RpcMutation<[id: string, data: Partial<EntityGroupUpdateOptions>], EntityGroupData>;
     /**
      * Entity group deletion command.
      * @param id The ID of the entity group.
@@ -230,10 +210,7 @@ export interface YasumuRPC {
      * Get the list of emails.
      * @returns The list of emails.
      */
-    listEmails: RpcQuery<
-      [options: ListEmailOptions],
-      PaginatedResult<EmailData>
-    >;
+    listEmails: RpcQuery<[options: ListEmailOptions], PaginatedResult<EmailData>>;
     /**
      * Get the email by ID.
      * @param id The ID of the email.
@@ -280,10 +257,7 @@ export interface YasumuRPC {
     /**
      * Update an environment command.
      */
-    update: RpcMutation<
-      [id: string, data: Partial<EnvironmentUpdateOptions>],
-      EnvironmentData
-    >;
+    update: RpcMutation<[id: string, data: Partial<EnvironmentUpdateOptions>], EnvironmentData>;
     /**
      * Delete an environment command.
      * @param id The ID of the environment to delete.
@@ -343,10 +317,7 @@ export interface YasumuRPC {
 /**
  * The Yasumu RPC service interface.
  */
-export type YasumuRpcService<
-  T extends keyof YasumuRPC,
-  OmitWorkspaceId extends boolean = false,
-> = {
+export type YasumuRpcService<T extends keyof YasumuRPC, OmitWorkspaceId extends boolean = false> = {
   [K in keyof YasumuRPC[T]]: OmitWorkspaceId extends true
     ? (
         ...args: InferParameters<ExtractRpcTypes<YasumuRPC[T][K]>>

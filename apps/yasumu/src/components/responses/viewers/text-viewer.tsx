@@ -9,9 +9,7 @@ interface TextViewerProps {
 export function TextViewer({ body }: TextViewerProps) {
   return (
     <ScrollArea className="h-full">
-      <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all">
-        {body}
-      </pre>
+      <pre className="p-4 font-mono text-sm break-all whitespace-pre-wrap">{body}</pre>
     </ScrollArea>
   );
 }

@@ -27,10 +27,7 @@ export type YasumuRpcCommandHandler = {
  * A handler for a Yasumu RPC command.
  */
 export type YasumuRpcCommandHandlerDefinition = {
-  [K in keyof YasumuRpcCommandMap]: YasumuRpcCommandMap[K] extends RpcQueryOrMutation<
-    infer P,
-    infer R
-  >
+  [K in keyof YasumuRpcCommandMap]: YasumuRpcCommandMap[K] extends RpcQueryOrMutation<infer P, infer R>
     ? {
         type: YasumuRpcCommandMap[K] extends RpcQuery<P, R>
           ? 'query'
@@ -45,19 +42,14 @@ export type YasumuRpcCommandHandlerDefinition = {
 /**
  * A handler for a Yasumu RPC call.
  */
-export type RpcCallHandler<P extends unknown[], R> = (
-  context: YasumuRpcContext,
-  ...args: P
-) => Promise<R>;
+export type RpcCallHandler<P extends unknown[], R> = (context: YasumuRpcContext, ...args: P) => Promise<R>;
 
 /**
  * Defines a handler for a Yasumu RPC command.
  * @param handler - The handler to define.
  * @returns The defined handler.
  */
-export function defineRpcCommandHandler(
-  handler: YasumuRpcCommandHandlerDefinition,
-): YasumuRpcCommandHandler {
+export function defineRpcCommandHandler(handler: YasumuRpcCommandHandlerDefinition): YasumuRpcCommandHandler {
   const rpcHandler: YasumuRpcCommandHandler = {
     async $query<K extends keyof YasumuRpcCommandMap>(
       context: YasumuRpcContext,
@@ -97,18 +89,10 @@ export function defineRpcCommandHandler(
     },
     async handler(context, command) {
       if (command.type === 'mutation') {
-        const result = await rpcHandler.$mutation(
-          context,
-          command.command,
-          command.parameters,
-        );
+        const result = await rpcHandler.$mutation(context, command.command, command.parameters);
         return result;
       } else if (command.type === 'query') {
-        const result = await rpcHandler.$query(
-          context,
-          command.command,
-          command.parameters,
-        );
+        const result = await rpcHandler.$query(context, command.command, command.parameters);
         return result;
       } else {
         throw new Error(`Invalid command type: ${command.type}`);

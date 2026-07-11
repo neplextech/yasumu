@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import { useMemo } from 'react';
 
 interface CsvViewerProps {
   body: string;
@@ -43,9 +43,7 @@ export function CsvViewer({ body }: CsvViewerProps) {
   if (rows.length === 0) {
     return (
       <ScrollArea className="h-full">
-        <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all">
-          {body}
-        </pre>
+        <pre className="p-4 font-mono text-sm break-all whitespace-pre-wrap">{body}</pre>
       </ScrollArea>
     );
   }
@@ -54,15 +52,12 @@ export function CsvViewer({ body }: CsvViewerProps) {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 overflow-auto">
-        <table className="w-full text-left border border-border rounded">
+      <div className="overflow-auto p-4">
+        <table className="border-border w-full rounded border text-left">
           <thead>
             <tr>
               {headers.map((cell, i) => (
-                <th
-                  key={i}
-                  className="px-2 py-1 border-b border-border text-xs font-semibold bg-muted"
-                >
+                <th key={i} className="border-border bg-muted border-b px-2 py-1 text-xs font-semibold">
                   {cell}
                 </th>
               ))}
@@ -72,10 +67,7 @@ export function CsvViewer({ body }: CsvViewerProps) {
             {rows.slice(1).map((row, rowIdx) => (
               <tr key={rowIdx}>
                 {row.map((cell, colIdx) => (
-                  <td
-                    key={colIdx}
-                    className="px-2 py-1 border-b border-border text-xs"
-                  >
+                  <td key={colIdx} className="border-border border-b px-2 py-1 text-xs">
                     {cell}
                   </td>
                 ))}

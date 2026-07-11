@@ -1,9 +1,7 @@
+import type { EnvironmentCreateOptions, EnvironmentUpdateOptions } from '@yasumu/common';
+
 import { Environment } from '../workspace/environment/environment.js';
 import type { Workspace } from '../workspace/workspace.js';
-import type {
-  EnvironmentCreateOptions,
-  EnvironmentUpdateOptions,
-} from '@yasumu/common';
 
 export class EnvironmentManager {
   /**
@@ -17,10 +15,9 @@ export class EnvironmentManager {
    * @returns The active environment or null if no environment is active.
    */
   public async getActiveEnvironment(): Promise<Environment | null> {
-    const env =
-      await this.workspace.manager.yasumu.rpc.environments.getActive.$query({
-        parameters: [],
-      });
+    const env = await this.workspace.manager.yasumu.rpc.environments.getActive.$query({
+      parameters: [],
+    });
 
     return env ? new Environment(this, env) : null;
   }
@@ -33,10 +30,7 @@ export class EnvironmentManager {
     await this.workspace.manager.yasumu.rpc.environments.setActive.$mutate({
       parameters: [id],
     });
-    this.workspace.manager.yasumu.events.emit(
-      'onEnvironmentActivated',
-      this.workspace,
-    );
+    this.workspace.manager.yasumu.events.emit('onEnvironmentActivated', this.workspace);
   }
 
   /**
@@ -44,10 +38,9 @@ export class EnvironmentManager {
    * @returns The list of environments.
    */
   public async list(): Promise<Environment[]> {
-    const envs =
-      await this.workspace.manager.yasumu.rpc.environments.list.$query({
-        parameters: [],
-      });
+    const envs = await this.workspace.manager.yasumu.rpc.environments.list.$query({
+      parameters: [],
+    });
 
     return envs.map((env) => new Environment(this, env));
   }
@@ -58,10 +51,9 @@ export class EnvironmentManager {
    * @returns The created environment.
    */
   public async create(data: EnvironmentCreateOptions): Promise<Environment> {
-    const env =
-      await this.workspace.manager.yasumu.rpc.environments.create.$mutate({
-        parameters: [data],
-      });
+    const env = await this.workspace.manager.yasumu.rpc.environments.create.$mutate({
+      parameters: [data],
+    });
 
     const newEnv = new Environment(this, env);
     this.workspace.manager.yasumu.events.emit('onEnvironmentCreated', newEnv);
@@ -77,10 +69,7 @@ export class EnvironmentManager {
       parameters: [id],
     });
 
-    this.workspace.manager.yasumu.events.emit(
-      'onEnvironmentDeleted',
-      this.workspace,
-    );
+    this.workspace.manager.yasumu.events.emit('onEnvironmentDeleted', this.workspace);
   }
 
   /**
@@ -89,11 +78,9 @@ export class EnvironmentManager {
    * @returns The environment.
    */
   public async get(id: string): Promise<Environment | null> {
-    const env = await this.workspace.manager.yasumu.rpc.environments.get.$query(
-      {
-        parameters: [id],
-      },
-    );
+    const env = await this.workspace.manager.yasumu.rpc.environments.get.$query({
+      parameters: [id],
+    });
 
     if (!env) {
       return null;
@@ -113,10 +100,9 @@ export class EnvironmentManager {
     data: Partial<EnvironmentUpdateOptions>,
     options: { noEmit?: boolean } = {},
   ): Promise<Environment> {
-    const env =
-      await this.workspace.manager.yasumu.rpc.environments.update.$mutate({
-        parameters: [id, data],
-      });
+    const env = await this.workspace.manager.yasumu.rpc.environments.update.$mutate({
+      parameters: [id, data],
+    });
     const newEnv = new Environment(this, env);
 
     if (!options.noEmit) {

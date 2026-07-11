@@ -1,44 +1,32 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useState,
-} from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileTreeSidebar } from '@/components/sidebars/file-tree';
-import {
-  useActiveWorkspace,
-  useYasumu,
-} from '@/components/providers/workspace-provider';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import LoadingScreen from '@/components/visuals/loading-screen';
-import { useGraphqlContext } from '../_providers/graphql-context';
-import {
-  useFileTreeClipboardActions,
-  useGraphqlFileTreeContext,
-} from '../_providers/file-tree-context';
-import { GeneratorDialog } from './dialogs/generator-dialog';
-import { Wand2 } from 'lucide-react';
-import { GraphqlIcon } from './graphql-icon';
-import { fileNamify } from '@/lib/utils/filenamify';
 import type { GraphqlTreeItem } from '@yasumu/core';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { Wand2 } from 'lucide-react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
+
+import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
+import { FileTreeSidebar } from '@/components/sidebars/file-tree';
+import LoadingScreen from '@/components/visuals/loading-screen';
 import {
   findFolderInWorkspaceTree,
   flattenWorkspaceFolders,
   mapWorkspaceTreeToFileTree,
 } from '@/components/workspace/file-tree-utils';
+import { fileNamify } from '@/lib/utils/filenamify';
+
+import { useFileTreeClipboardActions, useGraphqlFileTreeContext } from '../_providers/file-tree-context';
+import { useGraphqlContext } from '../_providers/graphql-context';
+import { GeneratorDialog } from './dialogs/generator-dialog';
+import { GraphqlIcon } from './graphql-icon';
 
 export function GraphqlFileTree() {
   const { yasumu } = useYasumu();
   const workspace = useActiveWorkspace();
   const { setEntityId, removeFromHistory } = useGraphqlContext();
-  const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } =
-    useGraphqlFileTreeContext();
-  const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } =
-    useFileTreeClipboardActions();
+  const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } = useGraphqlFileTreeContext();
+  const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } = useFileTreeClipboardActions();
 
   const graphql = workspace.graphql;
 
@@ -102,9 +90,7 @@ export function GraphqlFileTree() {
 
   const duplicateFolder = useCallback(
     async (id: string, targetParentId?: string | null) => {
-      const folder = graphqlEntities
-        ? findFolderInWorkspaceTree<GraphqlTreeItem>(graphqlEntities, id)
-        : null;
+      const folder = graphqlEntities ? findFolderInWorkspaceTree<GraphqlTreeItem>(graphqlEntities, id) : null;
       if (!folder || folder.type !== 'folder') return;
 
       const duplicateFolderRecursive = async (
@@ -141,12 +127,7 @@ export function GraphqlFileTree() {
         }
       };
 
-      await duplicateFolderRecursive(
-        folder,
-        targetParentId !== undefined
-          ? targetParentId
-          : (folder.parentId ?? null),
-      );
+      await duplicateFolderRecursive(folder, targetParentId !== undefined ? targetParentId : (folder.parentId ?? null));
 
       await refetchGraphqlEntities();
     },
@@ -195,10 +176,7 @@ export function GraphqlFileTree() {
 
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
-  const folders = useMemo(
-    () => flattenWorkspaceFolders(graphqlEntities ?? []),
-    [graphqlEntities],
-  );
+  const folders = useMemo(() => flattenWorkspaceFolders(graphqlEntities ?? []), [graphqlEntities]);
 
   const handleGenerate = async (
     url: string,
@@ -275,7 +253,7 @@ export function GraphqlFileTree() {
     <>
       <FileTreeSidebar
         fileTree={fileTree}
-        className="font-sans w-full"
+        className="w-full font-sans"
         collapsible="none"
         enableFileSearch
         fileSearchPlaceholder="Search GraphQL operations..."
@@ -290,29 +268,25 @@ export function GraphqlFileTree() {
         onFileSelect={withErrorHandler(async (id: string) => {
           setEntityId(id);
         })}
-        onFileCreate={withErrorHandler(
-          async (name: string, parentId?: string | null) => {
-            await graphql?.create({
-              name,
-              url: null,
-              groupId: parentId,
-              requestBody: null,
-              requestParameters: [],
-              searchParameters: [],
-              requestHeaders: [],
-              metadata: {},
-            });
-          },
-        )}
-        onFolderCreate={withErrorHandler(
-          async (name: string, parentId?: string | null) => {
-            await graphql?.createEntityGroup({
-              name,
-              parentId: parentId ?? null,
-              entityType: 'graphql',
-            });
-          },
-        )}
+        onFileCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
+          await graphql?.create({
+            name,
+            url: null,
+            groupId: parentId,
+            requestBody: null,
+            requestParameters: [],
+            searchParameters: [],
+            requestHeaders: [],
+            metadata: {},
+          });
+        })}
+        onFolderCreate={withErrorHandler(async (name: string, parentId?: string | null) => {
+          await graphql?.createEntityGroup({
+            name,
+            parentId: parentId ?? null,
+            entityType: 'graphql',
+          });
+        })}
         onFileDelete={withErrorHandler(async (id: string) => {
           await graphql?.delete(id);
           removeFromHistory(id);

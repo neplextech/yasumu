@@ -1,6 +1,7 @@
 import { Module } from '@yasumu/den';
-import { ScriptRuntimeService } from './script-runtime.service.ts';
+
 import { ScriptRuntimeResolver } from './script-runtime.resolver.ts';
+import { ScriptRuntimeService } from './script-runtime.service.ts';
 
 @Module({
   resolvers: [ScriptRuntimeResolver],

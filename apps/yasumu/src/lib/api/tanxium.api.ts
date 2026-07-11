@@ -1,6 +1,6 @@
-import { hc } from 'hono/client';
-import type { AppType } from '@yasumu/tanxium';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import type { AppType } from '@yasumu/tanxium';
+import { hc } from 'hono/client';
 
 export const createClient = (port: number) => {
   return hc<AppType>(`http://localhost:${port}`, {

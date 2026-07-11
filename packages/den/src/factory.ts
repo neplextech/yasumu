@@ -1,3 +1,4 @@
+import { MODULE_METADATA, RESOLVER_METADATA } from './constants.js';
 import { Container } from './di/container.js';
 import type {
   Type,
@@ -8,7 +9,6 @@ import type {
   RpcHandlerMetadata,
   Token,
 } from './interfaces.js';
-import { MODULE_METADATA, RESOLVER_METADATA } from './constants.js';
 
 interface RpcRegistryEntry {
   handler: Function;
@@ -63,9 +63,7 @@ export class DenFactory {
     };
   }
 
-  private static async scanModule(
-    moduleRef: Type<any> | DynamicModule,
-  ): Promise<ModuleDefinition> {
+  private static async scanModule(moduleRef: Type<any> | DynamicModule): Promise<ModuleDefinition> {
     if (this.modules.has(moduleRef)) {
       return this.modules.get(moduleRef)!;
     }
@@ -80,8 +78,7 @@ export class DenFactory {
       isGlobal = moduleRef.global || false;
     } else {
       ModuleClass = moduleRef;
-      isGlobal =
-        Reflect.getMetadata(MODULE_METADATA.GLOBAL, ModuleClass) || false;
+      isGlobal = Reflect.getMetadata(MODULE_METADATA.GLOBAL, ModuleClass) || false;
     }
 
     const container = new Container(ModuleClass.name);
@@ -191,29 +188,19 @@ export class DenFactory {
       // But we need to identify which are resolvers to register them.
 
       // Re-read resolver list to register handlers
-      let resolvers =
-        Reflect.getMetadata(MODULE_METADATA.RESOLVERS, ModuleClass) || [];
+      let resolvers = Reflect.getMetadata(MODULE_METADATA.RESOLVERS, ModuleClass) || [];
       if (this.isDynamicModule(def.ref)) {
         resolvers = [...resolvers, ...(def.ref.resolvers || [])];
       }
 
       for (const resolverClass of resolvers) {
         const instance = def.container.get(resolverClass);
-        const namespace = Reflect.getMetadata(
-          RESOLVER_METADATA.NAMESPACE,
-          resolverClass,
-        );
-        const handlers =
-          Reflect.getMetadata(RESOLVER_METADATA.HANDLERS, resolverClass) || {};
+        const namespace = Reflect.getMetadata(RESOLVER_METADATA.NAMESPACE, resolverClass);
+        const handlers = Reflect.getMetadata(RESOLVER_METADATA.HANDLERS, resolverClass) || {};
 
-        for (const [key, meta] of Object.entries(handlers) as [
-          string,
-          RpcHandlerMetadata,
-        ][]) {
+        for (const [key, meta] of Object.entries(handlers) as [string, RpcHandlerMetadata][]) {
           const handlerName = meta.rpcName || key;
-          const rpcKey = namespace
-            ? `${namespace}.${handlerName}`
-            : handlerName;
+          const rpcKey = namespace ? `${namespace}.${handlerName}` : handlerName;
 
           this.rpcRegistry.set(rpcKey, {
             handler: meta.handler,
@@ -246,10 +233,7 @@ export class DenFactory {
     }
   }
 
-  private static async execute(
-    request: RpcRequest,
-    context: any = {},
-  ): Promise<any> {
+  private static async execute(request: RpcRequest, context: any = {}): Promise<any> {
     const entry = this.rpcRegistry.get(request.action);
     if (!entry) {
       throw new Error('DEN_HANDLER_NOT_FOUND');
@@ -257,14 +241,11 @@ export class DenFactory {
 
     const { handler, instance, methodName, resolverClass } = entry;
 
-    const paramsMetadata =
-      Reflect.getMetadata(RESOLVER_METADATA.PARAMS, resolverClass) || {};
+    const paramsMetadata = Reflect.getMetadata(RESOLVER_METADATA.PARAMS, resolverClass) || {};
     const methodParams = paramsMetadata[methodName] || [];
 
     const args: any[] = [];
-    const payload = Array.isArray(request.payload)
-      ? [...request.payload]
-      : [request.payload];
+    const payload = Array.isArray(request.payload) ? [...request.payload] : [request.payload];
 
     const paramLength = handler.length;
 
@@ -289,11 +270,7 @@ export class DenFactory {
     if (paramLength === 0) {
       return handler.apply(
         instance,
-        request.payload === undefined
-          ? []
-          : Array.isArray(request.payload)
-            ? request.payload
-            : [request.payload],
+        request.payload === undefined ? [] : Array.isArray(request.payload) ? request.payload : [request.payload],
       );
     }
 
@@ -304,10 +281,7 @@ export class DenFactory {
     return module && module.module;
   }
 
-  private static hasLifecycleHook(
-    instance: any,
-    hook: string,
-  ): instance is any {
+  private static hasLifecycleHook(instance: any, hook: string): instance is any {
     return instance && typeof instance[hook] === 'function';
   }
 }

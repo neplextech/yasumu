@@ -5,13 +5,13 @@ import { YasumuSchemaParsable } from './parsable.js';
 
 export type _YasumuSchemaParsableEnumExpect = readonly string[];
 
-export type _YasumuSchemaParsableEnumReturn<
-  E extends _YasumuSchemaParsableEnumExpect,
-> = E extends readonly (infer U)[] ? U : never;
+export type _YasumuSchemaParsableEnumReturn<E extends _YasumuSchemaParsableEnumExpect> = E extends readonly (infer U)[]
+  ? U
+  : never;
 
-export class YasumuSchemaParsableEnum<
-  E extends _YasumuSchemaParsableEnumExpect,
-> extends YasumuSchemaParsable<_YasumuSchemaParsableEnumReturn<E>> {
+export class YasumuSchemaParsableEnum<E extends _YasumuSchemaParsableEnumExpect> extends YasumuSchemaParsable<
+  _YasumuSchemaParsableEnumReturn<E>
+> {
   expect: E;
 
   constructor(...expect: E) {
@@ -27,9 +27,7 @@ export class YasumuSchemaParsableEnum<
     const identifier = parser.consume(YasumuSchemaTokenTypes.IDENTIFIER);
     if (!this.expect.includes(identifier.value)) {
       const { line, column } = parser.currentToken!.span.start;
-      throw new YasumuSchemaParserError(
-        `Invalid enum value "${identifier.value}" (at line ${line}, column ${column})`,
-      );
+      throw new YasumuSchemaParserError(`Invalid enum value "${identifier.value}" (at line ${line}, column ${column})`);
     }
     return identifier.value as _YasumuSchemaParsableEnumReturn<E>;
   }
@@ -38,10 +36,7 @@ export class YasumuSchemaParsableEnum<
     return typeof value === 'string';
   }
 
-  serialize(
-    serializer: YasumuSchemaSerializer,
-    value: _YasumuSchemaParsableEnumReturn<E>,
-  ) {
+  serialize(serializer: YasumuSchemaSerializer, value: _YasumuSchemaParsableEnumReturn<E>) {
     return serializer.serializeIdentifier(value);
   }
 }

@@ -6,11 +6,7 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: (
         <div className="flex items-center gap-2">
-          <img
-            src="/logo-dark-glow.png"
-            alt="Yasumu Logo"
-            className="w-6 h-6 rounded-md"
-          />
+          <img src="/logo-dark-glow.png" alt="Yasumu Logo" className="h-6 w-6 rounded-md" />
           <span className="font-bold">Yasumu</span>
         </div>
       ),
@@ -21,14 +17,14 @@ export function baseOptions(): BaseLayoutProps {
         url: '/docs',
         type: 'main',
         description: 'Documentation for Yasumu',
-        icon: <Book className="w-4 h-4" />,
+        icon: <Book className="h-4 w-4" />,
       },
       {
         text: 'Blogs',
         url: '/blogs',
         type: 'main',
         description: 'Blogs about Yasumu',
-        icon: <Pencil className="w-4 h-4" />,
+        icon: <Pencil className="h-4 w-4" />,
       },
       {
         text: 'Download',
@@ -36,7 +32,7 @@ export function baseOptions(): BaseLayoutProps {
         type: 'main',
         external: true,
         description: 'Download Yasumu',
-        icon: <Download className="w-4 h-4" />,
+        icon: <Download className="h-4 w-4" />,
       },
       {
         text: 'Changelog',
@@ -44,7 +40,7 @@ export function baseOptions(): BaseLayoutProps {
         type: 'main',
         external: true,
         description: 'Changelog of Yasumu',
-        icon: <History className="w-4 h-4" />,
+        icon: <History className="h-4 w-4" />,
       },
       {
         icon: (

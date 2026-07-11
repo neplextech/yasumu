@@ -1,4 +1,5 @@
 import { text, sqliteTable, integer } from 'drizzle-orm/sqlite-core';
+
 import { JSONValue } from '@/common/types.ts';
 
 export function json<T = JSONValue>(name = 'metadata') {
@@ -38,5 +39,4 @@ export function commonColumns<M = JSONValue>() {
   };
 }
 
-export type Table<M = JSONValue> = ReturnType<typeof sqliteTable> &
-  ReturnType<typeof commonColumns<M>>;
+export type Table<M = JSONValue> = ReturnType<typeof sqliteTable> & ReturnType<typeof commonColumns<M>>;

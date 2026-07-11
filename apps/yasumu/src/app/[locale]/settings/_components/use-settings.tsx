@@ -1,15 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { getVersion, getTauriVersion, getIdentifier, getName, getBundleType, BundleType } from '@tauri-apps/api/app';
 import { Store } from '@tauri-apps/plugin-store';
-import {
-  getVersion,
-  getTauriVersion,
-  getIdentifier,
-  getName,
-  getBundleType,
-  BundleType,
-} from '@tauri-apps/api/app';
+import { useEffect, useState, useCallback } from 'react';
+
 import { YASUMU_ANALYTICS_FLAG_KEY } from '@/lib/constants/instrumentation';
 
 export interface SettingsState {
@@ -39,14 +33,13 @@ export function useSettings() {
 
   useEffect(() => {
     async function loadAppInfo() {
-      const [name, version, tauriVersion, identifier, bundleType] =
-        await Promise.all([
-          getName(),
-          getVersion(),
-          getTauriVersion(),
-          getIdentifier(),
-          getBundleType(),
-        ]);
+      const [name, version, tauriVersion, identifier, bundleType] = await Promise.all([
+        getName(),
+        getVersion(),
+        getTauriVersion(),
+        getIdentifier(),
+        getBundleType(),
+      ]);
 
       setAppInfo({
         name,
@@ -64,9 +57,7 @@ export function useSettings() {
     async function loadSettings() {
       try {
         const store = await getStore();
-        const analyticsEnabled = await store?.get<boolean>(
-          YASUMU_ANALYTICS_FLAG_KEY,
-        );
+        const analyticsEnabled = await store?.get<boolean>(YASUMU_ANALYTICS_FLAG_KEY);
 
         setSettings({
           analyticsEnabled: analyticsEnabled ?? true,
@@ -81,22 +72,19 @@ export function useSettings() {
     loadSettings().catch(console.error);
   }, []);
 
-  const updateSetting = useCallback(
-    async <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
-      setSettings((prev) => ({ ...prev, [key]: value }));
+  const updateSetting = useCallback(async <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
 
-      try {
-        const store = await getStore();
-        if (key === 'analyticsEnabled') {
-          await store?.set(YASUMU_ANALYTICS_FLAG_KEY, value);
-          await store?.save();
-        }
-      } catch (error) {
-        console.error('Failed to save setting:', error);
+    try {
+      const store = await getStore();
+      if (key === 'analyticsEnabled') {
+        await store?.set(YASUMU_ANALYTICS_FLAG_KEY, value);
+        await store?.save();
       }
-    },
-    [],
-  );
+    } catch (error) {
+      console.error('Failed to save setting:', error);
+    }
+  }, []);
 
   return {
     settings,

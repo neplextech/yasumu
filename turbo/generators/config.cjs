@@ -1,5 +1,5 @@
 /**
- * @param {import('@turbo/gen').PlopTypes.NodePlopAPI} plop 
+ * @param {import('@turbo/gen').PlopTypes.NodePlopAPI} plop
  */
 module.exports = function generator(plop) {
   const destination = plop.getDestBasePath();

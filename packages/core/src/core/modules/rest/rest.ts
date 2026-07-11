@@ -1,5 +1,3 @@
-import type { Workspace } from '@/core/workspace/workspace.js';
-import { RestEntity } from './rest.entity.js';
 import type {
   EntityGroupCreateOptions,
   EntityGroupData,
@@ -12,6 +10,10 @@ import type {
   RestTreeItem,
   YasumuEmbeddedScript,
 } from '@yasumu/common';
+
+import type { Workspace } from '@/core/workspace/workspace.js';
+
+import { RestEntity } from './rest.entity.js';
 
 export class RestModule {
   public constructor(private readonly workspace: Workspace) {}
@@ -37,10 +39,7 @@ export class RestModule {
     });
   }
 
-  public async update(
-    id: string,
-    data: Partial<RestEntityUpdateOptions>,
-  ): Promise<RestEntityData> {
+  public async update(id: string, data: Partial<RestEntityUpdateOptions>): Promise<RestEntityData> {
     const result = await this.workspace.manager.yasumu.rpc.rest.update.$mutate({
       parameters: [id, data],
     });
@@ -65,25 +64,18 @@ export class RestModule {
     return data as unknown as RestTreeItem[];
   }
 
-  public async createEntityGroup(
-    data: EntityGroupCreateOptions,
-  ): Promise<EntityGroupData> {
-    const result =
-      await this.workspace.manager.yasumu.rpc.entityGroups.create.$mutate({
-        parameters: [data],
-      });
+  public async createEntityGroup(data: EntityGroupCreateOptions): Promise<EntityGroupData> {
+    const result = await this.workspace.manager.yasumu.rpc.entityGroups.create.$mutate({
+      parameters: [data],
+    });
 
     return result;
   }
 
-  public async updateEntityGroup(
-    id: string,
-    data: EntityGroupUpdateOptions,
-  ): Promise<EntityGroupData> {
-    const result =
-      await this.workspace.manager.yasumu.rpc.entityGroups.update.$mutate({
-        parameters: [id, data],
-      });
+  public async updateEntityGroup(id: string, data: EntityGroupUpdateOptions): Promise<EntityGroupData> {
+    const result = await this.workspace.manager.yasumu.rpc.entityGroups.update.$mutate({
+      parameters: [id, data],
+    });
 
     return result;
   }
@@ -94,69 +86,55 @@ export class RestModule {
     });
   }
 
-  public async executeScript(
-    entityId: string,
-    script: YasumuEmbeddedScript,
-    context: RestScriptContext,
-  ) {
-    const result =
-      await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
-        parameters: [
-          {
-            entityId,
-            script,
-            context,
-            invocationTarget: !!context.response ? 'onResponse' : 'onRequest',
-          },
-        ],
-      });
+  public async executeScript(entityId: string, script: YasumuEmbeddedScript, context: RestScriptContext) {
+    const result = await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
+      parameters: [
+        {
+          entityId,
+          script,
+          context,
+          invocationTarget: !!context.response ? 'onResponse' : 'onRequest',
+        },
+      ],
+    });
 
     return result;
   }
 
-  public async executeTest(
-    entityId: string,
-    script: YasumuEmbeddedScript,
-    context: RestScriptContext,
-  ) {
-    const result =
-      await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
-        parameters: [
-          {
-            entityId,
-            script,
-            context,
-            invocationTarget: 'onTest',
-          },
-        ],
-      });
+  public async executeTest(entityId: string, script: YasumuEmbeddedScript, context: RestScriptContext) {
+    const result = await this.workspace.manager.yasumu.rpc.rest.executeScript.$mutate({
+      parameters: [
+        {
+          entityId,
+          script,
+          context,
+          invocationTarget: 'onTest',
+        },
+      ],
+    });
 
     return result;
   }
 
   public async listHistory(): Promise<EntityHistoryData[]> {
-    const data =
-      await this.workspace.manager.yasumu.rpc.entityHistory.list.$query({
-        parameters: [{ entityType: 'rest' }],
-      });
+    const data = await this.workspace.manager.yasumu.rpc.entityHistory.list.$query({
+      parameters: [{ entityType: 'rest' }],
+    });
 
     return data;
   }
 
   public async upsertHistory(entityId: string): Promise<EntityHistoryData> {
-    const data =
-      await this.workspace.manager.yasumu.rpc.entityHistory.upsert.$mutate({
-        parameters: [{ entityId, entityType: 'rest' }],
-      });
+    const data = await this.workspace.manager.yasumu.rpc.entityHistory.upsert.$mutate({
+      parameters: [{ entityId, entityType: 'rest' }],
+    });
 
     return data;
   }
 
   public async deleteHistory(entityId: string): Promise<void> {
-    await this.workspace.manager.yasumu.rpc.entityHistory.deleteByEntityId.$mutate(
-      {
-        parameters: [entityId],
-      },
-    );
+    await this.workspace.manager.yasumu.rpc.entityHistory.deleteByEntityId.$mutate({
+      parameters: [entityId],
+    });
   }
 }

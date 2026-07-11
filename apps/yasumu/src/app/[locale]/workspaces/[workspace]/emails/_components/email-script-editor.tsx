@@ -1,14 +1,16 @@
 'use client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { YasumuScriptingLanguage } from '@yasumu/core';
+import type { YasumuEmbeddedScript } from '@yasumu/core';
+import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
+import { SiTypescript } from 'react-icons/si';
+
 import { TextEditor } from '@/components/editors';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { YasumuScriptingLanguage } from '@yasumu/core';
+
 import { EMAIL_SCRIPT_PLACEHOLDER, EMAIL_TYPEDEF } from './common';
-import { useCallback, useEffect, useRef } from 'react';
-import type { YasumuEmbeddedScript } from '@yasumu/core';
-import { Loader2 } from 'lucide-react';
-import { SiTypescript } from 'react-icons/si';
 
 const DEBOUNCE_DELAY = 3000;
 
@@ -28,8 +30,7 @@ export default function EmailScriptEditor() {
 
   const { data: script } = useQuery({
     queryKey: ['email-script'],
-    queryFn: () =>
-      workspace.emails.getSmtpConfig().then((c) => c.script ?? null),
+    queryFn: () => workspace.emails.getSmtpConfig().then((c) => c.script ?? null),
     staleTime: Infinity,
     gcTime: Infinity,
   });
@@ -55,13 +56,10 @@ export default function EmailScriptEditor() {
     (code: string) => {
       pendingCodeRef.current = code;
 
-      queryClient.setQueryData<YasumuEmbeddedScript | null>(
-        ['email-script'],
-        (old) => ({
-          language: old?.language || YasumuScriptingLanguage.JavaScript,
-          code,
-        }),
-      );
+      queryClient.setQueryData<YasumuEmbeddedScript | null>(['email-script'], (old) => ({
+        language: old?.language || YasumuScriptingLanguage.JavaScript,
+        code,
+      }));
 
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -92,19 +90,15 @@ export default function EmailScriptEditor() {
   }, [workspace.emails]);
 
   return (
-    <div className="flex flex-col gap-2 min-h-0 h-full">
-      <div className="flex items-center justify-between shrink-0 px-8">
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex shrink-0 items-center justify-between px-8">
         <div className="flex items-center gap-2">
-          <SiTypescript className="size-4 text-blue-500 bg-gray-200" />
-          <span className="text-sm text-muted-foreground font-medium">
-            Email Script
-          </span>
+          <SiTypescript className="size-4 bg-gray-200 text-blue-500" />
+          <span className="text-muted-foreground text-sm font-medium">Email Script</span>
         </div>
         <div className="flex items-center gap-2">
           {isSaving && <Loader2 className="size-4 animate-spin" />}
-          <span className="text-xs text-muted-foreground font-mono">
-            onEmail(ctx, email)
-          </span>
+          <span className="text-muted-foreground font-mono text-xs">onEmail(ctx, email)</span>
         </div>
       </div>
       <TextEditor
@@ -113,15 +107,11 @@ export default function EmailScriptEditor() {
         typeDefinitions={YASUMU_EMAIL_TYPEDEF}
         className="rounded-none"
         placeholder={
-          <div className="text-sm text-muted-foreground font-medium opacity-40 ml-2">
-            <h1 className="font-bold underline">
-              Edit to hide this example placeholder
-            </h1>
+          <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
+            <h1 className="font-bold underline">Edit to hide this example placeholder</h1>
             <h1>Export onEmail to listen to new email event</h1>
             <h1>Example:</h1>
-            <pre className="font-mono text-sm whitespace-pre-wrap mt-4">
-              {EMAIL_SCRIPT_PLACEHOLDER}
-            </pre>
+            <pre className="mt-4 font-mono text-sm whitespace-pre-wrap">{EMAIL_SCRIPT_PLACEHOLDER}</pre>
           </div>
         }
       />

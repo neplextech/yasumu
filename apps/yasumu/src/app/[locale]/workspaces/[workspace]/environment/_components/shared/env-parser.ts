@@ -13,10 +13,7 @@ export function parseEnvFormat(text: string): TabularPair[] {
       const key = match[1].trim();
       let value = match[2].trim();
 
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1);
       }
 

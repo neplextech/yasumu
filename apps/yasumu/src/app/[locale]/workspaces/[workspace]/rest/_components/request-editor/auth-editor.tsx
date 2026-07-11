@@ -1,16 +1,11 @@
 'use client';
 
-import { KeyValuePair } from '@/components/tables/key-value-table';
-import React, { useMemo, useCallback } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@yasumu/ui/components/select';
 import { Label } from '@yasumu/ui/components/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
+import React, { useMemo, useCallback } from 'react';
+
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
+import { KeyValuePair } from '@/components/tables/key-value-table';
 
 interface AuthEditorProps {
   headers: KeyValuePair[];
@@ -28,9 +23,7 @@ interface ParsedAuth {
 }
 
 function parseAuthHeader(headers: KeyValuePair[]): ParsedAuth {
-  const authHeader = headers.find(
-    (h) => h.key.toLowerCase() === 'authorization' && h.enabled,
-  );
+  const authHeader = headers.find((h) => h.key.toLowerCase() === 'authorization' && h.enabled);
 
   if (!authHeader?.value) {
     return { type: 'none', value: '' };
@@ -75,9 +68,7 @@ export default function AuthEditor({ headers, onChange }: AuthEditorProps) {
 
   const updateAuthHeader = useCallback(
     (value: string | null) => {
-      const filteredHeaders = headers.filter(
-        (h) => h.key.toLowerCase() !== 'authorization',
-      );
+      const filteredHeaders = headers.filter((h) => h.key.toLowerCase() !== 'authorization');
 
       if (!value) {
         onChange(filteredHeaders);
@@ -139,7 +130,7 @@ export default function AuthEditor({ headers, onChange }: AuthEditorProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="space-y-2">
-        <Label className="text-sm text-muted-foreground">Auth Type</Label>
+        <Label className="text-muted-foreground text-sm">Auth Type</Label>
         <Select value={parsedAuth.type} onValueChange={handleAuthTypeChange}>
           <SelectTrigger>
             <SelectValue placeholder="Select Auth Type" />
@@ -170,9 +161,8 @@ export default function AuthEditor({ headers, onChange }: AuthEditorProps) {
       )}
 
       {parsedAuth.type === 'none' && (
-        <div className="text-sm text-muted-foreground py-4 text-center">
-          No authentication configured. Select an auth type above to add
-          credentials.
+        <div className="text-muted-foreground py-4 text-center text-sm">
+          No authentication configured. Select an auth type above to add credentials.
         </div>
       )}
     </div>

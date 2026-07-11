@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { ResponseStatusBar, ResponseTabs } from '@/components/responses';
 
 const mockGraphqlResponse = {
@@ -52,17 +53,13 @@ export default function OutputConsole() {
   const prettifiedJson = JSON.stringify(mockGraphqlResponse.body, null, 2);
 
   return (
-    <div className="flex flex-col h-full border-t bg-background">
+    <div className="bg-background flex h-full flex-col border-t">
       <ResponseStatusBar
         status={mockGraphqlResponse.status}
         statusText={mockGraphqlResponse.statusText}
         time={mockGraphqlResponse.time}
       />
-      <ResponseTabs
-        prettyContent={prettifiedJson}
-        rawContent={rawResponse}
-        headers={mockGraphqlResponse.headers}
-      />
+      <ResponseTabs prettyContent={prettifiedJson} rawContent={rawResponse} headers={mockGraphqlResponse.headers} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
-import { useLayoutEffect, useState } from 'react';
-import { highlight } from './highlighter';
-import type { BundledLanguage } from 'shiki/bundle/web';
 import { cn } from '@yasumu/ui/lib/utils';
+import { useLayoutEffect, useState } from 'react';
+import type { BundledLanguage } from 'shiki/bundle/web';
+
+import { highlight } from './highlighter';
 
 interface HighlightedCodeBlockProps {
   children: string;
@@ -25,15 +26,9 @@ export default function HighlightedCodeBlock({
 
   if (!nodes) {
     return (
-      <pre
-        data-allow-context-menu="true"
-        className={cn('p-4 text-sm select-text', className)}
-      >
+      <pre data-allow-context-menu="true" className={cn('p-4 text-sm select-text', className)}>
         <code
-          className={cn(
-            'text-foreground font-mono text-xs leading-relaxed whitespace-pre select-text',
-            codeClassName,
-          )}
+          className={cn('text-foreground font-mono text-xs leading-relaxed whitespace-pre select-text', codeClassName)}
         >
           {children}
         </code>
@@ -42,10 +37,7 @@ export default function HighlightedCodeBlock({
   }
 
   return (
-    <div
-      data-allow-context-menu="true"
-      className={cn('p-4 text-sm select-text', className)}
-    >
+    <div data-allow-context-menu="true" className={cn('p-4 text-sm select-text', className)}>
       {nodes}
     </div>
   );

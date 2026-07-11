@@ -1,10 +1,5 @@
 import { Injectable } from '@yasumu/den';
-import {
-  serialize,
-  deserialize,
-  type AnyYasumuSchema,
-  type Infer,
-} from '@yasumu/schema';
+import { serialize, deserialize, type AnyYasumuSchema, type Infer } from '@yasumu/schema';
 
 @Injectable()
 export class YslService {

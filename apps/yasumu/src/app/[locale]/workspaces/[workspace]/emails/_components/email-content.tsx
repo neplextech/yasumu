@@ -28,20 +28,18 @@ const getColorFromEmail = (email: string) => {
     'bg-indigo-500',
     'bg-red-500',
   ];
-  const hash = email
-    .split('')
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = email.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
 };
 
 export default function EmailContent({ email }: EmailContentProps) {
   if (!email) {
     return (
-      <div className="flex items-center justify-center h-full bg-background/30">
-        <div className="text-center max-w-md px-6">
+      <div className="bg-background/30 flex h-full items-center justify-center">
+        <div className="max-w-md px-6 text-center">
           <div className="mb-6">
             <svg
-              className="mx-auto h-16 w-16 text-muted-foreground/30"
+              className="text-muted-foreground/30 mx-auto h-16 w-16"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -54,12 +52,8 @@ export default function EmailContent({ email }: EmailContentProps) {
               />
             </svg>
           </div>
-          <p className="text-lg font-semibold mb-2 text-foreground/90">
-            Select an email to view
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Choose an email from the list on the left to read its content
-          </p>
+          <p className="text-foreground/90 mb-2 text-lg font-semibold">Select an email to view</p>
+          <p className="text-muted-foreground text-sm">Choose an email from the list on the left to read its content</p>
         </div>
       </div>
     );
@@ -78,9 +72,9 @@ export default function EmailContent({ email }: EmailContentProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <div className="border-b bg-background/50 backdrop-blur">
-        <div className="p-6 space-y-4">
+    <div className="bg-background flex h-full flex-col">
+      <div className="bg-background/50 border-b backdrop-blur">
+        <div className="space-y-4 p-6">
           <div className="flex items-start gap-4">
             <div
               className={cn(
@@ -90,46 +84,28 @@ export default function EmailContent({ email }: EmailContentProps) {
             >
               {getInitials(email.from)}
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold mb-3 break-words text-foreground">
-                {email.subject || (
-                  <span className="italic text-muted-foreground font-normal">
-                    (No subject)
-                  </span>
-                )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-foreground mb-3 text-2xl font-bold break-words">
+                {email.subject || <span className="text-muted-foreground font-normal italic">(No subject)</span>}
               </h1>
               <div className="space-y-2 text-sm">
                 <div className="flex items-start gap-3">
-                  <span className="text-muted-foreground font-medium min-w-[60px]">
-                    From:
-                  </span>
-                  <span className="break-all text-foreground">
-                    {email.from}
-                  </span>
+                  <span className="text-muted-foreground min-w-[60px] font-medium">From:</span>
+                  <span className="text-foreground break-all">{email.from}</span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-muted-foreground font-medium min-w-[60px]">
-                    To:
-                  </span>
-                  <span className="break-all text-foreground">{email.to}</span>
+                  <span className="text-muted-foreground min-w-[60px] font-medium">To:</span>
+                  <span className="text-foreground break-all">{email.to}</span>
                 </div>
                 {email.cc && (
                   <div className="flex items-start gap-3">
-                    <span className="text-muted-foreground font-medium min-w-[60px]">
-                      CC:
-                    </span>
-                    <span className="break-all text-foreground">
-                      {email.cc}
-                    </span>
+                    <span className="text-muted-foreground min-w-[60px] font-medium">CC:</span>
+                    <span className="text-foreground break-all">{email.cc}</span>
                   </div>
                 )}
                 <div className="flex items-start gap-3">
-                  <span className="text-muted-foreground font-medium min-w-[60px]">
-                    Date:
-                  </span>
-                  <span className="text-foreground">
-                    {formatDate(email.createdAt)}
-                  </span>
+                  <span className="text-muted-foreground min-w-[60px] font-medium">Date:</span>
+                  <span className="text-foreground">{formatDate(email.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -144,7 +120,7 @@ export default function EmailContent({ email }: EmailContentProps) {
       {email.html ? (
         <iframe
           srcDoc={`${email.html}`}
-          className="flex-1 w-full border-0 bg-white"
+          className="w-full flex-1 border-0 bg-white"
           sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
           title="Email content"
           referrerPolicy="no-referrer"
@@ -154,8 +130,8 @@ export default function EmailContent({ email }: EmailContentProps) {
         <ScrollArea className="flex-1">
           <div className="p-8">
             <div className="max-w-3xl">
-              <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-foreground/90 prose-p:leading-relaxed">
-                <div className="whitespace-pre-wrap break-words text-base leading-relaxed text-foreground/90">
+              <div className="prose prose-sm dark:prose-invert prose-headings:font-semibold prose-p:text-foreground/90 prose-p:leading-relaxed max-w-none">
+                <div className="text-foreground/90 text-base leading-relaxed break-words whitespace-pre-wrap">
                   {email.text}
                 </div>
               </div>

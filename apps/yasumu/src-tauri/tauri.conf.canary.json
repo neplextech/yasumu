@@ -17,13 +17,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
     "resources": ["resources/"],
     "createUpdaterArtifacts": true,
     "windows": {
@@ -35,9 +29,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwRTUxQkIxMDk3MDQ2OTQKUldTVVJuQUpzUnZsa09lYlVtQlhzQjdLTHVVY3AvMy9UMFJpamNTYnZBSGN6bU9yQUNZQkgzRzgK",
-      "endpoints": [
-        "https://github.com/neplextech/yasumu/releases/latest/download/latest.json"
-      ],
+      "endpoints": ["https://github.com/neplextech/yasumu/releases/latest/download/latest.json"],
       "windows": {
         "installMode": "passive"
       }

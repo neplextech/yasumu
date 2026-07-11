@@ -16,10 +16,7 @@ export interface PlatformBridge {
    * @param command - The command to invoke.
    * @returns The result of the command invocation.
    */
-  invoke<
-    T extends YasumuRpcCommands = YasumuRpcCommands,
-    C extends RpcCommandData<T> = RpcCommandData<T>,
-  >(
+  invoke<T extends YasumuRpcCommands = YasumuRpcCommands, C extends RpcCommandData<T> = RpcCommandData<T>>(
     context: YasumuRpcContext,
     command: C,
   ): Promise<InferReturnType<YasumuRpcCommandMap[T]>>;

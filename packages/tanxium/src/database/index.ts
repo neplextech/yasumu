@@ -1,8 +1,9 @@
-import { drizzle } from './sqlite/index.ts';
-import * as schema from './schema.ts';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+
+import * as schema from './schema.ts';
+import { drizzle } from './sqlite/index.ts';
 
 function getDatabasePath(): string {
   if (Yasumu.isDevMode) {
@@ -27,9 +28,7 @@ export const TransactionContext = new AsyncLocalStorage<{
 }>();
 
 // deno-lint-ignore no-explicit-any
-export function runInTransaction<T extends () => any>(
-  receiver: T,
-): ReturnType<T> {
+export function runInTransaction<T extends () => any>(receiver: T): ReturnType<T> {
   return db.transaction((tx) => {
     return TransactionContext.run({ transaction: tx }, receiver);
   });

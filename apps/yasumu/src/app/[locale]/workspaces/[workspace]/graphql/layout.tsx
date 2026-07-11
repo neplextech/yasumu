@@ -1,12 +1,10 @@
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@yasumu/ui/components/resizable';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
+
 import LayoutGroup from '@/components/layout/layout-group';
+
 import { GraphqlFileTree } from './_components/graphql-file-tree';
-import { GraphqlContextProvider } from './_providers/graphql-context';
 import { GraphqlFileTreeContextProvider } from './_providers/file-tree-context';
+import { GraphqlContextProvider } from './_providers/graphql-context';
 
 export default function GraphqlLayout({ children }: React.PropsWithChildren) {
   return (

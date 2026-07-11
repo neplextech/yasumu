@@ -1,11 +1,8 @@
 import { YasumuSchemaParserError, type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
-import {
-  YasumuSchemaParsable,
-  type YasumuSchemaParsableToType,
-} from './parsable.js';
 import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParsableNullable } from './nullable.js';
+import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
 
 export type _YasumuSchemaParsableScriptExpect = {
   annotation: string;
@@ -14,18 +11,16 @@ export type _YasumuSchemaParsableScriptExpect = {
   };
 };
 
-export type _YasumuSchemaParsableScriptReturn<
-  T extends _YasumuSchemaParsableScriptExpect,
-> = {
+export type _YasumuSchemaParsableScriptReturn<T extends _YasumuSchemaParsableScriptExpect> = {
   annotation: T['annotation'];
   blocks: {
     [K in keyof T['blocks']]: YasumuSchemaParsableToType<T['blocks'][K]>;
   };
 };
 
-export class YasumuSchemaParsableScript<
-  E extends _YasumuSchemaParsableScriptExpect,
-> extends YasumuSchemaParsable<_YasumuSchemaParsableScriptReturn<E>> {
+export class YasumuSchemaParsableScript<E extends _YasumuSchemaParsableScriptExpect> extends YasumuSchemaParsable<
+  _YasumuSchemaParsableScriptReturn<E>
+> {
   constructor(public readonly expect: E) {
     super();
   }
@@ -40,8 +35,7 @@ export class YasumuSchemaParsableScript<
       keys.delete(key);
     }
     for (const x of keys) {
-      const nullable =
-        this.expect.blocks[x]! instanceof YasumuSchemaParsableNullable;
+      const nullable = this.expect.blocks[x]! instanceof YasumuSchemaParsableNullable;
       if (!nullable && !(x in blocks)) {
         throw new YasumuSchemaParserError(`Missing required block '${x}'`);
       }
@@ -66,26 +60,18 @@ export class YasumuSchemaParsableScript<
     const parsable = this.expect.blocks[identifier.value];
     if (!parsable) {
       const { line, column } = identifier.span.start;
-      throw new YasumuSchemaParserError(
-        `Unexpected block '${identifier.value}' (at line ${line}, column ${column})`,
-      );
+      throw new YasumuSchemaParserError(`Unexpected block '${identifier.value}' (at line ${line}, column ${column})`);
     }
     const value = parsable.parse(parser);
     return [identifier.value, value] as const;
   }
 
-  serialize(
-    serializer: YasumuSchemaSerializer,
-    value: _YasumuSchemaParsableScriptReturn<E>,
-  ) {
+  serialize(serializer: YasumuSchemaSerializer, value: _YasumuSchemaParsableScriptReturn<E>) {
     let output = `@${value.annotation}\n\n`;
     for (const x of Object.keys(this.expect.blocks)) {
       const xSchema = this.expect.blocks[x]!;
       const xValue = value.blocks[x];
-      if (
-        xSchema instanceof YasumuSchemaParsableNullable &&
-        (xValue === undefined || xValue === null)
-      ) {
+      if (xSchema instanceof YasumuSchemaParsableNullable && (xValue === undefined || xValue === null)) {
         continue;
       }
       serializer.keyPath.push(x);

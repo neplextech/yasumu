@@ -40,12 +40,8 @@ export function AlertConfirm({
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {title || 'Are you absolutely sure?'}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {description || 'This action cannot be undone.'}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title || 'Are you absolutely sure?'}</AlertDialogTitle>
+          <AlertDialogDescription>{description || 'This action cannot be undone.'}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel

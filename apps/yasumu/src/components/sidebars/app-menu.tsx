@@ -1,4 +1,7 @@
 'use client';
+import { useQuery } from '@tanstack/react-query';
+import { open } from '@tauri-apps/plugin-dialog';
+import { asPathIdentifier, DEFAULT_WORKSPACE_PATH } from '@yasumu/tanxium/src/rpc/common/constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +16,10 @@ import {
   DropdownMenuTrigger,
 } from '@yasumu/ui/components/dropdown-menu';
 import { SidebarMenuButton } from '@yasumu/ui/components/sidebar';
-import YasumuLogo from '@/components/visuals/yasumu-logo';
-import { useYasumu } from '@/components/providers/workspace-provider';
-import { open } from '@tauri-apps/plugin-dialog';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { useQuery } from '@tanstack/react-query';
-import {
-  asPathIdentifier,
-  DEFAULT_WORKSPACE_PATH,
-} from '@yasumu/tanxium/src/rpc/common/constants';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 // import { FaJava } from 'react-icons/fa';
 import {
   //   SiGo,
@@ -33,9 +30,11 @@ import {
   //   SiPython,
   //   SiTypescript,
 } from 'react-icons/si';
-import { useState } from 'react';
+
+import { useYasumu } from '@/components/providers/workspace-provider';
+import YasumuLogo from '@/components/visuals/yasumu-logo';
+
 import PostmanImportDialog from '../dialogs/postman-import-dialog';
-import { useRouter } from 'next/navigation';
 
 export function AppMenu() {
   const { yasumu } = useYasumu();
@@ -73,8 +72,7 @@ export function AppMenu() {
     if (!folder) return;
 
     await yasumu.workspaces.create({
-      name:
-        folder.replaceAll('\\', '/').split('/').pop() ?? 'Untitled Workspace',
+      name: folder.replaceAll('\\', '/').split('/').pop() ?? 'Untitled Workspace',
       metadata: {
         path: folder,
       },
@@ -115,7 +113,7 @@ export function AppMenu() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[#272a37] text-sidebar-primary-foreground">
+            <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg bg-[#272a37]">
               <YasumuLogo className="size-4" />
             </div>
           </SidebarMenuButton>
@@ -124,9 +122,7 @@ export function AppMenu() {
           <DropdownMenuLabel>Workspace</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>
-              New Workspace
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>New Workspace</DropdownMenuItem>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>Import Workspace</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
@@ -149,19 +145,15 @@ export function AppMenu() {
             {/* <DropdownMenuItem>Rename Workspace</DropdownMenuItem> */}
           </DropdownMenuGroup>
           {/* <DropdownMenuSeparator /> */}
-          <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>
-            Open Workspace
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleOpenWorkspace(true)}>
-            Open Default Workspace
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>Open Workspace</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleOpenWorkspace(true)}>Open Default Workspace</DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Open Recent</DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="min-w-[200px]">
                 {isLoading ? (
                   <DropdownMenuItem disabled>
-                    <Loader2 className="size-4 animate-spin mr-2" />
+                    <Loader2 className="mr-2 size-4 animate-spin" />
                     Loading...
                   </DropdownMenuItem>
                 ) : !recentWorkspaces?.length ? (
@@ -174,10 +166,8 @@ export function AppMenu() {
                       className="flex flex-col items-start gap-0.5"
                     >
                       <span className="font-medium">{workspace.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
-                        {workspace.path === DEFAULT_WORKSPACE_PATH
-                          ? 'Default Workspace'
-                          : workspace.path}
+                      <span className="text-muted-foreground max-w-[180px] truncate font-mono text-xs">
+                        {workspace.path === DEFAULT_WORKSPACE_PATH ? 'Default Workspace' : workspace.path}
                       </span>
                     </DropdownMenuItem>
                   ))
@@ -185,9 +175,7 @@ export function AppMenu() {
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
-          <DropdownMenuItem onClick={handleCloseCurrentWorkspace}>
-            Close Current Workspace
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCloseCurrentWorkspace}>Close Current Workspace</DropdownMenuItem>
           {/* <DropdownMenuSeparator /> */}
           {/* <DropdownMenuItem>Duplicate Workspace</DropdownMenuItem> */}
           {/* <DropdownMenuSub>

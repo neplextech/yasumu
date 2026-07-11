@@ -1,7 +1,10 @@
 'use client';
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import { relaunch, exit } from '@tauri-apps/plugin-process';
+import { toast } from '@yasumu/ui/components/sonner';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import {
   Palette,
   FolderOpen,
@@ -16,16 +19,15 @@ import {
   RotateCcw,
   LogOut,
 } from 'lucide-react';
-import type { YasumuCommand } from './commands';
-import { useCommandPalette, useRegisterCommands } from './command-context';
-import { useYasumu } from '@/components/providers/workspace-provider';
-import { open } from '@tauri-apps/plugin-dialog';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { toast } from '@yasumu/ui/components/sonner';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { relaunch, exit } from '@tauri-apps/plugin-process';
 import { MdDeveloperMode } from 'react-icons/md';
-import { invoke } from '@tauri-apps/api/core';
+
+import { useYasumu } from '@/components/providers/workspace-provider';
+
+import { useCommandPalette, useRegisterCommands } from './command-context';
+import type { YasumuCommand } from './commands';
 
 export function useBuiltinCommands() {
   const router = useRouter();
@@ -45,8 +47,7 @@ export function useBuiltinCommands() {
       if (!folder) return;
 
       await yasumu.workspaces.create({
-        name:
-          folder.replaceAll('\\', '/').split('/').pop() ?? 'Untitled Workspace',
+        name: folder.replaceAll('\\', '/').split('/').pop() ?? 'Untitled Workspace',
         metadata: {
           path: folder,
         },

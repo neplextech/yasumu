@@ -1,15 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@yasumu/ui/components/tooltip';
 import { useHorizontalScroll } from '@yasumu/ui/hooks/use-horizontal-scroll';
 import { cn } from '@yasumu/ui/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@yasumu/ui/components/tooltip';
 import { Circle, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 export interface RequestTab {
   id: string;
@@ -80,10 +76,10 @@ export function RequestTabStrip({
   if (!tabs.length) return null;
 
   return (
-    <div className="flex items-center gap-2 select-none w-full max-w-[80vw]">
+    <div className="flex w-full max-w-[80vw] items-center gap-2 select-none">
       <div
         ref={ref}
-        className="flex flex-row items-center w-full overflow-x-auto zw-scrollbar bg-background/50 rounded-lg border shadow-sm h-10"
+        className="zw-scrollbar bg-background/50 flex h-10 w-full flex-row items-center overflow-x-auto rounded-lg border shadow-sm"
       >
         {tabs.map((tab) => (
           <RequestTabStripItem
@@ -159,24 +155,20 @@ function RequestTabStripItem({
             'relative flex items-center gap-2 px-3 h-full cursor-pointer min-w-fit transition-all duration-150',
             'border-r border-border/50 last:border-r-0',
             'group',
-            tab.active
-              ? 'bg-muted text-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+            tab.active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
           )}
           onClick={tab.onSelect}
           onMouseDown={handleMiddleClick}
         >
           {tab.active && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-primary w-full rounded-full" />
+            <div className="bg-primary absolute bottom-0 left-1/2 h-0.5 w-full -translate-x-1/2 rounded-full" />
           )}
 
           <div className="flex items-center gap-2 py-2">
             {isLoading ? (
-              <Circle className="h-2 w-2 animate-pulse text-muted-foreground" />
+              <Circle className="text-muted-foreground h-2 w-2 animate-pulse" />
             ) : (
-              data?.icon && (
-                <span className="text-[10px] shrink-0">{data.icon}</span>
-              )
+              data?.icon && <span className="shrink-0 text-[10px]">{data.icon}</span>
             )}
 
             <span
@@ -193,9 +185,7 @@ function RequestTabStripItem({
             className={cn(
               'p-0.5 rounded-sm transition-all duration-100',
               'hover:bg-destructive/20 hover:text-destructive',
-              tab.active
-                ? 'opacity-60 hover:opacity-100'
-                : 'opacity-0 group-hover:opacity-60 hover:opacity-100!',
+              tab.active ? 'opacity-60 hover:opacity-100' : 'opacity-0 group-hover:opacity-60 hover:opacity-100!',
             )}
             onClick={handleCloseClick}
             aria-label="Close tab"
@@ -204,20 +194,14 @@ function RequestTabStripItem({
           </button>
         </div>
       </TooltipTrigger>
-      <TooltipContent
-        side="bottom"
-        className="text-xs bg-popover border max-w-[400px]"
-        arrow={false}
-      >
+      <TooltipContent side="bottom" className="bg-popover max-w-[400px] border text-xs" arrow={false}>
         <div className="flex flex-col gap-2 py-1">
           <div className="flex items-center gap-2">
-            {data?.icon && (
-              <span className="text-[10px] shrink-0">{data.icon}</span>
-            )}
-            <span className="font-semibold text-foreground">{name}</span>
+            {data?.icon && <span className="shrink-0 text-[10px]">{data.icon}</span>}
+            <span className="text-foreground font-semibold">{name}</span>
           </div>
           {url && (
-            <code className="text-[11px] text-muted-foreground font-mono break-all leading-relaxed truncate max-w-[200px]">
+            <code className="text-muted-foreground max-w-[200px] truncate font-mono text-[11px] leading-relaxed break-all">
               {url}
             </code>
           )}

@@ -2,21 +2,21 @@
   "name": "@yasumu/workspace",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "app": "pnpm --filter=@yasumu/app tauri dev --additional-watch-folders ../../../packages/tanxium/src",
-    "bootstrap": "turbo gen bootstrap --args",
-    "format": "prettier --experimental-cli --write \"./{apps,packages,scripts}/**/*.{js,ts,jsx,tsx,md,mdx,json}\"",
-    "build": "turbo run build",
-    "build:app": "turbo run build --filter=!./apps/www --filter=!./apps/docs --filter=!./apps/yasumu",
-    "prepare": "pnpm --filter=tanxium --filter=test run deno install",
-    "generate-themes": "node ./themes/converter.ts --compact"
-  },
   "license": "AGPL-3.0",
   "author": "Neplex",
   "repository": {
     "type": "git",
     "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "type": "module",
+  "scripts": {
+    "app": "pnpm --filter=@yasumu/app tauri dev --additional-watch-folders ../../../packages/tanxium/src",
+    "bootstrap": "turbo gen bootstrap --args",
+    "format": "oxfmt",
+    "build": "turbo run build",
+    "build:app": "turbo run build --filter=!./apps/www --filter=!./apps/docs --filter=!./apps/yasumu",
+    "prepare": "pnpm --filter=tanxium --filter=test run deno install",
+    "generate-themes": "node ./themes/converter.ts --compact"
   },
   "devDependencies": {
     "@turbo/gen": "^2.9.7",
@@ -24,7 +24,7 @@
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
     "nodemailer": "^8.0.7",
-    "prettier": "^3.8.3",
+    "oxfmt": "^0.58.0",
     "turbo": "^2.9.7",
     "typescript": "catalog:build"
   },

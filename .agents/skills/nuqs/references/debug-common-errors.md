@@ -18,7 +18,7 @@ export default function RootLayout({ children }) {
     <html>
       <body>{children}</body>
     </html>
-  )
+  );
 }
 // Error: "Cannot read property 'push' of undefined"
 ```
@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
 
 ```tsx
 // app/layout.tsx
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 export default function RootLayout({ children }) {
   return (
@@ -36,18 +36,18 @@ export default function RootLayout({ children }) {
         <NuqsAdapter>{children}</NuqsAdapter>
       </body>
     </html>
-  )
+  );
 }
 ```
 
 **Other common errors and fixes:**
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| "Hooks can only be called inside Client Components" | Missing 'use client' | Add `'use client'` directive |
-| "Uncontrolled input" warning | Value is null | Use `value={query ?? ''}` |
-| Hydration mismatch | Different defaults | Use shared parsers with withDefault |
-| URL not updating | Missing adapter or old Next.js | Check adapter and version |
-| State undefined in Server Component | Missing parse() | Call `parse()` before `get()` |
+| Error                                               | Cause                          | Fix                                 |
+| --------------------------------------------------- | ------------------------------ | ----------------------------------- |
+| "Hooks can only be called inside Client Components" | Missing 'use client'           | Add `'use client'` directive        |
+| "Uncontrolled input" warning                        | Value is null                  | Use `value={query ?? ''}`           |
+| Hydration mismatch                                  | Different defaults             | Use shared parsers with withDefault |
+| URL not updating                                    | Missing adapter or old Next.js | Check adapter and version           |
+| State undefined in Server Component                 | Missing parse()                | Call `parse()` before `get()`       |
 
 Reference: [nuqs Documentation](https://nuqs.dev/docs)

@@ -9,8 +9,7 @@ export function Resolver(namespace?: string): ClassDecorator {
 
 function createRpcDecorator(type: 'query' | 'mutation', name?: string) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    const handlers =
-      Reflect.getMetadata(RESOLVER_METADATA.HANDLERS, target.constructor) || {};
+    const handlers = Reflect.getMetadata(RESOLVER_METADATA.HANDLERS, target.constructor) || {};
 
     const metadata: RpcHandlerMetadata = {
       type,
@@ -21,11 +20,7 @@ function createRpcDecorator(type: 'query' | 'mutation', name?: string) {
 
     handlers[propertyKey] = metadata;
 
-    Reflect.defineMetadata(
-      RESOLVER_METADATA.HANDLERS,
-      handlers,
-      target.constructor,
-    );
+    Reflect.defineMetadata(RESOLVER_METADATA.HANDLERS, handlers, target.constructor);
   };
 }
 

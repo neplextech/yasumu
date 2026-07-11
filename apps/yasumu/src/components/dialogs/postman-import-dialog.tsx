@@ -1,3 +1,9 @@
+import { useMutation } from '@tanstack/react-query';
+import { open } from '@tauri-apps/plugin-dialog';
+import { readTextFile } from '@tauri-apps/plugin-fs';
+import { ExternalWorkspaceImportStrategy } from '@yasumu/core';
+import { Alert, AlertDescription, AlertTitle } from '@yasumu/ui/components/alert';
+import { Button } from '@yasumu/ui/components/button';
 import {
   Dialog,
   DialogContent,
@@ -6,22 +12,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@yasumu/ui/components/dialog';
-import { Button } from '@yasumu/ui/components/button';
-import { Textarea } from '@yasumu/ui/components/textarea';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@yasumu/ui/components/alert';
 import { Spinner } from '@yasumu/ui/components/spinner';
-import { SiPostman } from 'react-icons/si';
-import { open } from '@tauri-apps/plugin-dialog';
-import { useMutation } from '@tanstack/react-query';
-import { useActiveWorkspace } from '../providers/workspace-provider';
-import { useCallback, useState, useRef } from 'react';
-import { ExternalWorkspaceImportStrategy } from '@yasumu/core';
-import { readTextFile } from '@tauri-apps/plugin-fs';
+import { Textarea } from '@yasumu/ui/components/textarea';
 import { CheckCircle2, XCircle, Upload, FileJson } from 'lucide-react';
+import { useCallback, useState, useRef } from 'react';
+import { SiPostman } from 'react-icons/si';
+
+import { useActiveWorkspace } from '../providers/workspace-provider';
 
 interface PostmanImportDialogProps {
   open: boolean;
@@ -30,10 +27,7 @@ interface PostmanImportDialogProps {
 
 type ImportStatus = 'idle' | 'importing' | 'success' | 'error';
 
-export default function PostmanImportDialog({
-  open: dialogOpen,
-  onOpenChange,
-}: PostmanImportDialogProps) {
+export default function PostmanImportDialog({ open: dialogOpen, onOpenChange }: PostmanImportDialogProps) {
   const workspace = useActiveWorkspace();
   const [content, setContent] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
@@ -48,13 +42,7 @@ export default function PostmanImportDialog({
       }),
   });
 
-  const status: ImportStatus = isPending
-    ? 'importing'
-    : isSuccess
-      ? 'success'
-      : isError
-        ? 'error'
-        : 'idle';
+  const status: ImportStatus = isPending ? 'importing' : isSuccess ? 'success' : isError ? 'error' : 'idle';
 
   const handleFilePick = useCallback(async () => {
     const selected = await open({
@@ -131,29 +119,22 @@ export default function PostmanImportDialog({
             Import from Postman
           </DialogTitle>
           <DialogDescription>
-            Import a Postman collection by dropping a file, picking one, or
-            pasting JSON content.
+            Import a Postman collection by dropping a file, picking one, or pasting JSON content.
           </DialogDescription>
         </DialogHeader>
 
         {status === 'importing' && (
           <div className="flex flex-col items-center justify-center gap-3 py-8">
-            <Spinner className="size-8 text-primary" />
-            <p className="text-sm text-muted-foreground">
-              Importing workspace...
-            </p>
+            <Spinner className="text-primary size-8" />
+            <p className="text-muted-foreground text-sm">Importing workspace...</p>
           </div>
         )}
 
         {status === 'success' && (
           <Alert className="border-green-500/50 bg-green-500/10">
             <CheckCircle2 className="size-4 text-green-500" />
-            <AlertTitle className="text-green-500">
-              Import Successful
-            </AlertTitle>
-            <AlertDescription>
-              Your Postman collection has been imported successfully.
-            </AlertDescription>
+            <AlertTitle className="text-green-500">Import Successful</AlertTitle>
+            <AlertDescription>Your Postman collection has been imported successfully.</AlertDescription>
           </Alert>
         )}
 
@@ -162,9 +143,7 @@ export default function PostmanImportDialog({
             <XCircle className="size-4" />
             <AlertTitle>Import Failed</AlertTitle>
             <AlertDescription>
-              {error instanceof Error
-                ? error.message
-                : 'Failed to import collection. Please check your JSON format.'}
+              {error instanceof Error ? error.message : 'Failed to import collection. Please check your JSON format.'}
             </AlertDescription>
           </Alert>
         )}
@@ -188,21 +167,15 @@ export default function PostmanImportDialog({
                   <FileJson className="size-10 text-[#ff6c37]" />
                   <div className="text-center">
                     <p className="text-sm font-medium">{fileName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Click to choose a different file
-                    </p>
+                    <p className="text-muted-foreground text-xs">Click to choose a different file</p>
                   </div>
                 </>
               ) : (
                 <>
-                  <Upload className="size-10 text-muted-foreground" />
+                  <Upload className="text-muted-foreground size-10" />
                   <div className="text-center">
-                    <p className="text-sm font-medium">
-                      Drop your Postman collection here
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      or click to browse for a file
-                    </p>
+                    <p className="text-sm font-medium">Drop your Postman collection here</p>
+                    <p className="text-muted-foreground text-xs">or click to browse for a file</p>
                   </div>
                 </>
               )}
@@ -213,9 +186,7 @@ export default function PostmanImportDialog({
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  or paste JSON
-                </span>
+                <span className="bg-background text-muted-foreground px-2">or paste JSON</span>
               </div>
             </div>
 

@@ -1,55 +1,48 @@
-import React from 'react';
+import { Button } from '@yasumu/ui/components/button';
 import Link from 'next/link';
+import React from 'react';
+import { FaArrowRight, FaDownload, FaGithub } from 'react-icons/fa6';
+import { MdCode, MdBolt, MdGridView, MdLock, MdFolderOpen, MdPublic } from 'react-icons/md';
+import { SiDeno, SiRust, SiTauri, SiTypescript } from 'react-icons/si';
+
 import AppPreview from '../components/app-preview';
 import { BackgroundGrid } from '../components/background-grid';
-import { Button } from '@yasumu/ui/components/button';
-import {
-  MdCode,
-  MdBolt,
-  MdGridView,
-  MdLock,
-  MdFolderOpen,
-  MdPublic,
-} from 'react-icons/md';
-import { FaArrowRight, FaDownload, FaGithub } from 'react-icons/fa6';
-import { SiDeno, SiRust, SiTauri, SiTypescript } from 'react-icons/si';
 
 export default function Home() {
   return (
     <div className="animate-fade-in">
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <section className="relative overflow-hidden pt-32 pb-20 lg:pt-48 lg:pb-32">
         <BackgroundGrid />
-        <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent z-0"></div>
+        <div className="from-background-dark absolute inset-0 z-0 bg-gradient-to-t via-transparent to-transparent"></div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <Link
             href="/changelog"
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm hover:border-white/20 transition-colors cursor-pointer group"
+            className="group mb-8 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm transition-colors hover:border-white/20"
           >
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
             </span>
-            <span className="text-xs font-mono font-medium text-gray-300 group-hover:text-white transition-colors">
+            <span className="font-mono text-xs font-medium text-gray-300 transition-colors group-hover:text-white">
               Now in public beta
             </span>
           </Link>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
+          <h1 className="mb-8 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-5xl font-bold tracking-tight text-transparent md:text-7xl">
             The Modern API Laboratory
           </h1>
 
-          <p className="mt-4 max-w-2xl mx-auto text-xl text-text-secondary leading-relaxed">
-            Design, test, and debug your API workflows with a fast, open-source
-            tool built for the modern web. Experience a beautiful, monochromatic
-            interface that gets out of your way.
+          <p className="text-text-secondary mx-auto mt-4 max-w-2xl text-xl leading-relaxed">
+            Design, test, and debug your API workflows with a fast, open-source tool built for the modern web.
+            Experience a beautiful, monochromatic interface that gets out of your way.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
             <Button
               asChild
-              className="h-12 px-8 text-base font-medium rounded-lg text-black bg-white hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(255,255,255,0.25)]"
+              className="h-12 rounded-lg bg-white px-8 text-base font-medium text-black shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-gray-200 hover:shadow-[0_0_25px_rgba(255,255,255,0.25)]"
             >
               <Link href="/download">
                 <FaDownload className="mr-2 text-xl" />
@@ -59,7 +52,7 @@ export default function Home() {
             <Button
               asChild
               variant="outline"
-              className="h-12 px-8 text-base font-medium rounded-lg text-gray-300 border-white/20 bg-white/5 hover:bg-white/10 hover:text-white hover:border-white/30 backdrop-blur-sm"
+              className="h-12 rounded-lg border-white/20 bg-white/5 px-8 text-base font-medium text-gray-300 backdrop-blur-sm hover:border-white/30 hover:bg-white/10 hover:text-white"
             >
               <a href="https://github.com/neplextech/yasumu">
                 <FaGithub className="mr-2 text-xl" />
@@ -69,29 +62,29 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-24 relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[80%] h-96 bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-40"></div>
+        <div className="relative mx-auto mt-24 max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="bg-primary/20 pointer-events-none absolute -top-32 left-1/2 h-96 w-[80%] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"></div>
           <AppPreview />
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-surface-dark border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-sm text-blue-400 font-mono font-semibold tracking-widest uppercase mb-3">
+      <section className="bg-surface-dark border-t border-white/5 py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-20 max-w-3xl text-center">
+            <h2 className="mb-3 font-mono text-sm font-semibold tracking-widest text-blue-400 uppercase">
               Core Features
             </h2>
-            <p className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-6">
+            <p className="mb-6 text-3xl font-bold tracking-tight text-white md:text-4xl">
               Everything you need for API development
             </p>
-            <p className="text-lg text-text-secondary leading-relaxed">
-              Built with performance and user experience in mind. Yasumu removes
-              the clutter so you can focus on the data.
+            <p className="text-text-secondary text-lg leading-relaxed">
+              Built with performance and user experience in mind. Yasumu removes the clutter so you can focus on the
+              data.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             <FeatureCard
               icon={<MdBolt />}
               color="blue"
@@ -133,20 +126,17 @@ export default function Home() {
       </section>
 
       {/* Open Source Section */}
-      <section className="py-24 relative overflow-hidden bg-black">
+      <section className="relative overflow-hidden bg-black py-24">
         <BackgroundGrid />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="items-center lg:grid lg:grid-cols-2 lg:gap-16">
             <div className="mb-12 lg:mb-0">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight">
-                Proudly Open Source
-              </h2>
-              <p className="text-lg text-text-secondary mb-8 leading-relaxed">
-                Yasumu is built on the shoulders of giants. We leverage the
-                power of modern web technologies to deliver a native-like
-                experience.
+              <h2 className="mb-6 text-3xl font-bold tracking-tight text-white md:text-4xl">Proudly Open Source</h2>
+              <p className="text-text-secondary mb-8 text-lg leading-relaxed">
+                Yasumu is built on the shoulders of giants. We leverage the power of modern web technologies to deliver
+                a native-like experience.
               </p>
-              <div className="flex flex-wrap gap-3 text-xs font-mono text-gray-400 mb-8">
+              <div className="mb-8 flex flex-wrap gap-3 font-mono text-xs text-gray-400">
                 {[
                   {
                     name: 'Rust',
@@ -174,7 +164,7 @@ export default function Home() {
                     href={tech.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-white/5 rounded border border-white/10 hover:border-white/30 transition-colors cursor-pointer flex items-center gap-2"
+                    className="flex cursor-pointer items-center gap-2 rounded border border-white/10 bg-white/5 px-3 py-1.5 transition-colors hover:border-white/30"
                   >
                     {tech.icon}
                     {tech.name}
@@ -184,7 +174,7 @@ export default function Home() {
               <div>
                 <a
                   href="https://github.com/neplextech/yasumu"
-                  className="text-white hover:text-gray-300 font-medium inline-flex items-center gap-2 transition-colors border-b border-white pb-0.5 hover:border-gray-300"
+                  className="inline-flex items-center gap-2 border-b border-white pb-0.5 font-medium text-white transition-colors hover:border-gray-300 hover:text-gray-300"
                 >
                   Join the community on GitHub
                   <FaArrowRight className="ml-2 text-sm" />
@@ -193,46 +183,28 @@ export default function Home() {
             </div>
 
             {/* Terminal Mock */}
-            <div className="relative rounded-lg bg-[#0d1117] border border-gray-800 shadow-2xl p-6 font-mono text-sm leading-relaxed overflow-hidden">
-              <div className="flex gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-[#FF5F56]"></div>
-                <div className="w-3 h-3 rounded-full bg-[#FFBD2E]"></div>
-                <div className="w-3 h-3 rounded-full bg-[#27C93F]"></div>
+            <div className="relative overflow-hidden rounded-lg border border-gray-800 bg-[#0d1117] p-6 font-mono text-sm leading-relaxed shadow-2xl">
+              <div className="mb-4 flex gap-2">
+                <div className="h-3 w-3 rounded-full bg-[#FF5F56]"></div>
+                <div className="h-3 w-3 rounded-full bg-[#FFBD2E]"></div>
+                <div className="h-3 w-3 rounded-full bg-[#27C93F]"></div>
               </div>
-              <div className="text-gray-400 select-none">
-                # Clone the repository
-              </div>
+              <div className="text-gray-400 select-none"># Clone the repository</div>
               <div className="text-white">
                 $ git clone{' '}
-                <a
-                  href="https://github.com/neplextech/yasumu"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className="text-blue-400 hover:underline">
-                    https://github.com/neplextech/yasumu
-                  </span>
+                <a href="https://github.com/neplextech/yasumu" target="_blank" rel="noopener noreferrer">
+                  <span className="text-blue-400 hover:underline">https://github.com/neplextech/yasumu</span>
                 </a>
               </div>
-              <div className="text-gray-500 mb-2">Cloning into 'yasumu'...</div>
-              <div className="text-gray-400 select-none mt-4">
-                # Run the development server
-              </div>
-              <div className="text-white">
-                $ pnpm i && pnpm build:app && pnpm app
-              </div>
-              <div className="text-gray-500">
-                {' '}
-                Compiling yasumu v1.0.0 (/path/to/yasumu)
-              </div>
-              <div className="text-green-400">
-                {' '}
-                Finished dev [unoptimized + debuginfo] target(s) in 2.34s
-              </div>
-              <div className="text-white flex items-center">
+              <div className="mb-2 text-gray-500">Cloning into 'yasumu'...</div>
+              <div className="mt-4 text-gray-400 select-none"># Run the development server</div>
+              <div className="text-white">$ pnpm i && pnpm build:app && pnpm app</div>
+              <div className="text-gray-500"> Compiling yasumu v1.0.0 (/path/to/yasumu)</div>
+              <div className="text-green-400"> Finished dev [unoptimized + debuginfo] target(s) in 2.34s</div>
+              <div className="flex items-center text-white">
                 {' '}
                 Running `target/debug/yasumu`
-                <span className="animate-pulse ml-1 w-2 h-4 bg-gray-400 inline-block"></span>
+                <span className="ml-1 inline-block h-4 w-2 animate-pulse bg-gray-400"></span>
               </div>
             </div>
           </div>
@@ -249,12 +221,7 @@ interface FeatureCardProps {
   description: string;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({
-  icon,
-  color,
-  title,
-  description,
-}) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, color, title, description }) => {
   const colorClasses: Record<string, string> = {
     blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -265,16 +232,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   };
 
   return (
-    <div className="bg-white/[0.02] border border-white/5 p-8 rounded-xl hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300 group cursor-default">
+    <div className="group cursor-default rounded-xl border border-white/5 bg-white/[0.02] p-8 transition-all duration-300 hover:border-white/10 hover:bg-white/[0.04]">
       <div
-        className={`w-10 h-10 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border text-xl ${colorClasses[color]}`}
+        className={`mb-6 flex h-10 w-10 items-center justify-center rounded-lg border text-xl transition-transform duration-300 group-hover:scale-110 ${colorClasses[color]}`}
       >
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-white mb-3">{title}</h3>
-      <p className="text-sm text-text-secondary leading-relaxed">
-        {description}
-      </p>
+      <h3 className="mb-3 text-lg font-semibold text-white">{title}</h3>
+      <p className="text-text-secondary text-sm leading-relaxed">{description}</p>
     </div>
   );
 };

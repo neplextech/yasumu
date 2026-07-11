@@ -7,16 +7,22 @@ tags: perf, createSerializer, links, navigation, ssr
 
 ## Use createSerializer for Link URLs
 
-When generating URLs for links or navigation without needing state, use `createSerializer`. This avoids unnecessary hook usage and works in Server Components.
+When generating URLs for links or navigation without needing state,
+use `createSerializer`. This avoids unnecessary hook usage and works
+in Server Components.
 
 **Incorrect (hook for URL generation only):**
 
 ```tsx
-'use client'
-import { useQueryState, parseAsInteger } from 'nuqs'
+'use client';
+import { useQueryState, parseAsInteger } from 'nuqs';
 
-export default function PaginationLinks({ totalPages }: { totalPages: number }) {
-  const [page] = useQueryState('page', parseAsInteger.withDefault(1))
+export default function PaginationLinks({
+  totalPages,
+}: {
+  totalPages: number;
+}) {
+  const [page] = useQueryState('page', parseAsInteger.withDefault(1));
 
   // Using state just to generate URLs
   return (
@@ -27,7 +33,7 @@ export default function PaginationLinks({ totalPages }: { totalPages: number }) 
         </a>
       ))}
     </nav>
-  )
+  );
 }
 ```
 
@@ -35,19 +41,27 @@ export default function PaginationLinks({ totalPages }: { totalPages: number }) 
 
 ```tsx
 // lib/searchParams.ts
-import { createSerializer, parseAsInteger, parseAsString } from 'nuqs/server'
+import {
+  createSerializer,
+  parseAsInteger,
+  parseAsString,
+} from 'nuqs/server';
 
 export const searchParams = {
   q: parseAsString,
-  page: parseAsInteger.withDefault(1)
-}
+  page: parseAsInteger.withDefault(1),
+};
 
-export const serialize = createSerializer(searchParams)
+export const serialize = createSerializer(searchParams);
 
 // components/PaginationLinks.tsx (can be Server Component)
-import { serialize } from '@/lib/searchParams'
+import { serialize } from '@/lib/searchParams';
 
-export default function PaginationLinks({ totalPages }: { totalPages: number }) {
+export default function PaginationLinks({
+  totalPages,
+}: {
+  totalPages: number;
+}) {
   return (
     <nav>
       {Array.from({ length: totalPages }, (_, i) => (
@@ -56,25 +70,25 @@ export default function PaginationLinks({ totalPages }: { totalPages: number }) 
         </a>
       ))}
     </nav>
-  )
+  );
 }
 ```
 
 **Building on existing URL:**
 
 ```tsx
-import { serialize } from '@/lib/searchParams'
+import { serialize } from '@/lib/searchParams';
 
 // Preserve existing params, change page
-const currentParams = { q: 'react', page: 1 }
-const nextPageUrl = `?${serialize({ ...currentParams, page: 2 })}`
+const currentParams = { q: 'react', page: 1 };
+const nextPageUrl = `?${serialize({ ...currentParams, page: 2 })}`;
 // Result: ?q=react&page=2
 ```
 
 **With base URL:**
 
 ```tsx
-const url = serialize('/search', { q: 'react', page: 1 })
+const url = serialize('/search', { q: 'react', page: 1 });
 // Result: /search?q=react&page=1
 ```
 

@@ -1,16 +1,6 @@
-import type {
-  Token,
-  Provider,
-  ClassProvider,
-  FactoryProvider,
-  ValueProvider,
-} from './types.js';
-import {
-  INJECT_METADATA,
-  DESIGN_PARAMTYPES,
-  OPTIONAL_METADATA,
-} from '../constants.js';
+import { INJECT_METADATA, DESIGN_PARAMTYPES, OPTIONAL_METADATA } from '../constants.js';
 import type { Type } from '../interfaces.js';
+import type { Token, Provider, ClassProvider, FactoryProvider, ValueProvider } from './types.js';
 
 export class Container {
   private providers = new Map<Token, Provider>();
@@ -69,9 +59,7 @@ export class Container {
       }
     }
 
-    throw new Error(
-      `No provider for ${this.getTokenName(token)} in ${this.name}`,
-    );
+    throw new Error(`No provider for ${this.getTokenName(token)} in ${this.name}`);
   }
 
   public has(token: Token): boolean {
@@ -100,9 +88,7 @@ export class Container {
     if (this.isClassProvider(provider)) {
       const Target = provider.useClass;
       const params = this.getInjectedParams(Target);
-      const args = params.map((param: { token: Token; optional: boolean }) =>
-        this.resolveParam(param),
-      );
+      const args = params.map((param: { token: Token; optional: boolean }) => this.resolveParam(param));
 
       const instance = new Target(...args);
       this.resolvePropertyInjections(instance, Target);
@@ -110,9 +96,7 @@ export class Container {
     }
 
     // Should be unreachable if providers are normalized
-    const tokenName = this.isType(provider)
-      ? provider.name
-      : (provider as any).provide.toString();
+    const tokenName = this.isType(provider) ? provider.name : (provider as any).provide.toString();
     throw new Error(`Invalid provider definition for ${tokenName}`);
   }
 
@@ -153,21 +137,15 @@ export class Container {
     return typeof provider === 'function';
   }
 
-  private isValueProvider<T>(
-    provider: Provider<T>,
-  ): provider is ValueProvider<T> {
+  private isValueProvider<T>(provider: Provider<T>): provider is ValueProvider<T> {
     return (provider as ValueProvider<T>).useValue !== undefined;
   }
 
-  private isFactoryProvider<T>(
-    provider: Provider<T>,
-  ): provider is FactoryProvider<T> {
+  private isFactoryProvider<T>(provider: Provider<T>): provider is FactoryProvider<T> {
     return (provider as FactoryProvider<T>).useFactory !== undefined;
   }
 
-  private isClassProvider<T>(
-    provider: Provider<T>,
-  ): provider is ClassProvider<T> {
+  private isClassProvider<T>(provider: Provider<T>): provider is ClassProvider<T> {
     return (provider as ClassProvider<T>).useClass !== undefined;
   }
 }

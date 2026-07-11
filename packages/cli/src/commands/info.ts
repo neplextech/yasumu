@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import pc from 'picocolors';
+
 import { WorkspaceLoader, resolveWorkspacePath } from '../workspace/loader.js';
 
 export const infoCommand = new Command('info')
@@ -11,9 +12,7 @@ export const infoCommand = new Command('info')
     const loader = new WorkspaceLoader(workspacePath);
 
     if (!loader.exists()) {
-      console.error(
-        pc.red(`No Yasumu workspace found at: ${workspacePath}/yasumu`),
-      );
+      console.error(pc.red(`No Yasumu workspace found at: ${workspacePath}/yasumu`));
       process.exit(1);
     }
 
@@ -68,33 +67,17 @@ export const infoCommand = new Command('info')
     console.log();
     console.log(pc.bold(pc.cyan('┌─ Yasumu Workspace')));
     console.log(pc.cyan('│'));
-    console.log(
-      pc.cyan('├─') + pc.bold(' Name:    ') + workspace.metadata.name,
-    );
-    console.log(
-      pc.cyan('├─') + pc.bold(' ID:      ') + pc.dim(workspace.metadata.id),
-    );
-    console.log(
-      pc.cyan('├─') + pc.bold(' Version: ') + workspace.metadata.version,
-    );
+    console.log(pc.cyan('├─') + pc.bold(' Name:    ') + workspace.metadata.name);
+    console.log(pc.cyan('├─') + pc.bold(' ID:      ') + pc.dim(workspace.metadata.id));
+    console.log(pc.cyan('├─') + pc.bold(' Version: ') + workspace.metadata.version);
     console.log(pc.cyan('├─') + pc.bold(' Path:    ') + pc.dim(workspace.path));
-    console.log(
-      pc.cyan('├─') +
-        pc.bold(' Snapshot: ') +
-        pc.dim(new Date(workspace.snapshot).toISOString()),
-    );
+    console.log(pc.cyan('├─') + pc.bold(' Snapshot: ') + pc.dim(new Date(workspace.snapshot).toISOString()));
     console.log(pc.cyan('│'));
 
     console.log(pc.cyan('├─') + pc.bold(pc.yellow(' Statistics')));
-    console.log(
-      pc.cyan('│  ├─') + ` REST Entities: ${pc.green(restEntities.length)}`,
-    );
-    console.log(
-      pc.cyan('│  ├─') + ` Environments:  ${pc.green(environments.length)}`,
-    );
-    console.log(
-      pc.cyan('│  └─') + ` Groups:        ${pc.green(groups.length)}`,
-    );
+    console.log(pc.cyan('│  ├─') + ` REST Entities: ${pc.green(restEntities.length)}`);
+    console.log(pc.cyan('│  ├─') + ` Environments:  ${pc.green(environments.length)}`);
+    console.log(pc.cyan('│  └─') + ` Groups:        ${pc.green(groups.length)}`);
 
     if (restEntities.length > 0) {
       console.log(pc.cyan('│'));
@@ -108,13 +91,9 @@ export const infoCommand = new Command('info')
         if (entity.test) flags.push(pc.magenta('test'));
         const flagStr = flags.length > 0 ? ` [${flags.join(', ')}]` : '';
         console.log(
-          pc.cyan(`│  ${prefix}`) +
-            ` ${methodColor(entity.method.padEnd(6))} ${pc.bold(entity.name)}${flagStr}`,
+          pc.cyan(`│  ${prefix}`) + ` ${methodColor(entity.method.padEnd(6))} ${pc.bold(entity.name)}${flagStr}`,
         );
-        console.log(
-          pc.cyan(`│  ${isLast ? ' ' : '│'}  `) +
-            pc.dim(`${entity.url ?? '(no url)'}`),
-        );
+        console.log(pc.cyan(`│  ${isLast ? ' ' : '│'}  `) + pc.dim(`${entity.url ?? '(no url)'}`));
       });
     }
 

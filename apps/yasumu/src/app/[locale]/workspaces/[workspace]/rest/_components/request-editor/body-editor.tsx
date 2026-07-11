@@ -1,22 +1,13 @@
 import { Label } from '@yasumu/ui/components/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@yasumu/ui/components/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
 import { Textarea } from '@yasumu/ui/components/textarea';
-import KeyValueTable, {
-  KeyValuePair,
-} from '@/components/tables/key-value-table';
-import FormDataTable, {
-  FormDataPair,
-} from '@/components/tables/form-data-table';
-import { TextEditor } from '@/components/editors/text-editor';
-import { ChangeEvent, useEffect, useState } from 'react';
-import useDebounced from '@/hooks/use-debounced';
 import { FileText, File as FileIcon } from 'lucide-react';
+import { ChangeEvent, useEffect, useState } from 'react';
+
+import { TextEditor } from '@/components/editors/text-editor';
+import FormDataTable, { FormDataPair } from '@/components/tables/form-data-table';
+import KeyValueTable, { KeyValuePair } from '@/components/tables/key-value-table';
+import useDebounced from '@/hooks/use-debounced';
 
 // @ts-ignore
 interface BodyEditorProps {
@@ -72,10 +63,7 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
       let newData: any = '';
 
       // Preserve compatible data or initialize defaults
-      if (
-        (type === 'json' || type === 'text') &&
-        typeof localData === 'string'
-      ) {
+      if ((type === 'json' || type === 'text') && typeof localData === 'string') {
         newData = localData;
       } else if (type === 'form-data' || type === 'x-www-form-urlencoded') {
         if (Array.isArray(localData)) {
@@ -126,13 +114,11 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full p-1">
+    <div className="flex h-full flex-col gap-4 p-1">
       <div className="flex items-center gap-4">
-        <Label className="text-muted-foreground whitespace-nowrap">
-          Content Type
-        </Label>
+        <Label className="text-muted-foreground whitespace-nowrap">Content Type</Label>
         <Select value={currentType} onValueChange={handleTypeChange}>
-          <SelectTrigger className="w-[200px] h-8">
+          <SelectTrigger className="h-8 w-[200px]">
             <SelectValue placeholder="Select Body Type" />
           </SelectTrigger>
           <SelectContent>
@@ -140,22 +126,20 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
             <SelectItem value="json">JSON</SelectItem>
             <SelectItem value="text">Text</SelectItem>
             <SelectItem value="form-data">Multipart Form</SelectItem>
-            <SelectItem value="x-www-form-urlencoded">
-              Form URL Encoded
-            </SelectItem>
+            <SelectItem value="x-www-form-urlencoded">Form URL Encoded</SelectItem>
             <SelectItem value="binary">Binary File</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="flex-1 min-h-0 relative overflow-y-auto border rounded-md bg-muted/5">
+      <div className="bg-muted/5 relative min-h-0 flex-1 overflow-y-auto rounded-md border">
         {currentType === 'json' && (
           <TextEditor
             value={typeof localData === 'string' ? localData : ''}
             onChange={handleJsonChange}
             language="json"
             placeholder="Enter JSON body..."
-            className="h-full border-0 rounded-none"
+            className="h-full rounded-none border-0"
           />
         )}
 
@@ -164,52 +148,35 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
             placeholder="Enter text body..."
             value={typeof localData === 'string' ? localData : ''}
             onChange={handleTextChange}
-            className="h-full resize-none border-0 focus-visible:ring-0 p-4"
+            className="h-full resize-none border-0 p-4 focus-visible:ring-0"
           />
         )}
 
         {currentType === 'form-data' && (
           <div className="p-4">
-            <FormDataTable
-              pairs={Array.isArray(localData) ? localData : []}
-              onChange={handleFormDataChange}
-            />
+            <FormDataTable pairs={Array.isArray(localData) ? localData : []} onChange={handleFormDataChange} />
           </div>
         )}
 
         {currentType === 'x-www-form-urlencoded' && (
           <div className="p-4">
-            <KeyValueTable
-              pairs={Array.isArray(localData) ? localData : []}
-              onChange={handleUrlEncodedChange}
-            />
+            <KeyValueTable pairs={Array.isArray(localData) ? localData : []} onChange={handleUrlEncodedChange} />
           </div>
         )}
 
         {currentType === 'binary' && (
-          <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-muted-foreground">
-            <div className="p-8 border-2 border-dashed rounded-lg bg-muted/10 flex flex-col items-center gap-4 hover:bg-muted/20 transition-colors">
-              <FileText className="w-10 h-10 opacity-50" />
+          <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-4 p-8">
+            <div className="bg-muted/10 hover:bg-muted/20 flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-8 transition-colors">
+              <FileText className="h-10 w-10 opacity-50" />
               <div className="text-center">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="binary-file-upload"
-                />
-                <label
-                  htmlFor="binary-file-upload"
-                  className="cursor-pointer text-primary hover:underline"
-                >
+                <input type="file" onChange={handleFileChange} className="hidden" id="binary-file-upload" />
+                <label htmlFor="binary-file-upload" className="text-primary cursor-pointer hover:underline">
                   Click to select a file
                 </label>
               </div>
               {localData instanceof File ? (
-                <div className="text-sm font-mono bg-background px-3 py-1 rounded border">
-                  {localData.name}{' '}
-                  <span className="text-muted-foreground">
-                    ({localData.size} bytes)
-                  </span>
+                <div className="bg-background rounded border px-3 py-1 font-mono text-sm">
+                  {localData.name} <span className="text-muted-foreground">({localData.size} bytes)</span>
                 </div>
               ) : (
                 <p className="text-sm">No file selected</p>
@@ -219,9 +186,9 @@ export function BodyEditor({ body, onChange }: BodyEditorProps) {
         )}
 
         {currentType === 'none' && (
-          <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
-            <div className="p-4 rounded-full bg-muted/10">
-              <FileIcon className="w-6 h-6 opacity-50" />
+          <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2">
+            <div className="bg-muted/10 rounded-full p-4">
+              <FileIcon className="h-6 w-6 opacity-50" />
             </div>
             <p className="text-sm">This request has no body</p>
           </div>

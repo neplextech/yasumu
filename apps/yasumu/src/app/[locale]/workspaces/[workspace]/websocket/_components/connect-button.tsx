@@ -6,16 +6,9 @@ interface ConnectButtonProps {
   onDisconnect: () => void;
 }
 
-export default function ConnectButton({
-  isConnected,
-  onConnect,
-  onDisconnect,
-}: ConnectButtonProps) {
+export default function ConnectButton({ isConnected, onConnect, onDisconnect }: ConnectButtonProps) {
   return (
-    <Button
-      variant={isConnected ? 'destructive' : 'default'}
-      onClick={isConnected ? onDisconnect : onConnect}
-    >
+    <Button variant={isConnected ? 'destructive' : 'default'} onClick={isConnected ? onDisconnect : onConnect}>
       {isConnected ? 'Disconnect' : 'Connect'}
     </Button>
   );

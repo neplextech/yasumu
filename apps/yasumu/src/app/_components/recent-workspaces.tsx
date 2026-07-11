@@ -1,18 +1,14 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import EmptyRecentWorkspace from './empty-recent-workspace';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@yasumu/ui/components/card';
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
-import RecentWorkspaceCard, { RecentWorkspace } from './recent-workspace-card';
-import { useYasumu } from '@/components/providers/workspace-provider';
 import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@yasumu/ui/components/card';
+import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import React, { useEffect, useState } from 'react';
+
+import { useYasumu } from '@/components/providers/workspace-provider';
 import LoadingScreen from '@/components/visuals/loading-screen';
+
+import EmptyRecentWorkspace from './empty-recent-workspace';
+import RecentWorkspaceCard, { RecentWorkspace } from './recent-workspace-card';
 
 export default function RecentWorkspaces() {
   const { yasumu } = useYasumu();
@@ -30,14 +26,12 @@ export default function RecentWorkspaces() {
   });
 
   return (
-    <Card className="h-full border-none shadow-none bg-transparent lg:bg-card lg:border lg:shadow-sm">
+    <Card className="lg:bg-card h-full border-none bg-transparent shadow-none lg:border lg:shadow-sm">
       <CardHeader className="px-0 lg:px-6">
         <div className="flex items-center justify-between">
           <CardTitle>Recent Workspaces</CardTitle>
         </div>
-        <CardDescription>
-          Continue working on your latest projects.
-        </CardDescription>
+        <CardDescription>Continue working on your latest projects.</CardDescription>
       </CardHeader>
       <CardContent className="px-0 lg:px-6">
         <ScrollArea className="h-[400px] pr-4">
@@ -47,9 +41,7 @@ export default function RecentWorkspaces() {
             ) : recentWorkspaces?.length === 0 ? (
               <EmptyRecentWorkspace />
             ) : (
-              recentWorkspaces?.map((workspace) => (
-                <RecentWorkspaceCard key={workspace.id} workspace={workspace} />
-              ))
+              recentWorkspaces?.map((workspace) => <RecentWorkspaceCard key={workspace.id} workspace={workspace} />)
             )}
           </div>
         </ScrollArea>

@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   type GraphQLSchema,
   type GraphQLField,
@@ -15,6 +14,7 @@ import {
   isScalarType,
   isInputObjectType,
 } from 'graphql';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 
 export interface FieldNode {
   name: string;
@@ -63,10 +63,7 @@ function buildArgNode(arg: GraphQLArgument): ArgNode {
   };
 }
 
-function buildFieldNode(
-  field: GraphQLField<unknown, unknown>,
-  depth: number = 0,
-): FieldNode {
+function buildFieldNode(field: GraphQLField<unknown, unknown>, depth: number = 0): FieldNode {
   const unwrapped = unwrapType(field.type);
   const subFields: FieldNode[] = [];
 
@@ -96,9 +93,7 @@ function buildRootOperation(
   if (!objectType) return null;
 
   const fieldMap = objectType.getFields();
-  const fields = Object.keys(fieldMap).map((name) =>
-    buildFieldNode(fieldMap[name]),
-  );
+  const fields = Object.keys(fieldMap).map((name) => buildFieldNode(fieldMap[name]));
 
   return {
     name: objectType.name,
@@ -107,10 +102,7 @@ function buildRootOperation(
   };
 }
 
-function generateQueryFromFields(
-  fields: FieldNode[],
-  indent: string = '  ',
-): string {
+function generateQueryFromFields(fields: FieldNode[], indent: string = '  '): string {
   const lines: string[] = [];
 
   for (const field of fields) {
@@ -141,9 +133,7 @@ function generateQueryFromFields(
 
 export function useQueryBuilder(schema: GraphQLSchema | null) {
   const [operations, setOperations] = useState<RootOperation[]>([]);
-  const [activeOperation, setActiveOperation] = useState<
-    'query' | 'mutation' | 'subscription'
-  >('query');
+  const [activeOperation, setActiveOperation] = useState<'query' | 'mutation' | 'subscription'>('query');
 
   useEffect(() => {
     if (!schema) {
@@ -156,10 +146,7 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
     if (queryOp) ops.push(queryOp);
     const mutationOp = buildRootOperation(schema.getMutationType(), 'mutation');
     if (mutationOp) ops.push(mutationOp);
-    const subscriptionOp = buildRootOperation(
-      schema.getSubscriptionType(),
-      'subscription',
-    );
+    const subscriptionOp = buildRootOperation(schema.getSubscriptionType(), 'subscription');
     if (subscriptionOp) ops.push(subscriptionOp);
 
     setOperations(ops);
@@ -246,11 +233,7 @@ function deepCloneFields(fields: FieldNode[]): FieldNode[] {
   }));
 }
 
-function toggleFieldAtPath(
-  fields: FieldNode[],
-  path: number[],
-  depth: number,
-): void {
+function toggleFieldAtPath(fields: FieldNode[], path: number[], depth: number): void {
   if (depth >= path.length) return;
   const idx = path[depth];
   if (idx >= fields.length) return;
@@ -272,11 +255,7 @@ function toggleFieldAtPath(
   }
 }
 
-function expandFieldAtPath(
-  fields: FieldNode[],
-  path: number[],
-  depth: number,
-): void {
+function expandFieldAtPath(fields: FieldNode[], path: number[], depth: number): void {
   if (depth >= path.length) return;
   const idx = path[depth];
   if (idx >= fields.length) return;
@@ -288,13 +267,7 @@ function expandFieldAtPath(
   }
 }
 
-function setArgValueAtPath(
-  fields: FieldNode[],
-  path: number[],
-  depth: number,
-  argName: string,
-  value: string,
-): void {
+function setArgValueAtPath(fields: FieldNode[], path: number[], depth: number, argName: string, value: string): void {
   if (depth >= path.length) return;
   const idx = path[depth];
   if (idx >= fields.length) return;

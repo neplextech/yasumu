@@ -1,8 +1,9 @@
-import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { Hono } from 'hono';
 import { z } from 'zod';
-import { rpcServer } from '../../rpc/rpc-server.ts';
+
 import { runInTransaction } from '../../database/index.ts';
+import { rpcServer } from '../../rpc/rpc-server.ts';
 
 const yasumuRpcPayloadSchema = z.object({
   context: z.object({
@@ -15,38 +16,34 @@ const yasumuRpcPayloadSchema = z.object({
   }),
 });
 
-export const yasumuRpcRoute = new Hono().post(
-  '/',
-  zValidator('json', yasumuRpcPayloadSchema),
-  async (c) => {
-    const { context, command } = c.req.valid('json');
+export const yasumuRpcRoute = new Hono().post('/', zValidator('json', yasumuRpcPayloadSchema), async (c) => {
+  const { context, command } = c.req.valid('json');
 
-    try {
-      const result = await runInTransaction(() =>
-        rpcServer.execute(
-          {
-            type: command.type,
-            action: command.command,
-            payload: command.parameters,
+  try {
+    const result = await runInTransaction(() =>
+      rpcServer.execute(
+        {
+          type: command.type,
+          action: command.command,
+          payload: command.parameters,
+        },
+        context,
+      ),
+    );
+
+    return c.json({ result: result === undefined ? {} : result });
+  } catch (error) {
+    if (Error.isError(error) && error.message === 'DEN_HANDLER_NOT_FOUND') {
+      return c.json(
+        {
+          error: {
+            message: `Command ${command.command} not found`,
           },
-          context,
-        ),
+        },
+        404,
       );
-
-      return c.json({ result: result === undefined ? {} : result });
-    } catch (error) {
-      if (Error.isError(error) && error.message === 'DEN_HANDLER_NOT_FOUND') {
-        return c.json(
-          {
-            error: {
-              message: `Command ${command.command} not found`,
-            },
-          },
-          404,
-        );
-      }
-
-      throw error;
     }
-  },
-);
+
+    throw error;
+  }
+});

@@ -10,13 +10,7 @@ const HTTP_METHOD_COLORS: Record<string, string> = {
   HEAD: 'text-teal-500',
 };
 
-export function HttpMethodIcon({
-  method,
-  short,
-}: {
-  method: HttpMethod | (string & {});
-  short?: boolean;
-}) {
+export function HttpMethodIcon({ method, short }: { method: HttpMethod | (string & {}); short?: boolean }) {
   const methodName = method.toUpperCase();
   const colorClass = HTTP_METHOD_COLORS[methodName] ?? 'text-muted-foreground';
 
@@ -27,9 +21,7 @@ export function HttpMethodIcon({
     else if (methodName.length > 4) displayName = methodName.slice(0, 4);
   }
 
-  return (
-    <span className={`font-mono font-bold ${colorClass}`}>{displayName}</span>
-  );
+  return <span className={`font-mono font-bold ${colorClass}`}>{displayName}</span>;
 }
 
 export function GetMethodIcon({ short }: { short?: boolean }) {
@@ -60,9 +52,6 @@ export function HeadMethodIcon({ short }: { short?: boolean }) {
   return <HttpMethodIcon method="HEAD" short={short} />;
 }
 
-export function resolveHttpMethodIcon(
-  method: HttpMethod | (string & {}),
-  { short }: { short?: boolean },
-) {
+export function resolveHttpMethodIcon(method: HttpMethod | (string & {}), { short }: { short?: boolean }) {
   return () => <HttpMethodIcon method={method} short={short} />;
 }
