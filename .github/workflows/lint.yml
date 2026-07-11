@@ -38,7 +38,7 @@ jobs:
           deno-version: 2.9.2
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile && pnpm --filter=tanxium deno install
 
       - name: Lint
         run: pnpm turbo run lint
