@@ -1,7 +1,7 @@
 import type { WorkspaceCreateOptions, WorkspaceOpenOptions } from '@yasumu/common';
 import type { PartialWorkspace, WorkspaceData } from '@yasumu/common';
 
-import type { Yasumu } from '@/yasumu.js';
+import type { Yasumu } from '../../yasumu.js';
 
 import { Workspace } from '../workspace/workspace.js';
 

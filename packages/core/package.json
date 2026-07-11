@@ -20,7 +20,7 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsc",
     "test": "tsx test/index.ts"
   },
   "dependencies": {

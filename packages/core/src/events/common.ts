@@ -1,7 +1,7 @@
 import type { EmailData } from '@yasumu/common';
 
-import type { Environment } from '@/core/workspace/environment/environment.js';
-import type { Workspace } from '@/core/workspace/workspace.js';
+import type { Environment } from '../core/workspace/environment/environment.js';
+import type { Workspace } from '../core/workspace/workspace.js';
 
 export interface YasumuEventHandlerInterface {
   /**

@@ -11,7 +11,7 @@ import type {
   YasumuEmbeddedScript,
 } from '@yasumu/common';
 
-import type { Workspace } from '@/core/workspace/workspace.js';
+import type { Workspace } from '../../workspace/workspace.js';
 
 import { GraphqlEntity } from './graphql.entity.js';
 

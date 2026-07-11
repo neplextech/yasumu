@@ -1,6 +1,6 @@
 import type { EmailData, ListEmailOptions, PaginatedResult, SmtpConfig } from '@yasumu/common';
 
-import type { Workspace } from '@/core/workspace/workspace.js';
+import type { Workspace } from '../../workspace/workspace.js';
 
 export class EmailModule {
   public constructor(private readonly workspace: Workspace) {}
