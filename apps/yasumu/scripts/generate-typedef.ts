@@ -1,6 +1,6 @@
-import ts from 'typescript';
-import fs, { readdirSync, readFileSync } from 'node:fs';
-import path, { join } from 'node:path';
+import ts from 'typescript-legacy';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const RUNTIME_DIR = path.join(
@@ -17,266 +17,449 @@ const OUTPUT_FILE = path.join(
   'types',
   'yasumu-typedef.ts',
 );
+const TYPES_DIR = path.join(import.meta.dirname, 'types');
+const DENO_TYPES_FILE = path.join(TYPES_DIR, 'deno', 'lib.deno.d.ts');
+const NODE_TYPES_DIR = path.join(ROOT_DIR, 'node_modules', '@types', 'node');
 
-const RUNTIME_FILES = [
-  'ui.ts',
-  'yasumu-request.ts',
-  'bootstrap.ts',
-  'yasumu-workspace-context.ts',
-  'message-queue.ts',
+// Files to extract public types from (dependency order, bootstrap handled separately)
+const RUNTIME_EXPORT_FILES = [
   'modules/collection.ts',
+  'message-queue.ts',
+  'yasumu-workspace-context.ts',
+  'yasumu-request.ts',
+  'ui.ts',
 ];
-const WHITELISTED_RUNTIME_FILES = ['internal.d.ts'];
 
-function cleanupGeneratedFiles() {
-  const generatedFiles = readdirSync(RUNTIME_DIR, { withFileTypes: true })
-    .filter(
-      (f) =>
-        f.isFile() &&
-        !WHITELISTED_RUNTIME_FILES.includes(f.name) &&
-        f.name.endsWith('.d.ts'),
-    )
-    .map((f) => join(RUNTIME_DIR, f.name));
+// Stubs for Deno internal modules that can't be resolved normally
+const EXT_STUBS = new Map<string, string>([
+  [
+    'ext:core/ops',
+    [
+      'export declare function op_send_renderer_event(s: string): void;',
+      'export declare function op_show_confirmation_dialog_sync(title: string, message: string, yesLabel: string, noLabel: string, cancelLabel: string): boolean;',
+      'export declare function op_get_resources_dir(): string;',
+      'export declare function op_get_app_data_dir(): string;',
+      'export declare function op_set_rpc_port(port: number): void;',
+      'export declare function op_generate_cuid(): string;',
+      'export declare function op_is_yasumu_ready(): boolean;',
+      'export declare function op_get_yasumu_version(): string;',
+      'export declare function op_set_echo_server_port(port: number): void;',
+      'export declare function op_set_mcp_server_port(port: number): void;',
+      'export declare function op_register_virtual_module(name: string, code: string): void;',
+      'export declare function op_unregister_virtual_module(name: string): void;',
+      'export declare function op_is_yasumu_dev_mode(): boolean;',
+      'export declare function op_get_rpc_port(): number;',
+      'export declare function op_unregister_all_virtual_modules(): void;',
+    ].join('\n'),
+  ],
+  [
+    'ext:deno_console/01_console.js',
+    // Minimal Console that satisfies globalThis.console assignment in patches.ts
+    `export declare class Console implements globalThis.Console {
+  constructor(fn: (msg: string, level: number) => void);
+  assert(condition?: boolean, ...data: any[]): void;
+  clear(): void;
+  count(label?: string): void;
+  countReset(label?: string): void;
+  debug(...data: any[]): void;
+  dir(item?: any, options?: any): void;
+  dirxml(...data: any[]): void;
+  error(...data: any[]): void;
+  group(...data: any[]): void;
+  groupCollapsed(...data: any[]): void;
+  groupEnd(): void;
+  info(...data: any[]): void;
+  log(...data: any[]): void;
+  table(tabularData?: any, properties?: string[]): void;
+  time(label?: string): void;
+  timeEnd(label?: string): void;
+  timeLog(label?: string, ...data: any[]): void;
+  timeStamp(label?: string): void;
+  trace(...data: any[]): void;
+  warn(...data: any[]): void;
+  profile(label?: string): void;
+  profileEnd(label?: string): void;
+  [Symbol.toStringTag]: string;
+}`,
+  ],
+]);
 
-  for (const file of generatedFiles) {
-    if (fs.existsSync(file)) {
-      fs.unlinkSync(file);
-    }
-  }
+const STUB_VIRTUAL_PREFIX = '//__yasumu_ext_stub__/';
+
+function stubVirtualPath(moduleName: string): string {
+  return STUB_VIRTUAL_PREFIX + encodeURIComponent(moduleName) + '.d.ts';
 }
 
-function generateDeclarations(fileNames: string[]): Map<string, string> {
-  const declarations = new Map<string, string>();
+function stubByVirtualPath(virtualPath: string): string | undefined {
+  if (!virtualPath.startsWith(STUB_VIRTUAL_PREFIX)) return undefined;
+  const key = decodeURIComponent(
+    virtualPath.slice(STUB_VIRTUAL_PREFIX.length).replace(/\.d\.ts$/, ''),
+  );
+  return EXT_STUBS.get(key);
+}
 
+// ============================================================================
+// TypeScript compiler with stub support
+// ============================================================================
+
+function createCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
+  const host = ts.createCompilerHost(options);
+  const readFile0 = host.readFile.bind(host);
+  const fileExists0 = host.fileExists.bind(host);
+
+  host.fileExists = (fileName) => {
+    if (fileName.startsWith(STUB_VIRTUAL_PREFIX)) return true;
+    return fileExists0(fileName);
+  };
+
+  host.readFile = (fileName) => {
+    const stub = stubByVirtualPath(fileName);
+    if (stub !== undefined) return stub;
+    return readFile0(fileName);
+  };
+
+  host.resolveModuleNames = (
+    moduleNames,
+    containingFile,
+    _reused,
+    _ref,
+    opts,
+  ) => {
+    return moduleNames.map((name) => {
+      if (EXT_STUBS.has(name)) {
+        return {
+          resolvedFileName: stubVirtualPath(name),
+          isExternalLibraryImport: false,
+          extension: ts.Extension.Dts,
+        } as ts.ResolvedModuleFull;
+      }
+      return ts.resolveModuleName(name, containingFile, opts, host)
+        .resolvedModule;
+    });
+  };
+
+  return host;
+}
+
+function compileToDeclarations(fileNames: string[]): Map<string, string> {
   const options: ts.CompilerOptions = {
     declaration: true,
     emitDeclarationOnly: true,
-    strict: true,
+    allowImportingTsExtensions: true,
+    strict: false,
     target: ts.ScriptTarget.ESNext,
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     skipLibCheck: true,
-    noEmit: false,
-    isolatedModules: false,
-    esModuleInterop: true,
-    allowSyntheticDefaultImports: true,
     lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+    typeRoots: [path.join(ROOT_DIR, 'node_modules', '@types')],
+    types: ['node'],
   };
 
-  const host = ts.createCompilerHost(options);
+  const host = createCompilerHost(options);
+  const out = new Map<string, string>();
 
-  host.writeFile = (fileName, contents) => {
-    const baseName = path.basename(fileName);
-    declarations.set(baseName, contents);
+  host.writeFile = (fileName, content) => {
+    if (fileName.endsWith('.d.ts')) {
+      out.set(path.basename(fileName), content);
+    }
   };
 
   const program = ts.createProgram(fileNames, options, host);
-  program.emit();
+  const { diagnostics } = program.emit();
 
-  return declarations;
+  // Only surface errors from the files we explicitly asked to compile
+  const inputSet = new Set(fileNames.map((f) => path.normalize(f)));
+  for (const d of [...ts.getPreEmitDiagnostics(program), ...diagnostics]) {
+    if (d.category === ts.DiagnosticCategory.Error && d.file) {
+      const normalized = path.normalize(d.file.fileName);
+      if (!inputSet.has(normalized)) continue;
+      const loc = `${path.basename(d.file.fileName)}:${d.file.getLineAndCharacterOfPosition(d.start ?? 0).line + 1}`;
+      console.warn(
+        `  [tsc] ${loc}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`,
+      );
+    }
+  }
+
+  return out;
 }
 
-function cleanDeclarationContent(content: string, fileName: string): string {
-  let result = content;
+// ============================================================================
+// Declaration post-processing: strip imports/exports → ambient globals
+// ============================================================================
 
-  result = result.replace(/^import\s+.*?[;\n]/gm, '');
-  result = result.replace(/^export\s*\{\s*\};?\s*$/gm, '');
-  result = result.replace(/^export\s+default\s+.*?;?\s*$/gm, '');
+function makeAmbient(content: string): string {
+  let r = content;
 
-  result = result.replace(/\bdeclare\s+declare\b/g, 'declare');
-  result = result.replace(/\bexport\s+declare\b/g, 'declare');
-  result = result.replace(
-    /^export\s+(?=type|interface|class|function|const|let|var|enum)/gm,
-    'declare ',
+  // Remove all import statements (single and multi-line)
+  r = r.replace(
+    /^import\s+(?:type\s+)?\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*\n?/gm,
+    '',
   );
-  result = result.replace(/^export\s+/gm, '');
+  r = r.replace(
+    /^import\s+[\w*]+(?:\s+as\s+\w+)?\s*(?:,\s*\{[^}]*\})?\s+from\s+['"][^'"]*['"];?\s*\n?/gm,
+    '',
+  );
+  r = r.replace(/^import\s+['"][^'"]*['"];?\s*\n?/gm, '');
 
-  result = result.replace(/^\s*private\s+[_a-zA-Z]\w*\s*[;:][^\n]*\n?/gm, '');
-  result = result.replace(/^\s*private\s+constructor\([^)]*\)[^;]*;\n?/gm, '');
+  // export {} → remove
+  r = r.replace(/^export\s*\{\s*\};?\s*\n?/gm, '');
 
-  result = result
-    .split('\n')
-    .filter((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return false;
-      if (trimmed.startsWith('private ')) return false;
-      return true;
-    })
-    .join('\n');
+  // export declare X → declare X
+  r = r.replace(/^export\s+declare\s+/gm, 'declare ');
 
-  result = result.replace(/\n{3,}/g, '\n\n');
+  // export abstract class → declare abstract class, etc.
+  r = r.replace(
+    /^export\s+(abstract\s+class|class|interface|type|function|enum|const|let|var)\b/gm,
+    'declare $1',
+  );
 
-  return result.trim();
+  // export { X, Y } re-exports → remove
+  r = r.replace(/^export\s+\{[^}]*\};?\s*\n?/gm, '');
+
+  // stray export
+  r = r.replace(/^export\s+/gm, '');
+
+  // duplicate declare
+  r = r.replace(/\bdeclare\s+declare\b/g, 'declare');
+
+  // collapse blank lines
+  r = r.replace(/\n{3,}/g, '\n\n');
+
+  return r.trim();
 }
 
-function extractClassesAndInterfaces(dtsContent: string): {
-  classes: string[];
-  interfaces: string[];
-  types: string[];
-  functions: string[];
-} {
+// ============================================================================
+// Bootstrap.ts AST extraction — Yasumu class + unsafe type
+// ============================================================================
+
+function extractYasumuClass(bootstrapPath: string): string {
+  const src = fs.readFileSync(bootstrapPath, 'utf-8');
   const sourceFile = ts.createSourceFile(
-    'temp.d.ts',
-    dtsContent,
+    bootstrapPath,
+    src,
     ts.ScriptTarget.ESNext,
     true,
-    ts.ScriptKind.TS,
   );
 
-  const classes: string[] = [];
-  const interfaces: string[] = [];
-  const types: string[] = [];
-  const functions: string[] = [];
-
-  function visit(node: ts.Node) {
-    if (ts.isClassDeclaration(node) && node.name) {
-      let text = node.getText(sourceFile);
-      text = text.replace(/^export\s+/, 'declare ');
-      if (!text.startsWith('declare')) {
-        text = 'declare ' + text;
-      }
-      text = text.replace(/\bdeclare\s+declare\b/g, 'declare');
-      classes.push(text);
-    } else if (ts.isInterfaceDeclaration(node) && node.name) {
-      let text = node.getText(sourceFile);
-      text = text.replace(/^export\s+/, '');
-      text = text.replace(/^declare\s+/, '');
-      interfaces.push(text);
-    } else if (ts.isTypeAliasDeclaration(node) && node.name) {
-      let text = node.getText(sourceFile);
-      text = text.replace(/^export\s+/, '');
-      if (!text.startsWith('type') && !text.startsWith('declare type')) {
-        text = 'type ' + text;
-      }
-      types.push(text);
-    } else if (ts.isFunctionDeclaration(node) && node.name) {
-      let text = node.getText(sourceFile);
-      text = text.replace(/^export\s+/, 'declare ');
-      if (!text.startsWith('declare')) {
-        text = 'declare ' + text;
-      }
-      functions.push(text);
+  let classNode: ts.ClassDeclaration | undefined;
+  ts.forEachChild(sourceFile, (node) => {
+    if (ts.isClassDeclaration(node) && node.name?.text === 'Yasumu') {
+      classNode = node;
     }
+  });
 
-    ts.forEachChild(node, visit);
-  }
+  if (!classNode) return '';
 
-  visit(sourceFile);
+  const factory = ts.factory;
+  const printer = ts.createPrinter({
+    removeComments: false,
+    omitTrailingSemicolon: false,
+  });
 
-  return { classes, interfaces, types, functions };
+  const keepMember = (m: ts.ClassElement): boolean => {
+    // @ts-ignore
+    // prettier-ignore
+    const hasPrivate: boolean = m.modifiers?.some((mod) =>
+        mod.kind === ts.SyntaxKind.PrivateKeyword ||
+        mod.kind === ts.SyntaxKind.ProtectedKeyword,
+    );
+    if (hasPrivate) return false;
+    const name = (m as ts.NamedDeclaration).name;
+    if (name && ts.isPrivateIdentifier(name)) return false;
+    return true;
+  };
+
+  const stripPublic = (mods: ts.NodeArray<ts.ModifierLike> | undefined) =>
+    mods?.filter((m) => m.kind !== ts.SyntaxKind.PublicKeyword) as
+      | ts.ModifierLike[]
+      | undefined;
+
+  const ambientMembers = classNode.members.filter(keepMember).map((m) => {
+    if (ts.isMethodDeclaration(m)) {
+      return factory.createMethodDeclaration(
+        stripPublic(m.modifiers),
+        m.asteriskToken,
+        m.name,
+        m.questionToken,
+        m.typeParameters,
+        m.parameters,
+        m.type,
+        undefined,
+      );
+    }
+    if (ts.isConstructorDeclaration(m)) {
+      return factory.createConstructorDeclaration(
+        stripPublic(m.modifiers),
+        m.parameters,
+        undefined,
+      );
+    }
+    if (ts.isGetAccessorDeclaration(m)) {
+      return factory.createGetAccessorDeclaration(
+        stripPublic(m.modifiers),
+        m.name,
+        m.parameters,
+        m.type,
+        undefined,
+      );
+    }
+    if (ts.isSetAccessorDeclaration(m)) {
+      return factory.createSetAccessorDeclaration(
+        stripPublic(m.modifiers),
+        m.name,
+        m.parameters,
+        undefined,
+      );
+    }
+    if (ts.isPropertyDeclaration(m)) {
+      // Ambient declarations cannot have initializers; infer the type if not explicit.
+      let typeNode = m.type;
+      if (!typeNode && m.initializer) {
+        if (ts.isIdentifier(m.initializer)) {
+          // e.g. `= YasumuUI` → `typeof YasumuUI`
+          typeNode = factory.createTypeQueryNode(
+            factory.createIdentifier(m.initializer.text),
+          );
+        } else if (
+          ts.isNewExpression(m.initializer) &&
+          ts.isIdentifier(m.initializer.expression)
+        ) {
+          // e.g. `= new Cache()` → `Cache`
+          typeNode = factory.createTypeReferenceNode(
+            factory.createIdentifier(m.initializer.expression.text),
+          );
+        }
+      }
+      return factory.createPropertyDeclaration(
+        stripPublic(m.modifiers),
+        m.name,
+        m.questionToken ?? m.exclamationToken,
+        typeNode,
+        undefined, // strip initializer — not valid in ambient context
+      );
+    }
+    return m;
+  });
+
+  const declMods = [
+    factory.createModifier(ts.SyntaxKind.DeclareKeyword),
+    ...(classNode.modifiers?.filter(
+      (m) =>
+        m.kind !== ts.SyntaxKind.ExportKeyword &&
+        m.kind !== ts.SyntaxKind.DefaultKeyword,
+    ) ?? []),
+  ];
+
+  const ambientClass = factory.createClassDeclaration(
+    declMods,
+    classNode.name,
+    classNode.typeParameters,
+    classNode.heritageClauses,
+    ambientMembers,
+  );
+
+  const dummy = ts.createSourceFile('_temp.d.ts', '', ts.ScriptTarget.ESNext);
+  return printer.printNode(ts.EmitHint.Unspecified, ambientClass, dummy);
 }
 
+// ============================================================================
+// Yasumu type assembly
+// ============================================================================
+
 function generateYasumuTypes(): string {
-  const runtimeFiles = RUNTIME_FILES.map((f) => path.join(RUNTIME_DIR, f));
-  const existingFiles = runtimeFiles.filter((f) => fs.existsSync(f));
+  const exportFiles = RUNTIME_EXPORT_FILES.map((f) =>
+    path.join(RUNTIME_DIR, f),
+  ).filter((f) => fs.existsSync(f));
 
-  if (existingFiles.length === 0) {
-    console.warn('No runtime files found');
-    return '';
-  }
+  // Include bootstrap.ts in compilation so globals like `unsafe` are visible
+  const bootstrapPath = path.join(RUNTIME_DIR, 'bootstrap.ts');
+  const allFiles = [...exportFiles];
+  if (fs.existsSync(bootstrapPath)) allFiles.push(bootstrapPath);
 
-  const seenTypes = new Set<string>();
-  const seenInterfaces = new Set<string>();
-  const seenClasses = new Set<string>();
-
-  const allTypes: string[] = [];
-  const allInterfaces: string[] = [];
-  const allClasses: string[] = [];
-  const allFunctions: string[] = [];
-
-  const declarations = generateDeclarations(existingFiles);
-
-  const processOrder = RUNTIME_FILES.map((f) => f.replace('.ts', '.d.ts'));
-
-  for (const fileName of processOrder) {
-    const content = declarations.get(fileName);
-    if (!content) continue;
-
-    if (fileName === 'bootstrap.d.ts') continue;
-
-    const cleaned = cleanDeclarationContent(content, fileName);
-    const extracted = extractClassesAndInterfaces(cleaned);
-
-    for (const t of extracted.types) {
-      const match = t.match(/^(?:declare\s+)?type\s+(\w+)/);
-      if (match && !seenTypes.has(match[1])) {
-        seenTypes.add(match[1]);
-        allTypes.push(t);
-      }
-    }
-
-    for (const i of extracted.interfaces) {
-      const match = i.match(/^interface\s+(\w+)/);
-      if (match && !seenInterfaces.has(match[1])) {
-        seenInterfaces.add(match[1]);
-        allInterfaces.push(i);
-      }
-    }
-
-    for (const c of extracted.classes) {
-      const match = c.match(/^declare\s+class\s+(\w+)/);
-      if (match && !seenClasses.has(match[1])) {
-        seenClasses.add(match[1]);
-        allClasses.push(c);
-      }
-    }
-
-    allFunctions.push(...extracted.functions);
-  }
+  console.log('  Compiling runtime TypeScript files...');
+  const declarations = compileToDeclarations(allFiles);
 
   const parts: string[] = [];
 
-  parts.push('// Yasumu Runtime Type Definitions');
-  parts.push('// Auto-generated from src-tauri/src/tanxium/runtime');
-  parts.push('');
-
-  if (allTypes.length > 0) {
-    parts.push('// Type Aliases');
-    parts.push(allTypes.join('\n\n'));
-    parts.push('');
+  // Ambient declarations from exported files
+  for (const relFile of RUNTIME_EXPORT_FILES) {
+    const baseName = path.basename(relFile, '.ts') + '.d.ts';
+    const content = declarations.get(baseName);
+    if (!content) {
+      console.warn(`  [warn] No declaration emitted for ${baseName}`);
+      continue;
+    }
+    const ambient = makeAmbient(content);
+    if (ambient.trim()) parts.push(ambient);
   }
 
-  if (allInterfaces.length > 0) {
-    parts.push('// Interfaces');
-    parts.push(allInterfaces.join('\n\n'));
-    parts.push('');
+  // Yasumu class extracted directly from source
+  if (fs.existsSync(bootstrapPath)) {
+    const yasumuClass = extractYasumuClass(bootstrapPath);
+    if (yasumuClass.trim()) parts.push(yasumuClass);
   }
 
-  if (allClasses.length > 0) {
-    parts.push('// Classes');
-    parts.push(allClasses.join('\n\n'));
-    parts.push('');
-  }
+  // Global type aliases needed by the runtime
+  parts.push('declare type unsafe = any;');
 
-  parts.push('// Yasumu Runtime API');
+  // Yasumu module declarations
   parts.push(
-    /* typescript */ `
-declare class Yasumu {
-  static readonly ui: typeof YasumuUI;
-  static readonly version: string;
-  static readonly isDevMode: boolean;
-  static readonly cache: Cache;
-  static cuid(): string;
-}
-
-declare type OnRequest = (req: YasumuRequest) => void | Promise<void>;
-declare type OnResponse = (req: YasumuRequest, res: YasumuResponse) => void | Promise<void>;
-declare type OnTest = (req: YasumuRequest, res: YasumuResponse) => void | Promise<void>;
-
-declare module "yasumu:collection" {
-  export { Collection };
-}
-`.trim(),
+    `declare module "yasumu:collection" {\n  export { Collection };\n}`,
   );
 
-  parts.push('');
-  parts.push('// Testing API');
-  parts.push(TESTING_API_TYPES);
+  // Testing API types (hand-written, stable)
+  parts.push(TESTING_API_TYPES.trim());
 
-  return parts.join('\n');
+  return parts.join('\n\n');
 }
 
-const TESTING_API_TYPES = /* typescript */ `
+// ============================================================================
+// Node.js types bundler — recursively follows /// <reference path> directives
+// ============================================================================
+
+function bundleNodeTypes(nodeTypesDir: string): string {
+  const visited = new Set<string>();
+  const chunks: string[] = [];
+
+  function processFile(filePath: string): void {
+    const normalized = path.normalize(filePath);
+    if (visited.has(normalized)) return;
+    visited.add(normalized);
+
+    if (!fs.existsSync(normalized)) return;
+
+    let content = fs.readFileSync(normalized, 'utf-8');
+
+    // Follow /// <reference path="..."> first (depth-first, so deps come before current)
+    const refRe = /\/\/\/\s*<reference\s+path="([^"]+)"\s*\/>/g;
+    let m: RegExpExecArray | null;
+    while ((m = refRe.exec(content)) !== null) {
+      processFile(path.resolve(path.dirname(normalized), m[1]));
+    }
+
+    // Strip all /// <reference .../> directives from the content itself
+    content = content.replace(/\/\/\/\s*<reference\s+[^/]*\/>\s*\n?/g, '');
+
+    // Strip leading license comments to reduce noise (keep first occurrence)
+    if (chunks.length > 0) {
+      content = content.replace(/^\/\*[\s\S]*?\*\/\s*\n?/, '');
+    }
+
+    const trimmed = content.trim();
+    if (trimmed) chunks.push(trimmed);
+  }
+
+  processFile(path.join(nodeTypesDir, 'index.d.ts'));
+
+  return chunks.join('\n\n');
+}
+
+// ============================================================================
+// Testing API types (hand-written)
+// ============================================================================
+
+const TESTING_API_TYPES = `
 interface Expected<T = unknown> {
   not: Expected<T>;
   resolves: Expected<Promise<T>>;
@@ -304,7 +487,6 @@ interface Expected<T = unknown> {
   toBeInstanceOf(expected: new (...args: unknown[]) => unknown): void;
   toThrow(expected?: string | RegExp | Error): void;
   toHaveProperty(keyPath: string | string[], value?: unknown): void;
-
   toHaveBeenCalled(): void;
   toHaveBeenCalledTimes(expected: number): void;
   toHaveBeenCalledWith(...args: unknown[]): void;
@@ -343,67 +525,85 @@ type Expect = (<T>(actual: T) => Expected<T>) & AsymmetricMatchers;
 declare const expect: Expect;
 
 interface TestContext {
-  /**
-   * Skip the current test. The test will be marked as skipped.
-   */
   skip(): never;
-  /**
-   * Explicitly fail the current test with an optional message.
-   */
   fail(message?: string): never;
-  /**
-   * Explicitly pass the current test. Useful for early exit.
-   */
   succeed(): never;
 }
 
 declare function test(name: string, fn: (ctx: TestContext) => void | Promise<void>): void;
-
 declare function describe(name: string, fn: () => void): void;
-`.trim();
+`;
+
+// ============================================================================
+// Main
+// ============================================================================
 
 function main() {
   console.log('Generating Yasumu type definitions...');
-  console.log(`Runtime directory: ${RUNTIME_DIR}`);
 
+  // 1. Yasumu runtime types
+  console.log('\n[1/3] Generating Yasumu runtime types...');
   const yasumuTypes = generateYasumuTypes();
+  console.log(`  ✓ ${(yasumuTypes.length / 1024).toFixed(1)} KB`);
 
-  if (!yasumuTypes) {
-    console.error('Failed to generate type definitions');
+  // 2. Deno types
+  console.log('\n[2/3] Loading Deno types...');
+  if (!fs.existsSync(DENO_TYPES_FILE)) {
+    console.error(`  ✗ Deno types not found at ${DENO_TYPES_FILE}`);
+    console.error(
+      '  Run: cp scripts/deno.ts.txt scripts/types/deno/lib.deno.d.ts',
+    );
     process.exit(1);
   }
+  const denoTypes = fs.readFileSync(DENO_TYPES_FILE, 'utf-8');
+  console.log(`  ✓ ${(denoTypes.length / 1024).toFixed(1)} KB`);
 
-  const denoTypes = readFileSync(
-    path.join(import.meta.dirname, 'deno.ts.txt'),
-    'utf8',
-  );
+  // 3. Node.js types
+  console.log('\n[3/3] Bundling Node.js types from @types/node...');
+  if (!fs.existsSync(NODE_TYPES_DIR)) {
+    console.warn(`  ⚠ @types/node not found at ${NODE_TYPES_DIR}, skipping`);
+  }
+  const nodeTypes = fs.existsSync(NODE_TYPES_DIR)
+    ? bundleNodeTypes(NODE_TYPES_DIR)
+    : '';
+  console.log(`  ✓ ${(nodeTypes.length / 1024).toFixed(1)} KB`);
 
+  // Output
   const output = `/* eslint-disable */
 // @ts-nocheck
 
 // THIS IS AN AUTOGENERATED FILE. DO NOT EDIT MANUALLY.
 // Run \`pnpm generate-typedef\` to regenerate.
-import denoTypes from './env-types/deno.ts.txt' with { type: 'text' };
 
 export const YASUMU_TYPE_DEFINITIONS = [
   {
     content: ${JSON.stringify(yasumuTypes)},
-    filePath: 'ts:yasumu/globals.d.ts',
+    filePath: 'file:///yasumu/globals.d.ts',
   },
   {
     content: ${JSON.stringify(denoTypes)},
-    filePath: 'ts:deno/globals.d.ts',
+    filePath: 'file:///lib.deno.d.ts',
+  },${
+    nodeTypes
+      ? `
+  {
+    content: ${JSON.stringify(nodeTypes)},
+    filePath: 'file:///node_modules/@types/node/index.d.ts',
+  },`
+      : ''
   }
-];
+] as const satisfies Array<{ content: string; filePath: string }>;
 `;
 
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, output, 'utf-8');
 
-  cleanupGeneratedFiles();
-
-  console.log(`✓ Generated type definitions at ${OUTPUT_FILE}`);
-  console.log(`  Total size: ${(yasumuTypes.length / 1024).toFixed(2)} KB`);
+  const totalKB = (
+    (yasumuTypes.length + denoTypes.length + nodeTypes.length) /
+    1024
+  ).toFixed(1);
+  console.log(`\n✓ Written to ${OUTPUT_FILE}`);
+  console.log(`  Total type definitions: ${totalKB} KB`);
 }
 
 main();

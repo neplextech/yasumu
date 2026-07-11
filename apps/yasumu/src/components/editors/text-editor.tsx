@@ -40,22 +40,34 @@ export function getMonacoInstance(): Promise<Monaco> {
   if (monacoInstance) return Promise.resolve(monacoInstance);
   if (initPromise) return initPromise;
 
-  initPromise = loader.init().then((monaco) => {
+  initPromise = loader.init().then((monaco: Monaco) => {
     monacoInstance = monaco;
 
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    const tsDefaults = monaco.languages.typescript.typescriptDefaults;
+    const jsDefaults = monaco.languages.typescript.javascriptDefaults;
+
+    const sharedCompilerOptions = {
       target: monaco.languages.typescript.ScriptTarget.ESNext,
       module: monaco.languages.typescript.ModuleKind.ESNext,
+      // NodeJs resolution walks up to file:///node_modules/@types/node/ where
+      // we register the bundled @types/node declarations.
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       allowNonTsExtensions: true,
-      strict: true,
+      allowSyntheticDefaultImports: true,
+      allowUmdGlobalAccess: true,
+      // Relax strict mode — user scripts shouldn't be penalised for missing
+      // types they cannot control (e.g. external Deno runtime APIs).
+      strict: false,
       noEmit: true,
       esModuleInterop: true,
       skipLibCheck: true,
       lib: ['esnext', 'dom'],
-    });
+    };
 
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    tsDefaults.setCompilerOptions(sharedCompilerOptions);
+    jsDefaults.setCompilerOptions(sharedCompilerOptions);
+
+    tsDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
       noSyntaxValidation: false,
     });
@@ -76,14 +88,12 @@ function registerTypeDefinitions(
 
   for (let i = 0; i < defs.length; i++) {
     const def = defs[i];
-    const filePath = def.filePath || `ts:filename/definitions-${i}.d.ts`;
+    const filePath = def.filePath || `file:///definitions-${i}.d.ts`;
 
     if (registeredLibs.has(filePath)) continue;
 
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(
-      def.content,
-      filePath,
-    );
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(def.content, filePath);
+    monaco.languages.typescript.javascriptDefaults.addExtraLib(def.content, filePath);
     registeredLibs.add(filePath);
   }
 }
@@ -102,12 +112,13 @@ export function TextEditor({
   const { resolvedTheme } = useTheme();
   const [isMonacoReady, setIsMonacoReady] = useState(!!monacoInstance);
 
-  const graphqlPath = useMemo(
-    () =>
-      `file:///graphql/query-${Math.random().toString(36).slice(2)}.graphql`,
-    [],
-  );
-  const editorPath = language === 'graphql' ? graphqlPath : undefined;
+  const editorPath = useMemo(() => {
+    const id = Math.random().toString(36).slice(2);
+    if (language === 'graphql') return `file:///graphql/query-${id}.graphql`;
+    if (language === 'typescript') return `file:///scripts/${id}.ts`;
+    if (language === 'javascript') return `file:///scripts/${id}.js`;
+    return undefined;
+  }, [language]);
 
   useEffect(() => {
     getMonacoInstance().then((monaco) => {
