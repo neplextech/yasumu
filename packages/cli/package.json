@@ -24,7 +24,7 @@
     "@types/node": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
-    "@typescript/native-preview": "catalog:build"
+    "typescript": "catalog:build"
   },
   "dependencies": {
     "@yasumu/schema": "workspace:*",

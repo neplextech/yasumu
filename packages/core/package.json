@@ -30,7 +30,7 @@
     "rimraf": "^6.1.0",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.20.6",
-    "@typescript/native-preview": "catalog:build"
+    "typescript": "catalog:build"
   },
   "dependencies": {
     "@yasumu/common": "workspace:*",

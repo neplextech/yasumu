@@ -2,6 +2,7 @@
   "extends": "@yasumu/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "paths": {
       "@/*": ["./src/*"]
     }

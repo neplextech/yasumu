@@ -7,10 +7,16 @@
     "verbatimModuleSyntax": true,
     "declaration": true,
     "module": "NodeNext",
-    "lib": ["ES2021", "DOM"],
+    "lib": [
+      "ES2021",
+      "DOM"
+    ],
     "inlineSourceMap": true,
     "pretty": true,
     "skipDefaultLibCheck": true
   },
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

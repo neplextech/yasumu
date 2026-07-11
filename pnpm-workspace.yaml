@@ -2,11 +2,20 @@ packages:
   - apps/*
   - packages/*
 
+allowBuilds:
+  '@parcel/watcher': set this to true or false
+  '@swc/core': set this to true or false
+  core-js: set this to true or false
+  core-js-pure: set this to true or false
+  esbuild: set this to true or false
+  msw: set this to true or false
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false
+
 catalogs:
   build:
     '@types/node': ^24.6.2
-    '@typescript/native-preview': ^7.0.0-dev.20260430.1
-    typescript: ^5.6
+    typescript: ^7.0.2
   react:
     '@types/react': ^19.2.14
     '@types/react-dom': ^19.2.3

@@ -1,6 +1,5 @@
 {
     "js/ts.tsdk.path": "node_modules/typescript/lib",
-    "js/ts.experimental.useTsgo": false,
     "deno.enablePaths": ["./apps/yasumu/src-tauri", "./packages/tanxium", "./packages/test"],
     "rust-analyzer.linkedProjects": ["apps/yasumu/src-tauri/Cargo.toml"],
     "rust-analyzer.diagnostics.disabled": [
@@ -8,5 +7,6 @@
     ],
     "cSpell.words": [
         "transletta",
-    ]
+    ],
+    "js/ts.experimental.useTsgo": false
 }

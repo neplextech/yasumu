@@ -3,10 +3,12 @@
   "compilerOptions": {
     "strict": true,
     "strictNullChecks": true,
+    "rootDir": "./src",
     "paths": {
       "@/*": ["./src/*"],
       "@yasumu/ui/*": ["../../packages/ui/src/*"]
     },
+    "types": ["node"],
     "plugins": [
       {
         "name": "next"

@@ -41,6 +41,6 @@
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.20.6",
-    "@typescript/native-preview": "catalog:build"
+    "typescript": "catalog:build"
   }
 }

@@ -21,7 +21,6 @@
   "devDependencies": {
     "@turbo/gen": "^2.9.7",
     "@types/nodemailer": "^8.0.0",
-    "@typescript/native-preview": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
     "nodemailer": "^8.0.7",
@@ -29,5 +28,5 @@
     "turbo": "^2.9.7",
     "typescript": "catalog:build"
   },
-  "packageManager": "pnpm@10.19.0"
+  "packageManager": "pnpm@11.11.0"
 }

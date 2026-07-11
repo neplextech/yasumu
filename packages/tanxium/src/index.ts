@@ -1,4 +1,4 @@
-/// <reference types="yasumu:types" />
+import './preflight.d.ts';
 
 // run migrations
 async function runMigrations() {
