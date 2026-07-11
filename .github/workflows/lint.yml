@@ -48,3 +48,30 @@ jobs:
         env:
           TURBO_TEAM: ${{ secrets.YASUMU_TURBO_TEAM }}
           TURBO_TOKEN: ${{ secrets.YASUMU_TURBO_TOKEN }}
+
+  cargo:
+    name: Cargo Check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./apps/yasumu/src-tauri -> target"
+          cache-on-failure: true
+          shared-key: yasumu-check
+
+      - name: Cargo check
+        run: cargo check
+        working-directory: ./apps/yasumu/src-tauri
