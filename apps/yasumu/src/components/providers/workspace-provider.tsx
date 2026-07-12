@@ -4,17 +4,17 @@ import { invoke } from '@tauri-apps/api/core';
 import { message } from '@tauri-apps/plugin-dialog';
 import { exit } from '@tauri-apps/plugin-process';
 import { Workspace, Yasumu, createYasumu } from '@yasumu/core';
-import { toast } from '@yasumu/ui/components/sonner';
-import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { useRouter, usePathname } from 'next/navigation';
-import React, { createContext, useContext, useEffect, useEffectEvent, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 import { createClient } from '@/lib/api/tanxium.api';
 import { trackEvent } from '@/lib/instrumentation/analytics';
 import { exponentialBackoff } from '@/lib/utils/exponential-backoff';
 
-import LoadingScreen from '../visuals/loading-screen';
+import LoadingScreen, { type RpcDiscoveryStatus } from '../visuals/loading-screen';
+
+const RPC_DISCOVERY_ATTEMPTS = 5;
 
 const WORKSPACE_SECTIONS = ['rest', 'graphql', 'socketio', 'websocket', 'sse', 'emails', 'environment'] as const;
 type WorkspaceSection = (typeof WORKSPACE_SECTIONS)[number];
@@ -91,6 +91,11 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
   const [client, setClient] = useState<ReturnType<typeof createClient> | null>(null);
   const [yasumu, setYasumu] = useState<Yasumu | null>(null);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [rpcDiscovery, setRpcDiscovery] = useState<RpcDiscoveryStatus>({
+    attempt: 1,
+    maxAttempts: RPC_DISCOVERY_ATTEMPTS,
+    phase: 'discovering' as const,
+  });
   const router = useRouter();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
@@ -101,7 +106,16 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
 
   const initializeYasumuEnvironment = async () => {
     let attempt: number;
-    for (attempt = 0; attempt < 5; attempt++) {
+    let lastError: string | undefined;
+
+    for (attempt = 0; attempt < RPC_DISCOVERY_ATTEMPTS; attempt++) {
+      setRpcDiscovery({
+        attempt: attempt + 1,
+        maxAttempts: RPC_DISCOVERY_ATTEMPTS,
+        phase: attempt === 0 ? 'discovering' : 'retrying',
+        lastError,
+      });
+
       try {
         const port = await invoke<number | null>('get_rpc_port');
         if (!port) throw new Error('Tanxium sent invalid port');
@@ -199,16 +213,34 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
 
         return;
       } catch (error) {
-        console.error(`[${attempt + 1}/5] Failed to discover the Tanxium server port:`, error);
+        console.error(`[${attempt + 1}/${RPC_DISCOVERY_ATTEMPTS}] Failed to discover the Tanxium server port:`, error);
+        lastError =
+          error instanceof Error ? error.message : 'The local Yasumu runtime has not exposed an RPC port yet.';
+
+        if (attempt === RPC_DISCOVERY_ATTEMPTS - 1) {
+          break;
+        }
+
+        const retryDelay = Math.pow(2, attempt) * 1000;
+        setRpcDiscovery({
+          attempt: attempt + 1,
+          maxAttempts: RPC_DISCOVERY_ATTEMPTS,
+          phase: 'retrying',
+          lastError,
+          retryAt: Date.now() + retryDelay,
+        });
       }
 
       await exponentialBackoff(attempt);
     }
 
-    await message(`Failed to discover the Yasumu RPC port after ${attempt} attempts`, {
-      kind: 'error',
-      title: 'Yasumu - Error',
-    });
+    await message(
+      `Failed to discover the Yasumu RPC port after ${Math.min(attempt + 1, RPC_DISCOVERY_ATTEMPTS)} attempts`,
+      {
+        kind: 'error',
+        title: 'Yasumu - Error',
+      },
+    );
 
     exit(1);
   };
@@ -218,7 +250,7 @@ export default function WorkspaceProvider({ children }: React.PropsWithChildren)
   }, []);
 
   if (!client || !port || !yasumu) {
-    return <LoadingScreen fullScreen message="Connecting to RPC server..." />;
+    return <LoadingScreen rpcDiscovery={rpcDiscovery} />;
   }
 
   return (

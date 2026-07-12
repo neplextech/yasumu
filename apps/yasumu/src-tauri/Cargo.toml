@@ -22,6 +22,7 @@ serde_json = "1"
 deno_core = "0.407.0"
 deno_fs = "0.164.0"
 deno_runtime = { version = "0.262.0", features = ["transpile", "snapshot"] }
+deno_snapshots = "0.69.0"
 deno_resolver = "0.85.0"
 deno_ast = { version = "0.53.2", features = ["transpiling"] }
 deno_error = "0.7.1"
@@ -54,6 +55,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 
 [patch.crates-io]
+cuid2 = { path = "vendor/cuid2" }
 gpu-allocator = { path = "vendor/gpu-allocator" }
 
 [profile.release]

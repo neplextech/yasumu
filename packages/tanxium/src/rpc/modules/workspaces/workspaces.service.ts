@@ -165,7 +165,9 @@ export class WorkspacesService implements OnModuleInit {
     });
 
     console.log(`Workspace ${id} activated`);
-    await this.eventBus.publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'activated'));
+    void this.eventBus.publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'activated')).catch((e) => {
+      console.error('Failed to handle workspace activation event', id, e);
+    });
   }
 
   public async deactivate(id: string) {
@@ -183,6 +185,8 @@ export class WorkspacesService implements OnModuleInit {
     });
 
     console.log(`Workspace ${id} deactivated`);
-    await this.eventBus.publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'deactivated'));
+    void this.eventBus.publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'deactivated')).catch((e) => {
+      console.error('Failed to handle workspace deactivation event', id, e);
+    });
   }
 }

@@ -9,7 +9,6 @@ use crate::tanxium::version::{DENO_VERSION, YASUMU_VERSION};
 use deno_resolver::npm::{DenoInNpmPackageChecker, NpmResolver};
 use deno_runtime::UNSTABLE_FEATURES;
 use deno_runtime::colors;
-use deno_runtime::deno_web::InMemoryBroadcastChannel;
 use deno_runtime::deno_core::{
     CompiledWasmModuleStore, ModuleSpecifier, SharedArrayBufferStore, error::AnyError,
 };
@@ -18,6 +17,7 @@ use deno_runtime::deno_io::Stdio;
 use deno_runtime::deno_node::NodeResolver;
 use deno_runtime::deno_permissions::{Permissions, PermissionsContainer};
 use deno_runtime::deno_web::BlobStore;
+use deno_runtime::deno_web::InMemoryBroadcastChannel;
 use deno_runtime::ops::worker_host::CreateWebWorkerCb;
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use deno_runtime::web_worker::{WebWorker, WebWorkerOptions, WebWorkerServiceOptions};
@@ -102,13 +102,10 @@ impl WorkerSharedState {
 
             let permission_desc_parser =
                 Arc::new(RuntimePermissionDescriptorParser::<RealSys>::new(RealSys));
-            let permissions = PermissionsContainer::new(
-                permission_desc_parser,
-                Permissions::none_with_prompt(),
-            );
+            let permissions =
+                PermissionsContainer::new(permission_desc_parser, Permissions::none_with_prompt());
 
-            let create_web_worker_cb =
-                shared.create_web_worker_callback(stdio.clone(), false);
+            let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone(), false);
 
             let node_require_loader = Rc::new(node_services::TanxiumNodeRequireLoader::new(
                 shared.workspace_dir.as_deref(),
@@ -121,33 +118,30 @@ impl WorkerSharedState {
 
             let user_agent = format!("Yasumu/{}", YASUMU_VERSION);
 
-            let services = WebWorkerServiceOptions::<
-                DenoInNpmPackageChecker,
-                NpmResolver<RealSys>,
-                RealSys,
-            > {
-                deno_rt_native_addon_loader: Default::default(),
-                root_cert_store_provider: Default::default(),
-                module_loader,
-                fs: shared.fs.clone(),
-                node_services,
-                blob_store: shared.blob_store.clone(),
-                broadcast_channel: shared.broadcast_channel.clone(),
-                shared_array_buffer_store: Some(shared.shared_array_buffer_store.clone()),
-                compiled_wasm_module_store: Some(shared.compiled_wasm_module_store.clone()),
-                main_inspector_session_tx: Default::default(),
-                feature_checker: build_feature_checker(),
-                npm_process_state_provider: Default::default(),
-                permissions,
-                bundle_provider: None,
-            };
+            let services =
+                WebWorkerServiceOptions::<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys> {
+                    deno_rt_native_addon_loader: Default::default(),
+                    root_cert_store_provider: Default::default(),
+                    module_loader,
+                    fs: shared.fs.clone(),
+                    node_services,
+                    blob_store: shared.blob_store.clone(),
+                    broadcast_channel: shared.broadcast_channel.clone(),
+                    shared_array_buffer_store: Some(shared.shared_array_buffer_store.clone()),
+                    compiled_wasm_module_store: Some(shared.compiled_wasm_module_store.clone()),
+                    main_inspector_session_tx: Default::default(),
+                    feature_checker: build_feature_checker(),
+                    npm_process_state_provider: Default::default(),
+                    permissions,
+                    bundle_provider: None,
+                };
 
             let options = WebWorkerOptions {
                 name: args.name,
                 main_module: args.main_module.clone(),
                 worker_id: args.worker_id,
-                residual_lazy_js_sources: &[],
-                residual_lazy_esm_sources: &[],
+                residual_lazy_js_sources: deno_snapshots::RESIDUAL_LAZY_JS,
+                residual_lazy_esm_sources: deno_snapshots::RESIDUAL_LAZY_ESM,
                 maybe_main_module_blob: None,
                 maybe_cpu_prof_config: None,
                 wait_for_debugger_on_start: false,
@@ -168,7 +162,7 @@ impl WorkerSharedState {
                     inspect: false,
                     is_standalone: false,
                     auto_serve: false,
-                    has_node_modules_dir: false,
+                    has_node_modules_dir: true,
                     argv0: None,
                     node_debug: None,
                     node_cluster_unique_id: None,
@@ -180,10 +174,10 @@ impl WorkerSharedState {
                     otel_config: Default::default(),
                     no_legacy_abort: false,
                     close_on_idle: args.close_on_idle,
-                    disable_offscreen_canvas: false,
+                    disable_offscreen_canvas: true,
                 },
                 extensions: vec![tanxium_rt::init()],
-                startup_snapshot: None,
+                startup_snapshot: deno_snapshots::CLI_SNAPSHOT,
                 create_params: None,
                 unsafely_ignore_certificate_errors: None,
                 seed: None,
@@ -225,8 +219,7 @@ async fn initialize_worker(
     let source_maps = Rc::new(RefCell::new(HashMap::new()));
     let user_agent = format!("Yasumu/{}", YASUMU_VERSION);
 
-    let permissions =
-        PermissionsContainer::new(permission_desc_parser, Permissions::allow_all());
+    let permissions = PermissionsContainer::new(permission_desc_parser, Permissions::allow_all());
 
     let stdio = Stdio::default();
     let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone(), true);
@@ -268,6 +261,9 @@ async fn initialize_worker(
         },
         WorkerOptions {
             extensions: vec![tanxium_rt::init()],
+            startup_snapshot: deno_snapshots::CLI_SNAPSHOT,
+            residual_lazy_js_sources: deno_snapshots::RESIDUAL_LAZY_JS,
+            residual_lazy_esm_sources: deno_snapshots::RESIDUAL_LAZY_ESM,
             bootstrap: BootstrapOptions {
                 deno_version: DENO_VERSION.to_string(),
                 user_agent,
@@ -420,10 +416,7 @@ pub fn create_and_start_worker(
                                     );
                                     app_handle
                                         .dialog()
-                                        .message(format!(
-                                            "JavaScript runtime crashed:\n\n{}",
-                                            msg
-                                        ))
+                                        .message(format!("JavaScript runtime crashed:\n\n{}", msg))
                                         .kind(MessageDialogKind::Error)
                                         .title("JavaScript runtime crashed unexpectedly")
                                         .blocking_show();

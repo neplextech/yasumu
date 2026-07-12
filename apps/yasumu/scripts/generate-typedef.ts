@@ -39,10 +39,12 @@ const EXT_STUBS = new Map<string, string>([
       'export declare function op_is_yasumu_dev_mode(): boolean;',
       'export declare function op_get_rpc_port(): number;',
       'export declare function op_unregister_all_virtual_modules(): void;',
+      'export declare function op_set_workspace_dir(path: string | null): void;',
+      'export declare function op_get_workspace_dir(): string | null;',
     ].join('\n'),
   ],
   [
-    'ext:deno_console/01_console.js',
+    'ext:deno_web/01_console.js',
     // Minimal Console that satisfies globalThis.console assignment in patches.ts
     `export declare class Console implements globalThis.Console {
   constructor(fn: (msg: string, level: number) => void);
