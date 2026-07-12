@@ -1,27 +1,33 @@
 use crate::tanxium::types::PermissionsResponse;
 use crossbeam_channel::{Receiver, Sender};
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Mutex;
-use std::thread;
+use std::sync::{LazyLock, Mutex};
 use tokio::sync::mpsc;
 
-pub static PERMISSION_CHANNELS: Lazy<
-    Mutex<HashMap<thread::ThreadId, Sender<PermissionsResponse>>>,
-> = Lazy::new(|| Mutex::new(HashMap::new()));
+/// Holds the two ends of a permission prompt channel for a single worker thread.
+pub struct PermissionChannelPair {
+    pub sender: Sender<PermissionsResponse>,
+    pub receiver: Receiver<PermissionsResponse>,
+}
 
-pub static RECEIVER_MAP: Lazy<Mutex<HashMap<thread::ThreadId, Receiver<PermissionsResponse>>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+/// Maps worker thread tokens (u64) to their permission channel pairs.
+pub static PERMISSION_CHANNELS: LazyLock<Mutex<HashMap<u64, PermissionChannelPair>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
-pub static RENDERER_EVENT_SENDER: Lazy<Mutex<Option<tokio::sync::mpsc::UnboundedSender<String>>>> =
-    Lazy::new(|| Mutex::new(None));
+pub static RENDERER_EVENT_SENDER: LazyLock<Mutex<Option<mpsc::UnboundedSender<String>>>> =
+    LazyLock::new(|| Mutex::new(None));
 
-pub fn init_renderer_event_channel() -> tokio::sync::mpsc::UnboundedReceiver<String> {
+pub fn init_renderer_event_channel() -> mpsc::UnboundedReceiver<String> {
     let (tx, rx) = mpsc::unbounded_channel();
-    *RENDERER_EVENT_SENDER.lock().unwrap() = Some(tx);
+    *RENDERER_EVENT_SENDER
+        .lock()
+        .expect("renderer event sender lock poisoned") = Some(tx);
     rx
 }
 
-pub fn get_renderer_event_sender() -> Option<tokio::sync::mpsc::UnboundedSender<String>> {
-    RENDERER_EVENT_SENDER.lock().unwrap().clone()
+pub fn get_renderer_event_sender() -> Option<mpsc::UnboundedSender<String>> {
+    RENDERER_EVENT_SENDER
+        .lock()
+        .expect("renderer event sender lock poisoned")
+        .clone()
 }

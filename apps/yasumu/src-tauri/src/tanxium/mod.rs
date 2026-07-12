@@ -1,6 +1,3 @@
-#![allow(clippy::print_stdout)]
-#![allow(clippy::print_stderr)]
-
 mod module_loader;
 mod node_services;
 mod ops;

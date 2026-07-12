@@ -34,8 +34,8 @@ jobs:
           - platform: windows-2022
             args: ''
 
-          - platform: windows-2022
-            args: --target aarch64-pc-windows-msvc
+          - platform: windows-11-arm
+            args: ''
 
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 120

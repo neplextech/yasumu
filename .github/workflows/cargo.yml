@@ -24,38 +24,100 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  cargo:
-    name: Cargo Check
+  bundle-test:
+    name: Bundle @yasumu/test
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - name: Install Deno
         uses: denoland/setup-deno@v1
         with:
           deno-version: 2.9.2
 
+      - name: Bundle @yasumu/test
+        run: deno run --unstable-bundle --allow-read --allow-write scripts/build.ts
+        working-directory: ./packages/test
+
+      - name: Upload @yasumu/test bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: yasumu-test-bundle
+          path: apps/yasumu/src-tauri/resources/yasumu-scripts/public-modules/yasumu__test
+          if-no-files-found: error
+
+  cargo:
+    name: Cargo Check (${{ matrix.name }})
+    needs: bundle-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS ARM
+            platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust-target: aarch64-apple-darwin
+          - name: macOS x64
+            platform: macos-latest
+            args: --target x86_64-apple-darwin
+            rust-target: x86_64-apple-darwin
+          - name: Linux x64
+            platform: ubuntu-22.04
+            args: ''
+            rust-target: ''
+          - name: Linux ARM
+            platform: ubuntu-22.04-arm
+            args: ''
+            rust-target: ''
+          - name: Windows x64
+            platform: windows-2022
+            args: ''
+            rust-target: ''
+          - name: Windows ARM
+            platform: windows-11-arm
+            args: ''
+            rust-target: ''
+
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Ubuntu dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install NASM
+        if: runner.os == 'Windows'
+        uses: ilammy/setup-nasm@v1
+
+      - name: Setup MSVC developer environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './apps/yasumu/src-tauri -> target'
           cache-on-failure: true
-          shared-key: yasumu-check
+          shared-key: yasumu-check-${{ matrix.name }}
 
-      - name: Bundle @yasumu/test
-        run: deno run --unstable-bundle --allow-read --allow-write scripts/build.ts
-        working-directory: ./packages/test
+      - name: Download @yasumu/test bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: yasumu-test-bundle
+          path: apps/yasumu/src-tauri/resources/yasumu-scripts/public-modules/yasumu__test
 
       - name: Cargo check
-        run: cargo check
+        run: cargo check ${{ matrix.args }}
         working-directory: ./apps/yasumu/src-tauri

@@ -1,133 +1,118 @@
-use crate::YasumuInternalState;
+use crate::state::YasumuInternalState;
 use crate::tanxium::state::get_renderer_event_sender;
 use crate::tanxium::types::AppHandleState;
 use cuid2::cuid;
-use deno_core::OpState;
-use deno_core::op2;
-use std::sync::Mutex;
-use tauri::Emitter;
-use tauri::Manager;
-use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_dialog::MessageDialogButtons;
-use tauri_plugin_dialog::MessageDialogKind;
+use deno_core::{op2, OpState};
+use std::sync::RwLock;
+use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use tracing::error;
+
+#[inline]
+fn get_app_handle(state: &OpState) -> AppHandle {
+    state.borrow::<AppHandleState>().app_handle.clone()
+}
 
 #[op2(fast)]
 fn op_send_renderer_event(state: &mut OpState, #[string] event: &str) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    app_handle.emit("tanxium-event", event).unwrap();
+    let app_handle = get_app_handle(state);
+    if let Err(e) = app_handle.emit("tanxium-event", event) {
+        error!("Failed to emit tanxium-event: {}", e);
+    }
 }
 
 #[op2(fast)]
 fn op_register_virtual_module(state: &mut OpState, #[string] key: &str, #[string] code: &str) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
+    let app_handle = get_app_handle(state);
+    let virtual_modules = {
+        let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+        let guard = app_state.read().expect("state lock poisoned");
+        guard.virtual_modules.clone()
     };
-    let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let guard = yasumu_state.lock().unwrap();
-    let mut virtual_modules = guard.virtual_modules.lock().unwrap();
-    virtual_modules.insert(key.to_string(), code.to_string());
+    virtual_modules
+        .lock()
+        .expect("virtual modules lock poisoned")
+        .insert(key.to_string(), code.to_string());
 }
 
 #[op2(fast)]
 fn op_unregister_virtual_module(state: &mut OpState, #[string] key: &str) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
+    let app_handle = get_app_handle(state);
+    let virtual_modules = {
+        let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+        let guard = app_state.read().expect("state lock poisoned");
+        guard.virtual_modules.clone()
     };
-    let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let guard = yasumu_state.lock().unwrap();
-    let mut virtual_modules = guard.virtual_modules.lock().unwrap();
-    virtual_modules.remove(key);
+    virtual_modules
+        .lock()
+        .expect("virtual modules lock poisoned")
+        .remove(key);
 }
 
 #[op2(fast)]
 fn op_unregister_all_virtual_modules(state: &mut OpState) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
+    let app_handle = get_app_handle(state);
+    let virtual_modules = {
+        let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+        let guard = app_state.read().expect("state lock poisoned");
+        guard.virtual_modules.clone()
     };
-    let yasumu_state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let guard = yasumu_state.lock().unwrap();
-    let mut virtual_modules = guard.virtual_modules.lock().unwrap();
-    virtual_modules.clear();
+    virtual_modules
+        .lock()
+        .expect("virtual modules lock poisoned")
+        .clear();
 }
 
 #[op2]
 #[string]
 fn op_get_resources_dir(state: &mut OpState) -> String {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let path_str = app_handle.path().resource_dir().unwrap();
-    let path_str = path_str.as_path().to_str();
-
-    if path_str.is_none() {
-        eprintln!("Failed to get resources directory");
-        return "".to_string();
+    let app_handle = get_app_handle(state);
+    match app_handle.path().resource_dir() {
+        Ok(path) => path.to_string_lossy().into_owned(),
+        Err(e) => {
+            error!("Failed to get resource directory: {}", e);
+            String::new()
+        }
     }
-
-    path_str.unwrap().to_string()
 }
 
 #[op2(fast)]
 fn op_set_rpc_port(state: &mut OpState, port: u16) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let mut yasumu_state = state.lock().unwrap();
-
-    // only set the RPC port if it is not already set
-    // this is to prevent the RPC port from being set multiple times
-    if yasumu_state.rpc_port.is_none() {
-        yasumu_state.rpc_port = Some(port);
+    let app_handle = get_app_handle(state);
+    let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+    let mut guard = app_state.write().expect("state lock poisoned");
+    if guard.rpc_port.is_none() {
+        guard.rpc_port = Some(port);
     }
 }
 
 #[op2]
 fn op_get_rpc_port(state: &mut OpState) -> Option<u16> {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let yasumu_state = state.lock().unwrap();
-    yasumu_state.rpc_port
+    let app_handle = get_app_handle(state);
+    app_handle
+        .state::<RwLock<YasumuInternalState>>()
+        .read()
+        .expect("state lock poisoned")
+        .rpc_port
 }
 
 #[op2(fast)]
 fn op_set_echo_server_port(state: &mut OpState, port: u16) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let mut yasumu_state = state.lock().unwrap();
-
-    // only set the echo server port if it is not already set
-    // this is to prevent the echo server port from being set multiple times
-    if yasumu_state.echo_server_port.is_none() {
-        yasumu_state.echo_server_port = Some(port);
+    let app_handle = get_app_handle(state);
+    let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+    let mut guard = app_state.write().expect("state lock poisoned");
+    if guard.echo_server_port.is_none() {
+        guard.echo_server_port = Some(port);
     }
 }
 
 #[op2(fast)]
 fn op_set_mcp_server_port(state: &mut OpState, port: u16) {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let mut yasumu_state = state.lock().unwrap();
-
-    if yasumu_state.mcp_server_port.is_none() {
-        yasumu_state.mcp_server_port = Some(port);
+    let app_handle = get_app_handle(state);
+    let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+    let mut guard = app_state.write().expect("state lock poisoned");
+    if guard.mcp_server_port.is_none() {
+        guard.mcp_server_port = Some(port);
     }
 }
 
@@ -139,30 +124,25 @@ fn op_generate_cuid() -> String {
 
 #[op2(fast)]
 fn op_is_yasumu_ready(state: &mut OpState) -> bool {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let state = app_handle.state::<Mutex<YasumuInternalState>>();
-    let yasumu_state = state.lock().unwrap();
-    yasumu_state.ready
+    let app_handle = get_app_handle(state);
+    app_handle
+        .state::<RwLock<YasumuInternalState>>()
+        .read()
+        .expect("state lock poisoned")
+        .ready
 }
 
 #[op2]
 #[string]
 fn op_get_yasumu_version(state: &mut OpState) -> String {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    app_handle.package_info().version.to_string()
+    get_app_handle(state).package_info().version.to_string()
 }
 
 pub fn invoke_renderer_event_callback(event: &str) {
     if let Some(sender) = get_renderer_event_sender() {
         let _ = sender.send(event.to_string());
     } else {
-        eprintln!("No renderer event sender available");
+        error!("No renderer event sender available");
     }
 }
 
@@ -171,22 +151,43 @@ fn op_is_yasumu_dev_mode() -> bool {
     tauri::is_dev()
 }
 
+#[op2(fast)]
+fn op_set_workspace_dir(state: &mut OpState, #[string] path: &str) {
+    use std::path::PathBuf;
+    let app_handle = get_app_handle(state);
+    let app_state = app_handle.state::<RwLock<YasumuInternalState>>();
+    let mut guard = app_state.write().expect("state lock poisoned");
+    guard.workspace_dir = if path.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(path))
+    };
+}
+
+#[op2]
+#[string]
+fn op_get_workspace_dir(state: &mut OpState) -> Option<String> {
+    let app_handle = get_app_handle(state);
+    app_handle
+        .state::<RwLock<YasumuInternalState>>()
+        .read()
+        .expect("state lock poisoned")
+        .workspace_dir
+        .as_ref()
+        .map(|p| p.to_string_lossy().into_owned())
+}
+
 #[op2]
 #[string]
 fn op_get_app_data_dir(state: &mut OpState) -> String {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-    let path = app_handle.path().app_data_dir().unwrap();
-    let path_str = path.as_path().to_str();
-
-    if path_str.is_none() {
-        eprintln!("Failed to get app data directory");
-        return "".to_string();
+    let app_handle = get_app_handle(state);
+    match app_handle.path().app_data_dir() {
+        Ok(path) => path.to_string_lossy().into_owned(),
+        Err(e) => {
+            error!("Failed to get app data directory: {}", e);
+            String::new()
+        }
     }
-
-    path_str.unwrap().to_string()
 }
 
 #[op2(fast)]
@@ -198,12 +199,7 @@ fn op_show_confirmation_dialog_sync(
     #[string] no_label: &str,
     #[string] cancel_label: &str,
 ) -> bool {
-    let app_handle = {
-        let app_handle_state = state.borrow::<AppHandleState>();
-        app_handle_state.app_handle.clone()
-    };
-
-    let result = app_handle
+    get_app_handle(state)
         .dialog()
         .message(message)
         .kind(MessageDialogKind::Info)
@@ -213,9 +209,7 @@ fn op_show_confirmation_dialog_sync(
             no_label.to_string(),
             cancel_label.to_string(),
         ))
-        .blocking_show();
-
-    result
+        .blocking_show()
 }
 
 deno_core::extension!(
@@ -236,6 +230,8 @@ deno_core::extension!(
         op_get_rpc_port,
         op_unregister_all_virtual_modules,
         op_show_confirmation_dialog_sync,
+        op_set_workspace_dir,
+        op_get_workspace_dir,
     ],
     esm_entry_point = "ext:tanxium_rt/bootstrap.ts",
     esm = [
@@ -254,6 +250,6 @@ deno_core::extension!(
         state.put::<deno_runtime::ops::bootstrap::SnapshotOptions>(
             deno_runtime::ops::bootstrap::SnapshotOptions::default(),
         );
-        state.put::<sys_traits::impls::RealSys>(sys_traits::impls::RealSys::default());
+        state.put::<sys_traits::impls::RealSys>(sys_traits::impls::RealSys);
     },
 );

@@ -1,46 +1,60 @@
-use crate::tanxium::state::{PERMISSION_CHANNELS, RECEIVER_MAP};
+use crate::tanxium::state::{PERMISSION_CHANNELS, PermissionChannelPair};
 use crate::tanxium::types::{PermissionPrompt, PermissionsResponse};
 use crossbeam_channel::unbounded;
-use deno_runtime::deno_permissions::prompter::PermissionPrompter;
-use deno_runtime::deno_permissions::prompter::PromptResponse;
-use deno_runtime::deno_permissions::prompter::set_prompter;
+use deno_runtime::deno_permissions::prompter::{
+    PermissionPrompter, PromptResponse, set_prompter,
+};
 use serde_json::json;
-use std::thread;
+use std::cell::Cell;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::OnceLock;
 use tauri::{AppHandle, Emitter};
+use tracing::{debug, error, warn};
 
-static APP_HANDLE: once_cell::sync::Lazy<std::sync::Mutex<Option<AppHandle>>> =
-    once_cell::sync::Lazy::new(|| std::sync::Mutex::new(None));
+static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
-pub fn set_app_handle(app_handle: AppHandle) {
-    *APP_HANDLE.lock().unwrap() = Some(app_handle);
+static NEXT_THREAD_TOKEN: AtomicU64 = AtomicU64::new(1);
+
+thread_local! {
+    static THREAD_TOKEN: Cell<u64> = const { Cell::new(0) };
 }
 
-pub struct CustomPrompter;
-
-pub fn setup_permission_channel(thread_id: thread::ThreadId) {
-    let (tx, rx) = unbounded();
-    PERMISSION_CHANNELS.lock().unwrap().insert(thread_id, tx);
-    RECEIVER_MAP.lock().unwrap().insert(thread_id, rx);
+/// Returns a stable numeric token for the current thread, assigning one on first call.
+fn current_thread_token() -> u64 {
+    THREAD_TOKEN.with(|cell| {
+        let val = cell.get();
+        if val != 0 {
+            return val;
+        }
+        let token = NEXT_THREAD_TOKEN.fetch_add(1, Ordering::Relaxed);
+        cell.set(token);
+        token
+    })
 }
 
-pub fn cleanup_permission_channel(thread_id: &thread::ThreadId) {
-    PERMISSION_CHANNELS.lock().unwrap().remove(thread_id);
-    RECEIVER_MAP.lock().unwrap().remove(thread_id);
+pub fn set_app_handle(handle: AppHandle) {
+    APP_HANDLE
+        .set(handle)
+        .unwrap_or_else(|_| error!("App handle was already set"));
 }
 
-pub fn cleanup_dead_channels() {
-    let mut channels = PERMISSION_CHANNELS.lock().unwrap();
-    let receivers = RECEIVER_MAP.lock().unwrap();
+/// Registers a permission channel for the current thread.
+pub fn setup_permission_channel() {
+    let token = current_thread_token();
+    let (sender, receiver) = unbounded();
+    PERMISSION_CHANNELS
+        .lock()
+        .expect("permission channels lock poisoned")
+        .insert(token, PermissionChannelPair { sender, receiver });
+}
 
-    let to_remove: Vec<_> = channels
-        .keys()
-        .filter(|thread_id| !receivers.contains_key(thread_id))
-        .copied()
-        .collect();
-
-    for thread_id in to_remove {
-        channels.remove(&thread_id);
-    }
+/// Removes the permission channel for the current thread.
+pub fn cleanup_permission_channel() {
+    let token = current_thread_token();
+    PERMISSION_CHANNELS
+        .lock()
+        .expect("permission channels lock poisoned")
+        .remove(&token);
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -49,6 +63,8 @@ struct PermissionPromptEvent {
     thread_id: String,
     prompt: PermissionPrompt,
 }
+
+pub struct CustomPrompter;
 
 impl PermissionPrompter for CustomPrompter {
     fn prompt(
@@ -59,128 +75,112 @@ impl PermissionPrompter for CustomPrompter {
         is_unary: bool,
         get_stack: Option<Box<dyn Fn() -> Vec<String> + Send + Sync + 'static>>,
     ) -> PromptResponse {
-        const MAX_PERMISSION_PROMPT_LENGTH: usize = 10 * 1024;
+        const MAX_PROMPT_LEN: usize = 10 * 1024;
 
-        if message.len() > MAX_PERMISSION_PROMPT_LENGTH {
-            let notification = json!({
-                "type": "show-notification",
-                "payload": {
-                    "title": "Permission Prompt Rejected",
-                    "message": format!(
-                        "Permission prompt length ({} bytes) was larger than the configured maximum length ({} bytes): denying request.\n\nWARNING: This may indicate that code is trying to bypass or hide permission check requests.",
-                        message.len(),
-                        MAX_PERMISSION_PROMPT_LENGTH
-                    ),
-                    "variant": "warning"
-                }
-            });
-
-            if let Some(app_handle) = APP_HANDLE.lock().unwrap().as_ref() {
-                if let Ok(json_string) = serde_json::to_string(&notification) {
-                    let _ = app_handle.emit("tanxium-event", json_string);
+        if message.len() > MAX_PROMPT_LEN {
+            warn!(
+                "Permission prompt rejected: length {} exceeds max {}",
+                message.len(),
+                MAX_PROMPT_LEN
+            );
+            if let Some(handle) = APP_HANDLE.get() {
+                let notification = json!({
+                    "type": "show-notification",
+                    "payload": {
+                        "title": "Permission Prompt Rejected",
+                        "message": format!(
+                            "Prompt length ({} bytes) exceeds the maximum ({} bytes): request denied.\n\nThis may indicate an attempt to hide or bypass permission checks.",
+                            message.len(),
+                            MAX_PROMPT_LEN
+                        ),
+                        "variant": "warning"
+                    }
+                });
+                if let Ok(s) = serde_json::to_string(&notification) {
+                    let _ = handle.emit("tanxium-event", s);
                 }
             }
-
             return PromptResponse::Deny;
         }
 
-        let thread_id = thread::current().id();
-        let thread_id_str = format!("{:?}", thread_id);
+        let token = current_thread_token();
+        let token_str = token.to_string();
         let custom_id = uuid::Uuid::new_v4().to_string();
         let stack = get_stack.map(|f| f()).unwrap_or_default();
 
         let prompt = PermissionPrompt {
             message: message.to_string(),
             name: name.to_string(),
-            api_name: api_name.map(|s| s.to_string()),
+            api_name: api_name.map(str::to_owned),
             is_unary,
             response: None,
             stack,
         };
 
-        println!("Prompting for permission: {:?}", prompt);
+        debug!(token, name, "Permission prompt requested");
 
         let receiver = {
-            let receiver_map = RECEIVER_MAP.lock().unwrap();
-            receiver_map.get(&thread_id).cloned()
+            let guard = PERMISSION_CHANNELS
+                .lock()
+                .expect("permission channels lock poisoned");
+            guard.get(&token).map(|pair| pair.receiver.clone())
         };
 
-        if let Some(receiver) = receiver {
-            if let Some(app_handle) = APP_HANDLE.lock().unwrap().as_ref() {
-                app_handle
-                    .emit(
-                        "permission-prompt",
-                        PermissionPromptEvent {
-                            thread_id: thread_id_str.clone(),
-                            prompt: prompt.clone(),
-                            custom_id: custom_id.clone(),
-                        },
-                    )
-                    .unwrap_or_else(|e| {
-                        println!("Failed to emit permission prompt: {}", e);
-                    });
-            }
+        let Some(receiver) = receiver else {
+            warn!(token, "No permission channel registered for this thread");
+            return PromptResponse::Deny;
+        };
 
-            match receiver.recv() {
-                Ok(response) => response.to_prompt_response(),
-                Err(_) => {
-                    cleanup_permission_channel(&thread_id);
-                    PromptResponse::Deny
-                }
+        if let Some(handle) = APP_HANDLE.get() {
+            handle
+                .emit(
+                    "permission-prompt",
+                    PermissionPromptEvent {
+                        thread_id: token_str,
+                        custom_id,
+                        prompt,
+                    },
+                )
+                .unwrap_or_else(|e| warn!("Failed to emit permission prompt: {}", e));
+        }
+
+        match receiver.recv() {
+            Ok(response) => response.to_prompt_response(),
+            Err(_) => {
+                cleanup_permission_channel();
+                PromptResponse::Deny
             }
-        } else {
-            cleanup_dead_channels();
-            PromptResponse::Deny
         }
     }
 }
 
-pub fn respond_to_permission_prompt(thread_id_str: &str, response: PermissionsResponse) {
-    let thread_id = parse_thread_id(thread_id_str);
+pub fn respond_to_permission_prompt(token_str: &str, response: PermissionsResponse) {
+    let Ok(token) = token_str.parse::<u64>() else {
+        warn!("Failed to parse thread token: {}", token_str);
+        return;
+    };
 
-    if let Some(thread_id) = thread_id {
-        let mut channels = PERMISSION_CHANNELS.lock().unwrap();
-        if let Some(tx) = channels.get(&thread_id).cloned() {
-            match tx.try_send(response.clone()) {
-                Ok(()) => {}
-                Err(crossbeam_channel::TrySendError::Disconnected(_)) => {
-                    channels.remove(&thread_id);
-                    RECEIVER_MAP.lock().unwrap().remove(&thread_id);
-                }
-                Err(crossbeam_channel::TrySendError::Full(_)) => {
-                    let _ = tx.send(response);
-                }
-            }
-        } else {
-            cleanup_dead_channels();
-            println!(
-                "No permission channel found for thread_id: {}",
-                thread_id_str
-            );
-        }
-    } else {
-        println!("Failed to parse thread_id: {}", thread_id_str);
+    let sender = {
+        let guard = PERMISSION_CHANNELS
+            .lock()
+            .expect("permission channels lock poisoned");
+        guard.get(&token).map(|pair| pair.sender.clone())
+    };
+
+    let Some(sender) = sender else {
+        warn!(token, "No permission channel found for token");
+        return;
+    };
+
+    if let Err(crossbeam_channel::SendError(_)) = sender.send(response) {
+        PERMISSION_CHANNELS
+            .lock()
+            .expect("permission channels lock poisoned")
+            .remove(&token);
     }
-}
-
-fn parse_thread_id(thread_id_str: &str) -> Option<thread::ThreadId> {
-    let thread_id_str = thread_id_str.trim();
-
-    if thread_id_str.starts_with("ThreadId(") && thread_id_str.ends_with(")") {
-        let inner = &thread_id_str[9..thread_id_str.len() - 1];
-        if let Ok(val) = inner.parse::<u64>() {
-            unsafe {
-                return Some(std::mem::transmute::<u64, thread::ThreadId>(val));
-            }
-        }
-    }
-
-    None
 }
 
 pub fn initialize_prompter() {
-    static PROMPTER_SET: std::sync::Once = std::sync::Once::new();
-    PROMPTER_SET.call_once(|| {
-        set_prompter(Box::new(CustomPrompter));
-    });
+    static INIT: std::sync::Once = std::sync::Once::new();
+    INIT.call_once(|| set_prompter(Box::new(CustomPrompter)));
 }
