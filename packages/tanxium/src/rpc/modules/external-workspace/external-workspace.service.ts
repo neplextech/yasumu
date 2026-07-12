@@ -4,17 +4,17 @@ import {
   ExternalWorkspaceImportStrategy,
 } from '@yasumu/common';
 import { Injectable } from '@yasumu/den';
+import type {
+  ExternalWorkspaceStrategy,
+  YasumuWorkspaceFormat,
+  YasumuWorkspaceFormatEntityGroup,
+} from '@yasumu/workspace-importer';
+import { PostmanWorkspaceStrategy } from '@yasumu/workspace-importer';
 import { eq } from 'drizzle-orm';
 
 import { workspaces, entityGroups, restEntities, environments } from '../../../database/schema.ts';
 import { NotFoundException, NotImplementedException } from '../common/exceptions/http.exception.ts';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { ExternalWorkspaceStrategy } from './strategies/common/external-workspace-strategy.ts';
-import {
-  YasumuWorkspaceFormat,
-  YasumuWorkspaceFormatEntityGroup,
-} from './strategies/common/yasumu-workspace-format.ts';
-import { PostmanWorkspaceStrategy } from './strategies/postman/postman-workspace-strategy.ts';
 
 @Injectable()
 export class ExternalWorkspaceService {

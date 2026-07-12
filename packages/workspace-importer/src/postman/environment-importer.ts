@@ -1,0 +1,38 @@
+import type { TabularPair } from '@yasumu/common';
+
+import type { YasumuWorkspaceFormat } from '../common/yasumu-workspace-format.js';
+import type { PostmanEnvironment } from './types.js';
+
+export class PostmanEnvironmentImporter {
+  public importEnvironment(env: PostmanEnvironment): YasumuWorkspaceFormat {
+    const variables: TabularPair[] = [];
+    const secrets: TabularPair[] = [];
+
+    for (const val of env.values) {
+      const pair: TabularPair = {
+        key: val.key,
+        value: val.value ?? '',
+        enabled: val.enabled !== false,
+      };
+
+      if (val.type === 'secret') {
+        secrets.push(pair);
+      } else {
+        variables.push(pair);
+      }
+    }
+
+    return {
+      environments: [
+        {
+          id: Yasumu.cuid(),
+          name: env.name || 'Imported Environment',
+          variables,
+          secrets,
+        },
+      ],
+      rest: [],
+      entityGroups: [],
+    };
+  }
+}

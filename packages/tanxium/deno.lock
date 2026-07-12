@@ -788,8 +788,15 @@
           "npm:reflect-metadata@~0.2.2"
         ]
       },
+      "npm:@yasumu/echo-server@0.0.0": {
+        "dependencies": [
+          "npm:hono@^4.12.16"
+        ]
+      },
       "npm:@yasumu/rpc@0.0.0": {},
-      "npm:@yasumu/schema@0.0.2": {}
+      "npm:@yasumu/schema@0.0.2": {},
+      "npm:@yasumu/sync@0.0.0": {},
+      "npm:@yasumu/workspace-importer@0.0.0": {}
     }
   }
 }
