@@ -89,7 +89,7 @@ jobs:
       - name: Install NASM
         if: runner.os == 'Windows'
         uses: ilammy/setup-nasm@v1
-        
+
       - name: Setup MSVC developer environment
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
