@@ -1,5 +1,7 @@
 /// <reference types="./internal.d.ts" />
-import { Console } from 'ext:deno_console/01_console.js';
+import { core } from 'ext:core/mod.js';
+
+const { Console } = core.loadExtScript('ext:deno_web/01_console.js');
 
 import { consoleEventQueue } from './utils.ts';
 

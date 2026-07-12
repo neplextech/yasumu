@@ -2,7 +2,7 @@
 import './patches.ts';
 import { join } from 'node:path';
 
-import {
+const {
   op_get_resources_dir,
   op_get_app_data_dir,
   op_set_rpc_port,
@@ -18,7 +18,7 @@ import {
   op_unregister_all_virtual_modules,
   op_set_workspace_dir,
   op_get_workspace_dir,
-} from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
+} = Deno.core.ops; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 
 import { MessageQueue } from './message-queue.ts';
 import { YasumuCache } from './modules/collection.ts';
