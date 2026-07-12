@@ -28,12 +28,12 @@ impl PermissionsResponse {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
-            "Allow" => PermissionsResponse::Allow,
-            "Deny" => PermissionsResponse::Deny,
-            "AllowAll" => PermissionsResponse::AllowAll,
-            _ => panic!("Invalid permissions response: {}", s),
+            "Allow" => Ok(PermissionsResponse::Allow),
+            "Deny" => Ok(PermissionsResponse::Deny),
+            "AllowAll" => Ok(PermissionsResponse::AllowAll),
+            other => Err(format!("unknown permission response: {other}")),
         }
     }
 
@@ -47,21 +47,15 @@ impl PermissionsResponse {
 }
 
 impl Serialize for PermissionsResponse {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(self.as_str())
     }
 }
 
 impl<'de> Deserialize<'de> for PermissionsResponse {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = String::deserialize(deserializer)?;
-        Ok(Self::from_str(&s))
+        Self::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 

@@ -1,85 +1,22 @@
+mod commands;
+mod state;
 mod tanxium;
 
 use deno_runtime::deno_core::ModuleSpecifier;
-use serde_json::json;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use state::YasumuInternalState;
+use std::sync::RwLock;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
-
-pub type VirtualModulesStore = Arc<Mutex<HashMap<String, String>>>;
-
-pub struct YasumuInternalState {
-    pub ready: bool,
-    pub rpc_port: Option<u16>,
-    pub echo_server_port: Option<u16>,
-    pub mcp_server_port: Option<u16>,
-    pub virtual_modules: VirtualModulesStore,
-}
-
-#[tauri::command]
-fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), ()> {
-    println!("Yasumu frontend is ready");
-    let state = app.state::<Mutex<YasumuInternalState>>();
-    let mut yasumu_state = state.lock().unwrap();
-
-    if !yasumu_state.ready {
-        yasumu_state.ready = true;
-        tanxium::invoke_renderer_event_callback(
-            &json!(r#"{"type": "yasumu_internal_ready_event"}"#).to_string(),
-        );
-        Ok(())
-    } else {
-        Ok(())
-    }
-}
-
-#[tauri::command]
-fn respond_to_permission_prompt(thread_id: String, response: String) {
-    tanxium::respond_to_permission_prompt(
-        &thread_id,
-        tanxium::PermissionsResponse::from_str(&response),
-    );
-}
-
-#[tauri::command]
-fn tanxium_send_event(data: &str) {
-    tanxium::invoke_renderer_event_callback(data);
-}
-
-#[tauri::command]
-fn get_rpc_port(app: tauri::AppHandle) -> Option<u16> {
-    let state = app.state::<Mutex<YasumuInternalState>>();
-    let yasumu_state = state.lock().unwrap();
-    yasumu_state.rpc_port
-}
-
-#[tauri::command]
-fn get_echo_server_port(app: tauri::AppHandle) -> Option<u16> {
-    let state = app.state::<Mutex<YasumuInternalState>>();
-    let yasumu_state = state.lock().unwrap();
-    yasumu_state.echo_server_port
-}
-
-#[tauri::command]
-fn get_mcp_server_port(app: tauri::AppHandle) -> Option<u16> {
-    let state = app.state::<Mutex<YasumuInternalState>>();
-    let yasumu_state = state.lock().unwrap();
-    yasumu_state.mcp_server_port
-}
-
-#[tauri::command]
-fn yasumu_open_devtools(app: tauri::AppHandle) {
-    let window = app.get_webview_window("main").unwrap();
-
-    if window.is_devtools_open() {
-        window.close_devtools();
-    } else {
-        window.open_devtools();
-    }
-}
+use tracing::{error, info};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .try_init();
+
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Failed to install rustls crypto provider");
@@ -94,20 +31,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(Mutex::new(YasumuInternalState {
-            ready: false,
-            rpc_port: None,
-            echo_server_port: None,
-            mcp_server_port: None,
-            virtual_modules: Arc::new(Mutex::new(HashMap::new())),
-        }))
+        .manage(RwLock::new(YasumuInternalState::new()))
         .setup(move |app| {
-            // Create the main window manually
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Yasumu")
                 .inner_size(1280.0, 720.0);
 
-            // Platform-specific configuration
             #[cfg(target_os = "macos")]
             let win_builder = win_builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
@@ -116,62 +45,63 @@ pub fn run() {
             #[cfg(not(target_os = "macos"))]
             let win_builder = win_builder.decorations(false);
 
-            let window = win_builder.build().unwrap();
+            let window = win_builder.build()?;
 
             tanxium::set_app_handle(app.handle().clone());
             tanxium::initialize_prompter();
 
-            #[cfg(debug_assertions)] // only include this code on debug builds
-            {
-                window.open_devtools();
-            }
+            #[cfg(debug_assertions)]
+            window.open_devtools();
 
             let app_handle = app.handle().clone();
 
-            if let Ok(resource_dir) = app_handle.path().resource_dir() {
-                let main_path = resource_dir
-                    .join("resources")
-                    .join("yasumu-scripts")
-                    .join("main.ts");
-                println!("Looking for main module at: {}", main_path.display());
+            match app_handle.path().resource_dir() {
+                Ok(resource_dir) => {
+                    let main_path = resource_dir
+                        .join("resources")
+                        .join("yasumu-scripts")
+                        .join("main.ts");
 
-                if main_path.exists() {
-                    println!("Main module file exists");
-                    if let Ok(main_module) = ModuleSpecifier::from_file_path(&main_path) {
-                        println!("Parsed main module: {}", main_module);
-                        if let Err(e) =
-                            tanxium::create_and_start_worker(&main_module, app_handle.clone())
-                        {
-                            eprintln!("Failed to initialize Deno worker: {}", e);
-                        } else {
-                            println!("Deno worker initialization started");
-                        }
-                    } else {
-                        eprintln!(
-                            "Failed to parse main module from path: {}",
+                    info!("Looking for main module at: {}", main_path.display());
+
+                    if !main_path.exists() {
+                        error!(
+                            "Main module does not exist at: {}",
                             main_path.display()
                         );
+                        return Ok(());
                     }
-                } else {
-                    eprintln!(
-                        "Main module file does not exist at: {}",
-                        main_path.display()
-                    );
+
+                    match ModuleSpecifier::from_file_path(&main_path) {
+                        Ok(main_module) => {
+                            info!("Starting worker for: {}", main_module);
+                            if let Err(e) =
+                                tanxium::create_and_start_worker(&main_module, app_handle)
+                            {
+                                error!("Failed to initialize Deno worker: {}", e);
+                            }
+                        }
+                        Err(()) => {
+                            error!(
+                                "Failed to parse module specifier from: {}",
+                                main_path.display()
+                            );
+                        }
+                    }
                 }
-            } else {
-                eprintln!("Failed to get resource directory");
+                Err(e) => error!("Failed to get resource directory: {}", e),
             }
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            respond_to_permission_prompt,
-            tanxium_send_event,
-            on_frontend_ready,
-            get_rpc_port,
-            get_echo_server_port,
-            get_mcp_server_port,
-            yasumu_open_devtools,
+            commands::respond_to_permission_prompt,
+            commands::tanxium_send_event,
+            commands::on_frontend_ready,
+            commands::get_rpc_port,
+            commands::get_echo_server_port,
+            commands::get_mcp_server_port,
+            commands::yasumu_open_devtools,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

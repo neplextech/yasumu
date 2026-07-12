@@ -13,7 +13,7 @@ use node_resolver::PackageJsonResolver;
 use node_resolver::cache::NodeResolutionSys;
 use node_resolver::errors::PackageJsonLoadError;
 use std::borrow::Cow;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
 use sys_traits::FsRead;
@@ -25,14 +25,29 @@ pub struct TanxiumNodeRequireLoader {
     sys: RealSys,
     #[allow(dead_code)]
     in_npm_pkg_checker: DenoInNpmPackageChecker,
+    /// Extra node_modules roots added when a real workspace is open.
+    workspace_node_modules_dirs: Vec<PathBuf>,
 }
 
 impl TanxiumNodeRequireLoader {
-    pub fn new() -> Self {
+    pub fn new(workspace_dir: Option<&Path>) -> Self {
         let sys = RealSys::default();
+
+        // When a workspace directory is set, add both the Yasumu-namespaced
+        // node_modules dir and the workspace root's node_modules so that
+        // user-installed packages are resolvable via `require()`.
+        let workspace_node_modules_dirs = match workspace_dir {
+            Some(dir) => vec![
+                dir.join("yasumu").join("node_modules"),
+                dir.join("node_modules"),
+            ],
+            None => vec![],
+        };
+
         Self {
             sys: sys.clone(),
             in_npm_pkg_checker: DenoInNpmPackageChecker::new(CreateInNpmPkgCheckerOptions::Byonm),
+            workspace_node_modules_dirs,
         }
     }
 }
@@ -40,7 +55,7 @@ impl TanxiumNodeRequireLoader {
 impl NodeRequireLoader for TanxiumNodeRequireLoader {
     fn ensure_read_permission<'a>(
         &self,
-        _permissions: &mut dyn deno_runtime::deno_node::NodePermissions,
+        _permissions: &mut deno_runtime::deno_permissions::PermissionsContainer,
         path: Cow<'a, Path>,
     ) -> Result<Cow<'a, Path>, JsErrorBox> {
         Ok(path)
@@ -60,8 +75,28 @@ impl NodeRequireLoader for TanxiumNodeRequireLoader {
         Ok(true)
     }
 
+    fn is_maybe_cjs_from_require(
+        &self,
+        _specifier: &ModuleSpecifier,
+    ) -> Result<bool, PackageJsonLoadError> {
+        Ok(true)
+    }
+
     fn resolve_require_node_module_paths(&self, from: &Path) -> Vec<String> {
-        deno_runtime::deno_node::default_resolve_require_node_module_paths(from)
+        let mut paths =
+            deno_runtime::deno_node::default_resolve_require_node_module_paths(from);
+
+        // Prepend workspace-scoped paths so they take priority over the default
+        // walk-up resolution. The `yasumu/node_modules` dir is checked first
+        // so that packages installed via `yasumu add` shadow workspace-root ones.
+        for dir in self.workspace_node_modules_dirs.iter().rev() {
+            let s = dir.to_string_lossy().into_owned();
+            if !paths.contains(&s) {
+                paths.insert(0, s);
+            }
+        }
+
+        paths
     }
 }
 
@@ -100,13 +135,25 @@ pub fn create_pkg_json_resolver() -> Arc<PackageJsonResolver<RealSys>> {
     Arc::new(PackageJsonResolver::new(sys, None))
 }
 
+/// Creates a BYONM npm resolver. When `workspace_dir` is provided the resolver
+/// roots its node_modules lookup at `<workspace_dir>/yasumu` so that packages
+/// installed inside the workspace are discovered before global ones.
 pub fn create_npm_resolver(
     pkg_json_resolver: Arc<PackageJsonResolver<RealSys>>,
+    workspace_dir: Option<&Path>,
 ) -> NpmResolver<RealSys> {
     let sys = RealSys::default();
+
+    // The BYONM resolver searches upward from `root_node_modules_dir` through
+    // parent directories. Setting it to `<workspace>/yasumu` means:
+    //   1. `<workspace>/yasumu/node_modules` is checked first.
+    //   2. The upward walk then naturally hits `<workspace>/node_modules`.
+    let root_node_modules_dir = workspace_dir.map(|d| d.join("yasumu"));
+
     NpmResolver::<RealSys>::new(deno_resolver::npm::NpmResolverCreateOptions::Byonm(
         ByonmNpmResolverCreateOptions {
-            root_node_modules_dir: None,
+            root_node_modules_dir,
+            search_stop_dir: None,
             sys: NodeResolutionSys::new(sys.clone(), None),
             pkg_json_resolver: pkg_json_resolver.clone(),
         },

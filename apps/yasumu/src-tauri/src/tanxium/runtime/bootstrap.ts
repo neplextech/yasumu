@@ -16,6 +16,8 @@ import {
   op_is_yasumu_dev_mode,
   op_get_rpc_port,
   op_unregister_all_virtual_modules,
+  op_set_workspace_dir,
+  op_get_workspace_dir,
 } from 'ext:core/ops'; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 
 import { MessageQueue } from './message-queue.ts';
@@ -206,6 +208,25 @@ class Yasumu {
   public static setMcpServerPort(port: number) {
     if (isWorkerEnvironment()) return;
     op_set_mcp_server_port(port);
+  }
+
+  /**
+   * Set the active workspace directory. Pass `null` to clear (virtual workspace).
+   * Setting this enables node_modules resolution inside the workspace.
+   * @param path Absolute path to the workspace root, or null
+   */
+  public static setWorkspaceDir(path: string | null) {
+    if (isWorkerEnvironment()) return;
+    op_set_workspace_dir(path ?? '');
+  }
+
+  /**
+   * Get the active workspace directory, or `null` for a virtual workspace.
+   * @returns The absolute workspace path, or null
+   */
+  public static getWorkspaceDir(): string | null {
+    const dir = op_get_workspace_dir();
+    return dir ?? null;
   }
 
   /**
