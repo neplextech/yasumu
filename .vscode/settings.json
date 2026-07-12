@@ -1,12 +1,12 @@
 {
-    "js/ts.tsdk.path": "node_modules/typescript/lib",
-    "deno.enablePaths": ["./apps/yasumu/src-tauri", "./packages/tanxium", "./packages/test"],
-    "rust-analyzer.linkedProjects": ["apps/yasumu/src-tauri/Cargo.toml"],
-    "rust-analyzer.diagnostics.disabled": [
-        "E0107"
-    ],
-    "cSpell.words": [
-        "transletta",
-    ],
-    "js/ts.experimental.useTsgo": false
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "deno.enablePaths": [
+    "./apps/yasumu/src-tauri",
+    "./packages/tanxium",
+    "./packages/test"
+  ],
+  "rust-analyzer.linkedProjects": ["apps/yasumu/src-tauri/Cargo.toml"],
+  "rust-analyzer.diagnostics.disabled": ["E0107"],
+  "cSpell.words": ["transletta"],
+  "js/ts.experimental.useTsgo": false
 }

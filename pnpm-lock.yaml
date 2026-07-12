@@ -493,6 +493,25 @@ importers:
         specifier: catalog:build
         version: 7.0.2
 
+  packages/echo-server:
+    dependencies:
+      hono:
+        specifier: ^4.12.16
+        version: 4.12.16
+    devDependencies:
+      '@types/node':
+        specifier: catalog:build
+        version: 24.10.1
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      typescript:
+        specifier: catalog:build
+        version: 7.0.2
+
   packages/rpc:
     dependencies:
       '@yasumu/common':
@@ -566,6 +585,31 @@ importers:
         specifier: ^8.39.0
         version: 8.46.2(eslint@9.39.2(jiti@2.6.1))(typescript@7.0.2)
 
+  packages/sync:
+    dependencies:
+      '@yasumu/common':
+        specifier: workspace:*
+        version: link:../common
+      '@yasumu/den':
+        specifier: workspace:*
+        version: link:../den
+      '@yasumu/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@types/node':
+        specifier: catalog:build
+        version: 24.10.1
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      typescript:
+        specifier: catalog:build
+        version: 7.0.2
+
   packages/tanxium:
     dependencies:
       '@hono/zod-validator':
@@ -580,12 +624,21 @@ importers:
       '@yasumu/den':
         specifier: file:../../packages/den
         version: link:../den
+      '@yasumu/echo-server':
+        specifier: file:../../packages/echo-server
+        version: link:../echo-server
       '@yasumu/rpc':
         specifier: file:../../packages/rpc
         version: file:packages/rpc
       '@yasumu/schema':
         specifier: file:../../packages/schema
         version: link:../schema
+      '@yasumu/sync':
+        specifier: file:../../packages/sync
+        version: file:packages/sync
+      '@yasumu/workspace-importer':
+        specifier: file:../../packages/workspace-importer
+        version: file:packages/workspace-importer
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
@@ -784,6 +837,22 @@ importers:
       tailwindcss:
         specifier: ^4.1.11
         version: 4.1.16
+      typescript:
+        specifier: catalog:build
+        version: 7.0.2
+
+  packages/workspace-importer:
+    dependencies:
+      '@yasumu/common':
+        specifier: workspace:*
+        version: link:../common
+    devDependencies:
+      '@yasumu/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@yasumu/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
       typescript:
         specifier: catalog:build
         version: 7.0.2
@@ -4194,6 +4263,12 @@ packages:
 
   '@yasumu/rpc@file:packages/rpc':
     resolution: {directory: packages/rpc, type: directory}
+
+  '@yasumu/sync@file:packages/sync':
+    resolution: {directory: packages/sync, type: directory}
+
+  '@yasumu/workspace-importer@file:packages/workspace-importer':
+    resolution: {directory: packages/workspace-importer, type: directory}
 
   '@zone-eu/mailsplit@5.4.8':
     resolution: {integrity: sha512-eEyACj4JZ7sjzRvy26QhLgKEMWwQbsw1+QZnlLX+/gihcNH07lVPOcnwf5U6UAL7gkc//J3jVd76o/WS+taUiA==}
@@ -11885,6 +11960,16 @@ snapshots:
       '@yasumu/rpc': link:packages/rpc
 
   '@yasumu/rpc@file:packages/rpc':
+    dependencies:
+      '@yasumu/common': link:packages/common
+
+  '@yasumu/sync@file:packages/sync':
+    dependencies:
+      '@yasumu/common': link:packages/common
+      '@yasumu/den': link:packages/den
+      '@yasumu/schema': link:packages/schema
+
+  '@yasumu/workspace-importer@file:packages/workspace-importer':
     dependencies:
       '@yasumu/common': link:packages/common
 

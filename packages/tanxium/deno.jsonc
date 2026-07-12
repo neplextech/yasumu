@@ -7,6 +7,9 @@
     "../../packages/core",
     "../../packages/den",
     "../../packages/schema",
+    "../../packages/echo-server",
+    "../../packages/workspace-importer",
+    "../../packages/sync",
   ],
   "imports": {
     "@/": "./src/",

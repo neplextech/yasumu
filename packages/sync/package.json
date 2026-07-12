@@ -1,0 +1,38 @@
+{
+  "name": "@yasumu/sync",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Synchronization, conflict detection, and YSL schema services for Yasumu",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "deno": "./src/index.ts",
+    "import": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@yasumu/common": "workspace:*",
+    "@yasumu/den": "workspace:*",
+    "@yasumu/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:build",
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
+    "typescript": "catalog:build"
+  }
+}
