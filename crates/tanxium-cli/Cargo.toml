@@ -3,7 +3,12 @@ name = "tanxium-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish = false
+description = "Command-line JavaScript and TypeScript runtime powered by Tanxium"
+repository = "https://github.com/neplextech/yasumu"
+readme = "README.md"
+keywords = ["deno", "javascript", "runtime", "typescript", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+include = ["src/**", "README.md"]
 
 [[bin]]
 name = "tanxium"
@@ -12,4 +17,4 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-tanxium = { path = "../tanxium" }
+tanxium.workspace = true

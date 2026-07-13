@@ -2,6 +2,11 @@ name: Publish Tanxium
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to publish, for example tanxium-v0.2.2
+        required: true
+        type: string
   push:
     tags:
       - 'tanxium-v*'
@@ -9,9 +14,87 @@ on:
 permissions:
   contents: read
 
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
+  build-cli:
+    name: Build CLI (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - name: Linux ARM
+            platform: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+          - name: macOS ARM
+            platform: macos-latest
+            target: aarch64-apple-darwin
+          - name: macOS x64
+            platform: macos-13
+            target: x86_64-apple-darwin
+          - name: Windows x64
+            platform: windows-2022
+            target: x86_64-pc-windows-msvc
+          - name: Windows ARM
+            platform: windows-11-arm
+            target: aarch64-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+          cache-on-failure: true
+          shared-key: tanxium-release-${{ matrix.target }}
+
+      # `rusty_v8` caches its checksum independently from its archive. Retain
+      # a complete archive, but force a download when the archive is absent.
+      - name: Repair incomplete rusty_v8 cache
+        shell: bash
+        run: |
+          find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
+            checksum="$1"
+            archive="${checksum%.sum}"
+            [ -f "${archive}.a" ] || [ -f "${archive}.lib" ] || rm -f "$checksum"
+          ' sh {} \;
+
+      - name: Build Tanxium CLI
+        run: cargo build --locked --release -p tanxium-cli --target ${{ matrix.target }}
+
+      - name: Stage executable
+        shell: bash
+        run: |
+          extension=""
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            extension=".exe"
+          fi
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/release/tanxium${extension}" "dist/tanxium-${{ matrix.target }}${extension}"
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: tanxium-cli-${{ matrix.target }}
+          path: dist/
+          if-no-files-found: error
+
   publish:
-    name: Publish tanxium to crates.io
+    name: Publish crates.io packages
+    needs: build-cli
     runs-on: ubuntu-latest
     environment: crates-io
     permissions:
@@ -24,14 +107,59 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Verify package contents
+      - name: Verify Tanxium package contents
         run: cargo package --locked -p tanxium
 
       - name: Authenticate with crates.io
         id: crates-io-auth
         uses: rust-lang/crates-io-auth-action@v1
 
-      - name: Publish
+      - name: Publish Tanxium library
         run: cargo publish --locked -p tanxium
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}
+
+      - name: Wait for Tanxium to reach the crates.io index
+        shell: bash
+        run: |
+          version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "tanxium") | .version')"
+          for attempt in {1..40}; do
+            if cargo search tanxium --limit 1 | grep -Fq "tanxium = \"${version}\""; then
+              exit 0
+            fi
+            echo "Waiting for tanxium ${version} in crates.io index (${attempt}/40)..."
+            sleep 15
+          done
+          echo "tanxium ${version} did not reach the crates.io index in time." >&2
+          exit 1
+
+      - name: Verify Tanxium CLI package contents
+        run: cargo package --locked -p tanxium-cli
+
+      - name: Publish Tanxium CLI
+        run: cargo publish --locked -p tanxium-cli
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}
+
+  release:
+    name: Create GitHub release
+    needs: [build-cli, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download CLI executables
+        uses: actions/download-artifact@v4
+        with:
+          pattern: tanxium-cli-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create draft release and upload executables
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Tanxium ${{ env.RELEASE_TAG }}
+          draft: true
+          generate_release_notes: true
+          files: dist/*

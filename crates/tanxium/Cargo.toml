@@ -8,7 +8,7 @@ repository = "https://github.com/neplextech/yasumu"
 readme = "README.md"
 keywords = ["deno", "javascript", "runtime", "typescript", "embedding"]
 categories = ["development-tools", "api-bindings"]
-include = ["src/**", "docs/**", "README.md", "LICENSE"]
+include = ["src/**", "docs/**", "README.md"]
 
 [dependencies]
 anyhow = "1"
