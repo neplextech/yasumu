@@ -1,0 +1,14 @@
+{
+  "name": "@yasumu/tanxium-runtime-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/deno": "catalog:test",
+    "@types/node": "catalog:build",
+    "@yasumu/tsconfig": "workspace:*",
+    "vitest": "catalog:test"
+  }
+}

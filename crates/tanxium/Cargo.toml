@@ -1,0 +1,32 @@
+[package]
+name = "tanxium"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Embeddable JavaScript and TypeScript runtime with Yasumu APIs"
+repository = "https://github.com/neplextech/yasumu"
+readme = "README.md"
+keywords = ["deno", "javascript", "runtime", "typescript", "embedding"]
+categories = ["development-tools", "api-bindings"]
+include = ["src/**", "docs/**", "README.md", "LICENSE"]
+
+[dependencies]
+anyhow = "1"
+base64 = "0.22.1"
+crossbeam-channel = "0.5.13"
+cuid2 = "=0.1.4"
+deno_ast = { version = "0.53.2", features = ["transpiling"] }
+deno_core = "0.407.0"
+deno_error = "0.7.1"
+deno_fs = "0.164.0"
+deno_resolver = "0.85.0"
+deno_runtime = { version = "0.262.0", features = ["transpile", "snapshot"] }
+deno_snapshots = "0.69.0"
+node_resolver = "0.92.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sys_traits = "0.1"
+tokio = { version = "1.41.0", features = ["full"] }
+tracing = "0.1"
+ureq = "2.10.1"
+urlencoding = "2.1.3"

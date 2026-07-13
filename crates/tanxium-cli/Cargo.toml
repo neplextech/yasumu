@@ -1,0 +1,15 @@
+[package]
+name = "tanxium-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "tanxium"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+tanxium = { path = "../tanxium" }

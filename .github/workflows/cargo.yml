@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - 'apps/yasumu/src-tauri/**'
+      - 'crates/**'
+      - 'tests/tanxium-runtime/**'
       - '**/Cargo.toml'
       - '**/Cargo.lock'
       - 'packages/test/**'
@@ -15,6 +17,8 @@ on:
       - main
     paths:
       - 'apps/yasumu/src-tauri/**'
+      - 'crates/**'
+      - 'tests/tanxium-runtime/**'
       - '**/Cargo.toml'
       - '**/Cargo.lock'
       - 'packages/test/**'
@@ -108,7 +112,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './apps/yasumu/src-tauri -> target'
+          workspaces: '. -> target'
           cache-on-failure: true
           shared-key: yasumu-check-${{ matrix.name }}
 
@@ -119,5 +123,43 @@ jobs:
           path: apps/yasumu/src-tauri/resources/yasumu-scripts/public-modules/yasumu__test
 
       - name: Cargo check
-        run: cargo check ${{ matrix.args }}
-        working-directory: ./apps/yasumu/src-tauri
+        run: cargo check --workspace ${{ matrix.args }}
+
+  tanxium-runtime:
+    name: Tanxium Runtime Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 2.9.2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+          shared-key: tanxium-runtime
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tanxium runtime tests
+        run: pnpm --filter @yasumu/tanxium-runtime-tests test
