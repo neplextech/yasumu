@@ -1,10 +1,9 @@
-use crate::state::YasumuInternalState;
-use crate::tanxium::module_loader::TypescriptModuleLoader;
-use crate::tanxium::node_services;
-use crate::tanxium::ops::tanxium_rt;
-use crate::tanxium::state::init_renderer_event_channel;
-use crate::tanxium::types::AppHandleState;
-use crate::tanxium::version::{DENO_VERSION, YASUMU_VERSION};
+use crate::module_loader::TypescriptModuleLoader;
+use crate::node_services;
+use crate::ops::tanxium_rt;
+use crate::state::{NoopHost, RuntimeContext, RuntimeEvent, RuntimeHost, RuntimeState};
+use crate::types::RuntimeHostState;
+use crate::version::{DENO_VERSION, TANXIUM_VERSION};
 use deno_resolver::npm::{DenoInNpmPackageChecker, NpmResolver};
 use deno_runtime::UNSTABLE_FEATURES;
 use deno_runtime::colors;
@@ -26,12 +25,10 @@ use node_resolver::PackageJsonResolver;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use sys_traits::impls::RealSys;
-use tauri::{AppHandle, Manager};
-use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use tracing::{error, info, warn};
 
 const ENABLED_UNSTABLE: &[&str] = &["worker-options", "kv", "cron", "detect-cjs"];
@@ -83,7 +80,8 @@ struct WorkerSharedState {
     compiled_wasm_module_store: CompiledWasmModuleStore,
     fs: Arc<dyn FileSystem>,
     shared_array_buffer_store: SharedArrayBufferStore,
-    app_handle: AppHandle,
+    host: Arc<dyn RuntimeHost>,
+    state: Arc<RuntimeState>,
     node_resolver: Arc<NodeResolver<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys>>,
     pkg_json_resolver: Arc<PackageJsonResolver<RealSys>>,
     virtual_modules: Arc<Mutex<HashMap<String, String>>>,
@@ -107,7 +105,7 @@ impl WorkerSharedState {
                     .maybe_main_module_blob
                     .clone()
                     .map(|blob| (args.main_module.clone(), blob)),
-                app_handle: shared.app_handle.clone(),
+                state: shared.state.clone(),
                 pkg_json_resolver: shared.pkg_json_resolver.clone(),
             });
 
@@ -127,7 +125,7 @@ impl WorkerSharedState {
                 shared.pkg_json_resolver.clone(),
             ));
 
-            let user_agent = format!("Yasumu/{}", YASUMU_VERSION);
+            let user_agent = format!("Yasumu/{}", TANXIUM_VERSION);
 
             let services =
                 WebWorkerServiceOptions::<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys> {
@@ -204,8 +202,9 @@ impl WorkerSharedState {
                 .js_runtime
                 .op_state()
                 .borrow_mut()
-                .put(AppHandleState {
-                    app_handle: shared.app_handle.clone(),
+                .put(RuntimeHostState {
+                    host: shared.host.clone(),
+                    state: shared.state.clone(),
                 });
 
             (worker, handle)
@@ -216,14 +215,20 @@ impl WorkerSharedState {
 async fn initialize_worker(
     main_module: &ModuleSpecifier,
     shared: &Arc<WorkerSharedState>,
-    app_handle: &AppHandle,
+    host: Arc<dyn RuntimeHost>,
+    main_worker_all_permissions: bool,
 ) -> Result<MainWorker, AnyError> {
     let permission_desc_parser =
         Arc::new(RuntimePermissionDescriptorParser::<RealSys>::new(RealSys));
     let source_maps = Rc::new(RefCell::new(HashMap::new()));
-    let user_agent = format!("Yasumu/{}", YASUMU_VERSION);
+    let user_agent = format!("Yasumu/{}", TANXIUM_VERSION);
 
-    let permissions = PermissionsContainer::new(permission_desc_parser, Permissions::allow_all());
+    let initial_permissions = if main_worker_all_permissions {
+        Permissions::allow_all()
+    } else {
+        Permissions::none_with_prompt()
+    };
+    let permissions = PermissionsContainer::new(permission_desc_parser, initial_permissions);
 
     let stdio = Stdio::default();
     let create_web_worker_cb = shared.create_web_worker_callback(stdio.clone(), true);
@@ -249,7 +254,7 @@ async fn initialize_worker(
                 virtual_modules: Some(shared.virtual_modules.clone()),
                 blob_store: Some(shared.blob_store.clone()),
                 main_module_blob: None,
-                app_handle: shared.app_handle.clone(),
+                state: shared.state.clone(),
                 pkg_json_resolver: shared.pkg_json_resolver.clone(),
             }),
             permissions,
@@ -276,6 +281,10 @@ async fn initialize_worker(
                 deno_version: DENO_VERSION.to_string(),
                 user_agent,
                 unstable_features: enabled_unstable_feature_ids(),
+                // Enable Deno's Node compatibility bootstrap for main workers.
+                // Without this, CommonJS modules that use `createRequire()`
+                // cannot initialize their Node built-ins.
+                has_node_modules_dir: true,
                 close_on_idle: false,
                 ..Default::default()
             },
@@ -290,14 +299,51 @@ async fn initialize_worker(
         .js_runtime
         .op_state()
         .borrow_mut()
-        .put(AppHandleState {
-            app_handle: app_handle.clone(),
+        .put(RuntimeHostState {
+            host,
+            state: shared.state.clone(),
         });
+
+    initialize_node_runtime(&mut worker).await?;
 
     info!("Executing main module: {}", main_module);
     worker.execute_main_module(main_module).await?;
 
     Ok(worker)
+}
+
+/// Completes Deno's lazy Node bootstrap before CommonJS code is evaluated.
+///
+/// This must run after `MainWorker::bootstrap_from_options`: the Node
+/// polyfills depend on the fully initialized Deno namespace (`Deno.env`,
+/// `Deno.build`, and related runtime state).
+async fn initialize_node_runtime(worker: &mut MainWorker) -> Result<(), AnyError> {
+    let module = ModuleSpecifier::parse("ext:tanxium_rt/node-bootstrap")?;
+    let module_id = worker
+        .js_runtime
+        .load_side_es_module_from_code(
+            &module,
+            r#"
+                import { core } from "ext:core/mod.js";
+
+                core.createLazyLoader("node:process")();
+                core.createLazyLoader("node:module")();
+                globalThis.nodeBootstrap({
+                  usesLocalNodeModulesDir: true,
+                  runningOnMainThread: true,
+                  argv0: undefined,
+                  nodeDebug: undefined,
+                  nodeClusterUniqueId: undefined,
+                  nodeClusterSchedPolicy: undefined,
+                  denoArgs: Deno.args,
+                  denoVersion: Deno.version,
+                });
+            "#,
+        )
+        .await?;
+
+    worker.evaluate_module(module_id).await?;
+    Ok(())
 }
 
 async fn run_worker_event_loop(
@@ -328,18 +374,19 @@ async fn run_worker_event_loop(
                     error!("Worker event loop error: {}", e);
                     return Err(e.into());
                 }
+                return Ok(());
             }
         }
     }
 }
 
-pub fn create_and_start_worker(
-    main_module: &ModuleSpecifier,
-    app_handle: AppHandle,
-) -> Result<(), AnyError> {
-    let main_module = main_module.clone();
-
-    thread::spawn(move || {
+fn start_worker(
+    main_module: ModuleSpecifier,
+    state: Arc<RuntimeState>,
+    host: Arc<dyn RuntimeHost>,
+    main_worker_all_permissions: bool,
+) -> Result<std::thread::JoinHandle<()>, AnyError> {
+    let handle = thread::spawn(move || {
         info!("Starting Deno runtime thread");
 
         let runtime = match tokio::runtime::Builder::new_current_thread()
@@ -356,11 +403,13 @@ pub fn create_and_start_worker(
         runtime.block_on(async move {
             let pkg_json_resolver = node_services::create_pkg_json_resolver();
 
-            let (virtual_modules, workspace_dir) = {
-                let state = app_handle.state::<RwLock<YasumuInternalState>>();
-                let guard = state.read().expect("state lock poisoned");
-                (guard.virtual_modules.clone(), guard.workspace_dir.clone())
-            };
+            let workspace_dir = state
+                .context
+                .read()
+                .expect("runtime context lock poisoned")
+                .workspace_dir
+                .clone();
+            let virtual_modules = state.virtual_modules.clone();
 
             let fs = create_file_system();
 
@@ -377,7 +426,8 @@ pub fn create_and_start_worker(
                 compiled_wasm_module_store: CompiledWasmModuleStore::default(),
                 fs,
                 shared_array_buffer_store: SharedArrayBufferStore::default(),
-                app_handle: app_handle.clone(),
+                host: host.clone(),
+                state: state.clone(),
                 node_resolver,
                 pkg_json_resolver,
                 virtual_modules,
@@ -399,9 +449,21 @@ pub fn create_and_start_worker(
                     tokio::time::sleep(delay).await;
                 }
 
-                match initialize_worker(&main_module, &shared, &app_handle).await {
+                match initialize_worker(
+                    &main_module,
+                    &shared,
+                    host.clone(),
+                    main_worker_all_permissions,
+                )
+                .await
+                {
                     Ok(mut worker) => {
-                        let mut event_receiver = init_renderer_event_channel();
+                        let (event_sender, mut event_receiver) =
+                            tokio::sync::mpsc::unbounded_channel();
+                        *state
+                            .event_sender
+                            .lock()
+                            .expect("event sender lock poisoned") = Some(event_sender);
 
                         match run_worker_event_loop(&mut worker, &mut event_receiver).await {
                             Ok(_) => {
@@ -424,23 +486,19 @@ pub fn create_and_start_worker(
                                         "Exceeded max retries ({}) — showing crash dialog",
                                         MAX_RETRIES
                                     );
-                                    app_handle
-                                        .dialog()
-                                        .message(format!("JavaScript runtime crashed:\n\n{}", msg))
-                                        .kind(MessageDialogKind::Error)
-                                        .title("JavaScript runtime crashed unexpectedly")
-                                        .blocking_show();
-                                    app_handle.exit(1);
+                                    host.emit_event(RuntimeEvent::Failure(msg));
                                     break;
                                 }
                             }
                         }
                     }
                     Err(e) => {
-                        error!("Failed to initialize worker: {}", e);
+                        let message = format!("Failed to initialize worker: {e}");
+                        error!("{message}");
                         retry_count += 1;
                         if retry_count > MAX_RETRIES {
                             error!("Exceeded max retries — giving up");
+                            host.emit_event(RuntimeEvent::Failure(message));
                             break;
                         }
                     }
@@ -451,5 +509,113 @@ pub fn create_and_start_worker(
         });
     });
 
-    Ok(())
+    Ok(handle)
+}
+
+pub struct TanxiumBuilder {
+    context: RuntimeContext,
+    host: Arc<dyn RuntimeHost>,
+    main_worker_all_permissions: bool,
+}
+impl TanxiumBuilder {
+    /// Sets the workspace used for package resolution.
+    pub fn workspace_dir(mut self, path: impl Into<std::path::PathBuf>) -> Self {
+        self.context.workspace_dir = Some(path.into());
+        self
+    }
+    /// Sets the resource root exposed to JavaScript.
+    pub fn resource_dir(mut self, path: impl Into<std::path::PathBuf>) -> Self {
+        self.context.resource_dir = Some(path.into());
+        self
+    }
+    /// Sets the initial frontend-ready state.
+    pub fn ready(mut self, ready: bool) -> Self {
+        self.context.ready = ready;
+        self
+    }
+    /// Supplies host-specific event and confirmation behavior.
+    pub fn host(mut self, host: Arc<dyn RuntimeHost>) -> Self {
+        self.host = host;
+        self
+    }
+    /// Controls whether the main worker receives every Deno permission at startup.
+    ///
+    /// This defaults to `true` for backwards compatibility with trusted host
+    /// bootstrap code. Set it to `false` to start the main worker sandboxed;
+    /// requests then use the installed permission prompter. Web workers always
+    /// start without permissions, regardless of this setting.
+    pub fn allow_main_worker_all_permissions(mut self, allow: bool) -> Self {
+        self.main_worker_all_permissions = allow;
+        self
+    }
+    /// Builds an embeddable runtime instance.
+    pub fn build(self) -> Result<Tanxium, AnyError> {
+        Ok(Tanxium {
+            state: Arc::new(RuntimeState::new(self.context)),
+            host: self.host,
+            main_worker_all_permissions: self.main_worker_all_permissions,
+        })
+    }
+}
+#[derive(Clone)]
+pub struct Tanxium {
+    state: Arc<RuntimeState>,
+    host: Arc<dyn RuntimeHost>,
+    main_worker_all_permissions: bool,
+}
+impl Tanxium {
+    /// Starts a runtime builder with safe headless defaults.
+    pub fn builder() -> TanxiumBuilder {
+        TanxiumBuilder {
+            context: RuntimeContext {
+                app_version: TANXIUM_VERSION.into(),
+                ..Default::default()
+            },
+            host: Arc::new(NoopHost),
+            main_worker_all_permissions: true,
+        }
+    }
+    /// Starts a module on its own runtime thread and returns immediately.
+    pub fn run_file(&self, file: impl AsRef<std::path::Path>) -> Result<(), AnyError> {
+        let file = std::fs::canonicalize(file)?;
+        let module = ModuleSpecifier::from_file_path(file)
+            .map_err(|_| AnyError::msg("invalid entrypoint path"))?;
+        start_worker(
+            module,
+            self.state.clone(),
+            self.host.clone(),
+            self.main_worker_all_permissions,
+        )
+        .map(|_| ())
+    }
+    /// Runs a module and waits for its runtime thread to exit.
+    pub fn run_file_blocking(&self, file: impl AsRef<std::path::Path>) -> Result<(), AnyError> {
+        let file = std::fs::canonicalize(file)?;
+        let module = ModuleSpecifier::from_file_path(file)
+            .map_err(|_| AnyError::msg("invalid entrypoint path"))?;
+        start_worker(
+            module,
+            self.state.clone(),
+            self.host.clone(),
+            self.main_worker_all_permissions,
+        )?
+        .join()
+        .map_err(|_| AnyError::msg("runtime thread panicked"))
+    }
+    /// Delivers a serialized host event to a running runtime.
+    pub fn send_event(&self, event: impl Into<String>) {
+        if let Some(sender) = self
+            .state
+            .event_sender
+            .lock()
+            .expect("event sender lock poisoned")
+            .as_ref()
+        {
+            let _ = sender.send(event.into());
+        }
+    }
+    /// Returns shared runtime state for advanced embedders.
+    pub fn state(&self) -> Arc<RuntimeState> {
+        self.state.clone()
+    }
 }

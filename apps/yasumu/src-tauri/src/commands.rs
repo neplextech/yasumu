@@ -1,5 +1,4 @@
 use crate::state::YasumuInternalState;
-use crate::tanxium;
 use serde_json::json;
 use std::sync::RwLock;
 use tauri::{AppHandle, Manager};
@@ -21,17 +20,31 @@ pub fn on_frontend_ready(app: AppHandle) -> Result<(), ()> {
     };
 
     if !already_ready {
-        tanxium::invoke_renderer_event_callback(
-            &json!(r#"{"type": "yasumu_internal_ready_event"}"#).to_string(),
-        );
+        if let Some(runtime) = app_state
+            .read()
+            .expect("state lock poisoned")
+            .runtime
+            .as_ref()
+        {
+            runtime.set_ready();
+            runtime.send_event(&json!(r#"{"type": "yasumu_internal_ready_event"}"#).to_string());
+        }
     }
 
     Ok(())
 }
 
 #[tauri::command]
-pub fn tanxium_send_event(data: &str) {
-    tanxium::invoke_renderer_event_callback(data);
+pub fn tanxium_send_event(app: AppHandle, data: &str) {
+    if let Some(runtime) = app
+        .state::<RwLock<YasumuInternalState>>()
+        .read()
+        .expect("state lock poisoned")
+        .runtime
+        .as_ref()
+    {
+        runtime.send_event(data);
+    }
 }
 
 #[tauri::command]
@@ -39,7 +52,9 @@ pub fn get_rpc_port(app: AppHandle) -> Option<u16> {
     app.state::<RwLock<YasumuInternalState>>()
         .read()
         .expect("state lock poisoned")
-        .rpc_port
+        .runtime
+        .as_ref()
+        .and_then(tanxium_yasumu::YasumuRuntime::rpc_port)
 }
 
 #[tauri::command]
@@ -47,7 +62,9 @@ pub fn get_echo_server_port(app: AppHandle) -> Option<u16> {
     app.state::<RwLock<YasumuInternalState>>()
         .read()
         .expect("state lock poisoned")
-        .echo_server_port
+        .runtime
+        .as_ref()
+        .and_then(tanxium_yasumu::YasumuRuntime::echo_server_port)
 }
 
 #[tauri::command]
@@ -55,7 +72,9 @@ pub fn get_mcp_server_port(app: AppHandle) -> Option<u16> {
     app.state::<RwLock<YasumuInternalState>>()
         .read()
         .expect("state lock poisoned")
-        .mcp_server_port
+        .runtime
+        .as_ref()
+        .and_then(tanxium_yasumu::YasumuRuntime::mcp_server_port)
 }
 
 #[tauri::command]

@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - tests/*
 
 allowBuilds:
   '@parcel/watcher': false
@@ -31,6 +32,9 @@ catalogs:
   tailwind:
     '@tailwindcss/postcss': ^4
     tailwindcss: ^4
+  test:
+    '@types/deno': ^2.7.0
+    vitest: ^4.1.10
 
 overrides:
   dompurify@<3.3.2: '>=3.3.2'

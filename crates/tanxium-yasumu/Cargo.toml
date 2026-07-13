@@ -1,0 +1,13 @@
+[package]
+name = "tanxium-yasumu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1"
+tanxium = { path = "../tanxium" }
+tauri = "2"
+tauri-plugin-dialog = "2"
+tracing = "0.1"

@@ -1,0 +1,20 @@
+[workspace]
+members = ["apps/yasumu/src-tauri", "crates/tanxium", "crates/tanxium-cli", "crates/tanxium-yasumu"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "AGPL-3.0"
+version = "0.3.0"
+
+[workspace.dependencies]
+tanxium = { version = "0.3.0", path = "crates/tanxium" }
+
+[patch.crates-io]
+cuid2 = { path = "apps/yasumu/src-tauri/vendor/cuid2" }
+gpu-allocator = { path = "apps/yasumu/src-tauri/vendor/gpu-allocator" }
+
+[profile.release]
+lto = true
+opt-level = "s"
+strip = true

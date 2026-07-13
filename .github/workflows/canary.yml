@@ -63,14 +63,12 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: |
-            ${{ startsWith(matrix.platform, 'macos-') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-            ${{ runner.os == 'Windows' && matrix.args == '--target aarch64-pc-windows-msvc' && 'aarch64-pc-windows-msvc' || '' }}
+          targets: ${{ startsWith(matrix.platform, 'macos-') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: ./apps/yasumu/src-tauri -> target
+          workspaces: . -> target
           cache-on-failure: true
           shared-key: yasumu-release
 

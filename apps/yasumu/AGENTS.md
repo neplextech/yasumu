@@ -1,5 +1,23 @@
-# Frontend Architecture
+# Yasumu application guide
 
-The frontend of Yasumu is built using Next.js app router. You probably
-DO NOT KNOW this Next.js, so before proceeding to update anything,
-it's better to read `node_modules/next/docs`
+This directory contains the Next.js desktop frontend and the Tauri
+application crate. Read the root [`AGENTS.md`](../../AGENTS.md) first
+for workspace-wide architecture, Cargo commands, and Tanxium
+boundaries.
+
+## Frontend architecture
+
+The frontend uses the Next.js App Router. Follow the project
+conventions and consult the installed Next.js documentation when
+working on framework-specific behavior.
+
+## Native runtime integration
+
+`src-tauri` is a member of the root Cargo workspace. Run Cargo
+commands from the repository root so the Tanxium crates and
+application compile together.
+
+Do not add runtime implementation files back under `src-tauri/src`.
+The app consumes `tanxium-yasumu`; generic runtime behavior belongs in
+`crates/tanxium`, and Tauri-specific behavior belongs in
+`crates/tanxium-yasumu`.

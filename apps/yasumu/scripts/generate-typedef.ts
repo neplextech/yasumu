@@ -4,7 +4,7 @@ import path from 'node:path';
 import ts from 'typescript-legacy';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
-const RUNTIME_DIR = path.join(ROOT_DIR, 'src-tauri', 'src', 'tanxium', 'runtime');
+const RUNTIME_DIR = path.join(ROOT_DIR, '../..', 'crates', 'tanxium', 'src', 'runtime');
 const OUTPUT_FILE = path.join(ROOT_DIR, 'src', 'lib', 'types', 'yasumu-typedef.ts');
 const TYPES_DIR = path.join(import.meta.dirname, 'types');
 const DENO_TYPES_FILE = path.join(TYPES_DIR, 'deno', 'lib.deno.d.ts');
@@ -46,7 +46,7 @@ const EXT_STUBS = new Map<string, string>([
   [
     'ext:deno_web/01_console.js',
     // Minimal Console that satisfies globalThis.console assignment in patches.ts
-    `export declare class Console implements globalThis.Console {
+    /* typescript */ `export declare class Console implements globalThis.Console {
   constructor(fn: (msg: string, level: number) => void);
   assert(condition?: boolean, ...data: any[]): void;
   clear(): void;
@@ -239,27 +239,49 @@ function extractYasumuClass(bootstrapPath: string): string {
   const stripPublic = (mods: ts.NodeArray<ts.ModifierLike> | undefined) =>
     mods?.filter((m) => m.kind !== ts.SyntaxKind.PublicKeyword) as ts.ModifierLike[] | undefined;
 
+  /** Copies source JSDoc to a synthesized declaration node for editor hovers. */
+  const preserveJsDoc = <T extends ts.Node>(node: T, sourceNode: ts.Node): T => {
+    const leadingTrivia = src.slice(sourceNode.getFullStart(), sourceNode.getStart(sourceFile));
+    const jsDocBlocks = leadingTrivia.matchAll(/\/\*\*[\s\S]*?\*\//g);
+
+    for (const match of jsDocBlocks) {
+      const comment = match[0];
+      ts.addSyntheticLeadingComment(node, ts.SyntaxKind.MultiLineCommentTrivia, comment.slice(2, -2), true);
+    }
+
+    return node;
+  };
+
   const ambientMembers = classNode.members.filter(keepMember).map((m) => {
     if (ts.isMethodDeclaration(m)) {
-      return factory.createMethodDeclaration(
-        stripPublic(m.modifiers),
-        m.asteriskToken,
-        m.name,
-        m.questionToken,
-        m.typeParameters,
-        m.parameters,
-        m.type,
-        undefined,
+      return preserveJsDoc(
+        factory.createMethodDeclaration(
+          stripPublic(m.modifiers),
+          m.asteriskToken,
+          m.name,
+          m.questionToken,
+          m.typeParameters,
+          m.parameters,
+          m.type,
+          undefined,
+        ),
+        m,
       );
     }
     if (ts.isConstructorDeclaration(m)) {
-      return factory.createConstructorDeclaration(stripPublic(m.modifiers), m.parameters, undefined);
+      return preserveJsDoc(factory.createConstructorDeclaration(stripPublic(m.modifiers), m.parameters, undefined), m);
     }
     if (ts.isGetAccessorDeclaration(m)) {
-      return factory.createGetAccessorDeclaration(stripPublic(m.modifiers), m.name, m.parameters, m.type, undefined);
+      return preserveJsDoc(
+        factory.createGetAccessorDeclaration(stripPublic(m.modifiers), m.name, m.parameters, m.type, undefined),
+        m,
+      );
     }
     if (ts.isSetAccessorDeclaration(m)) {
-      return factory.createSetAccessorDeclaration(stripPublic(m.modifiers), m.name, m.parameters, undefined);
+      return preserveJsDoc(
+        factory.createSetAccessorDeclaration(stripPublic(m.modifiers), m.name, m.parameters, undefined),
+        m,
+      );
     }
     if (ts.isPropertyDeclaration(m)) {
       // Ambient declarations cannot have initializers; infer the type if not explicit.
@@ -273,12 +295,15 @@ function extractYasumuClass(bootstrapPath: string): string {
           typeNode = factory.createTypeReferenceNode(factory.createIdentifier(m.initializer.expression.text));
         }
       }
-      return factory.createPropertyDeclaration(
-        stripPublic(m.modifiers),
-        m.name,
-        m.questionToken ?? m.exclamationToken,
-        typeNode,
-        undefined, // strip initializer — not valid in ambient context
+      return preserveJsDoc(
+        factory.createPropertyDeclaration(
+          stripPublic(m.modifiers),
+          m.name,
+          m.questionToken ?? m.exclamationToken,
+          typeNode,
+          undefined, // strip initializer — not valid in ambient context
+        ),
+        m,
       );
     }
     return m;
@@ -291,12 +316,15 @@ function extractYasumuClass(bootstrapPath: string): string {
     ) ?? []),
   ];
 
-  const ambientClass = factory.createClassDeclaration(
-    declMods,
-    classNode.name,
-    classNode.typeParameters,
-    classNode.heritageClauses,
-    ambientMembers,
+  const ambientClass = preserveJsDoc(
+    factory.createClassDeclaration(
+      declMods,
+      classNode.name,
+      classNode.typeParameters,
+      classNode.heritageClauses,
+      ambientMembers,
+    ),
+    classNode,
   );
 
   const dummy = ts.createSourceFile('_temp.d.ts', '', ts.ScriptTarget.ESNext);
@@ -312,6 +340,7 @@ function generateYasumuTypes(): string {
 
   // Include bootstrap.ts in compilation so globals like `unsafe` are visible
   const bootstrapPath = path.join(RUNTIME_DIR, 'bootstrap.ts');
+
   const allFiles = [...exportFiles];
   if (fs.existsSync(bootstrapPath)) allFiles.push(bootstrapPath);
 
@@ -434,53 +463,102 @@ function collectNodeTypeFiles(nodeTypesDir: string): Array<{ content: string; fi
 // Testing API types (hand-written)
 // ============================================================================
 
-const TESTING_API_TYPES = `
+const TESTING_API_TYPES = /* typescript */ `
+/**
+ * Assertions available in Yasumu test scripts.
+ *
+ * Create an assertion with {@link expect}. Matcher methods throw when their
+ * expectation is not met, causing the current test to fail.
+ */
 interface Expected<T = unknown> {
+  /** Negates the next matcher. */
   not: Expected<T>;
+  /** Unwraps a promise before evaluating the next matcher. */
   resolves: Expected<Promise<T>>;
+  /** Evaluates the next matcher against a rejected promise. */
   rejects: Expected<Promise<T>>;
 
+  /** Checks strict identity with \`Object.is\`. */
   toBe(expected: T): void;
+  /** Checks deep equality. */
   toEqual(expected: T): void;
+  /** Checks deep equality, including object type and sparse array differences. */
   toStrictEqual(expected: T): void;
+  /** Checks that a string matches text or a regular expression. */
   toMatch(expected: string | RegExp): void;
+  /** Checks that an object contains the provided partial shape. */
   toMatchObject(expected: Record<string, unknown>): void;
+  /** Checks that the received value is not \`undefined\`. */
   toBeDefined(): void;
+  /** Checks that the received value is \`undefined\`. */
   toBeUndefined(): void;
+  /** Checks that the received value is \`null\`. */
   toBeNull(): void;
+  /** Checks that the received value is \`NaN\`. */
   toBeNaN(): void;
+  /** Checks that the received value is truthy. */
   toBeTruthy(): void;
+  /** Checks that the received value is falsy. */
   toBeFalsy(): void;
+  /** Checks that a string, array, or iterable contains a value. */
   toContain(expected: unknown): void;
+  /** Checks that an array contains a deeply equal value. */
   toContainEqual(expected: unknown): void;
+  /** Checks the \`length\` property of the received value. */
   toHaveLength(expected: number): void;
+  /** Checks that a number is greater than another number. */
   toBeGreaterThan(expected: number): void;
+  /** Checks that a number is greater than or equal to another number. */
   toBeGreaterThanOrEqual(expected: number): void;
+  /** Checks that a number is less than another number. */
   toBeLessThan(expected: number): void;
+  /** Checks that a number is less than or equal to another number. */
   toBeLessThanOrEqual(expected: number): void;
+  /** Checks that a number is close to an expected value. */
   toBeCloseTo(expected: number, numDigits?: number): void;
+  /** Checks that a value is an instance of a constructor. */
   toBeInstanceOf(expected: new (...args: unknown[]) => unknown): void;
+  /** Checks that invoking the received function throws. */
   toThrow(expected?: string | RegExp | Error): void;
+  /** Checks that an object has a property at the given path. */
   toHaveProperty(keyPath: string | string[], value?: unknown): void;
+  /** Checks that a mock function was called at least once. */
   toHaveBeenCalled(): void;
+  /** Checks how many times a mock function was called. */
   toHaveBeenCalledTimes(expected: number): void;
+  /** Checks the arguments of at least one mock-function call. */
   toHaveBeenCalledWith(...args: unknown[]): void;
+  /** Checks the arguments of the most recent mock-function call. */
   toHaveBeenLastCalledWith(...args: unknown[]): void;
+  /** Checks the arguments of a mock-function call by one-based position. */
   toHaveBeenNthCalledWith(n: number, ...args: unknown[]): void;
+  /** Checks that a mock function returned at least once. */
   toHaveReturned(): void;
+  /** Checks how many times a mock function returned. */
   toHaveReturnedTimes(expected: number): void;
+  /** Checks that a mock function returned a value at least once. */
   toHaveReturnedWith(expected: unknown): void;
+  /** Checks the value returned by the most recent mock-function call. */
   toHaveLastReturnedWith(expected: unknown): void;
+  /** Checks a mock-function return value by one-based position. */
   toHaveNthReturnedWith(n: number, expected: unknown): void;
 }
 
+/** Asymmetric matchers for use as expected values in other matchers. */
 interface AsymmetricMatchers {
+  /** Matches any value except \`null\` and \`undefined\`. */
   anything(): unknown;
+  /** Matches any value created by the provided constructor. */
   any(constructor: new (...args: unknown[]) => unknown): unknown;
+  /** Matches an array containing the expected values. */
   arrayContaining(expected: unknown[]): unknown;
+  /** Matches an object containing the expected partial shape. */
   objectContaining(expected: Record<string, unknown>): unknown;
+  /** Matches a string containing the expected text. */
   stringContaining(expected: string): unknown;
+  /** Matches a string matching the expected pattern. */
   stringMatching(expected: string | RegExp): unknown;
+  /** Matches a number close to the expected value. */
   closeTo(expected: number, numDigits?: number): unknown;
   not: {
     arrayContaining(expected: unknown[]): unknown;
@@ -488,24 +566,37 @@ interface AsymmetricMatchers {
     stringContaining(expected: string): unknown;
     stringMatching(expected: string | RegExp): unknown;
   };
+  /** Registers a serializer used by snapshot assertions. */
   addSnapshotSerializer(serializer: unknown): void;
+  /** Requires exactly this many assertions in the current test. */
   assertions(num: number): void;
+  /** Adds a custom equality predicate. */
   addEqualityTester(tester: (a: unknown, b: unknown) => boolean | undefined): void;
+  /** Adds custom matcher implementations. */
   extend(matchers: Record<string, (received: unknown, ...args: unknown[]) => { pass: boolean; message: () => string }>): void;
+  /** Requires at least one assertion in the current test. */
   hasAssertions(): void;
 }
 
+/** Creates assertions for a received value. */
 type Expect = (<T>(actual: T) => Expected<T>) & AsymmetricMatchers;
 
+/** Creates assertions and exposes asymmetric matcher helpers. */
 declare const expect: Expect;
 
+/** Controls the currently running Yasumu test. */
 interface TestContext {
+  /** Marks the current test as skipped and exits it immediately. */
   skip(): never;
+  /** Marks the current test as failed and exits it immediately. */
   fail(message?: string): never;
+  /** Marks the current test as passed and exits it immediately. */
   succeed(): never;
 }
 
+/** Declares a test case to run with the Yasumu test runner. */
 declare function test(name: string, fn: (ctx: TestContext) => void | Promise<void>): void;
+/** Groups related test cases. */
 declare function describe(name: string, fn: () => void): void;
 `;
 
@@ -548,7 +639,7 @@ function main() {
     )
     .join(',\n');
 
-  const output = `/* eslint-disable */
+  const output = /* typescript */ `/* eslint-disable */
 // @ts-nocheck
 
 // THIS IS AN AUTOGENERATED FILE. DO NOT EDIT MANUALLY.

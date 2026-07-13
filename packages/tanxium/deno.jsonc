@@ -13,7 +13,7 @@
   ],
   "imports": {
     "@/": "./src/",
-    "yasumu:types": "../../apps/yasumu/src-tauri/src/tanxium/runtime/bootstrap.ts",
+    "yasumu:types": "../../crates/tanxium/src/runtime/bootstrap.ts",
   },
   "compilerOptions": {
     "experimentalDecorators": true,

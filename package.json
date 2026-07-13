@@ -20,6 +20,8 @@
   },
   "devDependencies": {
     "@turbo/gen": "^2.9.7",
+    "@types/deno": "catalog:test",
+    "@types/node": "catalog:build",
     "@types/nodemailer": "^8.0.0",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",

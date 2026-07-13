@@ -1,236 +1,87 @@
-# Contributing
+# Contributing to Yasumu
 
-Thank you for showing interests in contributing to this project.
-Please follow this guide before contributing to this project.
+Thanks for contributing to Yasumu. Start with an issue or discussion
+when the scope is unclear, and check existing pull requests before
+starting work on a large change.
 
-## Don't know where to start?
+## Repository overview
 
-If you dont know from where to start, check the issue tracker.
+Yasumu has two coordinated workspaces:
 
-## Architecture
+- **pnpm workspace**: Next.js applications and TypeScript packages.
+- **Cargo workspace**: the Yasumu Tauri application and the Tanxium
+  runtime crates.
 
-Yasumu is designed around a modular architecture where core features
-are implemented as independent packages.
+The root [`AGENTS.md`](AGENTS.md) is the authoritative repository map
+and architecture guide. Read it before changing package boundaries,
+the Tauri app, or Tanxium.
 
-```mermaid
-graph TD
-    subgraph Shared ["Shared Utilities"]
-        Common["@yasumu/common"]
-    end
+## Local setup
 
-    subgraph Client ["Client Layer"]
-        Core["@yasumu/core<br>(Client SDK)"]
-    end
+Install current stable Rust, Node.js, pnpm 11, and Deno 2.9.2. Then
+run:
 
-    subgraph Bridge ["Bridge Layer"]
-        RPC["@yasumu/rpc<br>(PlatformBridge)"]
-    end
-
-    subgraph Server ["Backend Layer (@yasumu/tanxium)"]
-        Hono["Hono Server"]
-        Den["@yasumu/den<br>(DI Framework)"]
-        DB[(SQLite + Drizzle)]
-    end
-
-    subgraph Storage ["Storage Layer"]
-        Schema["@yasumu/schema"]
-        Files["File System<br>(.ysl files)"]
-    end
-
-    %% Flows
-    Core -->|Uses| RPC
-    RPC <-->|IPC/HTTP| Hono
-    Hono --> Den
-    Den --> DB
-    DB <-->|Sync| Schema
-    Schema <-->|Serialize| Files
-
-    %% Dependencies
-    Common -.-> Core
-    Common -.-> RPC
-    Common -.-> Den
-    Common -.-> Schema
+```sh
+pnpm install
+cargo check --workspace
 ```
 
-### Package Structure
+## Working on Tanxium
 
-- **@yasumu/common**: A shared package that exposes common types and
-  utilities used across the ecosystem.
-- **@yasumu/core**: The client SDK that defines how Yasumu's data is
-  managed and structured.
-- **@yasumu/rpc**: Defines external operations and exposes the
-  `PlatformBridge` interface, allowing `@yasumu/core` to communicate
-  with the underlying platform (file system, external servers, etc.).
-- **@yasumu/tanxium**: The backend API running on Yasumu's custom
-  JS/TS runtime. It uses a Hono server and **@yasumu/den** (a custom
-  NestJS-like dependency injection container and module system) to
-  expose RPC-friendly endpoints. It manages CRUD operations using
-  Drizzle ORM and a local SQLite database powered by `node:sqlite`,
-  which is then synchronized with the file system.
-- **@yasumu/schema**: Handles the serialization and deserialization of
-  Yasumu's entities into the plain text `.ysl` (Yasumu Schema
-  Language) format.
+Tanxium is an embeddable Deno-based JS/TS runtime:
 
-Core features are implemented as independent modules, making it
-possible to:
+- `crates/tanxium` is the publishable, Tauri-free core.
+- `crates/tanxium-yasumu` is the Tauri adapter.
+- `crates/tanxium-cli` contains the `tanxium` CLI and REPL.
+- `tests/tanxium-runtime` contains Vitest tests that execute the
+  actual CLI.
 
-- Add new protocol support without touching the core system
-- Extend the application with plugins
-- Run specific components in different environments
-- Integrate Yasumu into custom developer tooling
+Do not add Tauri dependencies to `crates/tanxium`. Put host-specific
+behavior behind `RuntimeHost` and implement it in an adapter. Changes
+to module loading, runtime ops, bootstrap code, virtual modules, CLI
+behavior, or the REPL require semantic tests in
+`tests/tanxium-runtime`.
 
-This architecture keeps the system maintainable while allowing it to
-grow organically with new use cases.
+```sh
+cargo fmt --all
+cargo check --workspace
+pnpm --filter @yasumu/tanxium-runtime-tests test
+```
 
-## Check for existing PRs
+Public `tanxium` API changes require rustdoc and updates to
+`crates/tanxium/README.md` or `crates/tanxium/docs/`. Public Yasumu
+behavior also belongs in `apps/docs`.
 
-Before making a pull request, make sure to check if someone else has
-already made a PR for that specific topic. Avoid duplicated PRs.
+## Testing and formatting
 
-## Commits
+Use the narrowest relevant checks while iterating, then run the
+workspace checks before opening a pull request:
 
-Follow [conventional commits](https://www.conventionalcommits.org/en)
-format while committing. Conventional commit dovetails with semver, by
-describing the features, fixes, and breaking changes made in commit
-messages. The following specification is adapted from
-[conventionalcommits.org](https://www.conventionalcommits.org/en).
+```sh
+pnpm format
+pnpm build
+cargo fmt --all --check
+cargo check --workspace
+pnpm --filter @yasumu/tanxium-runtime-tests test
+```
 
-The commit message should be structured as follows:
+The GitHub Actions workflows in `.github/workflows/` use the root
+Cargo workspace. Do not add `working-directory: apps/yasumu/src-tauri`
+to generic Cargo jobs; use the root manifest so all crates remain
+checked.
+
+## Commits and pull requests
+
+Use [Conventional Commits](https://www.conventionalcommits.org/), for
+example:
 
 ```text
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer]
+feat(tanxium): add persistent inspector session
+fix(runtime): resolve workspace packages from node_modules
+docs: clarify trusted publishing setup
 ```
 
-##### The commit contains the following structural elements, to communicate intent to the consumers of your library:
-
-1. `fix`: a commit of the type fix patches a bug in your codebase
-   (this correlates with `PATCH` in semantic versioning).
-2. `feat`: a commit of the type feat introduces a new feature to the
-   codebase (this correlates with `MINOR` in semantic versioning).
-3. `BREAKING CHANGE`: a commit that has the text `BREAKING CHANGE`: at
-   the beginning of its optional body or footer section introduces a
-   breaking API change (correlating with MAJOR in semantic
-   versioning). A `BREAKING CHANGE` can be part of commits of any
-   type.
-4. Others: commit types other than `fix:` and `feat:` are allowed, for
-   example
-   [@commitlint/config-conventional](https://npm.im/@commitlint/config-conventional)
-   (based on the
-   [Angular convention](https://github.com/angular/angular/blob/68a6a07/CONTRIBUTING.md#commit))
-   recommends `chore:`, `docs:`, `style:`, `refactor:`, `perf:`,
-   `test:`, and others.
-
-### Examples
-
-#### Commit message with description and breaking change in body
-
-```text
-feat: allow provided config object to extend other configs
-
-BREAKING CHANGE: `extends` key in config file is now used for extending other config files
-```
-
-#### Commit message with optional `!` to draw attention to breaking change
-
-```text
-chore!: drop Node 6 from testing matrix
-
-BREAKING CHANGE: dropping Node 6 which hits end of life in April
-```
-
-#### Commit message with no body
-
-```text
-docs: correct spelling of CHANGELOG
-```
-
-#### Commit message with scope
-
-```text
-feat(lang): add polish language
-```
-
-#### Commit message for a fix using an (optional) issue number.
-
-```text
-fix: correct minor typos in code
-
-see the issue for details on the typos fixed
-
-closes issue #12
-```
-
-### Specification
-
-The key words `“MUST”`, `“MUST NOT”`, `“REQUIRED”`, `“SHALL”`,
-`“SHALL NOT”`, `“SHOULD”`, `“SHOULD NOT”`, `“RECOMMENDED”`, `“MAY”`,
-and `“OPTIONAL”` in this document are to be interpreted as described
-in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
-
-1. Commits MUST be prefixed with a type, which consists of a noun,
-   `feat`, `fix`, etc., followed by an OPTIONAL scope, and a REQUIRED
-   terminal colon and space.
-2. The type `feat` MUST be used when a commit adds a new feature to
-   your application or library.
-3. The type `fix` MUST be used when a commit represents a bug fix for
-   your application.
-4. A scope MAY be provided after a type. A scope MUST consist of a
-   noun describing a section of the codebase surrounded by
-   parenthesis, e.g., `fix(parser):`
-5. A description MUST immediately follow the space after the
-   type/scope prefix. The description is a short summary of the code
-   changes, e.g.,
-   `fix: array parsing issue when multiple spaces were contained in string`.
-6. A longer commit body MAY be provided after the short description,
-   providing additional contextual information about the code changes.
-   The body MUST begin one blank line after the description.
-7. A footer of one or more lines MAY be provided one blank line after
-   the body. The footer MUST contain meta-information about the
-   commit, e.g., related pull-requests, reviewers, breaking changes,
-   with one piece of meta-information per-line.
-8. Breaking changes MUST be indicated at the very beginning of the
-   body section, or at the beginning of a line in the footer section.
-   A breaking change MUST consist of the uppercase text
-   `BREAKING CHANGE`, followed by a colon and a space.
-9. A description MUST be provided after the `BREAKING CHANGE:`,
-   describing what has changed about the API, e.g.,
-   `BREAKING CHANGE: environment variables now take precedence over config files`.
-10. Types other than `feat` and `fix` MAY be used in your commit
-    messages.
-11. The units of information that make up conventional commits MUST
-    NOT be treated as case sensitive by implementors, with the
-    exception of `BREAKING CHANGE` which MUST be uppercase.
-12. A `!` MAY be appended prior to the `:` in the type/scope prefix,
-    to further draw attention to breaking changes.
-    `BREAKING CHANGE: description` MUST also be included in the body
-    or footer, along with the `!` in the prefix.
-
-## Formatting, Linting, Testing
-
-Make sure to properly format the source code, check for linter errors
-and test the code before pushing.
-
-## File Naming
-
-Prefer the use of `kebab-case` for file naming. Files such as services
-may append `.service` to the name (for example: `user.service.ts`).
-
-**Why `kebab-case`?**
-
-- **Readability:** Words are clearly separated with hyphens, making
-  file names easier to read at a glance.
-- **Consistency:** Uniform naming avoids confusion when importing
-  files, especially in case-sensitive file systems.
-- **URL & CLI Friendly:** Works seamlessly in URLs and command-line
-  operations without needing quotes or escaping spaces.
-- **Cross-Platform Safe:** Reduces issues with file systems that treat
-  uppercase/lowercase differently.
-
-Using `kebab-case` consistently helps maintain a clean, professional,
-and easily navigable project structure.
-
-> 🎉 Happy coding!
+Keep pull requests focused. Include the behavior changed, validation
+performed, and any migration or release impact in the description. For
+a breaking public API change, use `!` in the commit type and include a
+`BREAKING CHANGE:` footer.

@@ -18,11 +18,9 @@ use deno_runtime::deno_core::{
 use deno_runtime::deno_web::{Blob, BlobStore};
 use node_resolver::{NodeResolutionKind, PackageJsonResolver, ResolutionMode};
 use sys_traits::impls::RealSys;
-use tauri::{AppHandle, Manager};
 use tracing::trace;
 
-use crate::state::YasumuInternalState;
-use crate::tanxium::{node_services, yasumu_modules::YASUMU_MODULES};
+use crate::{node_services, state::RuntimeState, yasumu_modules::YASUMU_MODULES};
 
 const YASUMU_MODULE_PREFIX: &str = "yasumu:";
 const YASUMU_INTERNAL_PREFIX: &str = "file://yasumu_internal/";
@@ -114,12 +112,71 @@ fn is_common_js_module(path: &Path) -> bool {
     false
 }
 
+/// Finds statically declared CommonJS property exports.
+///
+/// Node exposes these properties as synthetic named exports when a CommonJS
+/// module is imported from ESM. Supporting the common assignment forms here
+/// keeps Tanxium's ESM interop aligned with Node without evaluating the module
+/// during module loading.
+fn common_js_named_exports(code: &str) -> Vec<String> {
+    let bytes = code.as_bytes();
+    let mut exports = Vec::new();
+    let mut offset = 0;
+
+    while let Some(index) = code[offset..].find("exports.") {
+        let exports_start = offset + index;
+        let is_module_exports = exports_start >= "module.".len()
+            && &code[exports_start - "module.".len()..exports_start] == "module.";
+        let is_plain_exports = exports_start == 0
+            || !bytes[exports_start - 1].is_ascii_alphanumeric()
+                && bytes[exports_start - 1] != b'_'
+                && bytes[exports_start - 1] != b'$'
+                && bytes[exports_start - 1] != b'.';
+
+        if !is_module_exports && !is_plain_exports {
+            offset = exports_start + "exports.".len();
+            continue;
+        }
+
+        let property_start = exports_start + "exports.".len();
+        let Some(first) = bytes.get(property_start) else {
+            break;
+        };
+
+        if !first.is_ascii_alphabetic() && *first != b'_' && *first != b'$' {
+            offset = property_start;
+            continue;
+        }
+
+        let property_end = bytes[property_start..]
+            .iter()
+            .position(|byte| !byte.is_ascii_alphanumeric() && *byte != b'_' && *byte != b'$')
+            .map(|length| property_start + length)
+            .unwrap_or(bytes.len());
+        let property = &code[property_start..property_end];
+
+        if !exports.iter().any(|export| export == property) {
+            exports.push(property.to_string());
+        }
+
+        offset = property_end;
+    }
+
+    exports
+}
+
 fn wrap_common_js_module(code: String, path: &Path) -> String {
     let filename = serde_json::to_string(&path.to_string_lossy()).unwrap();
     let dirname = serde_json::to_string(&path.parent().unwrap_or(path).to_string_lossy()).unwrap();
+    let named_exports = common_js_named_exports(&code)
+        .into_iter()
+        .map(|name| format!("export const {name} = module.exports.{name};"))
+        .collect::<Vec<_>>()
+        .join("\n");
 
     format!(
-        r#"import {{ createRequire }} from "node:module";
+        r#"import "node:process";
+import {{ createRequire }} from "node:module";
 const require = createRequire(import.meta.url);
 const module = {{ exports: {{}} }};
 const exports = module.exports;
@@ -128,8 +185,23 @@ const __dirname = {dirname};
 (function (require, module, exports, __filename, __dirname) {{
 {code}
 }})(require, module, exports, __filename, __dirname);
-export default module.exports;"#,
+export default module.exports;
+{named_exports}"#,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::common_js_named_exports;
+
+    #[test]
+    fn discovers_common_js_property_exports() {
+        let exports = common_js_named_exports(
+            "exports.answer = 42; module.exports.SMTPServer = SMTPServer; module.exports.answer = 43;",
+        );
+
+        assert_eq!(exports, vec!["answer", "SMTPServer"]);
+    }
 }
 
 pub struct TypescriptModuleLoader {
@@ -139,16 +211,16 @@ pub struct TypescriptModuleLoader {
     /// Keeps the root Blob alive if the caller revokes its object URL directly
     /// after creating a Web Worker.
     pub main_module_blob: Option<(ModuleSpecifier, Arc<Blob>)>,
-    pub app_handle: AppHandle,
+    pub state: Arc<RuntimeState>,
     pub pkg_json_resolver: Arc<PackageJsonResolver<RealSys>>,
 }
 
 impl TypescriptModuleLoader {
     fn current_workspace_dir(&self) -> Option<std::path::PathBuf> {
-        self.app_handle
-            .state::<std::sync::RwLock<YasumuInternalState>>()
+        self.state
+            .context
             .read()
-            .expect("state lock poisoned")
+            .expect("runtime context lock poisoned")
             .workspace_dir
             .clone()
     }
