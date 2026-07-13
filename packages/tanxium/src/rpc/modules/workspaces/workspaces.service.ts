@@ -155,9 +155,9 @@ export class WorkspacesService implements OnModuleInit {
     const workspace = await this.workspaceActivatorService.activate(id);
     this.activeWorkspaceId = workspace.id;
 
-    await this.emailService.createSmtpServer(id).catch((e) => {
+    void this.emailService.createSmtpServer(id).catch((e) => {
       console.error('Failed to create SMTP server for workspace', id, e);
-      return Yasumu.ui.showNotification({
+      void Yasumu.ui.showNotification({
         title: 'Failed to create SMTP server',
         message: 'Please try again later. If the problem persists, please restart the application.',
         variant: 'error',
@@ -175,9 +175,9 @@ export class WorkspacesService implements OnModuleInit {
     const workspace = await this.findOneById(id);
     if (!workspace) return;
 
-    await this.emailService.closeSmtpServer(id).catch((e) => {
+    void this.emailService.closeSmtpServer(id).catch((e) => {
       console.error('Failed to close SMTP server for workspace', id, e);
-      return Yasumu.ui.showNotification({
+      void Yasumu.ui.showNotification({
         title: 'Failed to close SMTP server',
         message: 'Please try again later. If the problem persists, please restart the application.',
         variant: 'error',
@@ -185,8 +185,10 @@ export class WorkspacesService implements OnModuleInit {
     });
 
     console.log(`Workspace ${id} deactivated`);
-    void this.eventBus.publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'deactivated')).catch((e) => {
-      console.error('Failed to handle workspace deactivation event', id, e);
-    });
+    void this.eventBus
+      .publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'deactivated'))
+      .catch((e) => {
+        console.error('Failed to handle workspace deactivation event', id, e);
+      });
   }
 }

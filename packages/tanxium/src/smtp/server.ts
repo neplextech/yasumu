@@ -67,18 +67,19 @@ export function createSmtpServer(options: SmtpServerOptions) {
       },
     });
 
-    server.on('error', async (err) => {
+    server.on('error', (err) => {
       if (server.server.listening) {
         server.close();
       }
 
       console.error('SMTP Server Error', err);
-      await Yasumu.ui.showNotification({
+      reject(err);
+
+      void Yasumu.ui.showNotification({
         title: 'SMTP Server Error',
         message: String(err),
         variant: 'error',
       });
-      reject(err);
     });
 
     server.listen(options.port ?? 0, () => {
@@ -90,6 +91,10 @@ export function createSmtpServer(options: SmtpServerOptions) {
       } else {
         port = address.port;
       }
+
+      console.log(
+        `SMTP Server listening on localhost:${port} (workspaceId: ${options.workspaceId}, smtpId: ${options.smtpId})`,
+      );
 
       resolve({
         server,

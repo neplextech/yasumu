@@ -27,13 +27,6 @@ import { EnvironmentsService } from '../environment/environment.service.ts';
 import { GraphqlService } from '../graphql/graphql.service.ts';
 import { RestService } from '../rest/rest.service.ts';
 import { getWorkspacePath, listYslFiles, readYslFile, topologicalSortGroups } from './fs-helpers.ts';
-import {
-  serializeEnvironmentContent,
-  serializeGraphqlContent,
-  serializeRestContent,
-  serializeSmtpContent,
-  serializeWorkspaceContent,
-} from './fs-serializers.ts';
 import { SynchronizationPusher } from './synchronization-pusher.service.ts';
 
 @Injectable()
@@ -103,11 +96,15 @@ export class SynchronizationLoader {
     await this.createEnvironmentsFromFs(newWorkspace);
     await this.createSmtpFromFs(newWorkspace);
 
+    const normalizedWorkspaceContent = this.yslService.serialize(WorkspaceSchema, {
+      ...parsed,
+      blocks: { ...parsed.blocks, snapshot: 0 },
+    });
     await this.lockFileService.setEntry(
       workspacePath,
       'workspace',
       newWorkspace.id,
-      this.lockFileService.computeHash(fileContent),
+      this.lockFileService.computeHash(normalizedWorkspaceContent),
     );
 
     return newWorkspace;
@@ -271,13 +268,42 @@ export class SynchronizationLoader {
 
     if (!fileContent) return;
 
-    const dbContent = serializeWorkspaceContent(workspace);
+    // Normalize snapshot to 0 so the non-deterministic timestamp doesn't
+    // cause spurious conflicts or push cycles on every sync.
+    const parsedFile = this.yslService.deserialize(WorkspaceSchema, fileContent);
+    const normalizedFileContent = this.yslService.serialize(WorkspaceSchema, {
+      ...parsedFile,
+      blocks: { ...parsedFile.blocks, snapshot: 0 },
+    });
+
+    const groups = await this.entityGroupService.findAll(workspace.id).catch(() => []);
+    const dbContent = this.yslService.serialize(WorkspaceSchema, {
+      annotation: YasumuAnnotations.Workspace,
+      blocks: {
+        metadata: { id: workspace.id, name: workspace.name, version: workspace.version },
+        groups: groups.reduce(
+          (acc, group) => {
+            acc[group.id] = {
+              id: group.id,
+              name: group.name,
+              entity: group.entityType,
+              parentId: group.parentId,
+              workspaceId: group.workspaceId,
+            };
+            return acc;
+          },
+          {} as Infer<typeof WorkspaceSchema>['blocks']['groups'],
+        ),
+        snapshot: 0,
+      },
+    });
+
     const { action, state } = await this.determineSyncAction(
       workspace.path,
       'workspace',
       workspace.id,
       dbContent,
-      fileContent,
+      normalizedFileContent,
     );
     const resolvedAction = await this.resolveSyncAction(action, state);
 
@@ -296,7 +322,7 @@ export class SynchronizationLoader {
       workspace.path,
       'workspace',
       workspace.id,
-      this.lockFileService.computeHash(fileContent),
+      this.lockFileService.computeHash(normalizedFileContent),
     );
   }
 
@@ -364,7 +390,49 @@ export class SynchronizationLoader {
       processedIds.add(entityId);
 
       const existingEntity = existingEntities.find((e) => e.id === entityId);
-      const dbContent = existingEntity ? serializeRestContent(existingEntity) : null;
+      const dbContent = existingEntity
+        ? this.yslService.serialize(RestSchema, {
+            annotation: YasumuAnnotations.Rest,
+            blocks: {
+              dependencies: [],
+              metadata: {
+                groupId: existingEntity.groupId,
+                id: existingEntity.id,
+                method: existingEntity.method,
+                name: existingEntity.name,
+              },
+              request: {
+                body: existingEntity.requestBody
+                  ? {
+                      type: existingEntity.requestBody.type,
+                      content:
+                        typeof existingEntity.requestBody.value === 'string'
+                          ? existingEntity.requestBody.value
+                          : JSON.stringify(existingEntity.requestBody.value),
+                    }
+                  : null,
+                headers: (existingEntity.requestHeaders ?? []).map((h) => ({
+                  key: h.key ?? '',
+                  value: h.value ?? '',
+                  enabled: h.enabled,
+                })),
+                parameters: (existingEntity.requestParameters ?? []).map((p) => ({
+                  key: p.key ?? '',
+                  value: p.value ?? '',
+                  enabled: p.enabled,
+                })),
+                searchParameters: (existingEntity.searchParameters ?? []).map((s) => ({
+                  key: s.key ?? '',
+                  value: s.value ?? '',
+                  enabled: s.enabled,
+                })),
+                url: existingEntity.url,
+              },
+              script: existingEntity.script?.code ?? null,
+              test: null,
+            },
+          })
+        : null;
 
       const { action, state } = await this.determineSyncAction(
         workspace.path,
@@ -465,7 +533,48 @@ export class SynchronizationLoader {
       processedIds.add(entityId);
 
       const existingEntity = existingEntities.find((e) => e.id === entityId);
-      const dbContent = existingEntity ? serializeGraphqlContent(existingEntity) : null;
+      const dbContent = existingEntity
+        ? this.yslService.serialize(GraphqlSchema, {
+            annotation: YasumuAnnotations.Graphql,
+            blocks: {
+              dependencies: [],
+              metadata: {
+                groupId: existingEntity.groupId,
+                id: existingEntity.id,
+                name: existingEntity.name,
+              },
+              request: {
+                body: existingEntity.requestBody
+                  ? {
+                      type: existingEntity.requestBody.type,
+                      content:
+                        typeof existingEntity.requestBody.value === 'string'
+                          ? existingEntity.requestBody.value
+                          : JSON.stringify(existingEntity.requestBody.value),
+                    }
+                  : null,
+                headers: (existingEntity.requestHeaders ?? []).map((h) => ({
+                  key: h.key ?? '',
+                  value: h.value ?? '',
+                  enabled: h.enabled,
+                })),
+                parameters: (existingEntity.requestParameters ?? []).map((p) => ({
+                  key: p.key ?? '',
+                  value: p.value ?? '',
+                  enabled: p.enabled,
+                })),
+                searchParameters: (existingEntity.searchParameters ?? []).map((s) => ({
+                  key: s.key ?? '',
+                  value: s.value ?? '',
+                  enabled: s.enabled,
+                })),
+                url: existingEntity.url,
+              },
+              script: existingEntity.script?.code ?? null,
+              test: null,
+            },
+          })
+        : null;
 
       const { action, state } = await this.determineSyncAction(
         workspace.path,
@@ -560,7 +669,24 @@ export class SynchronizationLoader {
       processedIds.add(envId);
 
       const existingEnv = existingEnvs.find((e) => e.id === envId);
-      const dbContent = existingEnv ? serializeEnvironmentContent(existingEnv) : null;
+      const dbContent = existingEnv
+        ? this.yslService.serialize(EnvironmentSchema, {
+            annotation: YasumuAnnotations.Environment,
+            blocks: {
+              metadata: { id: existingEnv.id, name: existingEnv.name },
+              variables: existingEnv.variables.map((v) => ({
+                key: v.key,
+                value: v.value ?? '',
+                enabled: v.enabled,
+              })),
+              secrets: existingEnv.secrets.map((s) => ({
+                key: s.key,
+                value: '',
+                enabled: s.enabled,
+              })),
+            },
+          })
+        : null;
 
       const { action, state } = await this.determineSyncAction(
         workspace.path,
@@ -634,7 +760,18 @@ export class SynchronizationLoader {
     if (!fileContent) return;
 
     const existingSmtp = await this.emailService.getSmtp(workspace.id);
-    const dbContent = serializeSmtpContent(existingSmtp);
+    const dbContent = this.yslService.serialize(SmtpSchema, {
+      annotation: YasumuAnnotations.Smtp,
+      blocks: {
+        metadata: {
+          id: existingSmtp.id,
+          port: existingSmtp.port,
+          username: existingSmtp.username,
+          password: null,
+        },
+        script: existingSmtp.script?.code ?? null,
+      },
+    });
 
     const { action, state } = await this.determineSyncAction(
       workspace.path,

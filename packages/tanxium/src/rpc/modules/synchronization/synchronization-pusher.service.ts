@@ -66,28 +66,37 @@ export class SynchronizationPusher {
   public async pushWorkspaceToFs(workspace: WorkspaceData): Promise<void> {
     const groups = await this.entityGroupService.findAll(workspace.id).catch(() => []);
 
+    const groupsMap = groups.reduce(
+      (acc, group) => {
+        acc[group.id] = {
+          id: group.id,
+          name: group.name,
+          entity: group.entityType,
+          parentId: group.parentId,
+          workspaceId: group.workspaceId,
+        };
+        return acc;
+      },
+      {} as Infer<typeof WorkspaceSchema>['blocks']['groups'],
+    );
+
     const content = this.yslService.serialize(WorkspaceSchema, {
       annotation: YasumuAnnotations.Workspace,
       blocks: {
-        metadata: {
-          id: workspace.id,
-          name: workspace.name,
-          version: workspace.version,
-        },
-        groups: groups.reduce(
-          (acc, group) => {
-            acc[group.id] = {
-              id: group.id,
-              name: group.name,
-              entity: group.entityType,
-              parentId: group.parentId,
-              workspaceId: group.workspaceId,
-            };
-            return acc;
-          },
-          {} as Infer<typeof WorkspaceSchema>['blocks']['groups'],
-        ),
+        metadata: { id: workspace.id, name: workspace.name, version: workspace.version },
+        groups: groupsMap,
         snapshot: Date.now(),
+      },
+    });
+
+    // Normalize snapshot to 0 for the lock hash so the loader's comparison
+    // (which also normalizes to 0) stays stable across pushes.
+    const normalizedContent = this.yslService.serialize(WorkspaceSchema, {
+      annotation: YasumuAnnotations.Workspace,
+      blocks: {
+        metadata: { id: workspace.id, name: workspace.name, version: workspace.version },
+        groups: groupsMap,
+        snapshot: 0,
       },
     });
 
@@ -98,7 +107,7 @@ export class SynchronizationPusher {
       workspace.path,
       'workspace',
       workspace.id,
-      this.lockFileService.computeHash(content),
+      this.lockFileService.computeHash(normalizedContent),
     );
   }
 
