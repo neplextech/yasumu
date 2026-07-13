@@ -116,6 +116,18 @@ jobs:
           cache-on-failure: true
           shared-key: yasumu-check-${{ matrix.name }}
 
+      # rusty_v8 stores its archive outside Cargo's normal artifact layout. A
+      # partial cache can retain its checksum without the archive, making V8
+      # skip its download and fail at link time. Keep valid archives cached.
+      - name: Repair incomplete rusty_v8 cache
+        shell: bash
+        run: |
+          find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
+            checksum="$1"
+            archive="${checksum%.sum}"
+            [ -f "${archive}.a" ] || [ -f "${archive}.lib" ] || rm -f "$checksum"
+          ' sh {} \;
+
       - name: Download @yasumu/test bundle
         uses: actions/download-artifact@v4
         with:
@@ -156,7 +168,19 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: '. -> target'
+          cache-on-failure: true
           shared-key: tanxium-runtime
+
+      # See the Cargo Check job above. Preserve a complete V8 archive while
+      # forcing a fresh download when only its stale checksum was restored.
+      - name: Repair incomplete rusty_v8 cache
+        shell: bash
+        run: |
+          find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
+            checksum="$1"
+            archive="${checksum%.sum}"
+            [ -f "${archive}.a" ] || [ -f "${archive}.lib" ] || rm -f "$checksum"
+          ' sh {} \;
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile

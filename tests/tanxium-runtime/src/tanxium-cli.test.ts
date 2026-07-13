@@ -88,7 +88,7 @@ beforeAll(() => {
     cwd: root,
     stdio: 'inherit',
   });
-});
+}, 10 * 60_000);
 
 afterAll(() => rmSync(workspace, { recursive: true, force: true }));
 
