@@ -3,7 +3,7 @@
   "specifiers": {
     "npm:@hono/zod-validator@~0.7.6": "0.7.6_hono@4.12.16_zod@4.4.1",
     "npm:@types/mailparser@^3.4.6": "3.4.6",
-    "npm:@types/node@*": "24.2.0",
+    "npm:@types/node@^24.6.2": "24.13.3",
     "npm:@types/smtp-server@^3.5.13": "3.5.13",
     "npm:drizzle-kit@~0.31.10": "0.31.10",
     "npm:drizzle-orm@~0.45.2": "0.45.2",
@@ -423,8 +423,8 @@
         "iconv-lite@0.6.3"
       ]
     },
-    "@types/node@24.2.0": {
-      "integrity": "sha512-3xyG3pMCq3oYCNg7/ZP+E1ooTaGB4cG8JWRsqqOYQdbWNY4zbaV0Ennrd7stjiJEFZCaybcIgpTjJWHRfBSIDw==",
+    "@types/node@24.13.3": {
+      "integrity": "sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==",
       "dependencies": [
         "undici-types"
       ]
@@ -759,8 +759,8 @@
     "uc.micro@2.1.0": {
       "integrity": "sha512-ARDJmphmdvUk6Glw7y9DQ2bFkKBHwQHLi2lsaH6PPmz/Ka9sFOBsBluozhDltWmnv9u/cF6Rt87znRTPV+yp/A=="
     },
-    "undici-types@7.10.0": {
-      "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
+    "undici-types@7.18.2": {
+      "integrity": "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="
     },
     "zod@4.4.1": {
       "integrity": "sha512-a6ENMBBGZBsnlSebQ/eKCguSBeGKSf4O7BPnqVPmYGtpBYI7VSqoVqw+QcB7kPRjbqPwhYTpFbVj/RqNz/CT0Q=="
@@ -771,6 +771,7 @@
       "dependencies": [
         "npm:@hono/zod-validator@~0.7.6",
         "npm:@types/mailparser@^3.4.6",
+        "npm:@types/node@^24.6.2",
         "npm:@types/smtp-server@^3.5.13",
         "npm:drizzle-kit@~0.31.10",
         "npm:drizzle-orm@~0.45.2",
