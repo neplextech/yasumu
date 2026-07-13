@@ -83,8 +83,7 @@ impl NodeRequireLoader for TanxiumNodeRequireLoader {
     }
 
     fn resolve_require_node_module_paths(&self, from: &Path) -> Vec<String> {
-        let mut paths =
-            deno_runtime::deno_node::default_resolve_require_node_module_paths(from);
+        let mut paths = deno_runtime::deno_node::default_resolve_require_node_module_paths(from);
 
         // Prepend workspace-scoped paths so they take priority over the default
         // walk-up resolution. The `yasumu/node_modules` dir is checked first
@@ -135,20 +134,15 @@ pub fn create_pkg_json_resolver() -> Arc<PackageJsonResolver<RealSys>> {
     Arc::new(PackageJsonResolver::new(sys, None))
 }
 
-/// Creates a BYONM npm resolver. When `workspace_dir` is provided the resolver
-/// roots its node_modules lookup at `<workspace_dir>/yasumu` so that packages
-/// installed inside the workspace are discovered before global ones.
+/// Creates a BYONM npm resolver rooted at the active workspace. Resolution
+/// searches `<workspace>/node_modules`, then its parent directories.
 pub fn create_npm_resolver(
     pkg_json_resolver: Arc<PackageJsonResolver<RealSys>>,
     workspace_dir: Option<&Path>,
 ) -> NpmResolver<RealSys> {
     let sys = RealSys::default();
 
-    // The BYONM resolver searches upward from `root_node_modules_dir` through
-    // parent directories. Setting it to `<workspace>/yasumu` means:
-    //   1. `<workspace>/yasumu/node_modules` is checked first.
-    //   2. The upward walk then naturally hits `<workspace>/node_modules`.
-    let root_node_modules_dir = workspace_dir.map(|d| d.join("yasumu"));
+    let root_node_modules_dir = workspace_dir.map(std::path::Path::to_path_buf);
 
     NpmResolver::<RealSys>::new(deno_resolver::npm::NpmResolverCreateOptions::Byonm(
         ByonmNpmResolverCreateOptions {

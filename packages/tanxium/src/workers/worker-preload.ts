@@ -37,13 +37,38 @@ export interface ContextHandlerDefinition {
     | ScriptContextFunction<[result: unknown, builtContext: BuiltContextExtractor], ScriptContextExtractorResult>;
 }
 
-export function generateWorkerPreload(handlers: ContextHandlerDefinition[]): string {
+export type WorkerTransport = 'web' | 'worker-threads';
+
+function getWorkerTransportPrelude(transport: WorkerTransport): string {
+  if (transport === 'worker-threads') {
+    return /* javascript */ `
+  import { parentPort } from 'node:worker_threads';
+
+  const postWorkerMessage = (message) => parentPort.postMessage(message);
+  const onWorkerMessage = (handler) => parentPort.on('message', handler);
+  const terminateWorker = () => process.exit(0);`;
+  }
+
+  return /* javascript */ `
+  const postWorkerMessage = (message) => self.postMessage(message);
+  const onWorkerMessage = (handler) => self.addEventListener('message', (event) => handler(event.data));
+  const terminateWorker = () => self.close();`;
+}
+
+export function generateWorkerPreload(
+  handlers: ContextHandlerDefinition[],
+  transport: WorkerTransport = 'web',
+): string {
   const handlerEntries = handlers
     .map(
       (h) => /* typescript */ `
   '${h.type}': {
     build: (context) => {
-      ${typeof h.builder === 'string' ? `${h.builder}\nreturn { args, getContext };` : `return (${h.builder.toString()})(context);`}
+      ${
+        typeof h.builder === 'string'
+          ? `${h.builder}\nreturn { args, getContext };`
+          : `return (${h.builder.toString()})(context);`
+      }
     },
     extract: (result, builtContext) => {
       ${
@@ -56,162 +81,173 @@ export function generateWorkerPreload(handlers: ContextHandlerDefinition[]): str
     )
     .join(',\n');
 
-  return /* typescript */ `
-import { parentPort } from 'node:worker_threads';
-import { runTest, test as _test, expect as _expect, describe as _describe } from 'yasumu:test';
+  return /* javascript */ `
+  import { createRequire } from 'node:module';
+  import { pathToFileURL } from 'node:url';
+  import { runTest, test as _test, expect as _expect, describe as _describe } from 'yasumu:test';
+${getWorkerTransportPrelude(transport)}
 
-const HEARTBEAT_INTERVAL = ${SCRIPT_WORKER_HEARTBEAT_TIMEOUT};
+  // Each script worker has an isolated global scope. CommonJS dependencies
+  // loaded from user modules (for example, nodemailer) need their own require.
+  if (typeof globalThis.require !== 'function') {
+    globalThis.require = (specifier) => {
+      const baseDir = Yasumu.getWorkspaceDir() ?? Deno.cwd();
+      return createRequire(
+        pathToFileURL(baseDir + '/__yasumu_virtual_module__.ts'),
+      )(specifier);
+    };
+  }
 
-const heartbeatTimer = setInterval(() => {
-  parentPort.postMessage({ type: 'heartbeat' });
-}, HEARTBEAT_INTERVAL);
+  const HEARTBEAT_INTERVAL = ${SCRIPT_WORKER_HEARTBEAT_TIMEOUT};
 
-if (heartbeatTimer && typeof heartbeatTimer === 'object' && 'unref' in heartbeatTimer) {
-  heartbeatTimer.unref();
-} else {
-  Deno.unrefTimer(heartbeatTimer);
-}
+  const heartbeatTimer = setInterval(() => {
+    postWorkerMessage({ type: 'heartbeat' });
+  }, HEARTBEAT_INTERVAL);
 
-globalThis.test = _test;
-globalThis.expect = _expect;
-globalThis.describe = _describe;
+  if (heartbeatTimer && typeof heartbeatTimer === 'object' && 'unref' in heartbeatTimer) {
+    heartbeatTimer.unref();
+  } else {
+    Deno.unrefTimer(heartbeatTimer);
+  }
 
-const contextHandlers = {
+  globalThis.test = _test;
+  globalThis.expect = _expect;
+  globalThis.describe = _describe;
+
+  const contextHandlers = {
 ${handlerEntries}
-};
-
-async function executeHandler(mod, invocationTarget, contextType, context) {
-  if (invocationTarget === 'onTest') {
-    return executeTestHandler(mod, contextType, context);
-  }
-
-  const targetFn = mod[invocationTarget];
-  
-  if (typeof targetFn !== 'function') {
-    return {
-      success: false,
-      context,
-      error: 'Function "' + invocationTarget + '" not found or is not a function',
-    };
-  }
-
-  const handler = contextHandlers[contextType];
-  if (!handler) {
-    return {
-      success: false,
-      context,
-      error: 'Unknown context type: ' + contextType,
-    };
-  }
-
-  const builtContext = handler.build(context);
-  const result = await targetFn(...builtContext.args);
-  const { updatedContext, extractedResult } = handler.extract(result, builtContext);
-
-  return {
-    success: true,
-    context: updatedContext,
-    result: extractedResult,
   };
-}
 
-async function executeTestHandler(mod, contextType, context) {
-  const targetFn = mod.onTest;
-  
-  if (typeof targetFn !== 'function') {
-    return {
-      success: true,
-      context,
-      result: { testResults: [] },
-    };
-  }
+  async function executeHandler(mod, invocationTarget, contextType, context) {
+    if (invocationTarget === 'onTest') {
+      return executeTestHandler(mod, contextType, context);
+    }
 
-  const handler = contextHandlers[contextType];
-  if (!handler) {
-    return {
-      success: false,
-      context,
-      error: 'Unknown context type for test: ' + contextType,
-    };
-  }
+    const targetFn = mod[invocationTarget];
 
-  try {
+    if (typeof targetFn !== 'function') {
+      return {
+        success: false,
+        context,
+        error: 'Function "' + invocationTarget + '" not found or is not a function',
+      };
+    }
+
+    const handler = contextHandlers[contextType];
+    if (!handler) {
+      return {
+        success: false,
+        context,
+        error: 'Unknown context type: ' + contextType,
+      };
+    }
+
     const builtContext = handler.build(context);
-    
-    const testResult = await runTest(() => {
-      return targetFn(...builtContext.args);
-    });
+    const result = await targetFn(...builtContext.args);
+    const { updatedContext, extractedResult } = handler.extract(result, builtContext);
 
     return {
       success: true,
-      context,
-      result: testResult,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      context,
-      error: error instanceof Error ? error.message : String(error),
+      context: updatedContext,
+      result: extractedResult,
     };
   }
-}
 
-parentPort.postMessage({ type: 'ready' });
+  async function executeTestHandler(mod, contextType, context) {
+    const targetFn = mod.onTest;
 
-parentPort.on('message', async (message) => {
-  if (message.type === 'terminate') {
-    clearInterval(heartbeatTimer);
-    process.exit(0);
-    return;
-  }
+    if (typeof targetFn !== 'function') {
+      return {
+        success: true,
+        context,
+        result: { testResults: [] },
+      };
+    }
 
-  if (message.type === 'publish-message') {
-    const { event, data } = message;
-    if (!event) return;
-    Yasumu.queue.publish(event, data);
-    return;
-  }
+    const handler = contextHandlers[contextType];
+    if (!handler) {
+      return {
+        success: false,
+        context,
+        error: 'Unknown context type for test: ' + contextType,
+      };
+    }
 
-  if (message.type !== 'execute') return;
+    try {
+      const builtContext = handler.build(context);
 
-  const { requestId, moduleKey, invocationTarget, contextType, context } = message;
-  
-  try {
-    const mod = await import('yasumu:virtual/' + moduleKey);
-    const result = await executeHandler(mod, invocationTarget, contextType, context);
-    
-    if (result.success) {
-      parentPort.postMessage({
-        type: 'execution-success',
-        requestId,
-        context: result.context,
-        result: result.result,
+      const testResult = await runTest(() => {
+        return targetFn(...builtContext.args);
       });
-    } else {
-      parentPort.postMessage({
+
+      return {
+        success: true,
+        context,
+        result: testResult,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        context,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  postWorkerMessage({ type: 'ready' });
+
+  onWorkerMessage(async (message) => {
+    if (message.type === 'terminate') {
+      clearInterval(heartbeatTimer);
+      terminateWorker();
+      return;
+    }
+
+    if (message.type === 'publish-message') {
+      const { event, data } = message;
+      if (!event) return;
+      Yasumu.queue.publish(event, data);
+      return;
+    }
+
+    if (message.type !== 'execute') return;
+
+    const { requestId, moduleKey, invocationTarget, contextType, context } = message;
+
+    try {
+      const mod = await import('yasumu:virtual/' + moduleKey);
+      const result = await executeHandler(mod, invocationTarget, contextType, context);
+
+      if (result.success) {
+        postWorkerMessage({
+          type: 'execution-success',
+          requestId,
+          context: result.context,
+          result: result.result,
+        });
+      } else {
+        postWorkerMessage({
+          type: 'execution-error',
+          requestId,
+          context: result.context,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      postWorkerMessage({
         type: 'execution-error',
         requestId,
-        context: result.context,
-        error: result.error,
+        context,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
-  } catch (error) {
-    parentPort.postMessage({
-      type: 'execution-error',
-      requestId,
-      context,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-});
+  });
 `;
 }
 
-export function getGlobalWorkerPreload(): string {
-  return generateWorkerPreload([
-    REST_CONTEXT_HANDLER,
-    GRAPHQL_CONTEXT_HANDLER,
-    TEST_CONTEXT_HANDLER,
-    EMAIL_CONTEXT_HANDLER,
-  ]);
+export function getGlobalWorkerPreload(transport: WorkerTransport = 'web'): string {
+  return generateWorkerPreload(
+    [REST_CONTEXT_HANDLER, GRAPHQL_CONTEXT_HANDLER, TEST_CONTEXT_HANDLER, EMAIL_CONTEXT_HANDLER],
+    transport,
+  );
 }

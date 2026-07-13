@@ -2,7 +2,6 @@ use crate::state::YasumuInternalState;
 use crate::tanxium::module_loader::TypescriptModuleLoader;
 use crate::tanxium::node_services;
 use crate::tanxium::ops::tanxium_rt;
-use crate::tanxium::permissions::setup_permission_channel;
 use crate::tanxium::state::init_renderer_event_channel;
 use crate::tanxium::types::AppHandleState;
 use crate::tanxium::version::{DENO_VERSION, YASUMU_VERSION};
@@ -12,7 +11,7 @@ use deno_runtime::colors;
 use deno_runtime::deno_core::{
     CompiledWasmModuleStore, ModuleSpecifier, SharedArrayBufferStore, error::AnyError,
 };
-use deno_runtime::deno_fs::RealFs;
+use deno_runtime::deno_fs::{FileSystem, RealFs};
 use deno_runtime::deno_io::Stdio;
 use deno_runtime::deno_node::NodeResolver;
 use deno_runtime::deno_permissions::{Permissions, PermissionsContainer};
@@ -35,8 +34,9 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use tracing::{error, info, warn};
 
-const ENABLED_UNSTABLE: &[&str] = &["worker-options", "kv"];
+const ENABLED_UNSTABLE: &[&str] = &["worker-options", "kv", "cron", "detect-cjs"];
 
+#[inline]
 fn build_feature_checker() -> Arc<FeatureChecker> {
     let mut checker = FeatureChecker::default();
     for f in UNSTABLE_FEATURES
@@ -48,12 +48,18 @@ fn build_feature_checker() -> Arc<FeatureChecker> {
     Arc::new(checker)
 }
 
+#[inline]
 fn enabled_unstable_feature_ids() -> Vec<i32> {
     UNSTABLE_FEATURES
         .iter()
         .filter(|f| ENABLED_UNSTABLE.contains(&f.name))
         .map(|f| f.id)
         .collect()
+}
+
+#[inline]
+fn create_file_system() -> Arc<dyn FileSystem> {
+    Arc::new(RealFs)
 }
 
 /// Exponential backoff with lightweight jitter derived from the current clock.
@@ -75,7 +81,7 @@ struct WorkerSharedState {
     blob_store: Arc<BlobStore>,
     broadcast_channel: InMemoryBroadcastChannel,
     compiled_wasm_module_store: CompiledWasmModuleStore,
-    fs: Arc<RealFs>,
+    fs: Arc<dyn FileSystem>,
     shared_array_buffer_store: SharedArrayBufferStore,
     app_handle: AppHandle,
     node_resolver: Arc<NodeResolver<DenoInNpmPackageChecker, NpmResolver<RealSys>, RealSys>>,
@@ -92,12 +98,17 @@ impl WorkerSharedState {
     ) -> Arc<CreateWebWorkerCb> {
         let shared = self.clone();
         Arc::new(move |args| {
-            setup_permission_channel();
-
             let source_maps = Rc::new(RefCell::new(HashMap::new()));
             let module_loader = Rc::new(TypescriptModuleLoader {
                 source_maps,
                 virtual_modules: Some(shared.virtual_modules.clone()),
+                blob_store: Some(shared.blob_store.clone()),
+                main_module_blob: args
+                    .maybe_main_module_blob
+                    .clone()
+                    .map(|blob| (args.main_module.clone(), blob)),
+                app_handle: shared.app_handle.clone(),
+                pkg_json_resolver: shared.pkg_json_resolver.clone(),
             });
 
             let permission_desc_parser =
@@ -163,18 +174,11 @@ impl WorkerSharedState {
                     is_standalone: false,
                     auto_serve: false,
                     has_node_modules_dir: true,
-                    argv0: None,
-                    node_debug: None,
-                    node_cluster_unique_id: None,
-                    node_cluster_sched_policy: None,
-                    node_ipc_init: None,
                     mode: deno_runtime::WorkerExecutionMode::Worker,
-                    serve_port: None,
-                    serve_host: None,
-                    otel_config: Default::default(),
                     no_legacy_abort: false,
                     close_on_idle: args.close_on_idle,
                     disable_offscreen_canvas: true,
+                    ..Default::default()
                 },
                 extensions: vec![tanxium_rt::init()],
                 startup_snapshot: deno_snapshots::CLI_SNAPSHOT,
@@ -243,6 +247,10 @@ async fn initialize_worker(
             module_loader: Rc::new(TypescriptModuleLoader {
                 source_maps,
                 virtual_modules: Some(shared.virtual_modules.clone()),
+                blob_store: Some(shared.blob_store.clone()),
+                main_module_blob: None,
+                app_handle: shared.app_handle.clone(),
+                pkg_json_resolver: shared.pkg_json_resolver.clone(),
             }),
             permissions,
             bundle_provider: Default::default(),
@@ -354,6 +362,8 @@ pub fn create_and_start_worker(
                 (guard.virtual_modules.clone(), guard.workspace_dir.clone())
             };
 
+            let fs = create_file_system();
+
             let npm_resolver = node_services::create_npm_resolver(
                 pkg_json_resolver.clone(),
                 workspace_dir.as_deref(),
@@ -365,7 +375,7 @@ pub fn create_and_start_worker(
                 blob_store: Arc::new(BlobStore::default()),
                 broadcast_channel: InMemoryBroadcastChannel::default(),
                 compiled_wasm_module_store: CompiledWasmModuleStore::default(),
-                fs: Arc::new(RealFs),
+                fs,
                 shared_array_buffer_store: SharedArrayBufferStore::default(),
                 app_handle: app_handle.clone(),
                 node_resolver,

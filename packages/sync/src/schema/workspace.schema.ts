@@ -1,4 +1,3 @@
-import type { EntityType } from '@yasumu/common';
 import { t } from '@yasumu/schema';
 
 import { YasumuAnnotations } from './constants.js';
@@ -16,7 +15,7 @@ export const WorkspaceSchema = t.script({
       t.object({
         id: t.string(),
         name: t.string(),
-        entity: t.enum('rest' as EntityType),
+        entity: t.enum('rest', 'graphql', 'websocket', 'socketio', 'sse'),
         parentId: t.nullable(t.string()),
         workspaceId: t.string(),
       }),

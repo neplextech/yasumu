@@ -2,6 +2,7 @@ import { Injectable } from '@yasumu/den';
 import { eq } from 'drizzle-orm';
 
 import { workspaces } from '@/database/schema.ts';
+import { isDefaultWorkspacePath } from '@/rpc/common/constants.ts';
 
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
 
@@ -20,6 +21,8 @@ export class WorkspaceActivatorService {
       })
       .where(eq(workspaces.id, id))
       .returning();
+
+    Yasumu.setWorkspaceDir(isDefaultWorkspacePath(workspace.path) ? null : workspace.path);
 
     return workspace;
   }

@@ -3,7 +3,7 @@ use crate::tanxium;
 use serde_json::json;
 use std::sync::RwLock;
 use tauri::{AppHandle, Manager};
-use tracing::{info, warn};
+use tracing::info;
 
 #[tauri::command]
 pub fn on_frontend_ready(app: AppHandle) -> Result<(), ()> {
@@ -27,14 +27,6 @@ pub fn on_frontend_ready(app: AppHandle) -> Result<(), ()> {
     }
 
     Ok(())
-}
-
-#[tauri::command]
-pub fn respond_to_permission_prompt(thread_id: String, response: String) {
-    match tanxium::PermissionsResponse::from_str(&response) {
-        Ok(resp) => tanxium::respond_to_permission_prompt(&thread_id, resp),
-        Err(e) => warn!("Invalid permission response '{}': {}", response, e),
-    }
 }
 
 #[tauri::command]

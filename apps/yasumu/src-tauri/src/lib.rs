@@ -65,10 +65,7 @@ pub fn run() {
                     info!("Looking for main module at: {}", main_path.display());
 
                     if !main_path.exists() {
-                        error!(
-                            "Main module does not exist at: {}",
-                            main_path.display()
-                        );
+                        error!("Main module does not exist at: {}", main_path.display());
                         return Ok(());
                     }
 
@@ -95,7 +92,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::respond_to_permission_prompt,
             commands::tanxium_send_event,
             commands::on_frontend_ready,
             commands::get_rpc_port,
