@@ -19,27 +19,27 @@ dependencies []
 
 script {
   interface IGithubUser {
-    followers: number;
-    name: string;
-  }
-  
-  let rauchg: IGithubUser | null = null;
-  
-  export async function onRequest(req: YasumuRequest) {
-    if (rauchg) return new YasumuResponse(JSON.stringify(rauchg));
-  }
-  
-  export async function onResponse(req: YasumuRequest, res: YasumuResponse) {
-    const body = res.json<IGithubUser>();
-    if (rauchg) rauchg = body;
-  
-    await Yasumu.ui.showNotification({
-      title: 'GitHub Profile Fetched',
-      message: `${body.name} has ${body.followers.toLocaleString()} followers count on github.`,
-      variant: 'info',
-    });
-  
-    res.env.setVariable('FOLLOWER_COUNT', body.followers.toString())
-  }
+      followers: number;
+      name: string;
+    }
+    
+    let rauchg: IGithubUser | null = null;
+    
+    export async function onRequest(req: YasumuRequest) {
+      if (rauchg) return new YasumuResponse(JSON.stringify(rauchg));
+    }
+    
+    export async function onResponse(req: YasumuRequest, res: YasumuResponse) {
+      const body = res.json<IGithubUser>();
+      if (rauchg) rauchg = body;
+    
+      await Yasumu.ui.showNotification({
+        title: 'GitHub Profile Fetched',
+        message: `${body.name} has ${body.followers.toLocaleString()} followers count on github.`,
+        variant: 'info',
+      });
+    
+      res.env.setVariable('FOLLOWER_COUNT', body.followers.toString())
+    }
 }
 
