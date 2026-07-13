@@ -190,5 +190,7 @@ export class WorkspacesService implements OnModuleInit {
       .catch((e) => {
         console.error('Failed to handle workspace deactivation event', id, e);
       });
+
+    Yasumu.setWorkspaceDir(null);
   }
 }

@@ -33,7 +33,16 @@ export interface WorkerTerminateMessage {
   type: 'terminate';
 }
 
-export type WorkerInboundMessage<Context = unknown> = WorkerExecuteMessage<Context> | WorkerTerminateMessage;
+export interface WorkerPublishMessage<T = unknown> {
+  type: 'publish-message';
+  event: string;
+  data: T;
+}
+
+export type WorkerInboundMessage<Context = unknown> =
+  | WorkerExecuteMessage<Context>
+  | WorkerTerminateMessage
+  | WorkerPublishMessage;
 
 export type WorkerOutboundMessage<Context = unknown> =
   | WorkerHeartbeatMessage

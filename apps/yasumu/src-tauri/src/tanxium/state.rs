@@ -1,18 +1,5 @@
-use crate::tanxium::types::PermissionsResponse;
-use crossbeam_channel::{Receiver, Sender};
-use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 use tokio::sync::mpsc;
-
-/// Holds the two ends of a permission prompt channel for a single worker thread.
-pub struct PermissionChannelPair {
-    pub sender: Sender<PermissionsResponse>,
-    pub receiver: Receiver<PermissionsResponse>,
-}
-
-/// Maps worker thread tokens (u64) to their permission channel pairs.
-pub static PERMISSION_CHANNELS: LazyLock<Mutex<HashMap<u64, PermissionChannelPair>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 pub static RENDERER_EVENT_SENDER: LazyLock<Mutex<Option<mpsc::UnboundedSender<String>>>> =
     LazyLock::new(|| Mutex::new(None));

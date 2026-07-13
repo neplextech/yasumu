@@ -37,13 +37,38 @@ export interface ContextHandlerDefinition {
     | ScriptContextFunction<[result: unknown, builtContext: BuiltContextExtractor], ScriptContextExtractorResult>;
 }
 
-export function generateWorkerPreload(handlers: ContextHandlerDefinition[]): string {
+export type WorkerTransport = 'web' | 'worker-threads';
+
+function getWorkerTransportPrelude(transport: WorkerTransport): string {
+  if (transport === 'worker-threads') {
+    return /* javascript */ `
+  import { parentPort } from 'node:worker_threads';
+
+  const postWorkerMessage = (message) => parentPort.postMessage(message);
+  const onWorkerMessage = (handler) => parentPort.on('message', handler);
+  const terminateWorker = () => process.exit(0);`;
+  }
+
+  return /* javascript */ `
+  const postWorkerMessage = (message) => self.postMessage(message);
+  const onWorkerMessage = (handler) => self.addEventListener('message', (event) => handler(event.data));
+  const terminateWorker = () => self.close();`;
+}
+
+export function generateWorkerPreload(
+  handlers: ContextHandlerDefinition[],
+  transport: WorkerTransport = 'web',
+): string {
   const handlerEntries = handlers
     .map(
       (h) => /* typescript */ `
   '${h.type}': {
     build: (context) => {
-      ${typeof h.builder === 'string' ? `${h.builder}\nreturn { args, getContext };` : `return (${h.builder.toString()})(context);`}
+      ${
+        typeof h.builder === 'string'
+          ? `${h.builder}\nreturn { args, getContext };`
+          : `return (${h.builder.toString()})(context);`
+      }
     },
     extract: (result, builtContext) => {
       ${
@@ -57,14 +82,26 @@ export function generateWorkerPreload(handlers: ContextHandlerDefinition[]): str
     .join(',\n');
 
   return /* javascript */ `
-(async function () {
-  const { parentPort } = await import('node:worker_threads');
-  const { runTest, test: _test, expect: _expect, describe: _describe } = await import('yasumu:test');
+  import { createRequire } from 'node:module';
+  import { pathToFileURL } from 'node:url';
+  import { runTest, test as _test, expect as _expect, describe as _describe } from 'yasumu:test';
+${getWorkerTransportPrelude(transport)}
+
+  // Each script worker has an isolated global scope. CommonJS dependencies
+  // loaded from user modules (for example, nodemailer) need their own require.
+  if (typeof globalThis.require !== 'function') {
+    globalThis.require = (specifier) => {
+      const baseDir = Yasumu.getWorkspaceDir() ?? Deno.cwd();
+      return createRequire(
+        pathToFileURL(baseDir + '/__yasumu_virtual_module__.ts'),
+      )(specifier);
+    };
+  }
 
   const HEARTBEAT_INTERVAL = ${SCRIPT_WORKER_HEARTBEAT_TIMEOUT};
 
   const heartbeatTimer = setInterval(() => {
-    parentPort.postMessage({ type: 'heartbeat' });
+    postWorkerMessage({ type: 'heartbeat' });
   }, HEARTBEAT_INTERVAL);
 
   if (heartbeatTimer && typeof heartbeatTimer === 'object' && 'unref' in heartbeatTimer) {
@@ -157,12 +194,12 @@ ${handlerEntries}
     }
   }
 
-  parentPort.postMessage({ type: 'ready' });
+  postWorkerMessage({ type: 'ready' });
 
-  parentPort.on('message', async (message) => {
+  onWorkerMessage(async (message) => {
     if (message.type === 'terminate') {
       clearInterval(heartbeatTimer);
-      process.exit(0);
+      terminateWorker();
       return;
     }
 
@@ -182,14 +219,14 @@ ${handlerEntries}
       const result = await executeHandler(mod, invocationTarget, contextType, context);
 
       if (result.success) {
-        parentPort.postMessage({
+        postWorkerMessage({
           type: 'execution-success',
           requestId,
           context: result.context,
           result: result.result,
         });
       } else {
-        parentPort.postMessage({
+        postWorkerMessage({
           type: 'execution-error',
           requestId,
           context: result.context,
@@ -197,7 +234,7 @@ ${handlerEntries}
         });
       }
     } catch (error) {
-      parentPort.postMessage({
+      postWorkerMessage({
         type: 'execution-error',
         requestId,
         context,
@@ -205,15 +242,12 @@ ${handlerEntries}
       });
     }
   });
-})();
 `;
 }
 
-export function getGlobalWorkerPreload(): string {
-  return generateWorkerPreload([
-    REST_CONTEXT_HANDLER,
-    GRAPHQL_CONTEXT_HANDLER,
-    TEST_CONTEXT_HANDLER,
-    EMAIL_CONTEXT_HANDLER,
-  ]);
+export function getGlobalWorkerPreload(transport: WorkerTransport = 'web'): string {
+  return generateWorkerPreload(
+    [REST_CONTEXT_HANDLER, GRAPHQL_CONTEXT_HANDLER, TEST_CONTEXT_HANDLER, EMAIL_CONTEXT_HANDLER],
+    transport,
+  );
 }

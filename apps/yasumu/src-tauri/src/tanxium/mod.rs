@@ -9,6 +9,5 @@ mod worker;
 mod yasumu_modules;
 
 pub use ops::invoke_renderer_event_callback;
-pub use permissions::{initialize_prompter, respond_to_permission_prompt, set_app_handle};
-pub use types::PermissionsResponse;
+pub use permissions::{initialize_prompter, set_app_handle};
 pub use worker::create_and_start_worker;

@@ -1,10 +1,10 @@
-import { Worker } from 'node:worker_threads';
-
 import { computeScriptHash, makeModuleKey } from './common/script-hash.ts';
 import {
   SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
   SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT,
 } from './common/worker-heartbeat.ts';
+import type { ScriptWorkerStrategy } from './strategies/types.ts';
+import { WebWorkerStrategy } from './strategies/web-worker.strategy.ts';
 import {
   ScriptExecutionRequest,
   ScriptExecutionResponse,
@@ -16,12 +16,13 @@ import {
 export interface ScriptWorkerOptions {
   source: string;
   onTerminate?: () => void;
+  strategy?: ScriptWorkerStrategy;
 }
 
 const EXECUTION_TIMEOUT = 30_000;
 
 export class ScriptWorker {
-  private worker: Worker | null = null;
+  private readonly strategy: ScriptWorkerStrategy;
   private readonly pendingRequests = new Map<string, ScriptExecutionRequest<unknown>>();
   private state: WorkerState = 'terminated';
   private lastHeartbeat = Date.now();
@@ -30,14 +31,16 @@ export class ScriptWorker {
   private readyResolve: (() => void) | null = null;
   private readyReject: ((error: Error) => void) | null = null;
 
-  public constructor(private readonly options: ScriptWorkerOptions) {}
+  public constructor(private readonly options: ScriptWorkerOptions) {
+    this.strategy = options.strategy ?? new WebWorkerStrategy();
+  }
 
   public get id(): number | null {
-    return this.worker?.threadId ?? null;
+    return this.strategy.id;
   }
 
   private ensureWorker(): Promise<void> {
-    if (this.worker && this.state !== 'terminated') {
+    if (this.state !== 'terminated') {
       return this.readyPromise!;
     }
 
@@ -49,18 +52,19 @@ export class ScriptWorker {
     this.readyResolve = resolve;
     this.readyReject = reject;
 
-    this.worker = new Worker(this.options.source, {
-      eval: true,
-      name: 'yasumu-script-worker',
-    });
-
-    this.worker.on('message', this.handleMessage.bind(this));
-    this.worker.on('error', this.handleError.bind(this));
-    this.worker.on('exit', this.handleExit.bind(this));
+    try {
+      this.strategy.start(this.options.source, {
+        onMessage: this.handleMessage.bind(this),
+        onError: this.handleError.bind(this),
+        onExit: this.handleExit.bind(this),
+      });
+    } catch (error) {
+      this.handleError(error instanceof Error ? error : new Error(String(error)));
+    }
 
     this.startHeartbeatMonitor();
 
-    return this.readyPromise;
+    return promise;
   }
 
   private handleMessage(message: WorkerOutboundMessage<unknown>) {
@@ -116,6 +120,12 @@ export class ScriptWorker {
       request.reject(new Error(`Worker error: ${error.message}`));
     }
     this.pendingRequests.clear();
+
+    if (this.state !== 'terminated') {
+      this.state = 'terminated';
+      this.cleanupWorker();
+      this.options.onTerminate?.();
+    }
   }
 
   private handleExit(code: number) {
@@ -138,7 +148,7 @@ export class ScriptWorker {
       clearTimeout(this.heartbeatCheckId);
       this.heartbeatCheckId = null;
     }
-    this.worker = null;
+    this.strategy.terminate();
     this.readyPromise = null;
     this.readyResolve = null;
     this.readyReject = null;
@@ -146,7 +156,7 @@ export class ScriptWorker {
 
   private startHeartbeatMonitor() {
     const check = () => {
-      if (this.state === 'terminated' || !this.worker) return;
+      if (this.state === 'terminated') return;
 
       const elapsed = Date.now() - this.lastHeartbeat;
       if (elapsed >= SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT) {
@@ -180,10 +190,7 @@ export class ScriptWorker {
 
   public async publishMessage<T = unknown>(event: string, data: T): Promise<void> {
     await this.ensureWorker();
-    if (!this.worker) {
-      throw new Error('Worker is not available');
-    }
-    this.worker.postMessage({
+    this.strategy.postMessage({
       type: 'publish-message',
       event,
       data,
@@ -198,10 +205,6 @@ export class ScriptWorker {
     timeout = EXECUTION_TIMEOUT,
   ): Promise<ScriptExecutionResponse<Context>> {
     await this.ensureWorker();
-
-    if (!this.worker) {
-      throw new Error('Worker is not available');
-    }
 
     const requestId = crypto.randomUUID();
 
@@ -236,7 +239,7 @@ export class ScriptWorker {
         context,
       };
 
-      this.worker!.postMessage(message);
+      this.strategy.postMessage(message);
     });
   }
 
@@ -253,10 +256,6 @@ export class ScriptWorker {
       if (request.timeoutId) clearTimeout(request.timeoutId);
     }
     this.pendingRequests.clear();
-
-    if (this.worker) {
-      this.worker.terminate();
-    }
 
     this.cleanupWorker();
     this.options.onTerminate?.();
