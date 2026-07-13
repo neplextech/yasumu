@@ -59,17 +59,18 @@ jobs:
         with:
           workspaces: '. -> target'
           cache-on-failure: true
-          shared-key: tanxium-release-${{ matrix.target }}
+          shared-key: tanxium-release-${{ matrix.target }}-v8-repair-v2
 
       # `rusty_v8` caches its checksum independently from its archive. Retain
       # a complete archive, but force a download when the archive is absent.
       - name: Repair incomplete rusty_v8 cache
         shell: bash
         run: |
+          [[ -d target ]] || exit 0
           find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
             checksum="$1"
             archive="${checksum%.sum}"
-            [ -f "${archive}.a" ] || [ -f "${archive}.lib" ] || rm -f "$checksum"
+            [ -s "${archive}.a" ] || [ -s "${archive}.lib" ] || rm -f "$checksum"
           ' sh {} \;
 
       - name: Build Tanxium CLI

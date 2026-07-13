@@ -114,7 +114,7 @@ jobs:
         with:
           workspaces: '. -> target'
           cache-on-failure: true
-          shared-key: yasumu-check-${{ matrix.name }}
+          shared-key: yasumu-check-${{ matrix.name }}-v8-repair-v2
 
       # rusty_v8 stores its archive outside Cargo's normal artifact layout. A
       # partial cache can retain its checksum without the archive, making V8
@@ -122,10 +122,11 @@ jobs:
       - name: Repair incomplete rusty_v8 cache
         shell: bash
         run: |
+          [[ -d target ]] || exit 0
           find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
             checksum="$1"
             archive="${checksum%.sum}"
-            [ -f "${archive}.a" ] || [ -f "${archive}.lib" ] || rm -f "$checksum"
+            [ -s "${archive}.a" ] || [ -s "${archive}.lib" ] || rm -f "$checksum"
           ' sh {} \;
 
       - name: Download @yasumu/test bundle
@@ -169,17 +170,18 @@ jobs:
         with:
           workspaces: '. -> target'
           cache-on-failure: true
-          shared-key: tanxium-runtime
+          shared-key: tanxium-runtime-v8-repair-v2
 
       # See the Cargo Check job above. Preserve a complete V8 archive while
       # forcing a fresh download when only its stale checksum was restored.
       - name: Repair incomplete rusty_v8 cache
         shell: bash
         run: |
+          [[ -d target ]] || exit 0
           find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
             checksum="$1"
             archive="${checksum%.sum}"
-            [ -f "${archive}.a" ] || [ -f "${archive}.lib" ] || rm -f "$checksum"
+            [ -s "${archive}.a" ] || [ -s "${archive}.lib" ] || rm -f "$checksum"
           ' sh {} \;
 
       - name: Install workspace dependencies
