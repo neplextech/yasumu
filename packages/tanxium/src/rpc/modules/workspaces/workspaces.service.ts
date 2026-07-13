@@ -7,7 +7,11 @@ import { desc, eq } from 'drizzle-orm';
 
 import { workspaces } from '@/database/schema.ts';
 
-import { DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_PATH, PATH_IDENTIFIER_PREFIX } from '../../common/constants.ts';
+import {
+  DEFAULT_WORKSPACE_NAME,
+  DEFAULT_WORKSPACE_PATH,
+  PATH_IDENTIFIER_PREFIX,
+} from '../../common/constants.ts';
 import { WorkspaceDiscoveryEvent } from '../common/events/workspace-discovery.event.ts';
 import { WorkspaceEvent } from '../common/events/workspace.event.ts';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
@@ -54,14 +58,21 @@ export class WorkspacesService implements OnModuleInit {
   public async list({ take }: { take?: number }): Promise<WorkspaceData[]> {
     take ??= 10;
     const db = this.connection.getConnection();
-    const result = await db.select().from(workspaces).orderBy(desc(workspaces.lastOpenedAt)).limit(take);
+    const result = await db
+      .select()
+      .from(workspaces)
+      .orderBy(desc(workspaces.lastOpenedAt))
+      .limit(take);
 
     return result;
   }
 
   public async findOneByPath(path: string): Promise<WorkspaceData | null> {
     const db = this.connection.getConnection();
-    const [result] = await db.select().from(workspaces).where(eq(workspaces.path, path));
+    const [result] = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.path, path));
 
     return result ?? null;
   }
@@ -91,7 +102,10 @@ export class WorkspacesService implements OnModuleInit {
     }
 
     const db = this.connection.getConnection();
-    const [result] = await db.select().from(workspaces).where(eq(workspaces.id, _id));
+    const [result] = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.id, _id));
 
     return result ?? null;
   }
@@ -109,20 +123,27 @@ export class WorkspacesService implements OnModuleInit {
       return existingWorkspace;
     }
 
-    const hasYasumuFiles = await this.pathContainsYasumuFiles(data.metadata.path);
+    const hasYasumuFiles = await this.pathContainsYasumuFiles(
+      data.metadata.path,
+    );
 
     if (hasYasumuFiles) {
       // the target path probably contains yasumu files
       // so we need to treat it as the source of truth
       // and create a new workspace with the contents from that location
-      const { promise, resolve } = Promise.withResolvers<WorkspaceData | null>();
+      const { promise, resolve } =
+        Promise.withResolvers<WorkspaceData | null>();
 
       const completeCallback = async (workspace: WorkspaceData | null) => {
         await resolve(workspace);
       };
 
       await this.eventBus.publish(
-        new WorkspaceDiscoveryEvent({ workspaceId: null }, data.metadata.path, completeCallback),
+        new WorkspaceDiscoveryEvent(
+          { workspaceId: null },
+          data.metadata.path,
+          completeCallback,
+        ),
       );
 
       const result = await promise;
@@ -159,15 +180,25 @@ export class WorkspacesService implements OnModuleInit {
       console.error('Failed to create SMTP server for workspace', id, e);
       void Yasumu.ui.showNotification({
         title: 'Failed to create SMTP server',
-        message: 'Please try again later. If the problem persists, please restart the application.',
+        message:
+          'Please try again later. If the problem persists, please restart the application.',
         variant: 'error',
       });
     });
 
     console.log(`Workspace ${id} activated`);
-    void this.eventBus.publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'activated')).catch((e) => {
-      console.error('Failed to handle workspace activation event', id, e);
-    });
+    void this.eventBus
+      .publish(
+        new WorkspaceEvent(
+          { workspaceId: id },
+          id,
+          workspace.path,
+          'activated',
+        ),
+      )
+      .catch((e) => {
+        console.error('Failed to handle workspace activation event', id, e);
+      });
   }
 
   public async deactivate(id: string) {
@@ -179,14 +210,22 @@ export class WorkspacesService implements OnModuleInit {
       console.error('Failed to close SMTP server for workspace', id, e);
       void Yasumu.ui.showNotification({
         title: 'Failed to close SMTP server',
-        message: 'Please try again later. If the problem persists, please restart the application.',
+        message:
+          'Please try again later. If the problem persists, please restart the application.',
         variant: 'error',
       });
     });
 
     console.log(`Workspace ${id} deactivated`);
     void this.eventBus
-      .publish(new WorkspaceEvent({ workspaceId: id }, id, workspace.path, 'deactivated'))
+      .publish(
+        new WorkspaceEvent(
+          { workspaceId: id },
+          id,
+          workspace.path,
+          'deactivated',
+        ),
+      )
       .catch((e) => {
         console.error('Failed to handle workspace deactivation event', id, e);
       });
