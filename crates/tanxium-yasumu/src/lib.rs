@@ -10,17 +10,20 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 pub struct TauriHost {
     app: AppHandle,
 }
+
 impl TauriHost {
     pub fn new(app: AppHandle) -> Arc<Self> {
         Arc::new(Self { app })
     }
 }
+
 impl RuntimeHost for TauriHost {
     fn emit_event(&self, event: RuntimeEvent) {
         if let RuntimeEvent::Renderer(payload) = event {
             let _ = self.app.emit("tanxium-event", payload);
         }
     }
+
     fn confirm(&self, title: &str, message: &str, yes: &str, no: &str, cancel: &str) -> bool {
         self.app
             .dialog()
@@ -106,6 +109,7 @@ impl RuntimeHost for TauriHost {
 pub struct YasumuRuntime {
     runtime: Tanxium,
 }
+
 impl YasumuRuntime {
     pub fn start(app: AppHandle, entrypoint: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
         let context = RuntimeContext {
@@ -131,9 +135,11 @@ impl YasumuRuntime {
         runtime.run_file(entrypoint)?;
         Ok(Self { runtime })
     }
+
     pub fn send_event(&self, event: &str) {
         self.runtime.send_event(event);
     }
+
     pub fn set_ready(&self) {
         self.runtime
             .state()
@@ -142,6 +148,7 @@ impl YasumuRuntime {
             .expect("runtime context lock poisoned")
             .ready = true;
     }
+
     pub fn rpc_port(&self) -> Option<u16> {
         self.runtime
             .state()
@@ -150,6 +157,7 @@ impl YasumuRuntime {
             .expect("runtime context lock poisoned")
             .rpc_port
     }
+
     pub fn echo_server_port(&self) -> Option<u16> {
         self.runtime
             .state()
@@ -158,6 +166,7 @@ impl YasumuRuntime {
             .expect("runtime context lock poisoned")
             .echo_server_port
     }
+
     pub fn mcp_server_port(&self) -> Option<u16> {
         self.runtime
             .state()

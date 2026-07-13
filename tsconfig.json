@@ -1,6 +1,7 @@
 {
   "extends": "@yasumu/tsconfig/base.json",
   "compilerOptions": {
+    "lib": ["es2024"],
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "types": ["node", "deno"]

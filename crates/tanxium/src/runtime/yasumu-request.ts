@@ -1,4 +1,8 @@
-import { YasumuWorkspace, YasumuWorkspaceContextData, YasumuWorkspaceData } from './yasumu-workspace-context.ts';
+import {
+  YasumuWorkspace,
+  type YasumuWorkspaceContextData,
+  type YasumuWorkspaceData,
+} from './yasumu-workspace-context.ts';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | 'CONNECT' | 'TRACE';
 
