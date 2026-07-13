@@ -1,6 +1,5 @@
 mod commands;
 mod state;
-mod tanxium;
 
 use deno_runtime::deno_core::ModuleSpecifier;
 use state::YasumuInternalState;
@@ -47,9 +46,6 @@ pub fn run() {
 
             let window = win_builder.build()?;
 
-            tanxium::set_app_handle(app.handle().clone());
-            tanxium::initialize_prompter();
-
             #[cfg(debug_assertions)]
             window.open_devtools();
 
@@ -70,12 +66,16 @@ pub fn run() {
                     }
 
                     match ModuleSpecifier::from_file_path(&main_path) {
-                        Ok(main_module) => {
-                            info!("Starting worker for: {}", main_module);
-                            if let Err(e) =
-                                tanxium::create_and_start_worker(&main_module, app_handle)
-                            {
-                                error!("Failed to initialize Deno worker: {}", e);
+                        Ok(_) => {
+                            info!("Starting worker for: {}", main_path.display());
+                            match tanxium_yasumu::YasumuRuntime::start(app_handle, main_path) {
+                                Ok(runtime) => {
+                                    app.state::<RwLock<YasumuInternalState>>()
+                                        .write()
+                                        .expect("state lock poisoned")
+                                        .runtime = Some(runtime)
+                                }
+                                Err(e) => error!("Failed to initialize Deno worker: {}", e),
                             }
                         }
                         Err(()) => {

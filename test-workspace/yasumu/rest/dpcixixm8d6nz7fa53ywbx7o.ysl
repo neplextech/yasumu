@@ -44,12 +44,10 @@ request {
 dependencies []
 
 script {
-  import nodemailer from 'nodemailer'
-  
   let reqId: string, runs: number = 0;
   
   export async function onRequest(req: YasumuRequest) {
-    console.log(nodemailer)
+    console.log({workspace: Yasumu.getWorkspaceDir()})
     runs++;
     reqId = Yasumu.cuid()
     const userId = req.env.getSecret('USER_ID')

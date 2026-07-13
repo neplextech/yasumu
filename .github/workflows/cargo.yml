@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - 'apps/yasumu/src-tauri/**'
+      - 'crates/**'
+      - 'tests/tanxium-runtime/**'
       - '**/Cargo.toml'
       - '**/Cargo.lock'
       - 'packages/test/**'
@@ -15,6 +17,8 @@ on:
       - main
     paths:
       - 'apps/yasumu/src-tauri/**'
+      - 'crates/**'
+      - 'tests/tanxium-runtime/**'
       - '**/Cargo.toml'
       - '**/Cargo.lock'
       - 'packages/test/**'
@@ -108,9 +112,22 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './apps/yasumu/src-tauri -> target'
+          workspaces: '. -> target'
           cache-on-failure: true
-          shared-key: yasumu-check-${{ matrix.name }}
+          shared-key: yasumu-check-${{ matrix.name }}-v8-repair-v2
+
+      # rusty_v8 stores its archive outside Cargo's normal artifact layout. A
+      # partial cache can retain its checksum without the archive, making V8
+      # skip its download and fail at link time. Keep valid archives cached.
+      - name: Repair incomplete rusty_v8 cache
+        shell: bash
+        run: |
+          [[ -d target ]] || exit 0
+          find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
+            checksum="$1"
+            archive="${checksum%.sum}"
+            [ -s "${archive}.a" ] || [ -s "${archive}.lib" ] || rm -f "$checksum"
+          ' sh {} \;
 
       - name: Download @yasumu/test bundle
         uses: actions/download-artifact@v4
@@ -119,5 +136,56 @@ jobs:
           path: apps/yasumu/src-tauri/resources/yasumu-scripts/public-modules/yasumu__test
 
       - name: Cargo check
-        run: cargo check ${{ matrix.args }}
-        working-directory: ./apps/yasumu/src-tauri
+        run: cargo check --workspace ${{ matrix.args }}
+
+  tanxium-runtime:
+    name: Tanxium Runtime Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 2.9.2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+          cache-on-failure: true
+          shared-key: tanxium-runtime-v8-repair-v2
+
+      # See the Cargo Check job above. Preserve a complete V8 archive while
+      # forcing a fresh download when only its stale checksum was restored.
+      - name: Repair incomplete rusty_v8 cache
+        shell: bash
+        run: |
+          [[ -d target ]] || exit 0
+          find target -type f -path '*/gn_out/obj/*rusty_v8.sum' -exec sh -c '
+            checksum="$1"
+            archive="${checksum%.sum}"
+            [ -s "${archive}.a" ] || [ -s "${archive}.lib" ] || rm -f "$checksum"
+          ' sh {} \;
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tanxium runtime tests
+        run: pnpm --filter @yasumu/tanxium-runtime-tests test

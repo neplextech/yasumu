@@ -35,7 +35,7 @@ import { YasumuWorkspace as YasumuWorkspaceType } from './yasumu-workspace-conte
 
 let _resourceDir: string, _yasumuVersion: string, _appDataDir: string;
 
-const __yasumuIsDevMode = op_is_yasumu_dev_mode();
+const __yasumuIsDevMode = () => op_is_yasumu_dev_mode();
 
 const listeners: Set<(event: string) => unknown> = new Set();
 const readyListeners: Set<() => unknown> = new Set();
@@ -94,7 +94,7 @@ class Yasumu {
    * @returns True if the Yasumu runtime is running in dev mode, false otherwise
    */
   public static get isDevMode() {
-    return __yasumuIsDevMode;
+    return __yasumuIsDevMode();
   }
 
   /**

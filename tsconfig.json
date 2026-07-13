@@ -1,4 +1,10 @@
 {
   "extends": "@yasumu/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node", "deno"]
+  },
+  "include": ["crates/tanxium/src/runtime"],
   "exclude": ["node_modules", "dist", "packages/tanxium", "packages/test", "apps/yasumu/src-tauri"]
 }

@@ -65,7 +65,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "catalog:tailwind",
     "@tauri-apps/cli": "^2",
-    "@types/deno": "^2.7.0",
+    "@types/deno": "catalog:test",
     "@types/node": "catalog:build",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
