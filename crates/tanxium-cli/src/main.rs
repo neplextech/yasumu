@@ -29,6 +29,9 @@ struct Cli {
     /// Grant all permissions to the main worker (equivalent to `--sandbox false`).
     #[arg(long = "no-sandbox", global = true, action = ArgAction::SetTrue)]
     no_sandbox: bool,
+    /// Allow modules to be imported over insecure HTTP.
+    #[arg(long, global = true, action = ArgAction::SetTrue)]
+    allow_http_imports: bool,
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -75,6 +78,7 @@ fn build_runtime(
     resources: Option<PathBuf>,
     verbose: bool,
     sandboxed: bool,
+    allow_http_imports: bool,
 ) -> Result<Tanxium> {
     let cwd = std::env::current_dir()?;
     let host = Arc::new(TerminalHost::new(verbose));
@@ -85,6 +89,7 @@ fn build_runtime(
         .resource_dir(resources.unwrap_or(cwd))
         .ready(true)
         .allow_main_worker_all_permissions(!sandboxed)
+        .allow_http_imports(allow_http_imports)
         .host(host)
         .build()
 }
@@ -99,12 +104,31 @@ fn main() -> Result<()> {
             workspace,
             resources,
             verbose,
-        }) => build_runtime(workspace, resources, verbose, sandboxed)?.run_file_blocking(file),
+        }) => build_runtime(
+            workspace,
+            resources,
+            verbose,
+            sandboxed,
+            cli.allow_http_imports,
+        )?
+        .run_file_blocking(file),
         Some(Command::Repl {
             workspace,
             resources,
             verbose,
-        }) => repl::run(build_runtime(workspace, resources, verbose, sandboxed)?),
-        None => repl::run(build_runtime(None, None, false, sandboxed)?),
+        }) => repl::run(build_runtime(
+            workspace,
+            resources,
+            verbose,
+            sandboxed,
+            cli.allow_http_imports,
+        )?),
+        None => repl::run(build_runtime(
+            None,
+            None,
+            false,
+            sandboxed,
+            cli.allow_http_imports,
+        )?),
     }
 }

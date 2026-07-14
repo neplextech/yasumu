@@ -16,6 +16,7 @@ pub struct RuntimeContext {
     pub workspace_dir: Option<PathBuf>,
     pub dev_mode: bool,
     pub ready: bool,
+    pub allow_http_imports: bool,
     pub rpc_port: Option<u16>,
     pub echo_server_port: Option<u16>,
     pub mcp_server_port: Option<u16>,

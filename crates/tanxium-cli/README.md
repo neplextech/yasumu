@@ -16,7 +16,11 @@ entrypoint is trusted and should receive all permissions.
 ```sh
 tanxium --no-sandbox run script.ts
 tanxium run script.ts --workspace ./workspace --resources ./resources
+tanxium --allow-http-imports run script.ts
 ```
+
+HTTPS imports are enabled by default. HTTP imports require
+`--allow-http-imports` because they are not transport-secure.
 
 See the [Tanxium repository](https://github.com/neplextech/yasumu/tree/main/crates/tanxium)
 for embedding guidance, the permission model, and the complete CLI reference.

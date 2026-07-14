@@ -1,7 +1,7 @@
 use crate::module_loader::TypescriptModuleLoader;
 use crate::node_services;
 use crate::ops::tanxium_rt;
-use crate::state::{NoopHost, RuntimeContext, RuntimeEvent, RuntimeHost, RuntimeState};
+use crate::state::{RuntimeEvent, RuntimeHost, RuntimeState};
 use crate::types::RuntimeHostState;
 use crate::version::{DENO_VERSION, TANXIUM_VERSION};
 use deno_resolver::npm::{DenoInNpmPackageChecker, NpmResolver};
@@ -380,7 +380,7 @@ async fn run_worker_event_loop(
     }
 }
 
-fn start_worker(
+pub(crate) fn start_worker(
     main_module: ModuleSpecifier,
     state: Arc<RuntimeState>,
     host: Arc<dyn RuntimeHost>,
@@ -510,112 +510,4 @@ fn start_worker(
     });
 
     Ok(handle)
-}
-
-pub struct TanxiumBuilder {
-    context: RuntimeContext,
-    host: Arc<dyn RuntimeHost>,
-    main_worker_all_permissions: bool,
-}
-impl TanxiumBuilder {
-    /// Sets the workspace used for package resolution.
-    pub fn workspace_dir(mut self, path: impl Into<std::path::PathBuf>) -> Self {
-        self.context.workspace_dir = Some(path.into());
-        self
-    }
-    /// Sets the resource root exposed to JavaScript.
-    pub fn resource_dir(mut self, path: impl Into<std::path::PathBuf>) -> Self {
-        self.context.resource_dir = Some(path.into());
-        self
-    }
-    /// Sets the initial frontend-ready state.
-    pub fn ready(mut self, ready: bool) -> Self {
-        self.context.ready = ready;
-        self
-    }
-    /// Supplies host-specific event and confirmation behavior.
-    pub fn host(mut self, host: Arc<dyn RuntimeHost>) -> Self {
-        self.host = host;
-        self
-    }
-    /// Controls whether the main worker receives every Deno permission at startup.
-    ///
-    /// This defaults to `true` for backwards compatibility with trusted host
-    /// bootstrap code. Set it to `false` to start the main worker sandboxed;
-    /// requests then use the installed permission prompter. Web workers always
-    /// start without permissions, regardless of this setting.
-    pub fn allow_main_worker_all_permissions(mut self, allow: bool) -> Self {
-        self.main_worker_all_permissions = allow;
-        self
-    }
-    /// Builds an embeddable runtime instance.
-    pub fn build(self) -> Result<Tanxium, AnyError> {
-        Ok(Tanxium {
-            state: Arc::new(RuntimeState::new(self.context)),
-            host: self.host,
-            main_worker_all_permissions: self.main_worker_all_permissions,
-        })
-    }
-}
-#[derive(Clone)]
-pub struct Tanxium {
-    state: Arc<RuntimeState>,
-    host: Arc<dyn RuntimeHost>,
-    main_worker_all_permissions: bool,
-}
-impl Tanxium {
-    /// Starts a runtime builder with safe headless defaults.
-    pub fn builder() -> TanxiumBuilder {
-        TanxiumBuilder {
-            context: RuntimeContext {
-                app_version: TANXIUM_VERSION.into(),
-                ..Default::default()
-            },
-            host: Arc::new(NoopHost),
-            main_worker_all_permissions: true,
-        }
-    }
-    /// Starts a module on its own runtime thread and returns immediately.
-    pub fn run_file(&self, file: impl AsRef<std::path::Path>) -> Result<(), AnyError> {
-        let file = std::fs::canonicalize(file)?;
-        let module = ModuleSpecifier::from_file_path(file)
-            .map_err(|_| AnyError::msg("invalid entrypoint path"))?;
-        start_worker(
-            module,
-            self.state.clone(),
-            self.host.clone(),
-            self.main_worker_all_permissions,
-        )
-        .map(|_| ())
-    }
-    /// Runs a module and waits for its runtime thread to exit.
-    pub fn run_file_blocking(&self, file: impl AsRef<std::path::Path>) -> Result<(), AnyError> {
-        let file = std::fs::canonicalize(file)?;
-        let module = ModuleSpecifier::from_file_path(file)
-            .map_err(|_| AnyError::msg("invalid entrypoint path"))?;
-        start_worker(
-            module,
-            self.state.clone(),
-            self.host.clone(),
-            self.main_worker_all_permissions,
-        )?
-        .join()
-        .map_err(|_| AnyError::msg("runtime thread panicked"))
-    }
-    /// Delivers a serialized host event to a running runtime.
-    pub fn send_event(&self, event: impl Into<String>) {
-        if let Some(sender) = self
-            .state
-            .event_sender
-            .lock()
-            .expect("event sender lock poisoned")
-            .as_ref()
-        {
-            let _ = sender.send(event.into());
-        }
-    }
-    /// Returns shared runtime state for advanced embedders.
-    pub fn state(&self) -> Arc<RuntimeState> {
-        self.state.clone()
-    }
 }

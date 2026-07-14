@@ -6,6 +6,7 @@ The `tanxium` executable runs one JavaScript or TypeScript entrypoint:
 tanxium run script.ts
 tanxium run script.ts --workspace ./workspace --resources ./resources
 tanxium --no-sandbox run script.ts
+tanxium --allow-http-imports run script.ts
 ```
 
 The CLI sandboxes its main worker by default, so permissions are not
@@ -14,6 +15,10 @@ terminal, Tanxium offers allow-once, allow-all, and deny choices.
 Non-interactive runs deny prompts deterministically. Pass
 `--sandbox false` or the shorter `--no-sandbox` to grant the main
 worker all permissions. Web workers remain sandboxed in either mode.
+
+HTTPS module imports are enabled by default. HTTP imports are disabled because
+they are not transport-secure; opt in explicitly with `--allow-http-imports`
+when loading trusted local-network or development modules.
 
 Both flags default to the process working directory. The CLI uses the
 same Yasumu bootstrap as library embedders. Runtime failures are
