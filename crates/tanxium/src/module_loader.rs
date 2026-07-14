@@ -216,6 +216,14 @@ pub struct TypescriptModuleLoader {
 }
 
 impl TypescriptModuleLoader {
+    fn allows_http_imports(&self) -> bool {
+        self.state
+            .context
+            .read()
+            .expect("runtime context lock poisoned")
+            .allow_http_imports
+    }
+
     fn current_workspace_dir(&self) -> Option<std::path::PathBuf> {
         self.state
             .context
@@ -367,7 +375,13 @@ impl TypescriptModuleLoader {
                 (code, should_transpile, media_type, module_type)
             }
 
-            "https" => {
+            "http" if !self.allows_http_imports() => {
+                return Err(ModuleLoaderError::type_error(
+                    "HTTP imports are disabled; rerun with --allow-http-imports",
+                ));
+            }
+
+            "http" | "https" => {
                 let url = module_specifier.as_str();
                 let response = ureq::get(url)
                     .call()
@@ -527,11 +541,41 @@ impl ModuleLoader for TypescriptModuleLoader {
         ModuleLoadResponse::Sync(self.load_inner(module_specifier))
     }
 
+    fn load_external_source_map(&self, source_map_url: &str) -> Option<Cow<'_, [u8]>> {
+        let specifier = ModuleSpecifier::parse(source_map_url).ok()?;
+
+        let source_map = match specifier.scheme() {
+            "data" => parse_data_url(source_map_url)?.1.into_bytes(),
+            "file" => std::fs::read(specifier.to_file_path().ok()?).ok()?,
+            "http" if !self.allows_http_imports() => return None,
+            "http" | "https" => ureq::get(source_map_url)
+                .call()
+                .ok()?
+                .into_string()
+                .ok()?
+                .into_bytes(),
+            _ => return None,
+        };
+
+        Some(Cow::Owned(source_map))
+    }
+
     fn get_source_map(&self, specifier: &str) -> Option<Cow<'_, [u8]>> {
         self.source_maps
             .borrow()
             .get(specifier)
             .cloned()
             .map(Cow::Owned)
+    }
+
+    fn source_map_source_exists(&self, source_url: &str) -> Option<bool> {
+        let specifier = ModuleSpecifier::parse(source_url).ok()?;
+
+        match specifier.scheme() {
+            "file" => Some(specifier.to_file_path().ok()?.exists()),
+            "http" if !self.allows_http_imports() => None,
+            "http" | "https" => Some(ureq::head(source_url).call().is_ok()),
+            _ => None,
+        }
     }
 }

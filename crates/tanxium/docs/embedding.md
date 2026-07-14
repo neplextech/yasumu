@@ -41,3 +41,9 @@ Set `allow_main_worker_all_permissions(false)` to start it sandboxed.
 Permission requests are then delegated to the `RuntimeHost` permission
 prompter. Web workers always start with no permissions and prompt when
 they need one, regardless of this main-worker setting.
+
+## HTTP imports
+
+HTTPS module imports are enabled by default. To allow insecure HTTP module
+imports for a trusted development or local-network environment, opt in with
+`allow_http_imports(true)` on the builder. This setting is disabled by default.

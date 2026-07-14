@@ -1,6 +1,7 @@
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { createConnection } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -12,16 +13,20 @@ const binary = join(root, 'target/debug/tanxium');
 const workspace = mkdtempSync(join(tmpdir(), 'tanxium-runtime-'));
 const tanxiumPackage = join(root, 'packages/tanxium');
 
-function run(
-  source: string,
-  { verbose = false, sandbox, noSandbox = false }: { verbose?: boolean; sandbox?: boolean; noSandbox?: boolean } = {},
+function runEntrypoint(
+  entrypoint: string,
+  {
+    verbose = false,
+    sandbox,
+    noSandbox = false,
+    allowHttpImports = false,
+    timeout = 10_000,
+  }: { verbose?: boolean; sandbox?: boolean; noSandbox?: boolean; allowHttpImports?: boolean; timeout?: number } = {},
 ) {
-  const entrypoint = join(workspace, 'entry.ts');
-  writeFileSync(entrypoint, source);
-
   const permissionFlags = [
     ...(sandbox === undefined ? [] : ['--sandbox', String(sandbox)]),
     ...(noSandbox ? ['--no-sandbox'] : []),
+    ...(allowHttpImports ? ['--allow-http-imports'] : []),
   ];
 
   return execFileSync(
@@ -39,9 +44,74 @@ function run(
     {
       cwd: workspace,
       encoding: 'utf8',
-      timeout: 10_000,
+      timeout,
     },
   );
+}
+
+function run(source: string, options: { verbose?: boolean; sandbox?: boolean; noSandbox?: boolean } = {}) {
+  const entrypoint = join(workspace, 'entry.ts');
+  writeFileSync(entrypoint, source);
+  return runEntrypoint(entrypoint, options);
+}
+
+function runFailure(source: string, filename: string) {
+  const entrypoint = join(workspace, filename);
+  writeFileSync(entrypoint, source);
+
+  const result = spawnSync(binary, ['run', entrypoint, '--workspace', workspace, '--resources', workspace], {
+    cwd: workspace,
+    encoding: 'utf8',
+    timeout: 60_000,
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return `${result.stdout ?? ''}${result.stderr ?? ''}`;
+}
+
+function runFailureAsync(source: string, filename: string, { allowHttpImports = false } = {}): Promise<string> {
+  const entrypoint = join(workspace, filename);
+  writeFileSync(entrypoint, source);
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      binary,
+      [
+        ...(allowHttpImports ? ['--allow-http-imports'] : []),
+        'run',
+        entrypoint,
+        '--workspace',
+        workspace,
+        '--resources',
+        workspace,
+      ],
+      {
+        cwd: workspace,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+    let stdout = '';
+    let stderr = '';
+    const timeout = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error('Tanxium did not finish reporting the source-mapped failure'));
+    }, 60_000);
+
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.once('error', reject);
+    child.once('close', () => {
+      clearTimeout(timeout);
+      resolve(`${stdout}${stderr}`);
+    });
+  });
 }
 
 async function sendSmtpMessage(): Promise<string> {
@@ -109,6 +179,115 @@ describe('tanxium CLI runtime semantics', () => {
     expect(result.resources).toBe(join(workspace, 'resources'));
   });
 
+  it('applies inline source maps to error stack traces', () => {
+    writeFileSync(
+      join(workspace, 'inline-original.ts'),
+      'export function fail() {\n  throw new Error("inline map failure");\n}\nfail();\n',
+    );
+    const sourceMap = Buffer.from(
+      JSON.stringify({
+        version: 3,
+        sources: ['inline-original.ts'],
+        sourcesContent: ['export function fail() {\n  throw new Error("inline map failure");\n}\nfail();\n'],
+        names: [],
+        mappings: 'AAAA;AACA;AACA;AACA',
+      }),
+    ).toString('base64');
+
+    const error = runFailure(
+      /* js */ `
+      export function fail() {
+        throw new Error('inline map failure');
+      }
+      fail();
+      ${'//# source' + `MappingURL=data:application/json;base64,${sourceMap}`}
+    `,
+      'inline-entry.js',
+    );
+
+    expect(error).toContain('inline-original.ts');
+  }, 30_000);
+
+  it('lazily loads external source maps for error stack traces', () => {
+    const sourceMapPath = join(workspace, 'external-entry.js.map');
+    const originalPath = join(workspace, 'external-original.ts');
+    writeFileSync(originalPath, 'export function fail() {\n  throw new Error("external map failure");\n}\nfail();\n');
+    writeFileSync(
+      sourceMapPath,
+      JSON.stringify({
+        version: 3,
+        sources: ['external-original.ts'],
+        sourcesContent: ['export function fail() {\n  throw new Error("external map failure");\n}\nfail();\n'],
+        names: [],
+        mappings: 'AAAA;AACA;AACA;AACA',
+      }),
+    );
+
+    const error = runFailure(
+      /* js */ `
+      export function fail() {
+        throw new Error('external map failure');
+      }
+      fail();
+      ${'//# source' + 'MappingURL=external-entry.js.map'}
+    `,
+      'external-entry.js',
+    );
+
+    expect(error).toContain('external-original.ts');
+  }, 30_000);
+
+  it('loads HTTP modules with external source maps', async () => {
+    const originalSource = 'export function fail(): never {\n  throw new Error("remote map failure");\n}\nfail();\n';
+    const sourceMap = JSON.stringify({
+      version: 3,
+      sources: ['remote-original.ts'],
+      sourcesContent: [originalSource],
+      names: [],
+      mappings: 'AAAA;AACA;AACA;AACA',
+    });
+    const generatedSource =
+      'export function fail() {\n  throw new Error("remote map failure");\n}\nfail();\n//# sourceMappingURL=remote-entry.js.map\n';
+    const server = createServer((request, response) => {
+      const content =
+        request.url === '/remote-entry.js'
+          ? generatedSource
+          : request.url === '/remote-entry.js.map'
+            ? sourceMap
+            : request.url === '/remote-original.ts'
+              ? originalSource
+              : undefined;
+
+      if (content === undefined) {
+        response.writeHead(404).end();
+        return;
+      }
+
+      response.writeHead(200, { 'Content-Type': 'application/javascript' });
+      response.end(request.method === 'HEAD' ? undefined : content);
+    });
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const address = server.address();
+    if (address === null || typeof address === 'string') {
+      throw new Error('Unable to determine the HTTP fixture server address');
+    }
+
+    try {
+      const entrypoint = /* js */ `await import('http://127.0.0.1:${address.port}/remote-entry.js');`;
+      const denied = await runFailureAsync(entrypoint, 'remote-entry.ts');
+      expect(denied).toContain('HTTP imports are disabled');
+
+      const error = await runFailureAsync(entrypoint, 'remote-entry.ts', { allowHttpImports: true });
+
+      expect(error).toContain('remote-original.ts');
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  }, 60_000);
+
   it('loads registered virtual modules through the Yasumu module loader', () => {
     const output = run(/* js */ `
       Yasumu.registerVirtualModule('answer', 'export const answer: number = 42');
@@ -118,6 +297,41 @@ describe('tanxium CLI runtime semantics', () => {
 
     expect(output).toContain('42');
     expect(output).not.toContain('"type":"console"');
+  });
+
+  it('shares main virtual modules with workers without allowing worker registration', () => {
+    const output = run(/* js */ `
+      Yasumu.registerVirtualModule('shared', 'export const answer: number = 42');
+
+      const workerSource = \`
+        Yasumu.registerVirtualModule('worker-only', 'export const answer = 0');
+
+        let workerRegistrationWasIgnored = false;
+        try {
+          await import('yasumu:virtual/worker-only');
+        } catch {
+          workerRegistrationWasIgnored = true;
+        }
+
+        const shared = await import('yasumu:virtual/shared');
+        postMessage({ answer: shared.answer, workerRegistrationWasIgnored });
+      \`;
+      const workerUrl = URL.createObjectURL(new Blob([workerSource], { type: 'application/javascript' }));
+      const worker = new Worker(workerUrl, { type: 'module' });
+      const result = await new Promise((resolve, reject) => {
+        worker.onmessage = (event) => resolve(event.data);
+        worker.onerror = (event) => reject(event.message);
+      });
+      worker.terminate();
+      URL.revokeObjectURL(workerUrl);
+
+      console.log(JSON.stringify(result));
+    `);
+
+    expect(JSON.parse(output.trim())).toEqual({
+      answer: 42,
+      workerRegistrationWasIgnored: true,
+    });
   });
 
   it('forwards renderer events through the terminal host', () => {
