@@ -34,7 +34,7 @@ jobs:
             platform: macos-latest
             target: aarch64-apple-darwin
           - name: macOS x64
-            platform: macos-13
+            platform: macos-latest
             target: x86_64-apple-darwin
           - name: Windows x64
             platform: windows-2022
