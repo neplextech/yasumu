@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 const GITHUB_RELEASES_URL = 'https://api.github.com/repos/neplextech/yasumu/releases';
-const CACHE_KEY = 'yasumu_github_releases_v2';
+const CACHE_KEY = 'yasumu_github_releases_v3';
 const CACHE_DURATION = 1000 * 60 * 15;
 
 interface GitHubAsset {
@@ -81,6 +81,10 @@ function getArchLabel(arch: Architecture): string {
 
 function isCanaryRelease(tagName: string): boolean {
   return tagName.toLowerCase().includes('canary');
+}
+
+function isTanxiumRelease(tagName: string): boolean {
+  return tagName.toLowerCase().startsWith('tanxium-v');
 }
 
 function categorizeAssets(assets: GitHubAsset[]): Omit<DownloadAssets, 'tagName'> {
@@ -173,7 +177,7 @@ function processReleases(releases: GitHubRelease[]): ChannelReleases {
   };
 
   for (const release of releases) {
-    if (release.draft) continue;
+    if (release.draft || isTanxiumRelease(release.tag_name)) continue;
 
     const isCanary = isCanaryRelease(release.tag_name);
     const channel = isCanary ? 'canary' : 'stable';
