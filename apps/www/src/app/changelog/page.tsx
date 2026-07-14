@@ -25,7 +25,7 @@ interface CachedData {
 }
 
 const GITHUB_API_URL = 'https://api.github.com/repos/neplextech/yasumu/releases';
-const CACHE_KEY = 'yasumu_changelog_releases_v2';
+const CACHE_KEY = 'yasumu_changelog_releases_v3';
 const CACHE_DURATION = 1000 * 60 * 15;
 const PER_PAGE = 10;
 const INITIAL_EXPANDED_COUNT = 3;
@@ -37,6 +37,8 @@ const formatDate = (dateString: string) => {
     day: 'numeric',
   });
 };
+
+const isTanxiumRelease = (tagName: string) => tagName.toLowerCase().startsWith('tanxium-v');
 
 function useChangelogReleases() {
   const [releases, setReleases] = useState<Release[]>([]);
@@ -95,8 +97,9 @@ function useChangelogReleases() {
         const data = await response.json();
         const releaseData: Release[] = Array.isArray(data) ? data : [];
         const newHasMore = releaseData.length === PER_PAGE;
+        const yasumuReleases = releaseData.filter((release) => !isTanxiumRelease(release.tag_name));
 
-        const updatedReleases = append ? [...releases, ...releaseData] : releaseData;
+        const updatedReleases = append ? [...releases, ...yasumuReleases] : yasumuReleases;
 
         const newCacheData: CachedData = {
           releases: updatedReleases,
