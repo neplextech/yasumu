@@ -94,6 +94,28 @@ Get the latest installer for your operating system:
 
 **[Download Yasumu](https://yasumu.dev/download)**
 
+### Tanxium CLI
+
+Install the latest prebuilt Tanxium CLI on macOS or Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/neplextech/yasumu/main/scripts/install-tanxium.sh | sh
+```
+
+Install it on Windows from PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/neplextech/yasumu/main/scripts/install-tanxium.ps1 | iex
+```
+
+Set `TANXIUM_INSTALL_DIR` to override the default installation directory. If
+you have Rust installed, you can alternatively build and install the CLI from
+crates.io:
+
+```sh
+cargo install tanxium-cli
+```
+
 ## Philosophy
 
 - **Open Source by Default:** Transparency builds trust.
