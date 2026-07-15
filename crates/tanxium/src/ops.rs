@@ -248,3 +248,30 @@ deno_core::extension!(
         state.put::<sys_traits::impls::RealSys>(sys_traits::impls::RealSys);
     },
 );
+
+deno_core::extension!(
+    tanxium_rt_ops,
+    deps = [tanxium_rt],
+    lazy_loaded_js = [dir "src/runtime", "ops.js"],
+    synthetic_esm = [
+        "ext:tanxium_rt_ops/ops.js" = "ext:tanxium_rt_ops/ops.js",
+    ],
+);
+
+/// Builds Tanxium's extension in the shape shared by snapshot creation and
+/// runtime startup.
+///
+/// `deno_core` resolves regular extension ESM while creating a snapshot. The
+/// Tanxium bootstrap imports Node polyfills which are intentionally lazy in
+/// Deno's base snapshot, so evaluating it at that point is both unnecessary
+/// and unsafe. Keep the declarative `esm = [...]` list above as the source of
+/// truth, but expose those files through Deno's lazy ESM table. The generated
+/// residual-source table embeds them in the final executable, and workers load
+/// the bootstrap explicitly after Deno has initialized its global scope.
+pub(crate) fn tanxium_runtime_extensions() -> Vec<deno_core::Extension> {
+    let mut extension = tanxium_rt::init();
+    extension.lazy_loaded_esm_files =
+        std::mem::replace(&mut extension.esm_files, std::borrow::Cow::Borrowed(&[]));
+    extension.esm_entry_point = None;
+    vec![extension, tanxium_rt_ops::init()]
+}

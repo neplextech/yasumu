@@ -1,4 +1,7 @@
-import { YasumuWorkspaceEnvironment, type EnvironmentData } from './yasumu-request.ts';
+import {
+  YasumuWorkspaceEnvironment,
+  type EnvironmentData,
+} from './yasumu-request.ts';
 
 export interface YasumuWorkspaceData {
   id: string;

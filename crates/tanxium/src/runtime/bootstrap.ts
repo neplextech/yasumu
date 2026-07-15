@@ -1,5 +1,6 @@
 /// <reference types="./internal.d.ts" />
 import './patches.ts';
+import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
 import { join } from 'node:path';
 
 const {
@@ -18,7 +19,7 @@ const {
   op_unregister_all_virtual_modules,
   op_set_workspace_dir,
   op_get_workspace_dir,
-} = Deno.core.ops; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
+} = tanxiumOps; // defined in resources/yasumu-scripts/yasumu-internal.d.ts
 
 import { MessageQueue } from './message-queue.ts';
 import { YasumuCache } from './modules/collection.ts';

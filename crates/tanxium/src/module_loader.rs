@@ -20,11 +20,15 @@ use node_resolver::{NodeResolutionKind, PackageJsonResolver, ResolutionMode};
 use sys_traits::impls::RealSys;
 use tracing::trace;
 
-use crate::{node_services, state::RuntimeState, yasumu_modules::YASUMU_MODULES};
+use crate::{
+    node_services, snapshot::TANXIUM_RESIDUAL_LAZY_ESM, state::RuntimeState,
+    yasumu_modules::YASUMU_MODULES,
+};
 
 const YASUMU_MODULE_PREFIX: &str = "yasumu:";
 const YASUMU_INTERNAL_PREFIX: &str = "file://yasumu_internal/";
 const YASUMU_VIRTUAL_PREFIX: &str = "yasumu:virtual/";
+const TANXIUM_RUNTIME_PREFIX: &str = "ext:tanxium_rt/";
 
 type SourceMapStore = Rc<RefCell<HashMap<String, Vec<u8>>>>;
 type VirtualModulesStore = Arc<Mutex<HashMap<String, String>>>;
@@ -53,6 +57,38 @@ fn parse_data_url(specifier: &str) -> Option<(String, String)> {
     };
 
     Some((mime.to_string(), decoded))
+}
+
+fn resolve_tanxium_runtime_import(
+    specifier: &str,
+    referrer: &str,
+) -> Option<Result<ModuleSpecifier, ModuleLoaderError>> {
+    if !specifier.starts_with("./") && !specifier.starts_with("../") {
+        return None;
+    }
+
+    let referrer_path = referrer.strip_prefix(TANXIUM_RUNTIME_PREFIX)?;
+    let mut segments = referrer_path.split('/').collect::<Vec<_>>();
+    segments.pop();
+
+    for segment in specifier.split('/') {
+        match segment {
+            "" | "." => {}
+            ".." => {
+                if segments.pop().is_none() {
+                    return Some(Err(ModuleLoaderError::type_error(format!(
+                        "Tanxium runtime import escapes its embedded module root: {specifier}"
+                    ))));
+                }
+            }
+            segment => segments.push(segment),
+        }
+    }
+
+    Some(
+        ModuleSpecifier::parse(&format!("{TANXIUM_RUNTIME_PREFIX}{}", segments.join("/")))
+            .map_err(|error| ModuleLoaderError::type_error(error.to_string())),
+    )
 }
 
 fn media_type_from_content_type(content_type: Option<&str>) -> (MediaType, bool, ModuleType) {
@@ -192,7 +228,7 @@ export default module.exports;
 
 #[cfg(test)]
 mod tests {
-    use super::common_js_named_exports;
+    use super::{common_js_named_exports, resolve_tanxium_runtime_import};
 
     #[test]
     fn discovers_common_js_property_exports() {
@@ -201,6 +237,18 @@ mod tests {
         );
 
         assert_eq!(exports, vec!["answer", "SMTPServer"]);
+    }
+
+    #[test]
+    fn resolves_relative_embedded_runtime_imports() {
+        let resolved = resolve_tanxium_runtime_import(
+            "../yasumu-request.ts",
+            "ext:tanxium_rt/modules/collection.ts",
+        )
+        .expect("Tanxium referrer should be handled")
+        .expect("relative import should resolve");
+
+        assert_eq!(resolved.as_str(), "ext:tanxium_rt/yasumu-request.ts");
     }
 }
 
@@ -446,6 +494,26 @@ impl TypescriptModuleLoader {
                 )
             }
 
+            "ext" if module_specifier.as_str().starts_with("ext:tanxium_rt/") => {
+                let source = TANXIUM_RESIDUAL_LAZY_ESM
+                    .binary_search_by(|(specifier, _)| specifier.cmp(&module_specifier.as_str()))
+                    .ok()
+                    .map(|index| TANXIUM_RESIDUAL_LAZY_ESM[index].1)
+                    .ok_or_else(|| {
+                        ModuleLoaderError::type_error(format!(
+                            "Unknown embedded Tanxium module: {}",
+                            module_specifier
+                        ))
+                    })?;
+
+                (
+                    source.to_string(),
+                    false,
+                    MediaType::JavaScript,
+                    ModuleType::JavaScript,
+                )
+            }
+
             scheme => {
                 return Err(ModuleLoaderError::type_error(format!(
                     "Unsupported module scheme: {}",
@@ -515,6 +583,10 @@ impl ModuleLoader for TypescriptModuleLoader {
         referrer: &str,
         _kind: ResolutionKind,
     ) -> Result<ModuleSpecifier, ModuleLoaderError> {
+        if let Some(resolved) = resolve_tanxium_runtime_import(specifier, referrer) {
+            return resolved;
+        }
+
         if specifier.starts_with("data:") {
             return ModuleSpecifier::parse(specifier)
                 .map_err(|e| ModuleLoaderError::type_error(e.to_string()));

@@ -6,3 +6,7 @@ declare module 'yasumu:ui/jsx-runtime' {
 }
 
 declare module 'yasumu:ui' {}
+
+declare module 'ext:tanxium_rt_ops/ops.js' {
+  export const tanxiumOps: typeof Deno.core.ops;
+}
