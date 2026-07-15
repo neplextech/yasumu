@@ -1,8 +1,9 @@
+import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
 import { isMainThread } from 'node:worker_threads';
 
 import { createBufferedQueue } from './common.ts';
 
-const { op_send_renderer_event } = Deno.core.ops;
+const { op_send_renderer_event } = tanxiumOps;
 
 export const isWorkerEnvironment = () =>
   !isMainThread ||

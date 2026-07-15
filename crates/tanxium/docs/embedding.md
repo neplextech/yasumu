@@ -24,6 +24,13 @@ Tanxium::builder()
     .run_file("./script.ts")?;
 ```
 
+The path passed to `run_file` is the embedder's physical main module.
+Relative imports continue to resolve from that file, so hosts can package an
+application module tree using their native resource system. Tanxium's private
+`ext:tanxium_rt/*` bootstrap modules are embedded in its build-generated
+snapshot bundle and do not need to be copied into the host application's
+resources.
+
 `RuntimeHost` is intentionally small: embedders decide how to present
 events and confirmation requests. Tanxium owns virtual modules,
 workspace/resource context, module loading, workers, and the

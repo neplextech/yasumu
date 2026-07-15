@@ -5,6 +5,7 @@ mod node_services;
 mod ops;
 mod permissions;
 mod runtime;
+mod snapshot;
 mod state;
 mod types;
 mod version;

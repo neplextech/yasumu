@@ -1,6 +1,7 @@
 use crate::module_loader::TypescriptModuleLoader;
 use crate::node_services;
-use crate::ops::tanxium_rt;
+use crate::ops::tanxium_runtime_extensions;
+use crate::snapshot::{TANXIUM_RESIDUAL_LAZY_ESM, TANXIUM_RESIDUAL_LAZY_JS, TANXIUM_SNAPSHOT};
 use crate::state::{RuntimeEvent, RuntimeHost, RuntimeState};
 use crate::types::RuntimeHostState;
 use crate::version::{DENO_VERSION, TANXIUM_VERSION};
@@ -149,8 +150,8 @@ impl WorkerSharedState {
                 name: args.name,
                 main_module: args.main_module.clone(),
                 worker_id: args.worker_id,
-                residual_lazy_js_sources: deno_snapshots::RESIDUAL_LAZY_JS,
-                residual_lazy_esm_sources: deno_snapshots::RESIDUAL_LAZY_ESM,
+                residual_lazy_js_sources: TANXIUM_RESIDUAL_LAZY_JS,
+                residual_lazy_esm_sources: TANXIUM_RESIDUAL_LAZY_ESM,
                 maybe_main_module_blob: None,
                 maybe_cpu_prof_config: None,
                 wait_for_debugger_on_start: false,
@@ -178,8 +179,8 @@ impl WorkerSharedState {
                     disable_offscreen_canvas: true,
                     ..Default::default()
                 },
-                extensions: vec![tanxium_rt::init()],
-                startup_snapshot: deno_snapshots::CLI_SNAPSHOT,
+                extensions: tanxium_runtime_extensions(),
+                startup_snapshot: TANXIUM_SNAPSHOT,
                 create_params: None,
                 unsafely_ignore_certificate_errors: None,
                 seed: None,
@@ -196,7 +197,7 @@ impl WorkerSharedState {
                 enable_stack_trace_arg_in_ops: true,
             };
 
-            let (worker, handle) = WebWorker::bootstrap_from_options(services, options);
+            let (mut worker, handle) = WebWorker::bootstrap_from_options(services, options);
 
             worker
                 .js_runtime
@@ -206,6 +207,10 @@ impl WorkerSharedState {
                     host: shared.host.clone(),
                     state: shared.state.clone(),
                 });
+
+            let bootstrap_module = tanxium_bootstrap_specifier();
+            deno_core::futures::executor::block_on(worker.execute_side_module(&bootstrap_module))
+                .expect("failed to initialize the Tanxium web worker bootstrap");
 
             (worker, handle)
         })
@@ -273,10 +278,10 @@ async fn initialize_worker(
             fs: shared.fs.clone(),
         },
         WorkerOptions {
-            extensions: vec![tanxium_rt::init()],
-            startup_snapshot: deno_snapshots::CLI_SNAPSHOT,
-            residual_lazy_js_sources: deno_snapshots::RESIDUAL_LAZY_JS,
-            residual_lazy_esm_sources: deno_snapshots::RESIDUAL_LAZY_ESM,
+            extensions: tanxium_runtime_extensions(),
+            startup_snapshot: TANXIUM_SNAPSHOT,
+            residual_lazy_js_sources: TANXIUM_RESIDUAL_LAZY_JS,
+            residual_lazy_esm_sources: TANXIUM_RESIDUAL_LAZY_ESM,
             bootstrap: BootstrapOptions {
                 deno_version: DENO_VERSION.to_string(),
                 user_agent,
@@ -304,12 +309,20 @@ async fn initialize_worker(
             state: shared.state.clone(),
         });
 
+    worker
+        .execute_side_module(&tanxium_bootstrap_specifier())
+        .await?;
     initialize_node_runtime(&mut worker).await?;
 
     info!("Executing main module: {}", main_module);
     worker.execute_main_module(main_module).await?;
 
     Ok(worker)
+}
+
+fn tanxium_bootstrap_specifier() -> ModuleSpecifier {
+    ModuleSpecifier::parse("ext:tanxium_rt/bootstrap.ts")
+        .expect("Tanxium bootstrap specifier must be valid")
 }
 
 /// Completes Deno's lazy Node bootstrap before CommonJS code is evaluated.
@@ -472,7 +485,6 @@ pub(crate) fn start_worker(
                             }
                             Err(e) => {
                                 let msg = e.to_string();
-
                                 if msg.contains("Event receiver channel closed") {
                                     info!("Renderer channel closed — shutting down");
                                     break;
