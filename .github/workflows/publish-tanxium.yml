@@ -125,16 +125,18 @@ jobs:
         run: |
           version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "tanxium") | .version')"
           indexed=false
-          for attempt in {1..40}; do
-            if cargo search tanxium --limit 1 | grep -Fq "tanxium = \"${version}\""; then
+          for attempt in {1..12}; do
+            if curl -sf "https://index.crates.io/ta/nx/tanxium" | tail -1 | jq -e --arg v "$version" '.vers == $v' > /dev/null; then
               indexed=true
               break
             fi
-            echo "Waiting for tanxium ${version} in crates.io index (${attempt}/40)..."
-            sleep 15
+            if [[ "$attempt" -lt 12 ]]; then
+              echo "Waiting for tanxium ${version} in crates.io index (${attempt}/12)..."
+              sleep 5
+            fi
           done
           if [[ "$indexed" != true ]]; then
-            echo "::warning::tanxium ${version} did not reach the crates.io index within 10 minutes; continuing with the tanxium-cli publish attempt."
+            echo "::warning::tanxium ${version} could not be confirmed in the crates.io index within 1 minute; continuing with the tanxium-cli publish attempt."
           fi
 
       - name: Verify Tanxium CLI package contents

@@ -10,6 +10,7 @@ name = "yasumu_lib"
 crate-type = ["staticlib", "rlib"]
 
 [build-dependencies]
+deno_napi = "0.185.0"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
