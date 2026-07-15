@@ -8,7 +8,7 @@ repository = "https://github.com/neplextech/yasumu"
 readme = "README.md"
 keywords = ["deno", "javascript", "runtime", "typescript", "cli"]
 categories = ["command-line-utilities", "development-tools"]
-include = ["src/**", "README.md"]
+include = ["build.rs", "src/**", "README.md"]
 
 [[bin]]
 name = "tanxium"
