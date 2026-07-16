@@ -1,4 +1,4 @@
-import { type YasumuSchemaParser } from '../parser.js';
+import { YasumuSchemaParserError, type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
 import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
@@ -14,26 +14,27 @@ export class YasumuSchemaParsableRecord<E extends YasumuSchemaParsable<unknown>>
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.LEFT_CURLY_BRACKET);
   }
 
   parse(parser: YasumuSchemaParser) {
-    const object: Record<string, any> = {};
-    const keys = new Set(Object.keys(this.expect));
+    const object: Record<string, unknown> = {};
     parser.consume(YasumuSchemaTokenTypes.LEFT_CURLY_BRACKET);
     while (!parser.isEOF() && !parser.check(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET)) {
       const identifier = parser.consume(YasumuSchemaTokenTypes.IDENTIFIER);
+      if (Object.prototype.hasOwnProperty.call(object, identifier.value)) {
+        throw new YasumuSchemaParserError(`Duplicate object key '${identifier.value}'`, identifier.span);
+      }
       parser.consume(YasumuSchemaTokenTypes.COLON);
       const value = this.expect.parse(parser);
       object[identifier.value] = value;
-      keys.delete(identifier.value);
     }
     parser.consume(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET);
     return object as _YasumuSchemaParsableRecordReturn<E>;
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return typeof value === 'object';
   }
 

@@ -1,162 +1,166 @@
 ---
 title: Requests
-description: Creating and managing HTTP requests in Yasumu.
+description: Build, script, and execute REST requests consistently in the desktop app and CLI.
 ---
 
 # Requests
 
-Requests are the core building blocks of API testing in Yasumu. This
-guide covers creating, configuring, and organizing HTTP requests.
+REST entities are stored in YSL, normalized into the shared workspace model,
+and executed by the same headless pipeline in the desktop app and CLI.
+
+## Creating a request
+
+1. Open **REST** in the workspace sidebar.
+2. Select **New request**.
+3. Choose a method and URL.
+4. Configure parameters, headers, authentication, body, and scripts.
+5. Send the request or run it in test mode.
 
 ![Request Editor](/preview.png)
 
-## Creating a Request
-
-To create a new request:
-
-1. Navigate to the **REST** section in the sidebar
-2. Click the **+** button or use the context menu
-3. Configure the request details in the editor
-
-## Request File Structure
-
-Each request in Yasumu is stored as a `.ysl` file with the following
-structure:
+## YSL structure
 
 ```d
 @rest
 
 metadata {
-  name: "Echo"
-  method: "GET"
-  id: "wmz1pu98ovohr1k44dbldpjt"
-  groupId: "xpm4mym1hqvcqq3fqc0hppv1"
+  name: "Create user"
+  method: "POST"
+  id: "create-user"
+  groupId: null
 }
 
 request {
-  url: "{{API_URL}}/?apiKey={{API_KEY}}"
-  headers: []
-  body: null
+  url: "{{API_URL}}/users/:userId"
+  headers: [
+    { key: "authorization", value: "Bearer {{API_TOKEN}}", enabled: true },
+  ]
+  parameters: [
+    { key: "userId", value: "{{USER_ID}}", enabled: true },
+  ]
+  searchParameters: []
+  body: {
+    type: "json"
+    content: "{ \"name\": \"{{DISPLAY_NAME}}\" }"
+  }
 }
 
 dependencies []
+script null
+test null
 ```
 
-### File Naming
+Entity IDs remain stable across the filesystem, SQLite import, CLI, scripts,
+and execution history. The loader rejects duplicate IDs and invalid group or
+dependency references with source-located diagnostics.
 
-Request files are named using unique IDs (e.g.,
-`wmz1pu98ovohr1k44dbldpjt.ysl`). The human-readable name is stored in
-the `metadata.name` field.
+## Supported request data
 
-### Metadata Block
+Yasumu supports standard HTTP methods and these body types:
 
-| Property  | Description                                        |
-| :-------- | :------------------------------------------------- |
-| `name`    | Display name in the UI                             |
-| `method`  | HTTP method (GET, POST, PUT, DELETE, PATCH, etc.)  |
-| `id`      | Unique identifier for the request                  |
-| `groupId` | ID of the group this request belongs to (optional) |
+| Body type | Behavior |
+| :-------- | :------- |
+| JSON | Preserves typed whole-value interpolation |
+| Text | Sends text with deterministic encoding |
+| Binary | Resolves a runtime-independent file reference |
+| Form data | Supports repeated text fields and multiple files |
+| URL encoded | Builds `application/x-www-form-urlencoded` pairs |
 
-### Request Block
+Enabled headers, path parameters, and search parameters are interpolated at
+execution time. Disabled rows are ignored.
 
-| Property  | Description                          |
-| :-------- | :----------------------------------- |
-| `url`     | Request URL (supports variables)     |
-| `headers` | Array of request headers             |
-| `body`    | Request body (null for GET requests) |
+## Variable interpolation
 
-## HTTP Methods
-
-Yasumu supports all standard HTTP methods:
-
-- **GET** — Retrieve data
-- **POST** — Create new resources
-- **PUT** — Update/replace resources
-- **PATCH** — Partial updates
-- **DELETE** — Remove resources
-- **HEAD** — Headers only
-- **OPTIONS** — CORS preflight
-
-## Variables
-
-Use double curly braces to reference variables in URLs and headers:
+Use `{{NAME}}` in URLs, keys, headers, parameters, bodies, GraphQL variables,
+and eligible file paths:
 
 ```d
-url: "{{API_URL}}/users/{{userId}}"
+url: "{{API_URL}}/teams/:teamId"
 ```
 
-Variables are resolved from:
+When a JSON or GraphQL value consists entirely of one reference, booleans,
+numbers, `null`, arrays, and objects keep their type. Embedded references are
+rendered as strings. Recursive values have a depth limit and cycles or missing
+values produce structured errors.
 
-1. **Environment variables** — From the active environment
-2. **Environment secrets** — Secret values from the active environment
+See [Environments](/docs/environments) for precedence and secret handling.
 
-<Callout type="info" title="Variable Resolution">
-  Variables are resolved at request time from the currently active
-  environment.
-</Callout>
+## Files and form data
 
-## Headers
+File values use a serializable reference whose source is one of:
 
-Headers are stored as an array in the request block:
+- a workspace-relative path
+- a desktop host handle
+- inline bytes selected by the renderer
 
-```d
-headers: [
-  { key: "Content-Type", value: "application/json", enabled: true },
-  { key: "Authorization", value: "Bearer {{API_KEY}}", enabled: true }
-]
+The desktop resolves GUI selections in the backend. The CLI resolves YSL paths
+relative to the workspace and blocks traversal or symlink escape. Scripts can
+inspect metadata or intentionally open workspace files through
+`ctx.workspace.files`.
+
+Multipart requests preserve repeated fields, file names, MIME types, multiple
+files, and empty files. Request snapshots record metadata and bounded bodies;
+they do not duplicate unbounded binary content across workers.
+
+## Script lifecycle
+
+Scripts use standard Web APIs:
+
+```ts
+export function onRequest(ctx: RequestHookContext) {
+  const headers = new Headers(ctx.req.headers);
+  headers.set('x-execution-id', ctx.execution.id);
+  ctx.setRequest(new Request(ctx.req, { headers }));
+}
+
+export async function onResponse(ctx: ResponseHookContext) {
+  console.log(ctx.res.status, await ctx.res.clone().text());
+}
+
+export function onTest(ctx: TestHookContext) {
+  test('succeeds', () => expect(ctx.res.ok).toBe(true));
+}
 ```
 
-Each header has:
+Workspace and nested group hooks cascade before the entity hook. Returning a
+Web `Response` from `onRequest` skips transport but still runs `onResponse` and
+`onTest`. Read [Scripting](/docs/scripting) for the complete contract.
 
-- `key` — Header name
-- `value` — Header value (supports variables)
-- `enabled` — Whether the header is active
+## Execution results
 
-## Request Body
+The headless result is serializable and includes:
 
-The body can be:
+- execution, root, parent, workspace, and entity identity
+- bounded request and response snapshots
+- real-versus-mock status
+- completion, cancellation, or failure status
+- timing
+- tests, logs, diagnostics, and nested executions
+- a redacted structured error when execution fails
 
-- `null` — No body (typical for GET requests)
-- JSON object — For POST, PUT, PATCH requests
+The desktop maps this result into the existing response panel and subscribes
+to execution events for live phases and console output. The CLI renders the
+same underlying result as human-readable or JSON output.
 
-## Response Handling
+## Cancellation and timeouts
 
-After sending a request, Yasumu displays:
+Cancelling from the desktop or pressing `Ctrl+C` in the CLI aborts transport,
+hooks, tests, nested requests, file work, email waits, and the runtime session.
+Timeouts and user cancellation remain distinct error categories.
 
-- **Status Code** — HTTP response status
-- **Response Time** — Duration of the request
-- **Size** — Response payload size
-- **Headers** — Response headers
-- **Body** — Response body with syntax highlighting
+## Dependencies and chaining
 
-### Response Formats
+YSL dependencies are validated as references. Scripts can directly execute
+another REST or GraphQL entity through `ctx.workspace.rest.execute()` or
+`ctx.workspace.graphql.execute()`. Nested execution inherits the active
+environment and cancellation signal, emits child events, and has a maximum
+depth to prevent recursion.
 
-Yasumu automatically formats common response types:
+## Best practices
 
-- **JSON** — Pretty-printed with syntax highlighting
-- **XML** — Formatted and highlighted
-- **HTML** — Rendered or source view
-- **Plain Text** — As-is display
-
-## Request Groups
-
-Requests can be organized into groups using the `groupId` field.
-Groups are defined in the workspace configuration and help organize
-related requests.
-
-## Dependencies
-
-The `dependencies` array allows you to define requests that should run
-before this request:
-
-```d
-dependencies ["wmz1pu98ovohr1k44dbldpjt"]
-```
-
-## Best Practices
-
-1. **Use descriptive names** — Give requests clear, descriptive names
-   in the metadata
-2. **Use variables** — Avoid hardcoding URLs and credentials
-3. **Organize with groups** — Group related requests together
-4. **Version your requests** — Commit changes to version control
+1. Use stable IDs and descriptive names.
+2. Keep endpoints and credentials in environments.
+3. Store secrets outside YSL and supply them explicitly in headless runs.
+4. Prefer Web `Request`/`Response` APIs in scripts.
+5. Use workspace paths, not absolute paths, for portable fixtures.
+6. Add `onTest` assertions so the same workspace can run in CI.

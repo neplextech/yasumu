@@ -1,4 +1,4 @@
-import type { EntityType } from '../common/common.types.js';
+import type { EntityType, YasumuEmbeddedScript } from '../common/common.types.js';
 
 /**
  * The options for creating an entity group.
@@ -16,6 +16,10 @@ export interface EntityGroupCreateOptions {
    * The type of the entity.
    */
   entityType: EntityType;
+  /**
+   * The optional script inherited by entities in this group.
+   */
+  script?: YasumuEmbeddedScript | null;
 }
 
 /**
@@ -30,6 +34,10 @@ export interface EntityGroupUpdateOptions {
    * The parent ID of the entity group.
    */
   parentId?: string | null;
+  /**
+   * The optional script inherited by entities in this group.
+   */
+  script?: YasumuEmbeddedScript | null;
 }
 
 export interface EntityGroupData {
@@ -53,4 +61,8 @@ export interface EntityGroupData {
    * The entity owner ID.
    */
   entityOwnerId: string;
+  /**
+   * The optional script inherited by entities in this group.
+   */
+  script: YasumuEmbeddedScript | null;
 }

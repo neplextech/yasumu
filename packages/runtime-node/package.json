@@ -1,0 +1,45 @@
+{
+  "name": "@yasumu/runtime-node",
+  "version": "0.1.0",
+  "description": "Node.js worker_threads adapter for Yasumu scripts",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "node": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "pnpm build && vitest run"
+  },
+  "dependencies": {
+    "@std/expect": "npm:@jsr/std__expect@^1.0.20",
+    "@yasumu/runtime-api": "workspace:*",
+    "typescript-legacy": "npm:typescript@^6"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:build",
+    "@yasumu/tsconfig": "workspace:*",
+    "typescript": "catalog:build",
+    "vitest": "catalog:test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

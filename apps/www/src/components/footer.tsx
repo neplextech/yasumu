@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
@@ -7,9 +8,11 @@ export default function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 sm:px-6 md:flex-row lg:px-8">
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <img
+            <Image
               src="/logo-dark-glow.png"
               alt="Yasumu Logo"
+              width={24}
+              height={24}
               className="h-6 w-6 rounded-md select-none"
               draggable={false}
             />

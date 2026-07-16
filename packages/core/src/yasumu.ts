@@ -28,15 +28,13 @@ export interface YasumuOptions {
  * The interface for a subscription event.
  */
 export type SubscriptionEventPayload<T extends RpcSubscriptionEvents = RpcSubscriptionEvents> = {
-  /**
-   * The event name.
-   */
-  event: keyof T;
-  /**
-   * The data for the event.
-   */
-  data: T[keyof T];
-};
+  [K in keyof T]: {
+    /** The event name. */
+    event: K;
+    /** The payload associated with this event name. */
+    data: T[K];
+  };
+}[keyof T];
 
 /**
  * The Yasumu class.
@@ -102,6 +100,12 @@ export class Yasumu {
     const activeWorkspace = this.workspaces.getActiveWorkspace();
 
     switch (event) {
+      case 'execution-event':
+        {
+          if (activeWorkspace?.id !== payload.data.workspaceId) return;
+          this.events.emit('onExecutionEvent', activeWorkspace, payload.data);
+        }
+        break;
       case 'rest-entity-updated':
         {
           if (activeWorkspace?.id !== payload.data.workspaceId) return;

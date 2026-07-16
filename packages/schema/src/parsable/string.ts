@@ -8,7 +8,7 @@ export class YasumuSchemaParsableString extends YasumuSchemaParsable<string> {
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.STRING);
   }
 
@@ -17,7 +17,7 @@ export class YasumuSchemaParsableString extends YasumuSchemaParsable<string> {
     return token.value;
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return typeof value === 'string';
   }
 

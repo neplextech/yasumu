@@ -68,30 +68,32 @@ groups {}
 | `id`       | Unique identifier for the workspace |
 | `name`     | Display name for the workspace      |
 | `version`  | Workspace schema version            |
-| `snapshot` | Timestamp of last modification      |
+| `snapshot` | Export marker; not the sole sync revision |
 | `groups`   | Request grouping configuration      |
 
-## Lock File
+## Source revisions and reconciliation
 
-The `yasumu-lock.json` file tracks all entities in the workspace:
+The desktop treats SQLite as its active application state while keeping YSL
+git-friendly. On import it records a content revision and the normalized source
+snapshot. Later synchronizations compare three values:
 
-```json
-{
-  "version": 1,
-  "entities": {
-    "workspace": { ... },
-    "rest": { ... },
-    "environment": { ... },
-    "smtp": { ... },
-    "group": {}
-  }
-}
+```d
+last imported source  ↔  current YSL source  ↔  current SQLite state
 ```
 
-Each entity entry contains:
+This detects source additions, updates, and deletions independently from local
+database edits. A change on only one side is safe to apply. Changes to
+different fields can be auto-merged. Changes to the same field produce a
+structured conflict and are not overwritten.
 
-- `hash` — Content hash for change detection
-- `lastSyncedAt` — Timestamp of last synchronization
+The existing `yasumu-lock.json` remains compatible with export tooling, but
+file modification time or the lock timestamp is not used as the only source of
+truth. Stable entity IDs prevent duplicate imports and synchronization only
+rewrites affected records.
+
+The same headless YSL loader is used by reconciliation and the CLI, including
+full validation, deterministic ordering, content-hash caching, and
+source-located diagnostics.
 
 ## Git Integration
 

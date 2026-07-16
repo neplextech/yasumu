@@ -2,6 +2,11 @@ import { YasumuSchemaParserError, type YasumuSchemaParser } from '../parser.js';
 import type { YasumuSchemaSerializer } from '../serializer.js';
 import { YasumuSchemaTokenTypes } from '../tokens.js';
 import { YasumuSchemaParsableNullable } from './nullable.js';
+import {
+  YasumuSchemaParsableOptional,
+  type YasumuSchemaOptionalKeys,
+  type YasumuSchemaRequiredKeys,
+} from './optional.js';
 import { YasumuSchemaParsable, type YasumuSchemaParsableToType } from './parsable.js';
 
 export type _YasumuSchemaParsableObjectExpect = {
@@ -9,7 +14,9 @@ export type _YasumuSchemaParsableObjectExpect = {
 };
 
 export type _YasumuSchemaParsableObjectReturn<T extends _YasumuSchemaParsableObjectExpect> = {
-  [K in keyof T]: YasumuSchemaParsableToType<T[K]>;
+  [K in YasumuSchemaRequiredKeys<T>]: YasumuSchemaParsableToType<T[K]>;
+} & {
+  [K in YasumuSchemaOptionalKeys<T>]?: YasumuSchemaParsableToType<T[K]>;
 };
 
 export class YasumuSchemaParsableObject<E extends _YasumuSchemaParsableObjectExpect> extends YasumuSchemaParsable<
@@ -19,49 +26,56 @@ export class YasumuSchemaParsableObject<E extends _YasumuSchemaParsableObjectExp
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.LEFT_CURLY_BRACKET);
   }
 
   parse(parser: YasumuSchemaParser) {
-    const object: Record<string, any> = {};
+    const object: Record<string, unknown> = {};
     const keys = new Set(Object.keys(this.expect));
+    const parsedKeys = new Set<string>();
     parser.consume(YasumuSchemaTokenTypes.LEFT_CURLY_BRACKET);
     while (!parser.isEOF() && !parser.check(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET)) {
-      const [key, value] = this.parseEntry(parser);
+      const [key, value] = this.parseEntry(parser, parsedKeys);
       object[key] = value;
       keys.delete(key);
+      parsedKeys.add(key);
     }
     const end = parser.consume(YasumuSchemaTokenTypes.RIGHT_CURLY_BRACKET);
     for (const x of keys) {
       const nullable = this.expect[x] instanceof YasumuSchemaParsableNullable;
-      if (!nullable && !(x in object)) {
-        const { line, column } = end.span.start;
-        throw new YasumuSchemaParserError(`Missing required object key '${x}' (at line ${line}, column ${column})`);
+      const optional = this.expect[x] instanceof YasumuSchemaParsableOptional;
+      if (!nullable && !optional && !(x in object)) {
+        throw new YasumuSchemaParserError(`Missing required object key '${x}'`, end.span);
       }
-      object[x] ??= null;
+      if (nullable) {
+        object[x] ??= null;
+      }
     }
     return object as _YasumuSchemaParsableObjectReturn<E>;
   }
 
-  parseEntry(parser: YasumuSchemaParser) {
+  parseEntry(parser: YasumuSchemaParser, parsedKeys: ReadonlySet<string> = new Set()) {
     const identifier = parser.consume(YasumuSchemaTokenTypes.IDENTIFIER);
+    if (parsedKeys.has(identifier.value)) {
+      throw new YasumuSchemaParserError(`Duplicate object key '${identifier.value}'`, identifier.span);
+    }
     const parsable = this.expect[identifier.value];
     if (!parsable) {
-      const { line, column } = identifier.span.start;
-      throw new YasumuSchemaParserError(`Unexpected block '${identifier.value}' (at line ${line}, column ${column})`);
+      throw new YasumuSchemaParserError(`Unexpected block '${identifier.value}'`, identifier.span);
     }
     parser.consume(YasumuSchemaTokenTypes.COLON);
     const value = parsable.parse(parser);
     return [identifier.value, value] as const;
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return typeof value === 'object';
   }
 
   serialize(serializer: YasumuSchemaSerializer, value: _YasumuSchemaParsableObjectReturn<E>) {
-    const keys = Object.keys(this.expect);
+    const keys = Object.keys(this.expect) as (keyof E & string)[];
+    const object = value as { [K in keyof E]?: YasumuSchemaParsableToType<E[K]> };
     if (keys.length === 0) {
       return '{}';
     }
@@ -69,9 +83,13 @@ export class YasumuSchemaParsableObject<E extends _YasumuSchemaParsableObjectExp
     serializer.incrementIndent();
     for (const x of keys) {
       const xSchema = this.expect[x]!;
-      const xValue = value[x];
+      const xValue = object[x];
       const nullable = xSchema instanceof YasumuSchemaParsableNullable;
-      if (!nullable && (xValue === undefined || xValue === null)) {
+      const optional = xSchema instanceof YasumuSchemaParsableOptional;
+      if (optional && xValue === undefined) {
+        continue;
+      }
+      if (!nullable && !optional && (xValue === undefined || xValue === null)) {
         continue;
       }
       serializer.keyPath.push(x);

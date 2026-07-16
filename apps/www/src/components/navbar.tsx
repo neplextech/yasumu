@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
@@ -18,9 +19,11 @@ const Navbar: React.FC = () => {
           {/* Logo Area */}
           <div className="flex flex-shrink-0 items-center gap-3">
             <Link href="/" className="group flex items-center gap-3">
-              <img
+              <Image
                 src="/logo-dark-glow.png"
                 alt="Yasumu Logo"
+                width={32}
+                height={32}
                 className="h-8 w-8 rounded-lg select-none"
                 draggable={false}
               />

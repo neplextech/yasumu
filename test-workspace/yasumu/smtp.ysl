@@ -8,16 +8,15 @@ metadata {
 }
 
 script {
-  export function onEmail(ctx: YasumuScriptContext, email: YasumuEmail) {
-      if (!email.subject.toLowerCase().includes('verification code')) return;
-    
-      const otp = email.html.split('data-otp="')[1]?.split('"')[0];
-    
-      console.log(`Parsed OTP: ${otp}`);
-    
-      if (otp) {
-        Yasumu.cache.set('VERIFICATION_CODE', otp);
-      }
-    }
-}
+  export function onEmail(ctx: EmailHookContext) {
+    if (!ctx.email.subject.toLowerCase().includes('verification code')) return;
 
+    const otp = ctx.email.html.split('data-otp="')[1]?.split('"')[0];
+
+    console.log(`Parsed OTP: ${otp}`);
+
+    if (otp) {
+      Yasumu.cache.set('VERIFICATION_CODE', otp);
+    }
+  }
+}

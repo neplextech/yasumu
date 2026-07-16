@@ -15,6 +15,12 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./headless/persistence": "./src/headless/persistence/index.ts",
+    "./headless/platform": "./src/headless/platform/index.ts",
+    "./headless/runtime": "./src/headless/runtime/index.ts"
+  },
   "scripts": {
     "build": "deno task bundle",
     "deno": "deno",
@@ -24,6 +30,10 @@
     "migrate": "deno task generate-schema && drizzle-kit generate",
     "studio": "deno task generate-schema && drizzle-kit studio",
     "generate-schema": "deno --allow-read --allow-write ./scripts/generate-schema.ts",
+    "check:persistence": "tsc --project src/headless/persistence/tsconfig.json",
+    "check:platform": "tsc --project src/headless/platform/tsconfig.json",
+    "test:persistence": "deno test --no-check --allow-read src/headless/persistence/*.test.ts",
+    "test:platform": "deno test --no-check --allow-read --allow-write src/headless/platform/*.test.ts",
     "lint": "deno lint"
   },
   "dependencies": {
@@ -32,7 +42,9 @@
     "@yasumu/core": "file:../../packages/core",
     "@yasumu/den": "file:../../packages/den",
     "@yasumu/echo-server": "file:../../packages/echo-server",
+    "@yasumu/headless": "file:../../packages/headless",
     "@yasumu/rpc": "file:../../packages/rpc",
+    "@yasumu/runtime-api": "file:../../packages/runtime-api",
     "@yasumu/schema": "file:../../packages/schema",
     "@yasumu/sync": "file:../../packages/sync",
     "@yasumu/workspace-importer": "file:../../packages/workspace-importer",
@@ -46,6 +58,7 @@
   "devDependencies": {
     "@types/mailparser": "^3.4.6",
     "@types/node": "^24.6.2",
-    "@types/smtp-server": "^3.5.13"
+    "@types/smtp-server": "^3.5.13",
+    "typescript": "catalog:build"
   }
 }

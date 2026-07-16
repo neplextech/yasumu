@@ -1,0 +1,25 @@
+@rest
+
+metadata {
+  name: "File upload"
+  method: "POST"
+  id: "file-upload"
+  groupId: null
+}
+
+request {
+  url: "{{BASE_URL}}/file"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: {
+    type: "binary"
+    content: "fixtures/payload.txt"
+  }
+}
+
+dependencies []
+
+script null
+
+test null

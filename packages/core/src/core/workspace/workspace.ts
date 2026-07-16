@@ -1,8 +1,10 @@
 import type { WorkspaceData } from '@yasumu/common';
+import type { WorkspaceSynchronizationResult } from '@yasumu/rpc';
 
 import { EnvironmentManager } from '../manager/environment-manager.js';
 import { WorkspaceManager } from '../manager/workspace-manager.js';
 import { EmailModule } from '../modules/email/email.js';
+import { ExecutionModule } from '../modules/execution/execution.js';
 import { GraphqlModule } from '../modules/graphql/graphql.js';
 import { RestModule } from '../modules/rest/rest.js';
 import { ExternalWorkspaceProvider } from './external-workspace-provider.js';
@@ -31,6 +33,8 @@ export class Workspace {
    * The email module for the workspace.
    */
   public readonly emails = new EmailModule(this);
+  /** Unified headless execution for REST and GraphQL entities. */
+  public readonly execution = new ExecutionModule(this);
   /**
    * The external workspace provider for the workspace.
    */
@@ -100,8 +104,8 @@ export class Workspace {
   /**
    * Synchronizes this workspace.
    */
-  public async synchronize(): Promise<void> {
-    await this.manager.yasumu.rpc.synchronization.synchronize.$mutate({
+  public synchronize(): Promise<WorkspaceSynchronizationResult> {
+    return this.manager.yasumu.rpc.synchronization.synchronize.$mutate({
       parameters: [],
     });
   }

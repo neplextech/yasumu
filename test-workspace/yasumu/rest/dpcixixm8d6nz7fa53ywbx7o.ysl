@@ -45,30 +45,35 @@ dependencies []
 
 script {
   let reqId: string, runs: number = 0;
-  
-  export async function onRequest(req: YasumuRequest) {
-    console.log({workspace: Yasumu.getWorkspaceDir()})
+
+  export async function onRequest(ctx: RequestHookContext) {
+    console.log({ workspace: ctx.workspace.root })
     runs++;
-    reqId = Yasumu.cuid()
-    const userId = req.env.getSecret('USER_ID')
-    req.headers.set('x-current-user-id', userId || 'NONE')
-    req.headers.set('x-request-id', reqId)
+    reqId = ctx.execution.id
+    const userId = ctx.workspace.env.getSecret('USER_ID')
+    const headers = new Headers(ctx.req.headers)
+    headers.set('x-current-user-id', userId || 'NONE')
+    headers.set('x-request-id', reqId)
+    ctx.setRequest(new Request(ctx.req, { headers }))
   }
-  
-  export async function onResponse(req: YasumuRequest, res: YasumuResponse) {
-    res.env.setVariable('SOURCE', res.json<any>().meta.source)
-    res.env.setVariable('TIMESTAMP', res.json<any>().meta.timestamp)
-  
+
+  export async function onResponse(ctx: ResponseHookContext) {
+    const body = await ctx.res.json() as {
+      meta: { source: string; timestamp: string }
+    }
+    ctx.workspace.env.setVariable('SOURCE', body.meta.source)
+    ctx.workspace.env.setVariable('TIMESTAMP', body.meta.timestamp)
+
     await Yasumu.ui.showNotification({
       title: `Info for request ${reqId}`,
       message: `Your request has been processed!`,
       variant: 'info',
     });
   }
-  
-  export async function onTest(req: YasumuRequest, res: YasumuResponse) {
+
+  export async function onTest(ctx: TestHookContext) {
     test('Response is successful', () => {
-      expect(res.status).toBe(200)
+      expect(ctx.res.status).toBe(200)
     })
     test(`Pass | Run: ${runs}`, (ctx) => {
       ctx.succeed()
@@ -81,4 +86,3 @@ script {
     })
   }
 }
-

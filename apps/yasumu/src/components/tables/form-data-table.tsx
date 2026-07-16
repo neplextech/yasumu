@@ -6,19 +6,23 @@ import { Input } from '@yasumu/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
 import { Plus, Trash } from 'lucide-react';
+import type { YasumuFileReference } from '@yasumu/core';
 
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import { registerFileReference } from '@/lib/files/file-reference';
 
 import { useStableRowKeys } from './use-stable-row-keys';
 
 export interface FormDataPair {
   key: string;
-  value: string | File;
-  type: 'text' | 'file';
+  kind: 'text' | 'file';
+  value?: string;
+  file?: YasumuFileReference;
   enabled: boolean;
 }
 
-const EMPTY_PAIR: FormDataPair = { key: '', value: '', type: 'text', enabled: true };
+const EMPTY_PAIR: FormDataPair = { key: '', value: '', kind: 'text', enabled: true };
 
 export default function FormDataTable({
   onChange,
@@ -28,6 +32,7 @@ export default function FormDataTable({
   pairs?: FormDataPair[];
 }) {
   const { renderVariablePopover } = useVariablePopover();
+  const workspace = useActiveWorkspace();
   const pairs = providedPairs?.length ? providedPairs : [EMPTY_PAIR];
   const { rowKeys, insertKey, removeKey } = useStableRowKeys(pairs.length);
 
@@ -44,7 +49,11 @@ export default function FormDataTable({
     onChange?.(
       pairs.map((pair, pairIndex) => {
         if (pairIndex !== index) return pair;
-        if (updates.type && updates.type !== pair.type) return { ...pair, type: updates.type, value: '' };
+        if (updates.kind && updates.kind !== pair.kind) {
+          return updates.kind === 'file'
+            ? { key: pair.key, enabled: pair.enabled, kind: 'file' }
+            : { key: pair.key, enabled: pair.enabled, kind: 'text', value: '' };
+        }
         return { ...pair, ...updates };
       }),
     );
@@ -99,9 +108,9 @@ export default function FormDataTable({
               </TableCell>
               <TableCell>
                 <Select
-                  value={pair.type}
-                  onValueChange={(type) => {
-                    if (type === 'text' || type === 'file') updatePair(index, { type });
+                  value={pair.kind}
+                  onValueChange={(kind) => {
+                    if (kind === 'text' || kind === 'file') updatePair(index, { kind });
                   }}
                   disabled={!pair.enabled}
                 >
@@ -115,27 +124,33 @@ export default function FormDataTable({
                 </Select>
               </TableCell>
               <TableCell>
-                {pair.type === 'file' ? (
+                {pair.kind === 'file' ? (
                   <div className="flex items-center gap-2">
                     <Input
                       type="file"
                       aria-label={`File value for ${pair.key || `form-data row ${index + 1}`}`}
                       onChange={(event) => {
                         const file = event.target.files?.[0];
-                        if (file) updatePair(index, { value: file });
+                        if (file) {
+                          void registerFileReference(file, workspace.execution).then((reference) =>
+                            updatePair(index, { file: reference }),
+                          );
+                        }
                       }}
                       disabled={!pair.enabled}
                       className="cursor-pointer"
                     />
-                    {pair.value instanceof File ? (
-                      <span className="text-muted-foreground text-xs whitespace-nowrap">{pair.value.size} bytes</span>
+                    {pair.file ? (
+                      <span className="text-muted-foreground text-xs whitespace-nowrap">
+                        {pair.file.name} ({pair.file.size ?? 0} bytes)
+                      </span>
                     ) : null}
                   </div>
                 ) : (
                   <InteropableInput
                     aria-label={`Value for ${pair.key || `form-data row ${index + 1}`}`}
                     placeholder="Value"
-                    value={typeof pair.value === 'string' ? pair.value : ''}
+                    value={pair.value ?? ''}
                     onChange={(value) => updatePair(index, { value })}
                     onVariableClick={renderVariablePopover}
                     disabled={!pair.enabled}

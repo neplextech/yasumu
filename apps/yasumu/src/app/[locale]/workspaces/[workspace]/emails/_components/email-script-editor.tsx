@@ -121,7 +121,7 @@ export default function EmailScriptEditor() {
               </Button>
             </>
           )}
-          <span className="text-muted-foreground font-mono text-xs">onEmail(ctx, email)</span>
+          <span className="text-muted-foreground font-mono text-xs">onEmail(ctx)</span>
         </div>
       </div>
       <TextEditor

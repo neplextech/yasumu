@@ -794,7 +794,9 @@
           "npm:hono@^4.12.16"
         ]
       },
+      "npm:@yasumu/headless@0.1.0": {},
       "npm:@yasumu/rpc@0.0.0": {},
+      "npm:@yasumu/runtime-api@0.1.0": {},
       "npm:@yasumu/schema@0.0.2": {},
       "npm:@yasumu/sync@0.0.0": {},
       "npm:@yasumu/workspace-importer@0.0.0": {}

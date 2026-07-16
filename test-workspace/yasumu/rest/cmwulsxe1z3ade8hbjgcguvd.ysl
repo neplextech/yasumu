@@ -18,9 +18,10 @@ request {
 dependencies []
 
 script {
-  export function onRequest() {
-      const res = new YasumuResponse('Hello World!', { status: 205, statusText: 'CUSTOM_STATUS' });
-      return res;
-    }
+  export function onRequest(_ctx: RequestHookContext) {
+    return new Response(null, {
+      status: 205,
+      statusText: 'CUSTOM_STATUS',
+    });
+  }
 }
-

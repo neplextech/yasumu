@@ -1,0 +1,23 @@
+@rest
+
+metadata {
+  name: "Broken"
+  name: "Duplicate"
+  method: "GET"
+  id: "broken"
+  groupId: null
+}
+
+request {
+  url: "https://example.invalid"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script null
+
+test null

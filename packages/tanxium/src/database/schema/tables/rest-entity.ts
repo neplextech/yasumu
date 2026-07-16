@@ -20,6 +20,7 @@ export const restEntities = sqliteTable('rest_entity', {
   requestHeaders: json<KeyValuePair[]>('requestHeaders').$default(() => []),
   requestBody: json<RestEntityRequestBody>('requestBody'),
   script: json<YasumuEmbeddedScript>('script'),
+  testScript: json<YasumuEmbeddedScript>('testScript'),
   groupId: text('groupId').references(() => entityGroups.id, {
     onDelete: 'cascade',
   }),

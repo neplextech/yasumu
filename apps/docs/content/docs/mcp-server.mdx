@@ -14,24 +14,25 @@ description:
 
 Yasumu includes a local Model Context Protocol server that lets an MCP
 client inspect, edit, synchronize, and execute workspace requests. It
-runs inside the Tanxium runtime while the desktop app is open, so the
-server uses the same RPC services and persistence layer as the
-application.
+runs inside the Tanxium runtime while the desktop app is open, so MCP
+uses the same RPC services, headless execution lifecycle, and
+persistence layer as the application.
 
 The server is designed for local automation. A compatible agent can
-create a request, update its lifecycle script, run it, inspect the
-response, and synchronize the workspace files without switching to the
-desktop UI.
+create or update a saved request, execute REST and GraphQL entities,
+inspect canonical execution results, and synchronize workspace files
+without switching to the desktop UI.
 
 ## When to Use It
 
 Use the MCP server when you want an AI agent or another local tool to:
 
 - discover workspaces and saved REST or GraphQL requests
-- create or update saved requests
+- create, update, or delete saved requests
 - add JavaScript lifecycle scripts to REST requests
-- execute REST requests with the same script lifecycle used by Yasumu
-- run request tests and inspect test results
+- run REST and GraphQL requests through Yasumu's canonical lifecycle
+- execute request tests and inspect structured test results
+- cancel a running execution
 - synchronize the workspace to disk after edits
 
 The MCP server is not a remote API. It binds to `127.0.0.1` and should
@@ -125,7 +126,8 @@ Call a tool:
 ```
 
 Notifications are accepted and return HTTP `202` with no JSON-RPC
-body.
+body. Yasumu also handles the MCP `notifications/cancelled`
+notification for active tool calls.
 
 ## Workspace Resolution
 
@@ -158,47 +160,74 @@ an existing workspace record:
 
 ## Tools
 
-| Tool                          | Description                                      |
-| :---------------------------- | :----------------------------------------------- |
-| `workspaces_list`             | List recent workspaces                           |
-| `workspaces_active`           | Return the active workspace id                   |
-| `workspaces_get`              | Get a workspace by id                            |
-| `rest_list`                   | List REST requests in a workspace                |
-| `rest_get`                    | Get a REST request by id                         |
-| `rest_create`                 | Create a REST request                            |
-| `rest_update`                 | Update any supported REST request fields         |
-| `rest_update_script`          | Replace the JavaScript lifecycle script          |
-| `rest_execute`                | Execute a REST request and run lifecycle scripts |
-| `rest_delete`                 | Delete a REST request by id                      |
-| `graphql_list`                | List GraphQL requests in a workspace             |
-| `graphql_get`                 | Get a GraphQL request by id                      |
-| `graphql_create`              | Create a GraphQL request                         |
-| `graphql_update`              | Update a GraphQL request by id                   |
-| `graphql_delete`              | Delete a GraphQL request by id                   |
-| `synchronization_synchronize` | Synchronize a workspace with its `yasumu` folder |
+| Tool                          | Description                                              |
+| :---------------------------- | :------------------------------------------------------- |
+| `workspaces_list`             | List recent workspaces                                   |
+| `workspaces_active`           | Return the active workspace id                           |
+| `workspaces_get`              | Get a workspace by id                                    |
+| `rest_list`                   | List REST requests in a workspace                        |
+| `rest_get`                    | Get a REST request by id                                 |
+| `rest_create`                 | Create a REST request                                    |
+| `rest_update`                 | Update supported REST request fields                     |
+| `rest_update_script`          | Replace the saved JavaScript lifecycle script            |
+| `rest_execute`                | Execute REST through the canonical headless lifecycle    |
+| `rest_delete`                 | Delete a REST request by id                              |
+| `graphql_list`                | List GraphQL requests in a workspace                     |
+| `graphql_get`                 | Get a GraphQL request by id                              |
+| `graphql_create`              | Create a GraphQL request                                 |
+| `graphql_update`              | Update a GraphQL request by id                           |
+| `graphql_execute`             | Execute GraphQL through the canonical headless lifecycle |
+| `graphql_delete`              | Delete a GraphQL request by id                           |
+| `synchronization_synchronize` | Synchronize a workspace with its `yasumu` folder         |
 
-## REST Execution
+## Canonical Request Execution
 
-`rest_execute` runs a saved REST request by id. It is intended for
-agent workflows where creating the request is not enough and the agent
-must send it, inspect the response, or run tests.
+`rest_execute` and `graphql_execute` both call the same
+`execution.execute` RPC command used by the desktop application. MCP
+does not implement a separate HTTP, interpolation, script, mock, or
+test lifecycle. The canonical headless service owns all of those
+behaviors.
 
-Execution follows this order:
+The tools return the `ExecutionResult` from that command without
+reshaping it. This means REST and GraphQL expose the same statuses,
+request and response snapshots, mocks, tests, logs, diagnostics,
+nested executions, and serialized errors as other Yasumu hosts.
 
-1. Load the saved request from the selected workspace.
-2. Load the active environment.
-3. Interpolate request URL, headers, body, and path parameters.
-4. Run the request script `onRequest` handler when a script is
-   present.
-5. Send the HTTP request, unless `onRequest` returns a mock response.
-6. Run the request script `onResponse` handler.
-7. Persist environment variable or secret changes made by the response
-   script.
-8. Run the request script `onTest` handler.
-9. Return the request, response, lifecycle summaries, and test
-   results.
+### Mode Defaults
 
-### Execute a Saved Request
+- `rest_execute` defaults to `mode: "test"` for compatibility with the
+  original MCP tool. It runs request and response hooks and also runs
+  test hooks.
+- `graphql_execute` defaults to `mode: "run"`. It runs the request and
+  response lifecycle but skips test hooks.
+- Pass `mode: "run"` or `mode: "test"` explicitly whenever client
+  behavior should not depend on a default.
+
+### Supported Execution Inputs
+
+Both execution tools accept these arguments:
+
+| Argument               | Type              | Behavior                                                     |
+| :--------------------- | :---------------- | :----------------------------------------------------------- |
+| `workspaceId`          | string            | Workspace id, name, path, or folder name; defaults to active |
+| `id`                   | string            | Required saved REST or GraphQL entity id                     |
+| `executionId`          | string            | Optional stable id supplied by the caller                    |
+| `environmentId`        | string            | Selects an environment instead of the active environment     |
+| `mode`                 | `"run" \| "test"` | Controls whether test hooks run                              |
+| `pathParameters`       | object            | JSON path parameter values by name                           |
+| `variables`            | object            | Temporary JSON interpolation values                          |
+| `secrets`              | object            | Temporary string secrets; result snapshots remain redacted   |
+| `timeoutMs`            | number            | Non-negative overall execution timeout in milliseconds       |
+| `scriptTimeoutMs`      | number            | Non-negative timeout for each script hook                    |
+| `includeResponseBody`  | boolean           | Controls response body inclusion in the snapshot             |
+| `maxRequestBodyBytes`  | number            | Maximum request body bytes captured                          |
+| `maxResponseBodyBytes` | number            | Maximum response body bytes captured                         |
+| `followRedirects`      | boolean           | Controls transport redirect handling                         |
+
+`variables` and `pathParameters` must contain JSON-serializable
+values. Every `secrets` value must be a string.
+
+### Execute REST
 
 ```json
 {
@@ -209,36 +238,29 @@ Execution follows this order:
     "name": "rest_execute",
     "arguments": {
       "workspaceId": "test-workspace",
-      "id": "q12allkockl4taxtxuhul9rb"
-    }
-  }
-}
-```
-
-### Execute With Path Parameters
-
-Use `pathParams` for URLs such as
-`https://pokeapi.co/api/v2/pokemon/:name`:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 5,
-  "method": "tools/call",
-  "params": {
-    "name": "rest_execute",
-    "arguments": {
-      "workspaceId": "test-workspace",
       "id": "q12allkockl4taxtxuhul9rb",
-      "pathParams": {
+      "executionId": "agent-run-42",
+      "mode": "test",
+      "environmentId": "staging",
+      "pathParameters": {
         "name": "pikachu"
-      }
+      },
+      "variables": {
+        "region": "eu-west-1",
+        "page": 2
+      },
+      "secrets": {
+        "token": "temporary-token"
+      },
+      "timeoutMs": 60000,
+      "includeResponseBody": true
     }
   }
 }
 ```
 
-Path parameter values can also be passed with an enabled flag:
+For compatibility, REST also accepts `pathParams` as an alias for
+`pathParameters`. Legacy values may use an enabled wrapper:
 
 ```json
 {
@@ -246,16 +268,46 @@ Path parameter values can also be passed with an enabled flag:
     "name": {
       "value": "pikachu",
       "enabled": true
+    },
+    "ignored": {
+      "value": "not-used",
+      "enabled": false
     }
   }
 }
 ```
 
-### Execute With Temporary Variables
+Disabled legacy entries are omitted before calling
+`execution.execute`.
 
-`variables` override active environment variables only for this
-execution. They are useful when the agent needs to run a request with
-short lived values:
+### Execute GraphQL
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "graphql_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "graphql-request-id",
+      "mode": "run",
+      "variables": {
+        "viewerId": 42
+      }
+    }
+  }
+}
+```
+
+GraphQL request construction, interpolation, hooks, mocks, tests, and
+errors follow the same headless execution contract as REST.
+
+## REST Scripts and Legacy Inputs
+
+Use `rest_update_script` to replace the saved JavaScript lifecycle
+script:
 
 ```json
 {
@@ -263,85 +315,19 @@ short lived values:
   "id": 6,
   "method": "tools/call",
   "params": {
-    "name": "rest_execute",
-    "arguments": {
-      "workspaceId": "test-workspace",
-      "id": "q12allkockl4taxtxuhul9rb",
-      "variables": {
-        "pokemonName": "bulbasaur"
-      }
-    }
-  }
-}
-```
-
-Any `{{pokemonName}}` token in the URL, headers, body, or enabled
-parameters resolves to `bulbasaur` for that run.
-
-### Execute With Extra Query Parameters
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 7,
-  "method": "tools/call",
-  "params": {
-    "name": "rest_execute",
-    "arguments": {
-      "workspaceId": "test-workspace",
-      "id": "q12allkockl4taxtxuhul9rb",
-      "queryParams": {
-        "limit": 10
-      }
-    }
-  }
-}
-```
-
-## REST Scripts
-
-REST scripts are JavaScript snippets that can export lifecycle
-handlers. Agents can use `rest_update_script` to persist a script, or
-pass a one-off script to `rest_execute`.
-
-### Persist a Script
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 8,
-  "method": "tools/call",
-  "params": {
     "name": "rest_update_script",
     "arguments": {
       "workspaceId": "test-workspace",
       "id": "q12allkockl4taxtxuhul9rb",
-      "script": "export function onRequest(req) { req.headers.set('x-agent', 'yasumu'); }"
+      "script": "export function onRequest(ctx) { return Response.json({ source: 'mock' }); }"
     }
   }
 }
 ```
 
-### Run With a One-Off Script
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 9,
-  "method": "tools/call",
-  "params": {
-    "name": "rest_execute",
-    "arguments": {
-      "workspaceId": "test-workspace",
-      "id": "q12allkockl4taxtxuhul9rb",
-      "script": "export function onResponse(req, res) { res.env.setVariable('lastStatus', String(res.status)); }"
-    }
-  }
-}
-```
-
-Set `persistScript` to `true` when the same script should be saved on
-the request before execution:
+`rest_execute` retains its original `script` and `persistScript`
+fields. A supplied script must be persisted before canonical
+execution:
 
 ```json
 {
@@ -349,82 +335,173 @@ the request before execution:
   "arguments": {
     "workspaceId": "test-workspace",
     "id": "q12allkockl4taxtxuhul9rb",
-    "script": "export function onTest(req, res) { test('status is ok', () => expect(res.status).toBe(200)); }",
-    "persistScript": true
+    "script": "export function onTest() { test('status is ok', () => expect(response.status).toBe(200)); }",
+    "persistScript": true,
+    "mode": "test"
   }
 }
 ```
 
-### Mock Responses
+Yasumu first updates the saved REST entity and then calls
+`execution.execute`. It does not create a temporary execution-only
+script because that would make MCP behave differently from the other
+hosts.
 
-If `onRequest` returns a `YasumuResponse`, Yasumu skips the HTTP
-request and treats it as a mock response:
+<Callout type="warning" title="Legacy execution overrides">
+  Non-empty `queryParams` overrides are rejected with
+  `MCP_INVALID_TOOL_INPUT`. Update the saved request query parameters
+  through `rest_update` before execution. A `script` without
+  `persistScript: true` is also rejected with
+  `MCP_INVALID_TOOL_INPUT`; use `rest_update_script` or persist the
+  supplied script. `pathParams` remains supported as an alias for
+  `pathParameters`.
+</Callout>
 
-```js
-export function onRequest() {
-  return new YasumuResponse(JSON.stringify({ source: 'mock' }), {
-    status: 200,
-    statusText: 'OK',
-    headers: { 'content-type': 'application/json' },
-  });
-}
-```
+## Execution Results
 
-The returned MCP payload marks this with `lifecycle.mocked: true`.
-
-## REST Execution Response
-
-`rest_execute` returns a text MCP result containing JSON. The shape
-is:
+The MCP `tools/call` result contains one text content item. Its text
+is the pretty-printed JSON serialization of the exact canonical
+`ExecutionResult`:
 
 ```json
 {
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"executionId\": \"agent-run-42\",\n  ...\n}"
+      }
+    ]
+  }
+}
+```
+
+After parsing `content[0].text`, the result has this shared shape:
+
+```json
+{
+  "executionId": "agent-run-42",
+  "rootExecutionId": "agent-run-42",
+  "entityId": "q12allkockl4taxtxuhul9rb",
+  "entityKind": "rest",
   "request": {
-    "id": "q12allkockl4taxtxuhul9rb",
-    "name": "Get pokemon by name",
+    "url": "https://pokeapi.co/api/v2/pokemon/pikachu",
     "method": "GET",
-    "url": "https://pokeapi.co/api/v2/pokemon/pikachu"
+    "headers": [["accept", "application/json"]],
+    "body": {
+      "kind": "empty",
+      "size": 0,
+      "truncated": false
+    }
   },
   "response": {
     "status": 200,
     "statusText": "OK",
-    "time": 148.5,
-    "headers": {},
-    "cookies": [],
-    "textBody": "{...}",
-    "bodyType": "text",
-    "size": 12345,
-    "bodyTruncated": false
-  },
-  "error": null,
-  "lifecycle": {
-    "preRequest": {
-      "success": true,
-      "error": null,
-      "result": null
-    },
-    "postResponse": {
-      "success": true,
-      "error": null,
-      "result": null
-    },
-    "tests": {
-      "summary": {
-        "success": true,
-        "error": null,
-        "result": {
-          "testResults": []
-        }
+    "headers": [["content-type", "application/json"]],
+    "body": {
+      "kind": "json",
+      "value": {
+        "name": "pikachu"
       },
-      "results": []
-    },
-    "mocked": false
+      "size": 18,
+      "truncated": false,
+      "contentType": "application/json"
+    }
+  },
+  "isMockResponse": true,
+  "status": "completed",
+  "startedAt": 1750000000000,
+  "completedAt": 1750000000148,
+  "durationMs": 148,
+  "tests": [
+    {
+      "id": "status-test",
+      "suite": ["Pokemon"],
+      "test": "returns 200",
+      "result": "pass",
+      "error": null,
+      "duration": 2
+    }
+  ],
+  "logs": [],
+  "diagnostics": [],
+  "nestedExecutions": []
+}
+```
+
+`request` and `response` use bounded serialized body snapshots instead
+of the old MCP-only `textBody` representation. `response` may be
+absent when execution fails before a response exists. `isMockResponse`
+is `true` when a request hook supplies the response. Nested executions
+and structured errors are returned without MCP-specific conversion.
+
+### Failed Executions and Tool Errors
+
+An execution failure or cancellation is still a valid canonical
+result. Inspect `status` and `error`:
+
+```json
+{
+  "status": "failed",
+  "error": {
+    "name": "YasumuError",
+    "code": "REQUEST_FAILED",
+    "message": "Connection refused",
+    "details": {
+      "retryable": true
+    }
   }
 }
 ```
 
-Large text bodies are truncated. Binary bodies are reported with
-metadata, but the binary payload is not embedded in the MCP response.
+Input validation and RPC invocation errors are MCP tool errors. Yasumu
+returns JSON-RPC success with `isError: true` and a structured text
+payload:
+
+```json
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"error\": {\n    \"code\": \"MCP_INVALID_TOOL_INPUT\",\n    \"message\": \"...\",\n    \"details\": { \"field\": \"queryParams\" }\n  }\n}"
+      }
+    ],
+    "isError": true
+  }
+}
+```
+
+## Cancellation
+
+Yasumu assigns an execution id before calling `execution.execute`.
+Pass `executionId` when your client needs a stable value for logs or
+result correlation; otherwise Yasumu generates one.
+
+There are two cancellation paths:
+
+- aborting the Streamable HTTP request forwards cancellation to
+  `execution.cancel`
+- sending `notifications/cancelled` for the active JSON-RPC request id
+  forwards the notification reason to `execution.cancel`
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/cancelled",
+  "params": {
+    "requestId": 4,
+    "reason": "No longer needed"
+  }
+}
+```
+
+`requestId` is the JSON-RPC id of the active `tools/call`, not the
+Yasumu execution id. The notification receives HTTP `202`. A
+successfully cancelled execution resolves with `status: "cancelled"`
+and its structured execution error.
 
 ## Synchronization
 
@@ -435,7 +512,7 @@ the workspace `yasumu` folder:
 ```json
 {
   "jsonrpc": "2.0",
-  "id": 10,
+  "id": 7,
   "method": "tools/call",
   "params": {
     "name": "synchronization_synchronize",
@@ -456,10 +533,10 @@ interfaces. It does not expose shell execution or arbitrary filesystem
 tools. All workspace operations go through Yasumu's Tanxium RPC
 services.
 
-Environment secrets can be used for request interpolation and scripts,
-but they are not listed separately by the MCP server. Agents should
-avoid printing secrets into script output, response mocks, or request
-bodies unless that is explicitly intended.
+Execution secrets are passed to the canonical headless service and are
+redacted from its returned snapshots, logs, diagnostics, and errors.
+Agents should still avoid intentionally writing secrets into remote
+request bodies or script-controlled output.
 
 ## Troubleshooting
 
@@ -489,30 +566,20 @@ convenience, but ids are the most predictable option.
 
 ### Request Execution Fails
 
-Check the returned `error` field from `rest_execute`. Common causes
-are:
+Parse `content[0].text`, then inspect the canonical `status`, `error`,
+and `diagnostics` fields. Common causes include:
 
-- the saved request has no URL
-- a path parameter such as `:name` was not provided
+- the saved request has no valid URL or GraphQL operation
+- a required interpolation or path parameter is missing
 - the remote server is unavailable
-- the request timed out
-- the script changed the URL or method to an invalid value
+- the execution or script hook timed out
+- a lifecycle script produced an invalid request
 
-Use `timeoutMs` for slow endpoints:
-
-```json
-{
-  "name": "rest_execute",
-  "arguments": {
-    "workspaceId": "test-workspace",
-    "id": "q12allkockl4taxtxuhul9rb",
-    "timeoutMs": 60000
-  }
-}
-```
+For a tool-level error, check `result.isError` and parse the
+structured error in `content[0].text`.
 
 ### Script Runs but Tests Are Missing
 
-Ensure the saved or one-off script exports an `onTest` handler. The
-handler runs after the response is available and receives the response
-context used by `onResponse`.
+Pass `mode: "test"` and ensure the saved script exports an `onTest`
+handler. `graphql_execute` defaults to run mode, so its test hooks do
+not run unless test mode is explicit.

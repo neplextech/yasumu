@@ -1,0 +1,22 @@
+@rest
+
+metadata {
+  name: "Slow response"
+  method: "GET"
+  id: "slow"
+  groupId: null
+}
+
+request {
+  url: "{{BASE_URL}}/slow?delay={{DELAY}}"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script null
+
+test null

@@ -27,16 +27,67 @@ import type {
   GraphqlEntityData,
   GraphqlEntityUpdateOptions,
   GraphqlScriptContext,
+  SourceEntityKind,
 } from '@yasumu/common';
+import type {
+  ExecuteEntityInput,
+  ExecutionResult,
+  ReconciliationConflict,
+  ReconciliationStatus,
+  YasumuFileReference,
+} from '@yasumu/headless';
 
 import type { ExtractRpcTypes, InferParameters, InferReturnType, RpcMutation, RpcQuery } from './yasumu-rpc.js';
 
 type ExecuteScriptCommand<Context> = RpcMutation<[entity: ExecutableScript<Context>], ScriptExecutionResult<Context>>;
 
+/** Serializable payload used to register one renderer-selected file with the desktop host. */
+export interface RegisterFileInput {
+  name: string;
+  mimeType?: string;
+  bytes: number[];
+}
+
+export type ReconciledSourceKind = Extract<
+  SourceEntityKind,
+  'workspace' | 'entity-group' | 'rest' | 'graphql' | 'environment' | 'smtp'
+>;
+
+export interface SourceReconciliationEntry {
+  kind: ReconciledSourceKind;
+  entityId: string;
+  sourcePath?: string;
+  status: ReconciliationStatus;
+  conflicts: ReconciliationConflict[];
+  baseRevision?: string;
+  sourceRevision?: string;
+  databaseRevision?: string;
+}
+
+/** Structured result returned by an explicit GUI synchronization request. */
+export interface WorkspaceSynchronizationResult {
+  workspaceId: string;
+  entries: SourceReconciliationEntry[];
+  conflicts: ReconciliationConflict[];
+  pushed: boolean;
+  skippedReason?: 'workspace-not-found' | 'default-workspace' | 'conflict';
+}
+
 /**
  * The Yasumu RPC interface.
  */
 export interface YasumuRPC {
+  /** Unified REST and GraphQL execution through the headless lifecycle. */
+  execution: {
+    /** Execute one saved entity in run or test mode. */
+    execute: RpcMutation<[input: Omit<ExecuteEntityInput, 'workspaceId' | 'signal'>], ExecutionResult>;
+    /** Cancel an active execution and its nested children. */
+    cancel: RpcMutation<[executionId: string, reason?: string], boolean>;
+    /** List active execution identifiers for the current workspace host. */
+    active: RpcQuery<[], string[]>;
+    /** Upload a selected file once and return an opaque host-handle reference. */
+    registerFile: RpcMutation<[file: RegisterFileInput], YasumuFileReference>;
+  };
   /**
    * The workspaces commands.
    */
@@ -77,7 +128,7 @@ export interface YasumuRPC {
     /**
      * Synchronize a workspace command.
      */
-    synchronize: RpcMutation<[], void>;
+    synchronize: RpcMutation<[], WorkspaceSynchronizationResult>;
   };
   /**
    * The rest commands.

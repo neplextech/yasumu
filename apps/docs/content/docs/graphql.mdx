@@ -362,12 +362,12 @@ support environment variables with `{{VARIABLE}}` syntax.
 The **Scripts** tab lets you write JavaScript code that runs at
 different stages of the request lifecycle:
 
-- `onRequest(req)` — Runs **before** the request is sent. Modify
-  headers, variables, or the URL.
-- `onResponse(req, res)` — Runs **after** the response is received.
-  Process response data or update environment variables.
-- `onTest(req, res)` — Define **test assertions** against the
-  response.
+- `onRequest(ctx)` — Runs **before** the request is sent. Replace the
+  standard Web `Request` with `ctx.setRequest()` or return a mock
+  `Response`.
+- `onResponse(ctx)` — Runs **after** the response is received and
+  exposes read-only Web `Request` and `Response` objects.
+- `onTest(ctx)` — Defines **test assertions** in test mode.
 
 ![graphql-script](/graphql-script.png)
 
@@ -375,20 +375,22 @@ different stages of the request lifecycle:
 
 ```js
 // modify request
-export function onRequest(req: YasumuRequest) {
-  req.headers.set('Authorization', `Bearer ${req.env.getSecret('API_TOKEN')}`)
+export function onRequest(ctx: RequestHookContext) {
+  const headers = new Headers(ctx.req.headers);
+  headers.set('Authorization', `Bearer ${ctx.workspace.env.getSecret('API_TOKEN')}`);
+  ctx.setRequest(new Request(ctx.req, { headers }));
 }
 
 // consume response
-export function onResponse(req: YasumuRequest, res: YasumuResponse) {
-  const body = res.json<any>();
+export async function onResponse(ctx: ResponseHookContext) {
+  const body = await ctx.res.clone().json();
   console.log(body.data.products.items[0]);
 }
 
 // run tests
-export function onTest(req: YasumuRequest, res: YasumuResponse) {
+export function onTest(ctx: TestHookContext) {
   test('Response status should be 200', () => {
-    expect(res.status).toBe(200);
+    expect(ctx.res.status).toBe(200);
   });
 }
 ```

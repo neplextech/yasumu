@@ -11,8 +11,8 @@ export class YasumuSchemaLexer {
     this.length = content.length;
   }
 
-  peek() {
-    return this.content[this.cursor]!;
+  peek(offset = 0) {
+    return this.content[this.cursor + offset] ?? '';
   }
 
   advance() {

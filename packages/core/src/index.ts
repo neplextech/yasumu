@@ -17,6 +17,7 @@ export * from './core/workspace/workspace.js';
 export * from './core/modules/rest/rest.entity.js';
 export * from './core/modules/rest/rest.js';
 export * from './core/modules/email/email.js';
+export * from './core/modules/execution/execution.js';
 export * from './core/manager/environment-manager.js';
 export * from './core/workspace/environment/environment.js';
 export * from './core/workspace/environment/environment-variable.js';
@@ -24,3 +25,4 @@ export * from './core/workspace/environment/environment-variable.js';
 // re-export
 export * from '@yasumu/common';
 export * from '@yasumu/rpc';
+export type { ExecuteEntityInput, ExecutionEvent, ExecutionResult, YasumuFileReference } from '@yasumu/headless';

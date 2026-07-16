@@ -176,7 +176,7 @@ export function RestRequestTabs({
             <div className="flex flex-shrink-0 items-center justify-between">
               <span className="text-muted-foreground text-sm font-medium">Request Scripts</span>
               <span className="text-muted-foreground font-mono text-xs">
-                onRequest(req) · onResponse(req, res) · onTest(req, res)
+                onRequest(ctx) · onResponse(ctx) · onTest(ctx)
               </span>
             </div>
             <TextEditor

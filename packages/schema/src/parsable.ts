@@ -7,6 +7,7 @@ export * from './parsable/null.js';
 export * from './parsable/nullable.js';
 export * from './parsable/number.js';
 export * from './parsable/object.js';
+export * from './parsable/optional.js';
 export * from './parsable/parsable.js';
 export * from './parsable/record.js';
 export * from './parsable/script.js';

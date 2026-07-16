@@ -33,11 +33,11 @@ Everything lives in your project folder as plain `.ysl` files. Commit
 them, diff them, review them in PRs—your API collections are just
 another part of your codebase.
 
-The app runs on Tauri with an embedded custom JavaScript runtime
-powered by Deno. This handles everything from request execution to
-scripting—write your pre-request logic in TypeScript without external
-tooling. You can also run `.ysl` files directly from the terminal for
-CI/CD integration.
+The desktop app runs on Tauri and uses the embedded Deno-based Tanxium
+adapter for scripting. Request construction, execution, interpolation,
+tests, and workspace behavior live in a shared headless engine. The
+Node.js CLI assembles that same engine, so `.ysl` workflows behave the
+same way in the editor, terminal, and CI.
 
 No account required. No cloud sync. No paid tiers.
 
@@ -80,9 +80,11 @@ for readability and clean git diffs.
 
 ### Runtime Architecture
 
-Tauri provides the desktop shell and OS-level operations. The
-backend—request execution, scripting, and core logic—runs on an
-embedded custom JavaScript runtime built on `deno_runtime`.
+Tauri provides the desktop shell and OS-level operations. A
+runtime-independent headless package owns request and workspace behavior.
+Tanxium implements the script runtime contract for the desktop, while a
+Node.js worker adapter implements it for the CLI. Both consume one generated
+script API and virtual-module contract.
 
 ## Quick Start
 
@@ -98,7 +100,8 @@ embedded custom JavaScript runtime built on `deno_runtime`.
 
 - **Frontend:** Next.js with React
 - **Desktop Shell:** Tauri
-- **Backend Runtime:** Embedded custom JS runtime powered by Deno
+- **Headless Engine:** Shared TypeScript domain and execution services
+- **Script Runtimes:** Embedded Tanxium (desktop) and Node.js workers (CLI)
 - **Platforms:** Windows, Linux, macOS
 
 ## Project Philosophy

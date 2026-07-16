@@ -1,13 +1,19 @@
+import type {
+  RuntimeInboundMessage,
+  RuntimeInvokeMessage,
+  RuntimeOutboundMessage,
+} from "../../../runtime-api/src/protocol.ts";
+
 export interface WorkerHeartbeatMessage {
-  type: 'heartbeat';
+  type: "heartbeat";
 }
 
 export interface WorkerReadyMessage {
-  type: 'ready';
+  type: "ready";
 }
 
 export interface WorkerExecuteMessage<Context = unknown> {
-  type: 'execute';
+  type: "execute";
   requestId: string;
   moduleKey: string;
   invocationTarget: string;
@@ -16,39 +22,48 @@ export interface WorkerExecuteMessage<Context = unknown> {
 }
 
 export interface WorkerExecutionSuccessMessage<Context = unknown> {
-  type: 'execution-success';
+  type: "execution-success";
   requestId: string;
   context: Context;
   result: unknown;
 }
 
 export interface WorkerExecutionErrorMessage<Context = unknown> {
-  type: 'execution-error';
+  type: "execution-error";
   requestId: string;
   context: Context;
   error: string;
 }
 
 export interface WorkerTerminateMessage {
-  type: 'terminate';
+  type: "terminate";
 }
 
 export interface WorkerPublishMessage<T = unknown> {
-  type: 'publish-message';
+  type: "publish-message";
   event: string;
   data: T;
 }
 
+export interface TanxiumRuntimeInvokeMessage extends RuntimeInvokeMessage {
+  moduleKey: string;
+}
+
+export type TanxiumRuntimeInboundMessage =
+  | TanxiumRuntimeInvokeMessage
+  | Exclude<RuntimeInboundMessage, RuntimeInvokeMessage>;
+
 export type WorkerInboundMessage<Context = unknown> =
   | WorkerExecuteMessage<Context>
   | WorkerTerminateMessage
-  | WorkerPublishMessage;
+  | WorkerPublishMessage
+  | TanxiumRuntimeInboundMessage;
 
 export type WorkerOutboundMessage<Context = unknown> =
   | WorkerHeartbeatMessage
-  | WorkerReadyMessage
   | WorkerExecutionSuccessMessage<Context>
-  | WorkerExecutionErrorMessage<Context>;
+  | WorkerExecutionErrorMessage<Context>
+  | RuntimeOutboundMessage;
 
 export interface ScriptExecutionRequest<Context = unknown> {
   requestId: string;
@@ -67,4 +82,4 @@ export interface ScriptExecutionResponse<Context = unknown> {
   error?: string;
 }
 
-export type WorkerState = 'initializing' | 'ready' | 'executing' | 'terminated';
+export type WorkerState = "initializing" | "ready" | "executing" | "terminated";

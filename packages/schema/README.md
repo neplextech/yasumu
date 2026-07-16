@@ -1,28 +1,59 @@
 # Yasumu Schema Language
 
-Yasumu Schema Language Parser
+`@yasumu/schema` provides the parser, serializer, schema-building primitives, and canonical schemas for Yasumu
+workspace files.
 
-## Example
+## Parse a Yasumu document
 
 ```ts
-import { YasumuSchemaScriptActions } from "@yasumu/schema";
+import { RestSchema, deserialize } from '@yasumu/schema';
 
-const code = `
-Metadata {
-    name: "Get request"
-    method: "GET"
+const source = `
+@rest
+
+metadata {
+  name: "Get user"
+  method: "GET"
+  id: "get-user"
+  groupId: null
 }
 
-Request {
-    url: "https://example.com"
-    body: null
+request {
+  url: "https://api.example.com/users/1"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
 }
 
-Test {
-    console.log("tested");
-}
+dependencies []
 `;
 
-const parsed = YasumuSchemaScriptActions.parse(script);
-console.log(parsed);
+const document = deserialize(source, RestSchema);
+console.log(document.blocks.metadata.name);
 ```
+
+The canonical `YasumuAnnotations`, `WorkspaceSchema`, `RestSchema`, `GraphqlSchema`, `EnvironmentSchema`, and
+`SmtpSchema` exports are available from both `@yasumu/schema` and `@yasumu/schema/yasumu`.
+
+## Define a custom schema
+
+```ts
+import { deserialize, t } from '@yasumu/schema';
+
+const ExampleSchema = t.script({
+  annotation: 'example',
+  blocks: {
+    metadata: t.object({
+      name: t.string(),
+      retries: t.optional(t.number()),
+    }),
+  },
+});
+
+const document = deserialize('@example\nmetadata { name: "Demo" }', ExampleSchema);
+console.log(document.blocks.metadata);
+```
+
+Parse failures throw `YasumuSchemaParserError`. Its `span` property contains the structured start and end line and
+column positions for diagnostics.

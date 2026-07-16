@@ -40,7 +40,7 @@ export class YasumuSchemaScanner {
     if (char === '"' || char === "'") {
       return this.readString(char, start);
     }
-    if (YasumuSchemaUtils.isNumericChar(char)) {
+    if (this.isNumberStart(char)) {
       return this.readNumber(char, start);
     }
     if (YasumuSchemaUtils.isAlphabeticChar(char)) {
@@ -63,6 +63,27 @@ export class YasumuSchemaScanner {
     while (YasumuSchemaUtils.isNumericChar(this.lexer.peek())) {
       value += this.lexer.advance();
     }
+
+    if (!value.includes('.') && this.lexer.peek() === '.') {
+      value += this.lexer.advance();
+      while (YasumuSchemaUtils.isNumericChar(this.lexer.peek())) {
+        value += this.lexer.advance();
+      }
+    }
+
+    const exponent = this.lexer.peek();
+    const exponentSign = this.lexer.peek(1);
+    const exponentFirstDigit = exponentSign === '+' || exponentSign === '-' ? this.lexer.peek(2) : exponentSign;
+    if ((exponent === 'e' || exponent === 'E') && YasumuSchemaUtils.isNumericChar(exponentFirstDigit)) {
+      value += this.lexer.advance();
+      if (this.lexer.peek() === '+' || this.lexer.peek() === '-') {
+        value += this.lexer.advance();
+      }
+      while (YasumuSchemaUtils.isNumericChar(this.lexer.peek())) {
+        value += this.lexer.advance();
+      }
+    }
+
     return {
       type: YasumuSchemaTokenTypes.NUMBER,
       value: value,
@@ -71,6 +92,22 @@ export class YasumuSchemaScanner {
         end: this.lexer.getCurrentSpan(),
       },
     };
+  }
+
+  private isNumberStart(char: string): boolean {
+    if (YasumuSchemaUtils.isNumericChar(char)) {
+      return true;
+    }
+    if (char === '.') {
+      return YasumuSchemaUtils.isNumericChar(this.lexer.peek());
+    }
+    if (char !== '+' && char !== '-') {
+      return false;
+    }
+    return (
+      YasumuSchemaUtils.isNumericChar(this.lexer.peek()) ||
+      (this.lexer.peek() === '.' && YasumuSchemaUtils.isNumericChar(this.lexer.peek(1)))
+    );
   }
 
   readString(delimiter: string, start: YasumuSchemaTokenSpanPosition): YasumuSchemaToken {
@@ -183,8 +220,19 @@ export class YasumuSchemaScanner {
 
   readRawIdentifier(start: YasumuSchemaTokenSpanPosition): YasumuSchemaToken {
     let value = '';
-    while (this.lexer.peek() !== '`') {
+    while (!this.lexer.isEOF() && this.lexer.peek() !== '`') {
       value += this.lexer.advance();
+    }
+    if (this.lexer.isEOF()) {
+      return {
+        type: YasumuSchemaTokenTypes.ILLEGAL,
+        value,
+        span: {
+          start,
+          end: this.lexer.getCurrentSpan(),
+        },
+        error: 'Missing end delimiter (`)',
+      };
     }
     this.lexer.advance();
     return {

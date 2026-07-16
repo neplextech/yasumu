@@ -1,0 +1,31 @@
+@rest
+
+metadata {
+  name: "Network REST"
+  method: "POST"
+  id: "network"
+  groupId: null
+}
+
+request {
+  url: "{{BASE_URL}}/rest"
+  headers: [
+    {
+      key: "authorization"
+      value: "Bearer {{TOKEN}}"
+      enabled: true
+    }
+  ]
+  parameters: []
+  searchParameters: []
+  body: {
+    type: "json"
+    content: "{\"from\":\"{{SOURCE}}\"}"
+  }
+}
+
+dependencies []
+
+script null
+
+test null

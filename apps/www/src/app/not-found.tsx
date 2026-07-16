@@ -17,8 +17,7 @@ export default function NotFound() {
         </h1>
         <h2 className="mb-6 text-2xl font-bold text-white md:text-3xl">Page not found</h2>
         <p className="text-text-secondary mx-auto mt-4 mb-10 max-w-lg text-lg leading-relaxed">
-          Sorry, we couldn't find the page you're looking for. Perhaps you've mistyped the URL? Be sure to check your
-          spelling.
+          {"Sorry, we couldn't find the page you're looking for. Perhaps you've mistyped the URL? Be sure to check your spelling."}
         </p>
         <Button
           asChild

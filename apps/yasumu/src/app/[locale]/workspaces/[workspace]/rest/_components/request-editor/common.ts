@@ -1,23 +1,26 @@
 export const REQUEST_SCRIPT_PLACEHOLDER = /* typescript */ `
-export function onRequest(req: YasumuRequest) {
-  // Modify request headers, body, etc.
-  req.headers.set('X-Custom-Header', 'value');
-  // Return a response object to show fake response data
-  return new YasumuResponse('Hello, world!', { status: 200 });
-}
-export function onResponse(req: YasumuRequest, res: YasumuResponse) {
-  // Process response data. Eg: save \`access_token\` to the environment
-  const body = res.json();
+export function onRequest(ctx: RequestHookContext) {
+  const headers = new Headers(ctx.req.headers);
+  headers.set('x-custom-header', 'value');
+  ctx.setRequest(new Request(ctx.req, { headers }));
 
+  // Returning a standard Response mocks the request and skips the network.
+  // return new Response(JSON.stringify({ mocked: true }), {
+  //   status: 200,
+  //   headers: { 'content-type': 'application/json' },
+  // });
+}
+
+export async function onResponse(ctx: ResponseHookContext) {
+  const body = await ctx.res.clone().json();
   if (body.access_token) {
-    res.env.setSecret('access_token', body.access_token);
+    ctx.workspace.env.setSecret('access_token', body.access_token);
   }
 }
 
-export function onTest(req: YasumuRequest, res: YasumuResponse) {
-  // Test assertions
+export function onTest(ctx: TestHookContext) {
   test('status should be 200', () => {
-    expect(res.status).toBe(200);
+    expect(ctx.res.status).toBe(200);
   });
 }
 `.trim();

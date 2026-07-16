@@ -29,6 +29,13 @@
       "when": 1770398911842,
       "tag": "0003_late_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784182528684,
+      "tag": "0004_headless_persistence",
+      "breakpoints": true
     }
   ]
 }

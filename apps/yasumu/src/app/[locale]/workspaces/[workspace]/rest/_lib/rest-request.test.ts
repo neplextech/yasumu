@@ -1,47 +1,69 @@
-import type { RestEntityData } from '@yasumu/core';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExecutionResult } from '@yasumu/core';
+import { describe, expect, it } from 'vitest';
 
-const { tauriFetch } = vi.hoisted(() => ({ tauriFetch: vi.fn() }));
+import { restResponseFromExecution } from './rest-request';
 
-vi.mock('@tauri-apps/plugin-http', () => ({ fetch: tauriFetch }));
+describe('restResponseFromExecution', () => {
+  it('maps text and JSON snapshots into the response-panel model', () => {
+    const response = restResponseFromExecution(
+      execution({
+        status: 201,
+        statusText: 'Created',
+        headers: [
+          ['content-type', 'application/json'],
+          ['set-cookie', 'session=one'],
+        ],
+        body: { kind: 'json', value: { ok: true }, size: 11, truncated: false, contentType: 'application/json' },
+      }),
+    );
 
-import { RestRequestController } from './rest-request';
+    expect(response).toMatchObject({
+      status: 201,
+      statusText: 'Created',
+      time: 25,
+      textBody: '{"ok":true}',
+      binaryBody: null,
+      bodyType: 'text',
+      size: 11,
+      cookies: ['session=one'],
+    });
+  });
 
-const requestOptions = {
-  entity: {
-    url: 'https://example.com',
-    method: 'GET',
-    requestHeaders: [],
-    searchParameters: [],
-    requestBody: null,
-  } as unknown as RestEntityData,
-  pathParams: {},
-  echoServerPort: null,
-  interpolate: (value: string) => value,
-};
+  it('preserves binary bytes and truncation metadata', () => {
+    const response = restResponseFromExecution(
+      execution({
+        status: 200,
+        statusText: 'OK',
+        headers: [['content-type', 'application/octet-stream']],
+        body: { kind: 'binary', bytes: [1, 2, 3], size: 30, truncated: true },
+      }),
+    );
 
-describe('RestRequestController', () => {
-  beforeEach(() => tauriFetch.mockReset());
+    expect(response?.bodyType).toBe('binary');
+    expect(response?.bodyTruncated).toBe(true);
+    expect([...new Uint8Array(response!.binaryBody!)]).toEqual([1, 2, 3]);
+  });
 
-  it('does not let an older request clear the active controller', async () => {
-    let resolveFirst!: (response: Response) => void;
-    let resolveSecond!: (response: Response) => void;
-    tauriFetch
-      .mockImplementationOnce(() => new Promise<Response>((resolve) => (resolveFirst = resolve)))
-      .mockImplementationOnce(() => new Promise<Response>((resolve) => (resolveSecond = resolve)));
-
-    const controller = new RestRequestController();
-    const firstRequest = controller.execute(requestOptions);
-    const secondRequest = controller.execute(requestOptions);
-
-    resolveFirst(new Response('{}', { headers: { 'content-type': 'application/json' } }));
-    await firstRequest;
-
-    expect(controller.isActive).toBe(true);
-    controller.cancel();
-    expect(controller.isActive).toBe(false);
-
-    resolveSecond(new Response('{}', { headers: { 'content-type': 'application/json' } }));
-    await secondRequest;
+  it('returns null when execution has no response', () => {
+    expect(restResponseFromExecution(execution(undefined))).toBeNull();
   });
 });
+
+function execution(response: ExecutionResult['response']): ExecutionResult {
+  return {
+    executionId: 'execution',
+    rootExecutionId: 'execution',
+    entityId: 'rest',
+    entityKind: 'rest',
+    response,
+    isMockResponse: false,
+    status: 'completed',
+    startedAt: 0,
+    completedAt: 25,
+    durationMs: 25,
+    tests: [],
+    logs: [],
+    diagnostics: [],
+    nestedExecutions: [],
+  };
+}

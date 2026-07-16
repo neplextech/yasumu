@@ -6,9 +6,11 @@ import { File as FileIcon, FileText } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { TextEditor } from '@/components/editors/text-editor';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import FormDataTable, { type FormDataPair } from '@/components/tables/form-data-table';
 import KeyValueTable, { type KeyValuePair } from '@/components/tables/key-value-table';
 import useDebounced from '@/hooks/use-debounced';
+import { isYasumuFileReference, registerFileReference } from '@/lib/files/file-reference';
 
 type BodyType = RestEntityRequestBody['type'];
 type BodyTypeSelection = BodyType | 'none';
@@ -24,23 +26,25 @@ function isBodyType(value: string): value is BodyType {
   return BODY_TYPES.has(value as BodyType);
 }
 
-function isFormDataPairs(value: unknown): value is FormDataPair[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (pair: unknown) =>
-        typeof pair === 'object' &&
-        pair !== null &&
-        'key' in pair &&
-        typeof pair.key === 'string' &&
-        'enabled' in pair &&
-        typeof pair.enabled === 'boolean' &&
-        'type' in pair &&
-        (pair.type === 'text' || pair.type === 'file') &&
-        'value' in pair &&
-        (typeof pair.value === 'string' || pair.value instanceof File),
-    )
-  );
+function normalizeFormDataPairs(value: unknown): FormDataPair[] | null {
+  if (!Array.isArray(value)) return null;
+  const pairs: FormDataPair[] = [];
+  for (const candidate of value) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
+    const pair = candidate as Record<string, unknown>;
+    if (typeof pair.key !== 'string' || typeof pair.enabled !== 'boolean') return null;
+    if (pair.kind === 'file' && isYasumuFileReference(pair.file)) {
+      pairs.push({ key: pair.key, enabled: pair.enabled, kind: 'file', file: pair.file });
+      continue;
+    }
+    // Rows written before the headless file model had no explicit kind.
+    if ((pair.kind === undefined || pair.kind === 'text') && typeof pair.value === 'string') {
+      pairs.push({ key: pair.key, enabled: pair.enabled, kind: 'text', value: pair.value });
+      continue;
+    }
+    return null;
+  }
+  return pairs;
 }
 
 function isKeyValuePairs(value: unknown): value is KeyValuePair[] {
@@ -65,6 +69,7 @@ export function BodyEditor(props: BodyEditorProps) {
 }
 
 function BodyEditorFields({ body, onChange }: BodyEditorProps) {
+  const workspace = useActiveWorkspace();
   const currentType: BodyTypeSelection = body?.type ?? 'none';
   const [localData, setLocalData] = useState<unknown>(body?.value);
   const contentTypeId = useId();
@@ -83,7 +88,7 @@ function BodyEditorFields({ body, onChange }: BodyEditorProps) {
 
     let value: unknown = '';
     if ((type === 'json' || type === 'text') && typeof localData === 'string') value = localData;
-    else if (type === 'form-data' && isFormDataPairs(localData)) value = localData;
+    else if (type === 'form-data' && normalizeFormDataPairs(localData)) value = normalizeFormDataPairs(localData)!;
     else if (type === 'x-www-form-urlencoded' && isKeyValuePairs(localData)) value = localData;
     else if (type === 'form-data' || type === 'x-www-form-urlencoded') value = [];
     else if (type === 'binary') value = null;
@@ -141,7 +146,7 @@ function BodyEditorFields({ body, onChange }: BodyEditorProps) {
 
         {currentType === 'form-data' ? (
           <div className="p-4">
-            <FormDataTable pairs={isFormDataPairs(localData) ? localData : []} onChange={updateData} />
+            <FormDataTable pairs={normalizeFormDataPairs(localData) ?? []} onChange={updateData} />
           </div>
         ) : null}
 
@@ -162,19 +167,20 @@ function BodyEditorFields({ body, onChange }: BodyEditorProps) {
                   className="sr-only"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
-                    if (file) {
-                      setLocalData(file);
-                      if (body) onChange({ ...body, value: file });
-                    }
+                    if (!file) return;
+                    void registerFileReference(file, workspace.execution).then((reference) => {
+                      setLocalData(reference);
+                      if (body) onChange({ ...body, value: reference });
+                    });
                   }}
                 />
                 <label htmlFor={binaryInputId} className="text-primary cursor-pointer hover:underline">
                   Select a file
                 </label>
               </div>
-              {localData instanceof File ? (
+              {isYasumuFileReference(localData) ? (
                 <div className="bg-background rounded border px-3 py-1 font-mono text-sm">
-                  {localData.name} <span className="text-muted-foreground">({localData.size} bytes)</span>
+                  {localData.name} <span className="text-muted-foreground">({localData.size ?? 0} bytes)</span>
                 </div>
               ) : (
                 <p className="text-sm">No file selected</p>

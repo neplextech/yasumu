@@ -6,3 +6,4 @@ export * from './scanner.js';
 export * from './serializer.js';
 export * from './tokens.js';
 export * from './utils.js';
+export * from './yasumu/index.js';
