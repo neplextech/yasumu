@@ -1,16 +1,16 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Environment, TabularPair } from '@yasumu/core';
+import type { Environment, TabularPair } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
 import { Separator } from '@yasumu/ui/components/separator';
 import { toast } from '@yasumu/ui/components/sonner';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useEffect, useEffectEvent } from 'react';
+import { useEffect } from 'react';
 
 import {
   useEnvironments,
+  useActiveEnvironment,
   useUpdateEnvironments,
 } from '@/app/[locale]/workspaces/[workspace]/environment/_hooks/useEnvironments';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
@@ -23,55 +23,53 @@ import SecretsTable from './_components/secrets-table';
 import VariablesTable from './_components/variables-table';
 
 export default function EnvironmentPage() {
-  const { environments, selectedEnvironment, setSelectedEnvironment, setEnvironments, updateEnvironment } =
-    useEnvironmentStore();
+  const environments = useEnvironmentStore((state) => state.environments);
+  const selectedEnvironment = useEnvironmentStore((state) => state.selectedEnvironment);
+  const setSelectedEnvironment = useEnvironmentStore((state) => state.setSelectedEnvironment);
+  const setEnvironments = useEnvironmentStore((state) => state.setEnvironments);
   const workspace = useActiveWorkspace();
   const [currentEnvironmentId, setCurrentEnvironmentId] = useQueryState<string>(
     'environmentId',
-    parseAsString.withDefault(selectedEnvironment?.id ?? ''),
+    parseAsString.withDefault(''),
   );
-
-  console.log({
-    currentEnvironmentId,
-    selectedEnvironmentId: selectedEnvironment?.id,
-  });
 
   const currentEnvironment = environments.find((env) => env.id === currentEnvironmentId);
 
   const { data: environmentsList, refetch, isError, isLoading } = useEnvironments();
   const updateEnvironments = useUpdateEnvironments();
-
-  const { data: selectedEnvironmentData, isLoading: isLoadingSelectedEnvironment } = useQuery({
-    queryKey: ['currentEnvironment'],
-    queryFn: () => workspace.environments.getActiveEnvironment(),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: 'always' as const,
-  });
-
-  const updateCurrentEnvironment = useEffectEvent(() => {
-    if (currentEnvironmentId) return;
-    if (selectedEnvironment) {
-      setCurrentEnvironmentId(selectedEnvironment.id);
-      return;
-    }
-    if (environments.length > 0) {
-      setCurrentEnvironmentId(environments[0]?.id);
-    }
-  });
+  const {
+    data: selectedEnvironmentData,
+    isFetched: isSelectedEnvironmentFetched,
+    refetch: refetchSelectedEnvironment,
+  } = useActiveEnvironment();
 
   useEffect(() => {
     if (environmentsList) {
       setEnvironments(environmentsList);
-      updateCurrentEnvironment();
     }
-  }, [environmentsList]);
+  }, [environmentsList, setEnvironments]);
 
   useEffect(() => {
     if (selectedEnvironmentData === undefined) return;
     setSelectedEnvironment(selectedEnvironmentData);
-    updateCurrentEnvironment();
-  }, [selectedEnvironmentData]);
+  }, [selectedEnvironmentData, setSelectedEnvironment]);
+
+  useEffect(() => {
+    if (!environmentsList || !isSelectedEnvironmentFetched) return;
+    if (environmentsList.some((environment) => environment.id === currentEnvironmentId)) return;
+
+    const activeEnvironment = selectedEnvironmentData
+      ? environmentsList.find((environment) => environment.id === selectedEnvironmentData.id)
+      : null;
+    const nextEnvironmentId = activeEnvironment?.id ?? environmentsList[0]?.id ?? '';
+    void setCurrentEnvironmentId(nextEnvironmentId);
+  }, [
+    currentEnvironmentId,
+    environmentsList,
+    isSelectedEnvironmentFetched,
+    selectedEnvironmentData,
+    setCurrentEnvironmentId,
+  ]);
 
   const handleAddEnvironment = async (name: string, secrets?: TabularPair[], variables?: TabularPair[]) => {
     const env = await workspace.environments.create({
@@ -81,27 +79,29 @@ export default function EnvironmentPage() {
     });
     const newEnvironments = [...environments, env];
     setEnvironments(newEnvironments);
-    updateEnvironments(newEnvironments);
-    setCurrentEnvironmentId(env.id);
+    await updateEnvironments(newEnvironments);
+    await setCurrentEnvironmentId(env.id);
   };
 
   const handleDeleteEnvironment = async (id: string) => {
     await workspace.environments.delete(id);
     const newEnvironments = environments.filter((env) => env.id !== id);
-    updateEnvironments(newEnvironments);
     setEnvironments(newEnvironments);
+    await updateEnvironments(newEnvironments);
     if (currentEnvironmentId === id) {
-      setCurrentEnvironmentId(environments[0]?.id);
+      await setCurrentEnvironmentId(newEnvironments[0]?.id ?? '');
     }
+
+    const { data: activeEnvironment } = await refetchSelectedEnvironment();
+    setSelectedEnvironment(activeEnvironment ?? null);
   };
 
   const handleRenameEnvironment = async (id: string, name: string) => {
     const env = environments.find((e) => e.id === id);
     if (!env) return;
     await env.update({ name });
-    updateEnvironment(id, { name });
-
-    await refetch();
+    const { data } = await refetch();
+    if (data) setEnvironments(data);
     toast.success('Environment renamed successfully');
   };
 
@@ -118,8 +118,8 @@ export default function EnvironmentPage() {
     });
     const newEnvironments = [...environments, env];
     setEnvironments(newEnvironments);
-    updateEnvironments(newEnvironments);
-    setCurrentEnvironmentId(env.id);
+    await updateEnvironments(newEnvironments);
+    await setCurrentEnvironmentId(env.id);
     toast.success('Environment duplicated successfully');
   };
 
@@ -195,6 +195,7 @@ export default function EnvironmentPage() {
               <div>
                 <h3 className="mb-4 text-lg font-semibold">Variables</h3>
                 <VariablesTable
+                  key={currentEnvironment.id}
                   environment={currentEnvironment}
                   variables={currentEnvironment.variables.toJSON() || []}
                   onSave={withErrorHandler(onVariablesSave)}
@@ -204,6 +205,7 @@ export default function EnvironmentPage() {
               <div>
                 <h3 className="mb-4 text-lg font-semibold">Secrets</h3>
                 <SecretsTable
+                  key={currentEnvironment.id}
                   environment={currentEnvironment}
                   secrets={currentEnvironment.secrets.toJSON() || []}
                   onSave={withErrorHandler(onSecretsSave)}

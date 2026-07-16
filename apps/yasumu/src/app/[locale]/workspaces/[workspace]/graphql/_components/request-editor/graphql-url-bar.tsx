@@ -43,6 +43,7 @@ export function GraphqlUrlBar({
     <div className="flex items-center gap-2">
       <div className="relative flex-1">
         <InteropableInput
+          aria-label="GraphQL endpoint URL"
           placeholder="Enter GraphQL endpoint URL (e.g., https://api.example.com/graphql)"
           value={url}
           onChange={onUrlChange}
@@ -51,21 +52,21 @@ export function GraphqlUrlBar({
           className="pr-8"
           disabled={isLoading}
         />
-        {isSaving && (
-          <div className="absolute top-1/2 right-2 -translate-y-1/2">
-            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+        {isSaving ? (
+          <div role="status" aria-label="Saving GraphQL changes" className="absolute top-1/2 right-2 -translate-y-1/2">
+            <Loader2 aria-hidden="true" className="text-muted-foreground size-4 animate-spin" />
           </div>
-        )}
+        ) : null}
       </div>
       {onIntrospect && (
         <IntrospectButton onClick={onIntrospect} disabled={!url.trim() || isLoading} isLoading={isIntrospecting} />
       )}
       {isSending ? (
-        <Button onClick={onCancel} variant="destructive" className="min-w-[100px]">
+        <Button type="button" onClick={onCancel} variant="destructive" className="min-w-[100px]">
           Cancel
         </Button>
       ) : (
-        <Button onClick={onSend} disabled={!url.trim()} className="min-w-[100px]">
+        <Button type="button" onClick={onSend} disabled={!url.trim()} className="min-w-[100px]">
           Send
         </Button>
       )}

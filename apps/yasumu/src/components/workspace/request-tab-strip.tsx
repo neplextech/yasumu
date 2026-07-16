@@ -73,12 +73,45 @@ export function RequestTabStrip({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab, tabs]);
 
+  const handleTabListKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') {
+        return;
+      }
+
+      const currentTab =
+        event.target instanceof HTMLElement ? event.target.closest<HTMLButtonElement>('[role="tab"]') : null;
+      if (!currentTab) return;
+
+      const tabElements = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+      const currentIndex = tabElements.indexOf(currentTab);
+      if (currentIndex < 0) return;
+
+      event.preventDefault();
+      const nextIndex =
+        event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? tabs.length - 1
+            : event.key === 'ArrowLeft'
+              ? (currentIndex - 1 + tabs.length) % tabs.length
+              : (currentIndex + 1) % tabs.length;
+
+      tabs[nextIndex]?.onSelect();
+      tabElements[nextIndex]?.focus();
+    },
+    [tabs],
+  );
+
   if (!tabs.length) return null;
 
   return (
     <div className="flex w-full max-w-[80vw] items-center gap-2 select-none">
       <div
         ref={ref}
+        role="tablist"
+        aria-label="Open requests"
+        onKeyDown={handleTabListKeyDown}
         className="zw-scrollbar bg-background/50 flex h-10 w-full flex-row items-center overflow-x-auto rounded-lg border shadow-sm"
       >
         {tabs.map((tab) => (
@@ -152,21 +185,27 @@ function RequestTabStripItem({
         <div
           ref={tabRef}
           className={cn(
-            'relative flex items-center gap-2 px-3 h-full cursor-pointer min-w-fit transition-all duration-150',
+            'relative flex items-center gap-2 px-3 h-full min-w-fit transition-all duration-150',
             'border-r border-border/50 last:border-r-0',
             'group',
             tab.active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
           )}
-          onClick={tab.onSelect}
           onMouseDown={handleMiddleClick}
         >
           {tab.active && (
             <div className="bg-primary absolute bottom-0 left-1/2 h-0.5 w-full -translate-x-1/2 rounded-full" />
           )}
 
-          <div className="flex items-center gap-2 py-2">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab.active}
+            tabIndex={tab.active ? 0 : -1}
+            className="focus-visible:ring-ring flex cursor-pointer items-center gap-2 py-2 outline-none focus-visible:ring-2"
+            onClick={tab.onSelect}
+          >
             {isLoading ? (
-              <Circle className="text-muted-foreground h-2 w-2 animate-pulse" />
+              <Circle aria-hidden="true" className="text-muted-foreground size-2 animate-pulse" />
             ) : (
               data?.icon && <span className="shrink-0 text-[10px]">{data.icon}</span>
             )}
@@ -179,18 +218,19 @@ function RequestTabStripItem({
             >
               {name}
             </span>
-          </div>
+          </button>
 
           <button
+            type="button"
             className={cn(
               'p-0.5 rounded-sm transition-all duration-100',
               'hover:bg-destructive/20 hover:text-destructive',
               tab.active ? 'opacity-60 hover:opacity-100' : 'opacity-0 group-hover:opacity-60 hover:opacity-100!',
             )}
             onClick={handleCloseClick}
-            aria-label="Close tab"
+            aria-label={`Close ${name}`}
           >
-            <X className="h-3 w-3" />
+            <X aria-hidden="true" className="size-3" />
           </button>
         </div>
       </TooltipTrigger>

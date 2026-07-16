@@ -59,12 +59,12 @@ export function CommandPalette() {
     function eventToHotkey(event: KeyboardEvent) {
       const keys = [];
 
-      // On Mac, 'metaKey' is ⌘, and is commonly the 'mod' key
-      // On Windows/Linux, 'ctrlKey' is commonly the 'mod' key
-      if (event.metaKey) {
+      if ((isMac && event.metaKey) || (!isMac && event.ctrlKey)) {
         keys.push('mod');
       } else if (event.ctrlKey) {
         keys.push('ctrl');
+      } else if (event.metaKey) {
+        keys.push('meta');
       }
       if (event.altKey) keys.push('alt');
       if (event.shiftKey) keys.push('shift');
@@ -88,12 +88,10 @@ export function CommandPalette() {
     document.addEventListener(
       'keydown',
       (event) => {
-        // skip if inside an input or textarea or form
+        if (event.repeat) return;
         if (
-          event.target &&
-          (event.target instanceof HTMLInputElement ||
-            event.target instanceof HTMLTextAreaElement ||
-            event.target instanceof HTMLFormElement)
+          event.target instanceof HTMLElement &&
+          event.target.closest('input, textarea, select, [contenteditable="true"], .monaco-editor, [role="dialog"]')
         ) {
           return;
         }
@@ -101,15 +99,9 @@ export function CommandPalette() {
 
         const pressedHotkey = eventToHotkey(event);
 
-        // Try to match command.shortcut.hotkey (which should also be in normalized "mod+r" format)
         const shortcut = commands.find(
           (cmd) =>
-            !cmd.disableShortcutRegistration &&
-            cmd.shortcut &&
-            // Exact match
-            (pressedHotkey === cmd.shortcut.hotkey.toLowerCase() ||
-              // Allow for "mod" mapping to "ctrl" on non-Mac if needed in the data
-              pressedHotkey.replace(/^mod/i, 'ctrl') === cmd.shortcut.hotkey.toLowerCase()),
+            !cmd.disableShortcutRegistration && cmd.shortcut && pressedHotkey === cmd.shortcut.hotkey.toLowerCase(),
         );
         if (shortcut) {
           event.preventDefault();
@@ -124,7 +116,7 @@ export function CommandPalette() {
     return () => {
       controller.abort();
     };
-  }, [commands]);
+  }, [commands, isMac]);
 
   if (activeSubDialog) {
     return (

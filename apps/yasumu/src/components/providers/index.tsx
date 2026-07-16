@@ -5,22 +5,16 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import * as React from 'react';
 
-import useDevtools from '@/hooks/use-devtools';
-import { useTanxiumEvent } from '@/hooks/use-tanxium-event';
-
 import { CommandPaletteProvider, CommandPalette } from '../command';
 import { AppLayoutProvider } from './app-layout-provider';
 import { CustomThemeProvider } from './custom-theme-provider';
 import { DisableContextMenu } from './disable-context-menu';
-import { PermissionPromptProvider } from './permission-prompt-provider';
+import { FrontendReadyProvider } from './frontend-ready-provider';
 import { QueryClientProvider } from './query-client-provider';
 import UpdaterProvider from './updater-provider';
 import WorkspaceProvider from './workspace-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  useTanxiumEvent();
-  useDevtools();
-
   return (
     <NextThemesProvider
       attribute="class"
@@ -39,7 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     <CommandPaletteProvider>
                       <WorkspaceProvider>
                         <CommandPalette />
-                        <PermissionPromptProvider>{children}</PermissionPromptProvider>
+                        <FrontendReadyProvider>{children}</FrontendReadyProvider>
                       </WorkspaceProvider>
                     </CommandPaletteProvider>
                   </AppLayoutProvider>

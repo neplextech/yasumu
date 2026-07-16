@@ -283,15 +283,18 @@ export class RestRequestController {
 
   async execute(options: Omit<RestRequestOptions, 'signal'>): Promise<RestRequestOutcome> {
     this.cancel();
-    this.abortController = new AbortController();
+    const abortController = new AbortController();
+    this.abortController = abortController;
 
     try {
       return await executeRestRequest({
         ...options,
-        signal: this.abortController.signal,
+        signal: abortController.signal,
       });
     } finally {
-      this.abortController = null;
+      if (this.abortController === abortController) {
+        this.abortController = null;
+      }
     }
   }
 

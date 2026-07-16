@@ -2,14 +2,15 @@
 
 import { Button } from '@yasumu/ui/components/button';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
+import { toast } from '@yasumu/ui/components/sonner';
 import { Check, Copy } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BundledLanguage } from 'shiki/bundle/web';
 
 import { getContentType } from '@/components/responses/viewers';
 import HighlightedCodeBlock from '@/components/visuals/code-block/highlighted-code-block';
 
-import type { RestResponse } from '../../_lib/rest-request';
+import { MAX_BINARY_BODY_SIZE, MAX_TEXT_BODY_SIZE, type RestResponse } from '../../_lib/rest-request';
 import { formatBytes } from './utils';
 
 interface BodyViewProps {
@@ -35,12 +36,20 @@ function getLanguageFromContentType(contentType: string): BundledLanguage {
 
 export function BodyView({ response, onSwitchToPreview }: BodyViewProps) {
   const [copied, setCopied] = useState(false);
+  const copiedResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (response.bodyType === 'binary') {
       onSwitchToPreview?.();
     }
   }, [response, onSwitchToPreview]);
+
+  useEffect(
+    () => () => {
+      if (copiedResetRef.current) clearTimeout(copiedResetRef.current);
+    },
+    [],
+  );
 
   const { formatted, language } = useMemo(() => {
     if (response.bodyType !== 'text' || !response.textBody) {
@@ -66,18 +75,28 @@ export function BodyView({ response, onSwitchToPreview }: BodyViewProps) {
 
   const handleCopy = async () => {
     if (!formatted) return;
-    await navigator.clipboard.writeText(formatted);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(formatted);
+      if (copiedResetRef.current) clearTimeout(copiedResetRef.current);
+      setCopied(true);
+      copiedResetRef.current = setTimeout(() => {
+        copiedResetRef.current = null;
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      toast.error('Failed to copy the response body', {
+        description: error instanceof Error ? error.message : 'Clipboard access is unavailable',
+      });
+    }
   };
 
   if (response.bodyTruncated) {
-    const maxSize = response.bodyType === 'text' ? '5 MB' : '50 MB';
+    const maxSize = response.bodyType === 'text' ? MAX_TEXT_BODY_SIZE : MAX_BINARY_BODY_SIZE;
     return (
       <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-4">
         <p className="font-medium">Response body too large to display</p>
         <p className="text-sm">
-          Size: {formatBytes(response.size)} (max: {maxSize})
+          Size: {formatBytes(response.size)} (max: {formatBytes(maxSize)})
         </p>
       </div>
     );
@@ -90,6 +109,7 @@ export function BodyView({ response, onSwitchToPreview }: BodyViewProps) {
         <p className="text-sm">
           Size: {formatBytes(response.size)} - Use{' '}
           <button
+            type="button"
             onClick={onSwitchToPreview}
             className="text-primary cursor-pointer underline underline-offset-2 hover:opacity-80"
           >
@@ -108,12 +128,15 @@ export function BodyView({ response, onSwitchToPreview }: BodyViewProps) {
   return (
     <div className="relative h-full select-text">
       <Button
+        type="button"
         variant="ghost"
         size="icon"
+        aria-label={copied ? 'Response body copied' : 'Copy response body'}
+        title={copied ? 'Copied' : 'Copy response body'}
         className="text-muted-foreground hover:text-foreground bg-background/80 absolute top-2 right-4 z-10 h-7 w-7 backdrop-blur-sm"
         onClick={handleCopy}
       >
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        {copied ? <Check aria-hidden="true" className="size-4" /> : <Copy aria-hidden="true" className="size-4" />}
       </Button>
       <ScrollArea className="h-full" data-allow-context-menu="true">
         <HighlightedCodeBlock

@@ -1,13 +1,18 @@
 'use client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { YasumuScriptingLanguage } from '@yasumu/core';
-import type { YasumuEmbeddedScript } from '@yasumu/core';
+
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { type SmtpConfig, type YasumuEmbeddedScript, YasumuScriptingLanguage } from '@yasumu/core';
+import { Button } from '@yasumu/ui/components/button';
 import { Loader2 } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { SiTypescript } from 'react-icons/si';
 
+import { useSerializedAutosave } from '@/app/[locale]/workspaces/[workspace]/_hooks/use-serialized-autosave';
+import { workspaceQueryKeys } from '@/app/[locale]/workspaces/[workspace]/_lib/workspace-query-keys';
 import { TextEditor } from '@/components/editors';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import ErrorScreen from '@/components/visuals/error-screen';
+import LoadingScreen from '@/components/visuals/loading-screen';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
 
 import { EMAIL_SCRIPT_PLACEHOLDER, EMAIL_TYPEDEF } from './common';
@@ -22,72 +27,74 @@ const YASUMU_EMAIL_TYPEDEF = [
   },
 ];
 
+interface EmailScriptUpdate {
+  code: string;
+}
+
 export default function EmailScriptEditor() {
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
-  const pendingCodeRef = useRef<string | null>(null);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const { data: script } = useQuery({
-    queryKey: ['email-script'],
-    queryFn: () => workspace.emails.getSmtpConfig().then((c) => c.script ?? null),
+  const queryKey = workspaceQueryKeys.smtpConfig(workspace.id);
+  const {
+    data: smtpConfig,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey,
+    queryFn: () => workspace.emails.getSmtpConfig(),
     staleTime: Infinity,
-    gcTime: Infinity,
   });
 
-  const { mutate: saveScript, isPending: isSaving } = useMutation({
-    mutationKey: ['update-email-script'],
-    mutationFn: (code: string) =>
-      workspace.emails.updateSmtpConfig({
+  const persist = useCallback(
+    async ({ code }: EmailScriptUpdate) => {
+      await workspace.emails.updateSmtpConfig({
         script: { code, language: YasumuScriptingLanguage.JavaScript },
-      }),
-    onSuccess: () => {
-      pendingCodeRef.current = null;
+      });
     },
-  });
+    [workspace.emails],
+  );
 
-  const flushPendingChanges = useCallback(() => {
-    if (pendingCodeRef.current !== null) {
-      saveScript(pendingCodeRef.current);
-    }
-  }, [saveScript]);
+  const { enqueue, flush, isSaving, saveError } = useSerializedAutosave<EmailScriptUpdate>({
+    identityKey: `${workspace.id}:email-script`,
+    persist,
+    debounceMs: DEBOUNCE_DELAY,
+  });
 
   const handleScriptCodeChange = useCallback(
     (code: string) => {
-      pendingCodeRef.current = code;
-
-      queryClient.setQueryData<YasumuEmbeddedScript | null>(['email-script'], (old) => ({
-        language: old?.language || YasumuScriptingLanguage.JavaScript,
+      if (!smtpConfig) return;
+      const script: YasumuEmbeddedScript = {
+        language: smtpConfig?.script?.language || YasumuScriptingLanguage.JavaScript,
         code,
+      };
+      queryClient.setQueryData<SmtpConfig>(queryKey, (current) => ({
+        ...smtpConfig,
+        ...current,
+        script,
       }));
-
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      debounceTimerRef.current = setTimeout(() => {
-        flushPendingChanges();
-        debounceTimerRef.current = null;
-      }, DEBOUNCE_DELAY);
+      enqueue({ code });
     },
-    [queryClient, flushPendingChanges],
+    [enqueue, queryClient, queryKey, smtpConfig],
   );
 
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      if (pendingCodeRef.current !== null) {
-        workspace.emails.updateSmtpConfig({
-          script: {
-            code: pendingCodeRef.current,
-            language: YasumuScriptingLanguage.JavaScript,
-          },
-        });
-      }
-    };
-  }, [workspace.emails]);
+  if (isLoading) {
+    return <LoadingScreen fullScreen message="Loading email script..." />;
+  }
+
+  if (queryError || !smtpConfig) {
+    return (
+      <ErrorScreen
+        fullScreen
+        message="Failed to load the email script"
+        action={
+          <Button type="button" variant="outline" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
@@ -98,11 +105,27 @@ export default function EmailScriptEditor() {
         </div>
         <div className="flex items-center gap-2">
           {isSaving && <Loader2 className="size-4 animate-spin" />}
+          {saveError && (
+            <>
+              <span role="alert" className="text-destructive max-w-64 truncate text-xs">
+                {saveError.message}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isSaving}
+                onClick={() => void flush().catch(() => undefined)}
+              >
+                Retry save
+              </Button>
+            </>
+          )}
           <span className="text-muted-foreground font-mono text-xs">onEmail(ctx, email)</span>
         </div>
       </div>
       <TextEditor
-        value={script?.code || ''}
+        value={smtpConfig?.script?.code || ''}
         onChange={handleScriptCodeChange}
         typeDefinitions={YASUMU_EMAIL_TYPEDEF}
         className="rounded-none"

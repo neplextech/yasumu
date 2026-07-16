@@ -31,9 +31,9 @@ export function usePlatform(): PlatformInfo {
       const p = navigator.platform.toLowerCase();
       setPlatformInfo({
         platform: p,
-        isMac: p.startsWith('Mac'),
-        isWindows: p.startsWith('Win'),
-        isLinux: p.startsWith('Linux'),
+        isMac: p.startsWith('mac'),
+        isWindows: p.startsWith('win'),
+        isLinux: p.startsWith('linux'),
       });
     }
   }, []);

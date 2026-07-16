@@ -346,27 +346,31 @@ function FieldItem({
         )}
         style={{ paddingLeft: `${depth * 14 + 4}px`, paddingRight: 4 }}
       >
-        {/* Expand/collapse chevron */}
         {hasChildren ? (
-          <button onClick={() => onToggleExpand(path)} className="hover:bg-muted shrink-0 rounded p-0.5">
+          <button
+            type="button"
+            aria-label={`${field.expanded ? 'Collapse' : 'Expand'} ${field.name}`}
+            aria-expanded={field.expanded}
+            onClick={() => onToggleExpand(path)}
+            className="hover:bg-muted focus-visible:ring-ring shrink-0 rounded p-0.5 outline-none focus-visible:ring-2"
+          >
             {field.expanded ? (
-              <ChevronDown className="text-muted-foreground h-3 w-3" />
+              <ChevronDown aria-hidden="true" className="text-muted-foreground size-3" />
             ) : (
-              <ChevronRight className="text-muted-foreground h-3 w-3" />
+              <ChevronRight aria-hidden="true" className="text-muted-foreground size-3" />
             )}
           </button>
         ) : (
           <div className="w-4 shrink-0" />
         )}
 
-        {/* Checkbox */}
         <Checkbox
+          aria-label={`${field.selected ? 'Deselect' : 'Select'} ${field.name}`}
           checked={field.selected}
           onCheckedChange={() => onToggleField(path)}
           className="h-3.5 w-3.5 shrink-0"
         />
 
-        {/* Field name */}
         <span
           className={cn(
             'text-xs font-mono truncate min-w-0',
@@ -384,14 +388,16 @@ function FieldItem({
 
         <span className="text-muted-foreground/70 max-w-32 truncate font-mono text-[10px]">{field.type}</span>
 
-        {/* Spacer */}
         <div className="flex-1 shrink-0" />
 
-        {/* Docs hover card trigger */}
         <HoverCard openDelay={200} closeDelay={100}>
           <HoverCardTrigger asChild>
-            <button className="hover:bg-muted shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-              <Info className="text-muted-foreground/60 h-3 w-3" />
+            <button
+              type="button"
+              aria-label={`View documentation for ${field.name}`}
+              className="hover:bg-muted focus-visible:ring-ring shrink-0 rounded p-0.5 opacity-0 transition-opacity outline-none group-hover:opacity-100 focus:opacity-100 focus-visible:ring-2"
+            >
+              <Info aria-hidden="true" className="text-muted-foreground/60 size-3" />
             </button>
           </HoverCardTrigger>
           <HoverCardContent side="right" align="start" sideOffset={8} className="w-[340px] p-3">
@@ -400,7 +406,6 @@ function FieldItem({
         </HoverCard>
       </div>
 
-      {/* Inline argument inputs when field is selected */}
       {field.selected && hasArgs && (
         <div className="space-y-1 py-1" style={{ paddingLeft: `${depth * 14 + 34}px`, paddingRight: 8 }}>
           {field.args.map((arg) => (
@@ -410,6 +415,7 @@ function FieldItem({
                 {arg.required && <span className="text-destructive">*</span>}
               </span>
               <Input
+                aria-label={`Value for ${arg.name} on ${field.name}`}
                 value={field.argValues[arg.name] ?? ''}
                 onChange={(e) => onSetArgValue(path, arg.name, e.target.value)}
                 placeholder={`${arg.type}${arg.defaultValue !== undefined ? ` = ${JSON.stringify(arg.defaultValue)}` : ''}`}

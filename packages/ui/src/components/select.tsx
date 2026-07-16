@@ -116,7 +116,7 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
 }
 
 function SelectItem({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Item>) {
-  const { indicatorPosition, open } = useSelectContext();
+  const { indicatorPosition } = useSelectContext();
 
   return (
     <SelectPrimitive.Item

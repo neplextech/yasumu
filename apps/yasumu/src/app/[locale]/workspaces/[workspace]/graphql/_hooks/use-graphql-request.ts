@@ -1,19 +1,59 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import type { GraphqlEntityData, GraphqlScriptContext, TestResult } from '@yasumu/core';
-import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
+import {
+  isDefaultWorkspacePath,
+  type GraphqlEntityData,
+  type GraphqlScriptContext,
+  type TestResult,
+} from '@yasumu/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+  parseScriptMockResponse,
+  parseScriptTestResults,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/script-result-guards';
+import { workspaceQueryKeys } from '@/app/[locale]/workspaces/[workspace]/_lib/workspace-query-keys';
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
-import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
+import { useActiveWorkspace, useYasumuRuntime } from '@/components/providers/workspace-provider';
 import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
-import { GraphqlRequestController, GraphqlResponse } from '../_lib/graphql-request';
+import { GraphqlRequestController, type GraphqlResponse } from '../_lib/graphql-request';
 import { getGraphqlBodyValue } from './use-graphql-entity';
 
 function extractTestResultsFromResponse(response: GraphqlResponse): TestResult[] {
   return response.testResults ?? [];
+}
+
+interface ExecutableGraphqlBody {
+  query: string;
+  variables: string | null;
+  operationName: string | null;
+}
+
+function normalizeScriptBody(body: unknown, fallback: ExecutableGraphqlBody): ExecutableGraphqlBody {
+  if (!body || typeof body !== 'object') return fallback;
+  const value = body as Record<string, unknown>;
+
+  let variables = fallback.variables;
+  if (value.variables === null) {
+    variables = null;
+  } else if (typeof value.variables === 'string') {
+    variables = value.variables;
+  } else if (value.variables !== undefined) {
+    variables = JSON.stringify(value.variables) ?? fallback.variables;
+  }
+
+  return {
+    query: typeof value.query === 'string' ? value.query : fallback.query,
+    variables,
+    operationName:
+      value.operationName === null
+        ? null
+        : typeof value.operationName === 'string'
+          ? value.operationName
+          : fallback.operationName,
+  };
 }
 
 export type RequestPhase =
@@ -62,31 +102,45 @@ const INITIAL_STATE: RequestState = {
 
 export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGraphqlRequestReturn {
   const workspace = useActiveWorkspace();
-  const { echoServerPort } = useYasumu();
-  const { interpolate } = useEnvironmentStore();
-  const [state, setState] = useState<RequestState>(INITIAL_STATE);
-  const controllerRef = useRef(new GraphqlRequestController());
-  const isCancelledRef = useRef(false);
-  const { selectedEnvironment } = useEnvironmentStore();
+  const { echoServerPort } = useYasumuRuntime();
+  const interpolate = useEnvironmentStore((store) => store.interpolate);
+  const selectedEnvironment = useEnvironmentStore((store) => store.selectedEnvironment);
   const queryClient = useQueryClient();
-
-  // Reset request state when switching entities
-  useEffect(() => {
-    setState(INITIAL_STATE);
-  }, [entityId]);
-
+  const [state, setState] = useState<RequestState>(INITIAL_STATE);
+  const controllerRef = useRef<GraphqlRequestController | null>(null);
+  const generationRef = useRef(0);
   const graphql = workspace.graphql;
 
-  const appendScriptOutput = useCallback((message: string, type: ScriptOutputType = 'info') => {
-    setState((prev) => ({
-      ...prev,
-      scriptOutput: [...prev.scriptOutput, { message, type, timestamp: Date.now() }],
-    }));
-  }, []);
+  if (!controllerRef.current) controllerRef.current = new GraphqlRequestController();
+
+  useEffect(() => {
+    generationRef.current += 1;
+    controllerRef.current?.cancel();
+    setState(INITIAL_STATE);
+
+    return () => {
+      generationRef.current += 1;
+      controllerRef.current?.cancel();
+    };
+  }, [entityId, workspace.id]);
 
   const execute = useCallback(
     async (_entity: GraphqlEntityData) => {
       if (!entityId) return;
+
+      const generation = ++generationRef.current;
+      const controller = controllerRef.current!;
+      controller.cancel();
+      const isCurrent = () => generationRef.current === generation;
+      const updateState = (update: (previous: RequestState) => RequestState) => {
+        setState((previous) => (isCurrent() ? update(previous) : previous));
+      };
+      const appendOutput = (message: string, type: ScriptOutputType = 'info') => {
+        updateState((previous) => ({
+          ...previous,
+          scriptOutput: [...previous.scriptOutput, { message, type, timestamp: Date.now() }],
+        }));
+      };
 
       const startedAt = performance.now();
       trackEvent('graphql_request_started', {
@@ -94,149 +148,132 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
         entity_id: entityId,
         has_script: !!_entity.script?.code?.trim(),
       });
-
-      isCancelledRef.current = false;
-      setState({
-        phase: 'idle',
-        response: null,
-        error: null,
-        scriptOutput: [],
-        testResults: [],
-      });
-
-      // Fetch fresh entity data
-      let entity = _entity;
-      if (graphql) {
-        const freshEntity = await graphql.get(entityId);
-        if (freshEntity) {
-          entity = freshEntity.data;
-        }
-      }
-
-      if (!entity) {
-        setState((prev) => ({
-          ...prev,
-          phase: 'error',
-          error: 'Entity not found',
-        }));
-        return;
-      }
-
-      const interpolateValue = (value: string) => interpolate(value);
-      let interpolatedUrl = interpolateValue(entity.url || '');
-      let interpolatedHeaders = Object.fromEntries(
-        (entity.requestHeaders || [])
-          .filter((h) => h.enabled && h.key)
-          .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
-      );
-      const bodyValue = getGraphqlBodyValue(entity.requestBody);
-      const interpolatedQuery = bodyValue.query ? interpolateValue(bodyValue.query) : '';
-      const interpolatedVariables = bodyValue.variables ? interpolateValue(bodyValue.variables) : null;
-
-      let currentContext: GraphqlScriptContext = {
-        environment: selectedEnvironment?.toJSON() ?? null,
-        request: {
-          url: interpolatedUrl,
-          headers: interpolatedHeaders,
-          body: {
-            query: interpolatedQuery,
-            variables: interpolatedVariables,
-          },
-          parameters: {},
-        },
-        response: null,
-        workspace: {
-          id: workspace.id,
-          name: workspace.name,
-          path: isDefaultWorkspacePath(workspace.path) ? null : workspace.path,
-        },
-      };
-
-      let mockResponse: GraphqlResponse | null = null;
+      updateState(() => INITIAL_STATE);
 
       try {
-        // === Pre-request script execution ===
+        const freshEntity = await graphql.get(entityId);
+        if (!isCurrent()) return;
+        const entity = freshEntity?.data ?? _entity;
+        const bodyValue = getGraphqlBodyValue(entity.requestBody);
+        const interpolateValue = (value: string) => interpolate(value);
+
+        let requestUrl = interpolateValue(entity.url || '');
+        let requestHeaders = Object.fromEntries(
+          (entity.requestHeaders || [])
+            .filter((header) => header.enabled && header.key)
+            .map((header) => [interpolateValue(header.key), interpolateValue(header.value)]),
+        );
+        let requestBody: ExecutableGraphqlBody = {
+          query: interpolateValue(bodyValue.query || ''),
+          variables: bodyValue.variables ? interpolateValue(bodyValue.variables) : null,
+          operationName: bodyValue.operationName ? interpolateValue(bodyValue.operationName) : null,
+        };
+
+        let currentContext: GraphqlScriptContext = {
+          environment: selectedEnvironment?.toJSON() ?? null,
+          request: {
+            url: requestUrl,
+            headers: requestHeaders,
+            body: requestBody,
+            parameters: {},
+          },
+          response: null,
+          workspace: {
+            id: workspace.id,
+            name: workspace.name,
+            path: isDefaultWorkspacePath(workspace.path) ? null : workspace.path,
+          },
+        };
+        let mockResponse: GraphqlResponse | null = null;
+
         if (entity.script?.code?.trim()) {
-          setState((prev) => ({ ...prev, phase: 'pre-request-script' }));
-          appendScriptOutput('[Pre-Request] Executing script...', 'info');
+          updateState((previous) => ({ ...previous, phase: 'pre-request-script' }));
+          appendOutput('[Pre-Request] Executing script...');
 
           try {
             const result = await graphql.executeScript(entityId, entity.script, currentContext);
+            if (!isCurrent()) return;
 
             if (result.result.success) {
               currentContext = result.context;
-              // Apply script-modified context back to request params
-              interpolatedUrl = currentContext.request.url;
-              interpolatedHeaders = currentContext.request.headers;
+              requestUrl = interpolateValue(currentContext.request.url);
+              requestHeaders = Object.fromEntries(
+                Object.entries(currentContext.request.headers).map(([key, value]) => [
+                  interpolateValue(key),
+                  interpolateValue(value),
+                ]),
+              );
+              const scriptBody = normalizeScriptBody(currentContext.request.body, requestBody);
+              requestBody = {
+                query: interpolateValue(scriptBody.query),
+                variables: scriptBody.variables === null ? null : interpolateValue(scriptBody.variables),
+                operationName: scriptBody.operationName === null ? null : interpolateValue(scriptBody.operationName),
+              };
+              currentContext = {
+                ...currentContext,
+                request: {
+                  ...currentContext.request,
+                  url: requestUrl,
+                  headers: requestHeaders,
+                  body: requestBody,
+                },
+              };
 
-              appendScriptOutput('[Pre-Request] Script completed successfully', 'success');
-
+              appendOutput('[Pre-Request] Script completed successfully', 'success');
               if (result.result.result) {
-                const mockData = result.result.result as {
-                  status: number;
-                  statusText: string;
-                  headers: Record<string, string>;
-                  body: unknown;
-                };
-                const bodyStr = typeof mockData.body === 'string' ? mockData.body : JSON.stringify(mockData.body);
-                mockResponse = {
-                  status: mockData.status,
-                  statusText: mockData.statusText,
-                  headers: mockData.headers,
-                  rawBody: bodyStr,
-                  data: null,
-                  errors: null,
-                  time: 0,
-                  size: new Blob([bodyStr]).size,
-                  testResults: [],
-                };
-                appendScriptOutput('[Pre-Request] Mock response returned, skipping HTTP request', 'warning');
+                const mockData = parseScriptMockResponse(result.result.result);
+                if (mockData) {
+                  const body =
+                    typeof mockData.body === 'string' ? mockData.body : (JSON.stringify(mockData.body) ?? '');
+                  mockResponse = {
+                    status: mockData.status,
+                    statusText: mockData.statusText,
+                    headers: mockData.headers,
+                    rawBody: body,
+                    data: null,
+                    errors: null,
+                    time: 0,
+                    size: new Blob([body]).size,
+                    testResults: [],
+                  };
+                  appendOutput('[Pre-Request] Mock response returned, skipping HTTP request', 'warning');
+                } else {
+                  appendOutput('[Pre-Request] Ignored an invalid mock response', 'warning');
+                }
               }
             } else {
-              appendScriptOutput(`[Pre-Request] Script failed: ${result.result.error}`, 'error');
+              appendOutput(`[Pre-Request] Script failed: ${result.result.error}`, 'error');
             }
-          } catch (err) {
-            appendScriptOutput(
-              `[Pre-Request] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          } catch (error) {
+            if (!isCurrent()) return;
+            appendOutput(
+              `[Pre-Request] Script error: ${error instanceof Error ? error.message : 'Unknown error'}`,
               'error',
             );
           }
         }
 
-        if (isCancelledRef.current) {
-          setState((prev) => ({ ...prev, phase: 'cancelled' }));
-          return;
-        }
-
+        if (!isCurrent()) return;
         let response: GraphqlResponse;
 
         if (mockResponse) {
           response = mockResponse;
-          setState((prev) => ({ ...prev, response }));
+          updateState((previous) => ({ ...previous, response }));
         } else {
-          setState((prev) => ({ ...prev, phase: 'sending' }));
-
-          const outcome = await controllerRef.current.execute({
-            url: interpolatedUrl,
-            query: interpolatedQuery,
-            variables: interpolatedVariables,
-            operationName: /* bodyValue.operationName || */ null,
-            headers: interpolatedHeaders,
+          updateState((previous) => ({ ...previous, phase: 'sending' }));
+          const outcome = await controller.execute({
+            url: requestUrl,
+            query: requestBody.query,
+            variables: requestBody.variables,
+            operationName: requestBody.operationName,
+            headers: requestHeaders,
             echoServerPort,
             interpolate,
           });
 
-          if (isCancelledRef.current) {
-            setState((prev) => ({ ...prev, phase: 'cancelled' }));
-            return;
-          }
-
-          if (outcome.error) {
-            setState((prev) => ({
-              ...prev,
-              phase: 'error',
-              error: outcome.error,
-            }));
+          if (!isCurrent()) return;
+          if (!outcome.response) {
+            updateState((previous) => ({ ...previous, phase: 'error', error: outcome.error }));
             trackTiming('graphql_request_failed', startedAt, {
               workspace_id: workspace.id,
               entity_id: entityId,
@@ -245,15 +282,14 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
             return;
           }
 
-          response = outcome.response!;
-          setState((prev) => ({ ...prev, response }));
+          response = outcome.response;
+          updateState((previous) => ({ ...previous, response }));
         }
 
-        // === Post-response script execution ===
         if (entity.script?.code?.trim()) {
-          setState((prev) => ({ ...prev, phase: 'post-response-script' }));
-          appendScriptOutput('[Post-Response] Executing onResponse...', 'info');
-
+          if (!isCurrent()) return;
+          updateState((previous) => ({ ...previous, phase: 'post-response-script' }));
+          appendOutput('[Post-Response] Executing onResponse...');
           const responseContext: GraphqlScriptContext = {
             ...currentContext,
             response: {
@@ -265,38 +301,41 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
 
           try {
             const result = await graphql.executeScript(entityId, entity.script, responseContext);
+            if (!isCurrent()) return;
 
             if (result.result.success) {
-              appendScriptOutput('[Post-Response] Script completed successfully', 'success');
-
+              appendOutput('[Post-Response] Script completed successfully', 'success');
               if (selectedEnvironment && result.context.environment) {
-                const envData = result.context.environment;
+                const environment = result.context.environment;
                 await selectedEnvironment.update({
-                  variables: envData.variables,
-                  secrets: envData.secrets,
+                  variables: environment.variables,
+                  secrets: environment.secrets,
                 });
-                await queryClient.invalidateQueries({
-                  queryKey: ['environments'],
-                });
-                await queryClient.invalidateQueries({
-                  queryKey: ['currentEnvironment'],
-                });
+                await Promise.all([
+                  queryClient.invalidateQueries({
+                    queryKey: workspaceQueryKeys.environments(workspace.id),
+                  }),
+                  queryClient.invalidateQueries({
+                    queryKey: workspaceQueryKeys.activeEnvironment(workspace.id),
+                  }),
+                ]);
+                if (!isCurrent()) return;
               }
             } else {
-              appendScriptOutput(`[Post-Response] Script failed: ${result.result.error}`, 'error');
+              appendOutput(`[Post-Response] Script failed: ${result.result.error}`, 'error');
             }
-          } catch (err) {
-            appendScriptOutput(
-              `[Post-Response] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          } catch (error) {
+            if (!isCurrent()) return;
+            appendOutput(
+              `[Post-Response] Script error: ${error instanceof Error ? error.message : 'Unknown error'}`,
               'error',
             );
           }
         }
 
-        // === Test execution ===
         if (entity.script?.code?.trim()) {
-          appendScriptOutput('[Test] Running tests...', 'info');
-
+          if (!isCurrent()) return;
+          appendOutput('[Test] Running tests...');
           const testContext: GraphqlScriptContext = {
             ...currentContext,
             response: {
@@ -308,70 +347,50 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
 
           try {
             const testResult = await graphql.executeTest(entityId, entity.script, testContext);
+            if (!isCurrent()) return;
 
             if (testResult.result.success) {
-              const results = testResult.result.result as {
-                testResults: TestResult[];
-              };
-              if (results?.testResults?.length > 0) {
-                setState((prev) => ({
-                  ...prev,
-                  testResults: results.testResults,
-                }));
-                const passed = results.testResults.filter((r) => r.result === 'pass').length;
-                const failed = results.testResults.filter((r) => r.result === 'fail').length;
-                const skipped = results.testResults.filter((r) => r.result === 'skip').length;
-
-                if (failed > 0) {
-                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-fail');
-                } else if (skipped > 0 && passed === 0) {
-                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-skip');
-                } else {
-                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-pass');
-                }
+              const results = parseScriptTestResults(testResult.result.result);
+              if (results && results.length > 0) {
+                updateState((previous) => ({ ...previous, testResults: results }));
+                const passed = results.filter((result) => result.result === 'pass').length;
+                const failed = results.filter((result) => result.result === 'fail').length;
+                const skipped = results.filter((result) => result.result === 'skip').length;
+                const type = failed > 0 ? 'test-fail' : skipped > 0 && passed === 0 ? 'test-skip' : 'test-pass';
+                appendOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, type);
+              } else if (results === null && testResult.result.result != null) {
+                appendOutput('[Test] Ignored an invalid test result', 'warning');
               } else {
-                const responseTestResults = extractTestResultsFromResponse(response);
-
-                if (responseTestResults.length > 0) {
-                  setState((prev) => ({
-                    ...prev,
-                    testResults: responseTestResults,
-                  }));
-                  appendScriptOutput(
-                    `[Test] Loaded ${responseTestResults.length} test result(s) from response`,
-                    'info',
-                  );
+                const responseResults = extractTestResultsFromResponse(response);
+                if (responseResults.length > 0) {
+                  updateState((previous) => ({ ...previous, testResults: responseResults }));
+                  appendOutput(`[Test] Loaded ${responseResults.length} test result(s) from response`);
                 } else {
-                  appendScriptOutput('[Test] No tests defined', 'info');
+                  appendOutput('[Test] No tests defined');
                 }
               }
             } else {
-              appendScriptOutput(`[Test] Failed: ${testResult.result.error}`, 'error');
+              appendOutput(`[Test] Failed: ${testResult.result.error}`, 'error');
             }
-          } catch (err) {
-            appendScriptOutput(`[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
-
-            const responseTestResults = extractTestResultsFromResponse(response);
-            if (responseTestResults.length > 0) {
-              setState((prev) => ({
-                ...prev,
-                testResults: responseTestResults,
-              }));
-              appendScriptOutput(`[Test] Loaded ${responseTestResults.length} test result(s) from response`, 'info');
+          } catch (error) {
+            if (!isCurrent()) return;
+            appendOutput(`[Test] Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+            const responseResults = extractTestResultsFromResponse(response);
+            if (responseResults.length > 0) {
+              updateState((previous) => ({ ...previous, testResults: responseResults }));
+              appendOutput(`[Test] Loaded ${responseResults.length} test result(s) from response`);
             }
           }
         } else {
-          const responseTestResults = extractTestResultsFromResponse(response);
-          if (responseTestResults.length > 0) {
-            setState((prev) => ({
-              ...prev,
-              testResults: responseTestResults,
-            }));
-            appendScriptOutput(`[Test] Loaded ${responseTestResults.length} test result(s) from response`, 'info');
+          const responseResults = extractTestResultsFromResponse(response);
+          if (responseResults.length > 0) {
+            updateState((previous) => ({ ...previous, testResults: responseResults }));
+            appendOutput(`[Test] Loaded ${responseResults.length} test result(s) from response`);
           }
         }
 
-        setState((prev) => ({ ...prev, phase: 'completed' }));
+        if (!isCurrent()) return;
+        updateState((previous) => ({ ...previous, phase: 'completed' }));
         trackTiming('graphql_request_completed', startedAt, {
           workspace_id: workspace.id,
           entity_id: entityId,
@@ -379,48 +398,40 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
           has_errors: !!response.errors?.length,
           test_count: extractTestResultsFromResponse(response).length,
         });
-      } catch (err) {
-        if (!isCancelledRef.current) {
-          setState((prev) => ({
-            ...prev,
-            phase: 'error',
-            error: err instanceof Error ? err.message : 'Unknown error',
-          }));
-          trackTiming('graphql_request_failed', startedAt, {
-            workspace_id: workspace.id,
-            entity_id: entityId,
-            failure_stage: 'exception',
-          });
-        }
+      } catch (error) {
+        if (!isCurrent()) return;
+        updateState((previous) => ({
+          ...previous,
+          phase: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }));
+        trackTiming('graphql_request_failed', startedAt, {
+          workspace_id: workspace.id,
+          entity_id: entityId,
+          failure_stage: 'exception',
+        });
       }
     },
-    [entityId, workspace, echoServerPort, interpolate, appendScriptOutput, selectedEnvironment, queryClient],
+    [echoServerPort, entityId, graphql, interpolate, queryClient, selectedEnvironment, workspace],
   );
 
   const cancel = useCallback(() => {
-    isCancelledRef.current = true;
-    controllerRef.current.cancel();
+    generationRef.current += 1;
+    controllerRef.current?.cancel();
     if (entityId) {
       trackEvent('graphql_request_cancelled', {
         workspace_id: workspace.id,
         entity_id: entityId,
       });
     }
-    setState((prev) => ({
-      ...prev,
-      phase: 'cancelled',
-      error: 'Request cancelled',
-    }));
+    setState((previous) => ({ ...previous, phase: 'cancelled', error: 'Request cancelled' }));
   }, [entityId, workspace.id]);
 
   const reset = useCallback(() => {
+    generationRef.current += 1;
+    controllerRef.current?.cancel();
     setState(INITIAL_STATE);
   }, []);
 
-  return {
-    state,
-    execute,
-    cancel,
-    reset,
-  };
+  return { state, execute, cancel, reset };
 }

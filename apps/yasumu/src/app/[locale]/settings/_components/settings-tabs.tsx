@@ -31,6 +31,7 @@ export default function SettingsTabs({ activeTab, onTabChange }: SettingsTabsPro
 
         return (
           <button
+            type="button"
             key={tab.id}
             role="tab"
             aria-selected={isActive}
@@ -41,7 +42,7 @@ export default function SettingsTabs({ activeTab, onTabChange }: SettingsTabsPro
               isActive && 'bg-accent text-accent-foreground',
             )}
           >
-            <Icon className="size-4 shrink-0" />
+            <Icon aria-hidden="true" className="size-4 shrink-0" />
             <span>{tab.label}</span>
           </button>
         );

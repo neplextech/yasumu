@@ -5,9 +5,11 @@ import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Input } from '@yasumu/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
-import { Trash, Plus } from 'lucide-react';
+import { Plus, Trash } from 'lucide-react';
 
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
+
+import { useStableRowKeys } from './use-stable-row-keys';
 
 export interface FormDataPair {
   key: string;
@@ -16,97 +18,94 @@ export interface FormDataPair {
   enabled: boolean;
 }
 
-export default function FormDataTable(props: { onChange?: (pairs: FormDataPair[]) => void; pairs?: FormDataPair[] }) {
+const EMPTY_PAIR: FormDataPair = { key: '', value: '', type: 'text', enabled: true };
+
+export default function FormDataTable({
+  onChange,
+  pairs: providedPairs,
+}: {
+  onChange?: (pairs: FormDataPair[]) => void;
+  pairs?: FormDataPair[];
+}) {
   const { renderVariablePopover } = useVariablePopover();
-  // We use local state to handle updates immediately for UI,
-  // but we rely on the parent to pass the "saved" state back if needed,
-  // or we can just be controlled.
-  // Given the requirement for debouncing in the parent, this component should probably be controlled
-  // but efficient.
-  // However, since we are inside BodyEditor which will manage state,
-  // we can treat this as a controlled component where `pairs` comes from BodyEditor's local state.
+  const pairs = providedPairs?.length ? providedPairs : [EMPTY_PAIR];
+  const { rowKeys, insertKey, removeKey } = useStableRowKeys(pairs.length);
 
-  const pairs = props.pairs?.length ? props.pairs : [{ key: '', value: '', type: 'text' as const, enabled: true }];
-
-  const updatePairs = (newPairs: FormDataPair[]) => {
-    props.onChange?.(newPairs);
+  const addPair = (index = pairs.length) => {
+    insertKey(index);
+    onChange?.([...pairs.slice(0, index), { ...EMPTY_PAIR }, ...pairs.slice(index)]);
   };
-
-  const addNewPair = (index = pairs.length) => {
-    const newPairs = [
-      ...pairs.slice(0, index),
-      { key: '', value: '', type: 'text' as const, enabled: true },
-      ...pairs.slice(index),
-    ];
-    updatePairs(newPairs);
-  };
-
   const deletePair = (index: number) => {
-    const newPairs = pairs.filter((_, i) => i !== index);
-    updatePairs(newPairs.length ? newPairs : [{ key: '', value: '', type: 'text' as const, enabled: true }]);
+    if (pairs.length > 1) removeKey(index);
+    const nextPairs = pairs.filter((_, pairIndex) => pairIndex !== index);
+    onChange?.(nextPairs.length ? nextPairs : [{ ...EMPTY_PAIR }]);
   };
-
-  const updatePair = (index: number, field: keyof FormDataPair, value: any) => {
-    const newPairs = pairs.map((pair, i) => {
-      if (i !== index) return pair;
-      if (field === 'type') {
-        // Reset value if type changes
-        return { ...pair, type: value, value: '' };
-      }
-      return { ...pair, [field]: value };
-    });
-    updatePairs(newPairs);
+  const updatePair = (index: number, updates: Partial<FormDataPair>) => {
+    onChange?.(
+      pairs.map((pair, pairIndex) => {
+        if (pairIndex !== index) return pair;
+        if (updates.type && updates.type !== pair.type) return { ...pair, type: updates.type, value: '' };
+        return { ...pair, ...updates };
+      }),
+    );
   };
-
-  function handleKeyDown(e: React.KeyboardEvent, index: number) {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      addNewPair(index + 1);
-    }
-    if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      deletePair(index);
-    }
-  }
 
   return (
     <div className="space-y-4">
       <Table className="rounded-md border">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[30px]"></TableHead>
+            <TableHead className="w-[30px]">
+              <span className="sr-only">Enabled</span>
+            </TableHead>
             <TableHead className="w-[200px]">Key</TableHead>
             <TableHead className="w-[100px]">Type</TableHead>
             <TableHead>Value</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="w-[50px]">
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {pairs.map((pair, i) => (
+          {pairs.map((pair, index) => (
             <TableRow
-              key={i}
-              onKeyDown={(e) => {
-                handleKeyDown(e, i);
+              key={rowKeys[index]}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  addPair(index + 1);
+                } else if (event.key === 'd' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  deletePair(index);
+                }
               }}
             >
               <TableCell>
                 <Checkbox
+                  aria-label={`${pair.enabled ? 'Disable' : 'Enable'} form-data row ${index + 1}`}
                   checked={pair.enabled}
-                  onCheckedChange={(checked) => updatePair(i, 'enabled', checked === true)}
+                  onCheckedChange={(checked) => updatePair(index, { enabled: checked === true })}
                 />
               </TableCell>
               <TableCell>
                 <InteropableInput
+                  aria-label={`Key for form-data row ${index + 1}`}
                   placeholder="Key"
                   value={pair.key}
-                  onChange={(val) => updatePair(i, 'key', val)}
+                  onChange={(key) => updatePair(index, { key })}
                   onVariableClick={renderVariablePopover}
                   disabled={!pair.enabled}
                 />
               </TableCell>
               <TableCell>
-                <Select value={pair.type} onValueChange={(val) => updatePair(i, 'type', val)} disabled={!pair.enabled}>
-                  <SelectTrigger>
+                <Select
+                  value={pair.type}
+                  onValueChange={(type) => {
+                    if (type === 'text' || type === 'file') updatePair(index, { type });
+                  }}
+                  disabled={!pair.enabled}
+                >
+                  <SelectTrigger aria-label={`Value type for form-data row ${index + 1}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -120,38 +119,46 @@ export default function FormDataTable(props: { onChange?: (pairs: FormDataPair[]
                   <div className="flex items-center gap-2">
                     <Input
                       type="file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) updatePair(i, 'value', file);
+                      aria-label={`File value for ${pair.key || `form-data row ${index + 1}`}`}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) updatePair(index, { value: file });
                       }}
                       disabled={!pair.enabled}
                       className="cursor-pointer"
                     />
-                    {pair.value instanceof File && (
+                    {pair.value instanceof File ? (
                       <span className="text-muted-foreground text-xs whitespace-nowrap">{pair.value.size} bytes</span>
-                    )}
+                    ) : null}
                   </div>
                 ) : (
                   <InteropableInput
+                    aria-label={`Value for ${pair.key || `form-data row ${index + 1}`}`}
                     placeholder="Value"
                     value={typeof pair.value === 'string' ? pair.value : ''}
-                    onChange={(val) => updatePair(i, 'value', val)}
+                    onChange={(value) => updatePair(index, { value })}
                     onVariableClick={renderVariablePopover}
                     disabled={!pair.enabled}
                   />
                 )}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="icon" onClick={() => deletePair(i)} disabled={pairs.length === 1}>
-                  <Trash className="h-4 w-4 text-red-500" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Delete form-data row ${index + 1}`}
+                  onClick={() => deletePair(index)}
+                  disabled={pairs.length === 1}
+                >
+                  <Trash className="text-destructive size-4" aria-hidden="true" />
                 </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <Button variant="link" onClick={() => addNewPair()} className="h-auto p-0 text-sm font-normal">
-        <Plus className="mr-1 h-3 w-3" /> Add new row
+      <Button variant="link" onClick={() => addPair()} className="h-auto p-0 text-sm font-normal">
+        <Plus className="mr-1 size-3" aria-hidden="true" /> Add new row
       </Button>
     </div>
   );

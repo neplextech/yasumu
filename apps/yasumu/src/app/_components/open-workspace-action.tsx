@@ -4,12 +4,12 @@ import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { FolderOpen } from 'lucide-react';
 import React from 'react';
 
-import { useYasumu } from '@/components/providers/workspace-provider';
+import { useYasumuRuntime } from '@/components/providers/workspace-provider';
 
 import ActionCard from './action-card';
 
 export default function OpenWorkspaceAction() {
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
 
   return (
     <ActionCard

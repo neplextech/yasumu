@@ -148,6 +148,7 @@ export function GraphqlRequestTabs({
             <div className="mb-2 flex shrink-0 items-center gap-1">
               <button
                 type="button"
+                aria-pressed={querySubTab === 'editor'}
                 onClick={() => setQuerySubTab('editor')}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'editor'
@@ -159,6 +160,7 @@ export function GraphqlRequestTabs({
               </button>
               <button
                 type="button"
+                aria-pressed={querySubTab === 'query-builder'}
                 onClick={() => setQuerySubTab('query-builder')}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'query-builder'
@@ -170,6 +172,7 @@ export function GraphqlRequestTabs({
               </button>
               <button
                 type="button"
+                aria-pressed={querySubTab === 'docs'}
                 onClick={() => setQuerySubTab('docs')}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'docs'

@@ -2,7 +2,7 @@
 
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { buildClientSchema, getIntrospectionQuery, type GraphQLSchema, type IntrospectionQuery } from 'graphql';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
@@ -20,6 +20,21 @@ const INITIAL_STATE: IntrospectionState = {
   error: null,
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getGraphqlErrorMessage(value: unknown): string | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const firstError = value[0];
+  return isRecord(firstError) && typeof firstError.message === 'string' ? firstError.message : 'Unknown GraphQL error';
+}
+
+function isIntrospectionQuery(value: unknown): value is IntrospectionQuery {
+  if (!isRecord(value) || !isRecord(value.__schema)) return false;
+  return Array.isArray(value.__schema.types) && Array.isArray(value.__schema.directives);
+}
+
 export function useGraphqlIntrospection() {
   const [state, setState] = useState<IntrospectionState>(INITIAL_STATE);
   const abortRef = useRef<AbortController | null>(null);
@@ -31,7 +46,8 @@ export function useGraphqlIntrospection() {
     }
 
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
     const startedAt = performance.now();
     trackEvent('graphql_introspection_started', {
       has_headers: !!headers && Object.keys(headers).length > 0,
@@ -58,16 +74,22 @@ export function useGraphqlIntrospection() {
         method: 'POST',
         headers: requestHeaders,
         body,
-        signal: abortRef.current.signal,
+        signal: controller.signal,
       });
 
-      const json = await response.json();
+      const json: unknown = await response.json();
+      if (abortRef.current !== controller) return;
 
-      if (json.errors && json.errors.length > 0) {
+      if (!isRecord(json)) {
+        throw new Error('The server returned an invalid introspection response');
+      }
+
+      const graphqlError = getGraphqlErrorMessage(json.errors);
+      if (graphqlError) {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: `Introspection failed: ${json.errors[0].message}`,
+          error: `Introspection failed: ${graphqlError}`,
         }));
         trackTiming('graphql_introspection_failed', startedAt, {
           failure_stage: 'graphql_error',
@@ -75,7 +97,7 @@ export function useGraphqlIntrospection() {
         return;
       }
 
-      if (!json.data) {
+      if (!isIntrospectionQuery(json.data)) {
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -87,7 +109,7 @@ export function useGraphqlIntrospection() {
         return;
       }
 
-      const introspectionResult = json.data as IntrospectionQuery;
+      const introspectionResult = json.data;
       const schema = buildClientSchema(introspectionResult);
 
       setState({
@@ -101,6 +123,7 @@ export function useGraphqlIntrospection() {
       });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
+      if (abortRef.current !== controller) return;
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -111,6 +134,8 @@ export function useGraphqlIntrospection() {
       });
     }
   }, []);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();

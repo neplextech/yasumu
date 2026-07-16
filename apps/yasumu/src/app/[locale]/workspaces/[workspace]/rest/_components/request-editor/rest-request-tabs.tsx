@@ -27,7 +27,7 @@ interface RestRequestTabsProps {
   onSearchParamsChange: (params: TabularPair[]) => void;
   onPathParamsChange: (params: Record<string, { value: string; enabled: boolean }>) => void;
   onHeadersChange: (headers: TabularPair[]) => void;
-  onBodyChange: (body: { type: string; data: unknown } | null) => void;
+  onBodyChange: (body: RestEntityRequestBody | null) => void;
   onScriptChange: (script: YasumuEmbeddedScript) => void;
 }
 
@@ -168,7 +168,7 @@ export function RestRequestTabs({
         </TabsContent>
 
         <TabsContent value="body" className="mt-0 h-full">
-          <BodyEditor body={body ? { type: body.type, data: body.value } : null} onChange={onBodyChange} />
+          <BodyEditor body={body} onChange={onBodyChange} />
         </TabsContent>
 
         <TabsContent value="scripts" className="mt-0 h-full">

@@ -1,5 +1,6 @@
-import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
 import { isMainThread } from 'node:worker_threads';
+
+import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
 
 import { createBufferedQueue } from './common.ts';
 

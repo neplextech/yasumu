@@ -25,7 +25,8 @@ import {
 } from '@yasumu/ui/components/sidebar';
 import { Skeleton } from '@yasumu/ui/components/skeleton';
 import { cn } from '@yasumu/ui/lib/utils';
-import { ChevronsUpDown, Home, Lock, Logs, Mail, Settings } from 'lucide-react';
+import { ChevronsUpDown, Lock, Logs, Mail, Settings } from 'lucide-react';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -37,7 +38,7 @@ import YasumuLogo from '@/components/visuals/yasumu-logo';
 import { YasumuSocials } from '@/lib/constants/socials';
 
 import { useUpdater } from '../providers/updater-provider';
-import { useYasumu } from '../providers/workspace-provider';
+import { useWorkspaceSession, useYasumuRuntime } from '../providers/workspace-provider';
 import { AppMenu } from './app-menu';
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import SidebarLayoutStyleSelector from './layout-style-selector';
@@ -50,62 +51,37 @@ const data = {
     avatar: '/Yasumu Dark.svg',
   },
   navMain: [
-    // {
-    //   title: 'Home',
-    //   url: '/',
-    //   icon: Home,
-    //   isActive: true,
-    // },
     {
       title: 'Rest API',
-      url: '/en/workspaces/default/rest',
+      section: 'rest',
       icon: TbWorldWww,
-      isActive: false,
     },
     {
       title: 'GraphQL',
-      url: '/en/workspaces/default/graphql',
+      section: 'graphql',
       icon: SiGraphql,
-      isActive: false,
     },
-    // {
-    //   title: 'Socket.IO',
-    //   url: '/en/workspaces/default/socketio',
-    //   icon: SiSocketdotio,
-    //   isActive: false,
-    // },
-    // {
-    //   title: 'WebSocket',
-    //   url: '/en/workspaces/default/websocket',
-    //   icon: WebSocketIcon,
-    //   isActive: false,
-    // },
-    // {
-    //   title: 'Server Sent Events',
-    //   url: '/en/workspaces/default/sse',
-    //   icon: Zap,
-    //   isActive: false,
-    // },
     {
       title: 'Emails',
-      url: '/en/workspaces/default/emails',
+      section: 'emails',
       icon: Mail,
-      isActive: false,
     },
   ],
   navFooter: [
     {
       title: 'Environment',
-      url: '/en/workspaces/default/environment',
+      section: 'environment',
       icon: Lock,
     },
   ],
-};
+} as const;
 
 export function AppSidebar() {
   const { setOpen } = useSidebar();
   const path = usePathname();
-  const { currentWorkspaceId } = useYasumu();
+  const { currentWorkspaceId } = useWorkspaceSession();
+  const locale = path.split('/').filter(Boolean)[0] ?? 'en';
+  const workspaceRoute = `/${locale}/workspaces/default`;
 
   if (!currentWorkspaceId) return null;
 
@@ -122,52 +98,50 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent className="px-1.5 md:px-0">
             <SidebarMenu>
-              {data.navMain.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <Link href={item.url as any}>
+              {data.navMain.map((item) => {
+                const href = `${workspaceRoute}/${item.section}` as Route;
+
+                return (
+                  <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      tooltip={{
-                        children: item.title,
-                        hidden: false,
-                      }}
-                      onClick={() => {
-                        setOpen(true);
-                      }}
-                      isActive={path === item.url}
+                      asChild
+                      tooltip={{ children: item.title, hidden: false }}
+                      isActive={path === href}
                       className="px-2.5 md:px-2"
                     >
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <Link href={href} onClick={() => setOpen(true)}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
                     </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          {data.navFooter.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <Link href={item.url as any}>
+          {data.navFooter.map((item) => {
+            const href = `${workspaceRoute}/${item.section}` as Route;
+
+            return (
+              <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  tooltip={{
-                    children: item.title,
-                    hidden: false,
-                  }}
-                  onClick={() => {
-                    setOpen(true);
-                  }}
-                  isActive={path === item.url}
+                  asChild
+                  tooltip={{ children: item.title, hidden: false }}
+                  isActive={path === href}
                   className="px-2.5 md:px-2"
                 >
-                  <item.icon />
-                  <span>{item.title}</span>
+                  <Link href={href} onClick={() => setOpen(true)}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
                 </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
+              </SidebarMenuItem>
+            );
+          })}
           <SettingsDropdown user={data.user} />
         </SidebarMenu>
       </SidebarFooter>
@@ -191,11 +165,12 @@ function SettingsDropdown({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
+            aria-label="Open application menu"
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
           >
             <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage alt={'Settings'} />
+              <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="rounded-lg">
                 <Settings className="size-4" />
               </AvatarFallback>
@@ -222,37 +197,36 @@ function SettingsDropdown({
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            {/* @ts-ignore */}
-            <Link href="/en/settings">
-              <DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/en/settings">
                 <Settings />
                 Settings
-              </DropdownMenuItem>
-            </Link>
+              </Link>
+            </DropdownMenuItem>
             <SidebarThemeSelector />
             <SidebarLayoutStyleSelector />
             <KeyboardShortcutsDialog />
-            <Link href={YasumuSocials.Changelogs as any} target="_blank">
-              <DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={YasumuSocials.Changelogs} target="_blank" rel="noreferrer">
                 <Logs />
                 Changelogs
-              </DropdownMenuItem>
-            </Link>
+              </a>
+            </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <Link href={YasumuSocials.GitHub as any} target="_blank">
-              <DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={YasumuSocials.GitHub} target="_blank" rel="noreferrer">
                 <SiGithub />
                 GitHub
-              </DropdownMenuItem>
-            </Link>
-            <Link href={YasumuSocials.Discord as any} target="_blank">
-              <DropdownMenuItem>
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={YasumuSocials.Discord} target="_blank" rel="noreferrer">
                 <SiDiscord />
                 Discord
-              </DropdownMenuItem>
-            </Link>
+              </a>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <CheckForUpdates />
           </DropdownMenuGroup>
@@ -266,7 +240,7 @@ function CheckForUpdates() {
   const { isChecking, checkForUpdates } = useUpdater();
 
   return (
-    <DropdownMenuItem onClick={() => void checkForUpdates()}>
+    <DropdownMenuItem onClick={() => void checkForUpdates(true)}>
       <IoSync className={cn(isChecking && 'animate-spin')} />
       {isChecking ? 'Checking for Updates...' : 'Check for Updates'}
     </DropdownMenuItem>
@@ -279,7 +253,7 @@ function AppInfo() {
     version: string;
     tauriVersion: string;
   } | null>(null);
-  const { port } = useYasumu();
+  const { port } = useYasumuRuntime();
 
   useEffect(() => {
     const fetchInfo = async () => {
@@ -292,7 +266,7 @@ function AppInfo() {
       }
     };
 
-    fetchInfo();
+    void fetchInfo();
   }, []);
 
   return (

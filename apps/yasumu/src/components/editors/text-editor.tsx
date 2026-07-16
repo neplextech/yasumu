@@ -1,12 +1,13 @@
 'use client';
 
 import Editor, { loader, type Monaco, type OnMount } from '@monaco-editor/react';
+import { Button } from '@yasumu/ui/components/button';
+import { cn } from '@yasumu/ui/lib/utils';
 import { useTheme } from 'next-themes';
-import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
+import ErrorScreen from '../visuals/error-screen';
 import LoadingScreen from '../visuals/loading-screen';
-
-type IStandaloneCodeEditor = Parameters<OnMount>['0'];
 
 export interface TypeDefinition {
   content: string;
@@ -23,7 +24,8 @@ interface TextEditorProps {
   className?: string;
 }
 
-const registeredLibs = new Set<string>();
+const EMPTY_TYPE_DEFINITIONS: TypeDefinition[] = [];
+const registeredLibs = new Map<string, { content: string; disposables: Array<{ dispose: () => void }> }>();
 let monacoInstance: Monaco | null = null;
 let initPromise: Promise<Monaco> | null = null;
 
@@ -31,40 +33,46 @@ export function getMonacoInstance(): Promise<Monaco> {
   if (monacoInstance) return Promise.resolve(monacoInstance);
   if (initPromise) return initPromise;
 
-  initPromise = loader.init().then((monaco: Monaco) => {
-    monacoInstance = monaco;
+  initPromise = loader
+    .init()
+    .then((monaco: Monaco) => {
+      monacoInstance = monaco;
 
-    const tsDefaults = monaco.languages.typescript.typescriptDefaults;
-    const jsDefaults = monaco.languages.typescript.javascriptDefaults;
+      const tsDefaults = monaco.languages.typescript.typescriptDefaults;
+      const jsDefaults = monaco.languages.typescript.javascriptDefaults;
 
-    const sharedCompilerOptions = {
-      target: monaco.languages.typescript.ScriptTarget.ESNext,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
-      // NodeJs resolution walks up to file:///node_modules/@types/node/ where
-      // we register the bundled @types/node declarations.
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-      allowNonTsExtensions: true,
-      allowSyntheticDefaultImports: true,
-      allowUmdGlobalAccess: true,
-      // Relax strict mode — user scripts shouldn't be penalised for missing
-      // types they cannot control (e.g. external Deno runtime APIs).
-      strict: false,
-      noEmit: true,
-      esModuleInterop: true,
-      skipLibCheck: true,
-      lib: ['esnext', 'dom'],
-    };
+      const sharedCompilerOptions = {
+        target: monaco.languages.typescript.ScriptTarget.ESNext,
+        module: monaco.languages.typescript.ModuleKind.ESNext,
+        // NodeJs resolution walks up to file:///node_modules/@types/node/ where
+        // we register the bundled @types/node declarations.
+        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+        allowNonTsExtensions: true,
+        allowSyntheticDefaultImports: true,
+        allowUmdGlobalAccess: true,
+        // Relax strict mode — user scripts shouldn't be penalised for missing
+        // types they cannot control (e.g. external Deno runtime APIs).
+        strict: false,
+        noEmit: true,
+        esModuleInterop: true,
+        skipLibCheck: true,
+        lib: ['esnext', 'dom'],
+      };
 
-    tsDefaults.setCompilerOptions(sharedCompilerOptions);
-    jsDefaults.setCompilerOptions(sharedCompilerOptions);
+      tsDefaults.setCompilerOptions(sharedCompilerOptions);
+      jsDefaults.setCompilerOptions(sharedCompilerOptions);
 
-    tsDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
-      noSyntaxValidation: false,
+      tsDefaults.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+      });
+
+      return monaco;
+    })
+    .catch((error: unknown) => {
+      initPromise = null;
+      throw error;
     });
-
-    return monaco;
-  });
 
   return initPromise;
 }
@@ -76,11 +84,18 @@ function registerTypeDefinitions(monaco: Monaco, typeDefinitions: TypeDefinition
     const def = defs[i];
     const filePath = def.filePath || `file:///definitions-${i}.d.ts`;
 
-    if (registeredLibs.has(filePath)) continue;
+    const registered = registeredLibs.get(filePath);
+    if (registered?.content === def.content) continue;
 
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(def.content, filePath);
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(def.content, filePath);
-    registeredLibs.add(filePath);
+    registered?.disposables.forEach((disposable) => disposable.dispose());
+
+    registeredLibs.set(filePath, {
+      content: def.content,
+      disposables: [
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(def.content, filePath),
+        monaco.languages.typescript.javascriptDefaults.addExtraLib(def.content, filePath),
+      ],
+    });
   }
 }
 
@@ -88,42 +103,47 @@ export function TextEditor({
   value,
   onChange,
   language = 'typescript',
-  typeDefinitions = [],
+  typeDefinitions = EMPTY_TYPE_DEFINITIONS,
   placeholder,
   readOnly = false,
   className,
 }: TextEditorProps) {
-  const editorRef = useRef<IStandaloneCodeEditor | null>(null);
-  const localMonacoRef = useRef<Monaco | null>(null);
   const { resolvedTheme } = useTheme();
+  const editorId = useId().replaceAll(':', '');
   const [isMonacoReady, setIsMonacoReady] = useState(!!monacoInstance);
+  const [initializationError, setInitializationError] = useState<Error | null>(null);
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
 
   const editorPath = useMemo(() => {
-    const id = Math.random().toString(36).slice(2);
-    if (language === 'graphql') return `file:///graphql/query-${id}.graphql`;
-    if (language === 'typescript') return `file:///scripts/${id}.ts`;
-    if (language === 'javascript') return `file:///scripts/${id}.js`;
+    if (language === 'graphql') return `file:///graphql/query-${editorId}.graphql`;
+    if (language === 'typescript') return `file:///scripts/${editorId}.ts`;
+    if (language === 'javascript') return `file:///scripts/${editorId}.js`;
     return undefined;
-  }, [language]);
+  }, [editorId, language]);
 
   useEffect(() => {
-    getMonacoInstance().then((monaco) => {
-      localMonacoRef.current = monaco;
-      if (typeDefinitions) {
+    let active = true;
+    setInitializationError(null);
+
+    void getMonacoInstance()
+      .then((monaco) => {
+        if (!active) return;
         registerTypeDefinitions(monaco, typeDefinitions);
-      }
-      setIsMonacoReady(true);
-    });
-  }, [typeDefinitions]);
+        setIsMonacoReady(true);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setInitializationError(error instanceof Error ? error : new Error('Failed to initialize the editor'));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [initializationAttempt, typeDefinitions]);
 
   const handleEditorDidMount: OnMount = useCallback(
     (editor, monaco) => {
-      editorRef.current = editor;
-      localMonacoRef.current = monaco;
-
-      if (typeDefinitions) {
-        registerTypeDefinitions(monaco, typeDefinitions);
-      }
+      registerTypeDefinitions(monaco, typeDefinitions);
 
       editor.updateOptions({
         minimap: { enabled: false },
@@ -164,10 +184,28 @@ export function TextEditor({
 
   const showPlaceholder = !value && !!placeholder;
 
+  if (initializationError) {
+    return (
+      <ErrorScreen
+        className={className}
+        title="Editor unavailable"
+        message={initializationError.message}
+        action={
+          <Button variant="outline" onClick={() => setInitializationAttempt((attempt) => attempt + 1)}>
+            Retry editor
+          </Button>
+        }
+      />
+    );
+  }
+
   if (!isMonacoReady) {
     return (
       <div
-        className={`border-border bg-muted/30 relative min-h-0 w-full flex-1 overflow-hidden rounded-md border ${className ?? ''}`}
+        className={cn(
+          'border-border bg-muted/30 relative min-h-0 w-full flex-1 overflow-hidden rounded-md border',
+          className,
+        )}
       >
         <LoadingScreen fullScreen />
       </div>
@@ -176,7 +214,10 @@ export function TextEditor({
 
   return (
     <div
-      className={`border-border bg-muted/30 relative min-h-0 w-full flex-1 overflow-hidden rounded-md border ${className ?? ''}`}
+      className={cn(
+        'border-border bg-muted/30 relative min-h-0 w-full flex-1 overflow-hidden rounded-md border',
+        className,
+      )}
     >
       {showPlaceholder && (
         <div className="text-muted-foreground/50 pointer-events-none absolute inset-0 z-10 p-3 pl-14 font-mono text-sm whitespace-pre-wrap">
@@ -201,10 +242,7 @@ export function TextEditor({
   );
 }
 
-export function preloadMonacoEditor(typeDefinitions?: TypeDefinition[] | TypeDefinition) {
-  getMonacoInstance().then((monaco) => {
-    if (typeDefinitions) {
-      registerTypeDefinitions(monaco, typeDefinitions);
-    }
-  });
+export async function preloadMonacoEditor(typeDefinitions?: TypeDefinition[] | TypeDefinition): Promise<void> {
+  const monaco = await getMonacoInstance();
+  if (typeDefinitions) registerTypeDefinitions(monaco, typeDefinitions);
 }

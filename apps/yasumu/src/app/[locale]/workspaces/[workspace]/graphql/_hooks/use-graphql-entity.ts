@@ -4,48 +4,44 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { GraphqlEntityData, GraphqlEntityRequestBody, GraphqlEntityUpdateOptions } from '@yasumu/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useSerializedAutosave } from '@/app/[locale]/workspaces/[workspace]/_hooks/use-serialized-autosave';
+import { workspaceQueryKeys } from '@/app/[locale]/workspaces/[workspace]/_lib/workspace-query-keys';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
 const DEBOUNCE_DELAY = 500;
 
-/**
- * The structured value inside GraphqlEntityRequestBody.value for GraphQL requests.
- */
 export interface GraphqlBodyValue {
   query: string;
   variables: string;
   operationName: string;
 }
 
-/**
- * Extract query/variables/operationName from a GraphQL entity's requestBody.
- */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function getGraphqlBodyValue(requestBody: GraphqlEntityRequestBody | null | undefined): GraphqlBodyValue {
   const defaultValue: GraphqlBodyValue = {
     query: '',
     variables: '',
     operationName: '',
   };
-  if (!requestBody?.value || typeof requestBody.value !== 'object') return defaultValue;
-  const val = requestBody.value as Partial<GraphqlBodyValue>;
+  if (!isRecord(requestBody?.value)) return defaultValue;
+  const value = requestBody.value;
   return {
-    query: val.query || '',
-    variables: val.variables || '',
-    operationName: val.operationName || '',
+    query: typeof value.query === 'string' ? value.query : '',
+    variables: typeof value.variables === 'string' ? value.variables : '',
+    operationName: typeof value.operationName === 'string' ? value.operationName : '',
   };
 }
 
-/**
- * Create a new GraphqlEntityRequestBody with updated body value fields.
- */
 export function updateGraphqlBodyValue(
   current: GraphqlEntityRequestBody | null | undefined,
   updates: Partial<GraphqlBodyValue>,
 ): GraphqlEntityRequestBody {
-  const currentValue = getGraphqlBodyValue(current);
   return {
     type: 'json',
-    value: { ...currentValue, ...updates },
+    value: { ...getGraphqlBodyValue(current), ...updates },
     metadata: current?.metadata || {},
   };
 }
@@ -58,6 +54,7 @@ interface UseGraphqlEntityReturn {
   data: GraphqlEntityData | null;
   isLoading: boolean;
   error: Error | null;
+  saveError: Error | null;
   isSaving: boolean;
   updateField: <K extends keyof GraphqlEntityUpdateOptions>(field: K, value: GraphqlEntityUpdateOptions[K]) => void;
   updateFields: (fields: Partial<GraphqlEntityUpdateOptions>) => void;
@@ -69,25 +66,19 @@ export function useGraphqlEntity({ entityId }: UseGraphqlEntityOptions): UseGrap
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [localData, setLocalData] = useState<GraphqlEntityData | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const pendingUpdates = useRef<Partial<GraphqlEntityUpdateOptions>>({});
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isMounted = useRef(true);
-
-  // GraphQL API accessor
+  const localDataRef = useRef<GraphqlEntityData | null>(null);
   const graphql = workspace.graphql;
-
-  const queryKey = useMemo(() => ['graphql-entity', workspace.id, entityId], [entityId, workspace.id]);
+  const queryKey = useMemo(() => workspaceQueryKeys.graphqlEntity(workspace.id, entityId), [entityId, workspace.id]);
 
   const {
     data: serverData,
     isLoading,
-    error,
+    error: queryError,
     isFetched,
   } = useQuery({
     queryKey,
     queryFn: async () => {
-      if (!entityId || !graphql) return null;
+      if (!entityId) return null;
       const entity = await graphql.get(entityId);
       return entity.data;
     },
@@ -96,90 +87,65 @@ export function useGraphqlEntity({ entityId }: UseGraphqlEntityOptions): UseGrap
     refetchOnWindowFocus: false,
   });
 
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+  const persist = useCallback(
+    async (updates: Partial<GraphqlEntityUpdateOptions>) => {
+      if (!entityId) throw new Error('Cannot save a GraphQL entity without an id');
+      await graphql.update(entityId, updates);
+    },
+    [entityId, graphql],
+  );
+
+  const onSaved = useCallback(
+    (updates: Partial<GraphqlEntityUpdateOptions>) => {
+      queryClient.setQueryData<GraphqlEntityData | null>(queryKey, (old) => (old ? { ...old, ...updates } : old));
+      if (entityId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.graphqlTab(workspace.id, entityId),
+        });
       }
-    };
+    },
+    [entityId, queryClient, queryKey, workspace.id],
+  );
+
+  const { enqueue, flush, isSaving, hasUnsavedChanges, saveError } = useSerializedAutosave<
+    Partial<GraphqlEntityUpdateOptions>
+  >({
+    identityKey: entityId ? `${workspace.id}:graphql:${entityId}` : null,
+    persist,
+    onSaved,
+    debounceMs: DEBOUNCE_DELAY,
+  });
+
+  const commitLocalData = useCallback((next: GraphqlEntityData | null) => {
+    localDataRef.current = next;
+    setLocalData(next);
   }, []);
 
   useEffect(() => {
-    pendingUpdates.current = {};
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
     if (!entityId) {
-      setLocalData(null);
+      commitLocalData(null);
       return;
     }
-    const cached = queryClient.getQueryData<GraphqlEntityData>(queryKey);
-    if (cached) {
-      setLocalData(cached);
-    }
-  }, [entityId, queryClient, queryKey]);
+
+    commitLocalData(queryClient.getQueryData<GraphqlEntityData>(queryKey) ?? null);
+  }, [commitLocalData, entityId, queryClient, queryKey]);
 
   useEffect(() => {
-    if (!serverData || !isFetched) return;
-
-    setLocalData((current) => {
-      if (current?.id === serverData.id) {
-        return current;
-      }
-
-      return serverData;
-    });
-  }, [serverData, isFetched]);
-
-  const flushSave = useCallback(async () => {
-    if (!entityId || !graphql || Object.keys(pendingUpdates.current).length === 0) return;
-
-    const updates = { ...pendingUpdates.current };
-    pendingUpdates.current = {};
-
-    try {
-      setIsSaving(true);
-      await graphql.update(entityId, updates);
-      queryClient.setQueryData(queryKey, (old: GraphqlEntityData | null) => {
-        if (!old) return old;
-        return { ...old, ...updates };
-      });
-    } catch (err) {
-      console.error('Failed to save GraphQL entity:', err);
-      // Restore pending updates if failed
-      pendingUpdates.current = { ...pendingUpdates.current, ...updates };
-    } finally {
-      if (isMounted.current) {
-        setIsSaving(false);
-      }
-    }
-  }, [entityId, graphql, queryClient, queryKey]);
-
-  const scheduleSave = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      flushSave();
-    }, DEBOUNCE_DELAY);
-  }, [flushSave]);
+    if (!serverData || !isFetched || hasUnsavedChanges) return;
+    commitLocalData(serverData);
+  }, [commitLocalData, hasUnsavedChanges, isFetched, serverData]);
 
   const updateFields = useCallback(
     (fields: Partial<GraphqlEntityUpdateOptions>) => {
       if (!entityId) return;
-
-      setLocalData((prev) => {
-        if (!prev) return prev;
-        return { ...prev, ...fields };
-      });
-
-      pendingUpdates.current = { ...pendingUpdates.current, ...fields };
-      scheduleSave();
+      const current = localDataRef.current;
+      if (current) commitLocalData({ ...current, ...fields });
+      queryClient.setQueryData<GraphqlEntityData | null>(queryKey, (cached) =>
+        cached ? { ...cached, ...fields } : cached,
+      );
+      enqueue(fields);
     },
-    [entityId, scheduleSave],
+    [commitLocalData, enqueue, entityId, queryClient, queryKey],
   );
 
   const updateField = useCallback(
@@ -192,42 +158,28 @@ export function useGraphqlEntity({ entityId }: UseGraphqlEntityOptions): UseGrap
   const updateBodyValue = useCallback(
     (updates: Partial<GraphqlBodyValue>) => {
       if (!entityId) return;
+      const current = localDataRef.current;
+      if (!current) return;
 
-      setLocalData((prev) => {
-        if (!prev) return prev;
-        const pendingBody = updateGraphqlBodyValue(prev.requestBody, updates);
-        pendingUpdates.current = {
-          ...pendingUpdates.current,
-          requestBody: pendingBody,
-        };
-
-        return {
-          ...prev,
-          requestBody: pendingBody,
-        };
-      });
-
-      scheduleSave();
+      const requestBody = updateGraphqlBodyValue(current.requestBody, updates);
+      commitLocalData({ ...current, requestBody });
+      queryClient.setQueryData<GraphqlEntityData | null>(queryKey, (cached) =>
+        cached ? { ...cached, requestBody } : cached,
+      );
+      enqueue({ requestBody });
     },
-    [entityId, scheduleSave],
+    [commitLocalData, enqueue, entityId, queryClient, queryKey],
   );
-
-  const save = useCallback(async () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-    await flushSave();
-  }, [flushSave]);
 
   return {
     data: localData,
     isLoading,
-    error: error as Error | null,
+    error: queryError instanceof Error ? queryError : null,
+    saveError,
     isSaving,
     updateField,
     updateFields,
     updateBodyValue,
-    save,
+    save: flush,
   };
 }

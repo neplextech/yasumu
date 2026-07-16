@@ -2,6 +2,7 @@
 
 import type { Monaco } from '@monaco-editor/react';
 import type { GraphQLSchema } from 'graphql';
+import type { editor, languages, Position as MonacoPosition } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 
 import { getMonacoInstance } from '@/components/editors/text-editor';
@@ -20,6 +21,11 @@ type GlobalGraphqlProviders = {
   completion: Disposable | null;
   hover: Disposable | null;
 };
+
+interface GraphqlLanguageApi {
+  setSchemaConfig: (configs: Array<{ schema: GraphQLSchema }>) => void;
+  dispose: () => void;
+}
 
 function getGlobalGraphqlProviders(): GlobalGraphqlProviders {
   const g = globalThis as typeof globalThis & {
@@ -61,7 +67,7 @@ async function ensureGraphQLProviders(monaco: Monaco) {
 
     completionProviderDisposable = monaco.languages.registerCompletionItemProvider('graphql', {
       triggerCharacters: [' ', '\n', '{', '(', ':', '@'],
-      provideCompletionItems: (model, position) => {
+      provideCompletionItems: (model: editor.ITextModel, position: MonacoPosition) => {
         if (!currentSchema) return { suggestions: [] };
 
         try {
@@ -78,11 +84,18 @@ async function ensureGraphQLProviders(monaco: Monaco) {
             seen.add(key);
             return true;
           });
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
 
           return {
             suggestions: uniqueSuggestions.map((entry) => ({
               label: entry.label,
-              kind: entry.kind as monaco.languages.CompletionItemKind,
+              kind: entry.kind as languages.CompletionItemKind,
               detail: entry.detail,
               insertText: entry.insertText || entry.label,
               insertTextRules:
@@ -92,6 +105,7 @@ async function ensureGraphQLProviders(monaco: Monaco) {
               sortText: entry.sortText,
               filterText: entry.filterText,
               documentation: markdownToString(entry.documentation),
+              range,
             })),
           };
         } catch {
@@ -101,7 +115,7 @@ async function ensureGraphQLProviders(monaco: Monaco) {
     });
 
     hoverProviderDisposable = monaco.languages.registerHoverProvider('graphql', {
-      provideHover: (model, position) => {
+      provideHover: (model: editor.ITextModel, position: MonacoPosition) => {
         if (!currentSchema) return null;
 
         try {
@@ -137,7 +151,7 @@ async function ensureGraphQLProviders(monaco: Monaco) {
 }
 
 export function useMonacoGraphqlLanguage(schema: GraphQLSchema | null) {
-  const apiRef = useRef<any>(null);
+  const apiRef = useRef<GraphqlLanguageApi | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -170,7 +184,7 @@ export function useMonacoGraphqlLanguage(schema: GraphQLSchema | null) {
       }
     }
 
-    setupGraphQL();
+    void setupGraphQL();
 
     return () => {
       mounted = false;

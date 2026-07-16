@@ -4,11 +4,18 @@ import type { TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { Separator } from '@yasumu/ui/components/separator';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
+import {
+  recordToTabularPairs,
+  tabularPairsToRecord,
+  type ToggleableValueRecord,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/tabular-pairs';
 import { useVariablePopover } from '@/components/inputs';
 import { useAppLayout } from '@/components/providers/app-layout-provider';
+import ErrorScreen from '@/components/visuals/error-screen';
+import { InlineErrorBanner } from '@/components/visuals/inline-error-banner';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
 import { YasumuLayout } from '@/lib/constants/layout';
@@ -22,42 +29,21 @@ import { getGraphqlBodyValue } from './_hooks/use-graphql-entity';
 import { useGraphqlIntrospection } from './_hooks/use-graphql-introspection';
 import { useGraphqlRequest } from './_hooks/use-graphql-request';
 import { useQueryBuilder } from './_hooks/use-query-builder';
-import { preloadGraphQLLanguage, useMonacoGraphqlLanguage } from './_lib/monaco-graphql-support';
+import { useMonacoGraphqlLanguage } from './_lib/monaco-graphql-support';
 import { useGraphqlContext } from './_providers/graphql-context';
-
-function tabularPairsToRecord(pairs: TabularPair[] | undefined): Record<string, { value: string; enabled: boolean }> {
-  if (!pairs) return {};
-  return pairs.reduce(
-    (acc, pair) => {
-      if (pair.key) {
-        acc[pair.key] = { value: pair.value, enabled: pair.enabled };
-      }
-      return acc;
-    },
-    {} as Record<string, { value: string; enabled: boolean }>,
-  );
-}
 
 export default function GraphqlPage() {
   const { entityId } = useGraphqlContext();
   const { layout } = useAppLayout();
   const { renderVariablePopover } = useVariablePopover();
-  const { data, isLoading, error, isSaving, updateField, updateBodyValue, save } = useGraphqlEntity({
+  const { data, isLoading, error, saveError, isSaving, updateField, updateBodyValue, save } = useGraphqlEntity({
     entityId,
   });
   const { state: requestState, execute, cancel } = useGraphqlRequest({ entityId });
 
-  // Introspection
   const { schema, isLoading: isIntrospecting, error: introspectionError, introspect } = useGraphqlIntrospection();
-
-  // Monaco GraphQL IntelliSense
   useMonacoGraphqlLanguage(schema);
 
-  useEffect(() => {
-    preloadGraphQLLanguage(schema);
-  }, [schema]);
-
-  // Query builder
   const {
     operations: queryBuilderOperations,
     activeOperation: queryBuilderActiveOperation,
@@ -69,19 +55,12 @@ export default function GraphqlPage() {
     generatedQuery: queryBuilderGeneratedQuery,
   } = useQueryBuilder(schema);
 
-  // Path params
-  const pathParams = useMemo(
-    () => (data?.requestParameters ? tabularPairsToRecord(data.requestParameters as TabularPair[]) : {}),
-    [data?.requestParameters],
-  );
+  const pathParams = useMemo(() => tabularPairsToRecord(data?.requestParameters), [data?.requestParameters]);
 
-  const isRequestActive = useMemo(
-    () =>
-      requestState.phase === 'pre-request-script' ||
-      requestState.phase === 'sending' ||
-      requestState.phase === 'post-response-script',
-    [requestState.phase],
-  );
+  const isRequestActive =
+    requestState.phase === 'pre-request-script' ||
+    requestState.phase === 'sending' ||
+    requestState.phase === 'post-response-script';
 
   const isClassicLayout = layout === YasumuLayout.Classic;
 
@@ -121,13 +100,8 @@ export default function GraphqlPage() {
   );
 
   const handlePathParamsChange = useCallback(
-    (params: Record<string, { value: string; enabled: boolean }>) => {
-      const tabularParams = Object.entries(params).map(([key, val]) => ({
-        key,
-        value: val.value,
-        enabled: val.enabled,
-      }));
-      updateField('requestParameters', tabularParams);
+    (params: ToggleableValueRecord) => {
+      updateField('requestParameters', recordToTabularPairs(params));
     },
     [updateField],
   );
@@ -144,6 +118,7 @@ export default function GraphqlPage() {
     await save();
     await execute(data);
   }, [data, save, execute]);
+  const handleSendSafely = useMemo(() => withErrorHandler(handleSend), [handleSend]);
 
   const handleCancel = useCallback(() => {
     cancel();
@@ -157,60 +132,44 @@ export default function GraphqlPage() {
     await introspect(data.url, interpolatedHeaders);
   }, [data?.url, data?.requestHeaders, introspect]);
 
-  // Auto-introspection
-  const [lastIntrospectedUrl, setLastIntrospectedUrl] = useState<string | null>(null);
+  const lastIntrospectionKeyRef = useRef<string | null>(null);
+  const introspectionKey = data?.url ? `${entityId ?? 'none'}:${data.url}` : null;
 
   useEffect(() => {
-    if (!data?.url || isIntrospecting) return;
+    if (!introspectionKey || isIntrospecting || lastIntrospectionKeyRef.current === introspectionKey) return;
 
-    // Initial load or URL changed
-    if (data.url !== lastIntrospectedUrl) {
-      console.log('Auto-introspecting', data.url);
-      const timeoutId = setTimeout(() => {
-        handleIntrospect();
-        setLastIntrospectedUrl(data.url!);
-      }, 1000);
+    const timeoutId = setTimeout(() => {
+      lastIntrospectionKeyRef.current = introspectionKey;
+      void handleIntrospect();
+    }, 1000);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [data?.url, isIntrospecting, lastIntrospectedUrl, handleIntrospect]);
+    return () => clearTimeout(timeoutId);
+  }, [handleIntrospect, introspectionKey, isIntrospecting]);
 
-  useHotkeys(
-    'mod+enter',
-    async () => {
-      await withErrorHandler(handleSend)();
-    },
-    { preventDefault: true, enableOnFormTags: false },
-  );
+  useHotkeys('mod+enter', () => void handleSendSafely(), { preventDefault: true, enableOnFormTags: false });
 
   if (!entityId) {
     return (
-      <main className="relative grid h-screen w-full place-items-center">
+      <main className="relative grid h-full min-h-0 w-full place-items-center">
         <YasumuBackgroundArt message="Yasumu" />
       </main>
     );
+  }
+
+  if (error) {
+    return <ErrorScreen fullScreen title="Failed to load entity" message={error.message} />;
   }
 
   if (isLoading || !data) {
     return <LoadingScreen fullScreen />;
   }
 
-  if (error) {
-    return (
-      <main className="relative grid h-screen w-full place-items-center">
-        <div className="space-y-2 text-center">
-          <p className="text-destructive font-medium">Failed to load entity</p>
-          <p className="text-muted-foreground text-sm">{error.message}</p>
-        </div>
-      </main>
-    );
-  }
-
+  const bodyValue = getGraphqlBodyValue(data.requestBody);
   const requestEditor = (
     <GraphqlRequestTabs
       key={entityId}
-      query={getGraphqlBodyValue(data.requestBody).query}
-      variables={getGraphqlBodyValue(data.requestBody).variables}
+      query={bodyValue.query}
+      variables={bodyValue.variables}
       headers={data.requestHeaders || []}
       script={data.script}
       searchParams={data.searchParameters || []}
@@ -251,7 +210,7 @@ export default function GraphqlPage() {
         <GraphqlUrlBar
           url={data.url || ''}
           onUrlChange={handleUrlChange}
-          onSend={handleSend}
+          onSend={handleSendSafely}
           onCancel={handleCancel}
           onIntrospect={handleIntrospect}
           onVariableClick={renderVariablePopover}
@@ -260,6 +219,21 @@ export default function GraphqlPage() {
           isIntrospecting={isIntrospecting}
         />
       </div>
+      {introspectionError ? (
+        <InlineErrorBanner
+          message={`Schema introspection failed: ${introspectionError}`}
+          actionLabel="Retry introspection"
+          onAction={() => void handleIntrospect()}
+        />
+      ) : null}
+      {saveError ? (
+        <InlineErrorBanner
+          message={`Changes are not saved: ${saveError.message}`}
+          actionLabel="Retry save"
+          actionDisabled={isSaving}
+          onAction={() => void withErrorHandler(save)()}
+        />
+      ) : null}
       <Separator />
       <ResizablePanelGroup direction={isClassicLayout ? 'vertical' : 'horizontal'} className="min-h-0 flex-1">
         <ResizablePanel defaultSize={50} minSize={20}>

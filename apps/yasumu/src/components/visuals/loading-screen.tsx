@@ -1,4 +1,7 @@
 'use client';
+import { Alert, AlertDescription, AlertTitle } from '@yasumu/ui/components/alert';
+import { Progress } from '@yasumu/ui/components/progress';
+import { Spinner } from '@yasumu/ui/components/spinner';
 import { cn } from '@yasumu/ui/lib/utils';
 import { CircleAlert, Loader2, RotateCw, Server } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -15,6 +18,7 @@ export interface LoadingScreenProps {
   fullScreen?: boolean;
   message?: string;
   rpcDiscovery?: RpcDiscoveryStatus;
+  className?: string;
 }
 
 function getRetryCountdown(retryAt?: number): number | null {
@@ -34,7 +38,7 @@ function RpcDiscoveryLoadingScreen({ status }: { status: RpcDiscoveryStatus }) {
 
     const timer = window.setInterval(() => {
       setRetryCountdown(getRetryCountdown(status.retryAt));
-    }, 250);
+    }, 1000);
 
     return () => window.clearInterval(timer);
   }, [status.retryAt]);
@@ -46,7 +50,16 @@ function RpcDiscoveryLoadingScreen({ status }: { status: RpcDiscoveryStatus }) {
       : 'Looking for the local Yasumu runtime';
 
   return (
-    <div className="bg-background relative flex min-h-screen w-full items-center justify-center overflow-hidden px-6">
+    <div
+      className="bg-background relative flex min-h-screen w-full items-center justify-center overflow-hidden px-6"
+      aria-busy="true"
+    >
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        Yasumu is starting. Attempt {status.attempt} of {status.maxAttempts}.
+        {status.phase === 'retrying'
+          ? ' Waiting to retry the local runtime connection.'
+          : ' Looking for the local runtime.'}
+      </p>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--muted))_0%,transparent_55%)] opacity-70" />
       <div className="border-border/80 bg-card/80 relative w-full max-w-md rounded-2xl border p-7 shadow-2xl shadow-black/10 backdrop-blur-sm">
         <div className="mb-7 flex items-start justify-between gap-4">
@@ -54,7 +67,7 @@ function RpcDiscoveryLoadingScreen({ status }: { status: RpcDiscoveryStatus }) {
             <Server className="size-5" aria-hidden="true" />
           </div>
           <div className="border-border bg-background/70 text-muted-foreground flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium">
-            <Loader2 className="text-primary size-3.5 animate-spin" aria-hidden="true" />
+            <Loader2 className="text-primary size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             Starting services
           </div>
         </div>
@@ -71,9 +84,9 @@ function RpcDiscoveryLoadingScreen({ status }: { status: RpcDiscoveryStatus }) {
           <div className="flex items-center gap-3">
             <div className="bg-background text-primary flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm">
               {status.phase === 'retrying' ? (
-                <RotateCw className="size-4 animate-spin" aria-hidden="true" />
+                <RotateCw className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
               ) : (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
               )}
             </div>
             <div className="min-w-0">
@@ -83,38 +96,51 @@ function RpcDiscoveryLoadingScreen({ status }: { status: RpcDiscoveryStatus }) {
               </p>
             </div>
           </div>
-          <div className="bg-border/80 mt-4 h-1.5 overflow-hidden rounded-full">
-            <div
-              className="bg-primary h-full rounded-full transition-[width] duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <Progress
+            value={progress}
+            aria-label="RPC connection progress"
+            aria-valuemin={0}
+            aria-valuemax={status.maxAttempts}
+            aria-valuenow={status.attempt}
+            aria-valuetext={`Attempt ${status.attempt} of ${status.maxAttempts}`}
+            className="bg-border/80 mt-4 h-1.5"
+          />
         </div>
 
         {status.lastError && (
-          <div className="mt-4 flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-950 dark:text-amber-200">
+          <Alert className="mt-4 border-amber-500/20 bg-amber-500/10 text-amber-950 dark:text-amber-200">
             <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <div>
-              <p className="font-medium">The RPC service is not ready yet</p>
-              <p className="mt-1 text-xs leading-5 break-words opacity-80">{status.lastError}</p>
-            </div>
-          </div>
+            <AlertTitle>The RPC service is not ready yet</AlertTitle>
+            <AlertDescription className="text-xs leading-5 break-words text-current opacity-80">
+              {status.lastError}
+            </AlertDescription>
+          </Alert>
         )}
       </div>
     </div>
   );
 }
 
-export default function LoadingScreen({ fullScreen, message, rpcDiscovery }: LoadingScreenProps) {
+export default function LoadingScreen({ fullScreen, message, rpcDiscovery, className }: LoadingScreenProps) {
   if (rpcDiscovery) {
     return <RpcDiscoveryLoadingScreen status={rpcDiscovery} />;
   }
 
   return (
-    <div className={cn('flex items-center justify-center', fullScreen && 'h-screen w-full overflow-hidden')}>
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-busy="true"
+      className={cn(
+        'flex items-center justify-center',
+        fullScreen && 'h-full min-h-0 w-full overflow-hidden',
+        className,
+      )}
+    >
       <div className="flex flex-col items-center justify-center gap-2">
-        <Loader2 className="animate-spin" size={48} />
-        {message && <p className="text-center text-sm">{message}</p>}
+        <Spinner aria-hidden="true" className="size-12 motion-reduce:animate-none" />
+        {message ? <p className="text-center text-sm">{message}</p> : <span className="sr-only">Loading</span>}
       </div>
     </div>
   );

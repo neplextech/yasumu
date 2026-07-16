@@ -224,11 +224,9 @@ function extractYasumuClass(bootstrapPath: string): string {
   });
 
   const keepMember = (m: ts.ClassElement): boolean => {
-    // @ts-ignore
-    // prettier-ignore
-    const hasPrivate: boolean = m.modifiers?.some((mod) =>
-        mod.kind === ts.SyntaxKind.PrivateKeyword ||
-        mod.kind === ts.SyntaxKind.ProtectedKeyword,
+    const modifiers = ts.canHaveModifiers(m) ? ts.getModifiers(m) : undefined;
+    const hasPrivate = modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword || modifier.kind === ts.SyntaxKind.ProtectedKeyword,
     );
     if (hasPrivate) return false;
     const name = (m as ts.NamedDeclaration).name;

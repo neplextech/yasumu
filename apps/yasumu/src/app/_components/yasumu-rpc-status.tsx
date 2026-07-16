@@ -1,10 +1,10 @@
 'use client';
 import { Badge } from '@yasumu/ui/components/badge';
 
-import { useYasumu } from '@/components/providers/workspace-provider';
+import { useYasumuRuntime } from '@/components/providers/workspace-provider';
 
 export default function YasumuRpcStatus() {
-  const { port } = useYasumu();
+  const { port } = useYasumuRuntime();
 
   return (
     <Badge variant="outline" className="gap-2 rounded-full pl-2">

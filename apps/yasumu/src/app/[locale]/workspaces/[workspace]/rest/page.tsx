@@ -4,11 +4,18 @@ import type { TabularPair, RestEntityRequestBody, YasumuEmbeddedScript } from '@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { Separator } from '@yasumu/ui/components/separator';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
+import {
+  recordToTabularPairs,
+  tabularPairsToRecord,
+  type ToggleableValueRecord,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/tabular-pairs';
 import { useVariablePopover } from '@/components/inputs';
 import { useAppLayout } from '@/components/providers/app-layout-provider';
+import ErrorScreen from '@/components/visuals/error-screen';
+import { InlineErrorBanner } from '@/components/visuals/inline-error-banner';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
 import { YasumuLayout } from '@/lib/constants/layout';
@@ -21,51 +28,26 @@ import { useRestEntity } from './_hooks/use-rest-entity';
 import { useRestRequest } from './_hooks/use-rest-request';
 import { useRestContext } from './_providers/rest-context';
 
-function tabularPairsToRecord(pairs: TabularPair[] | undefined): Record<string, { value: string; enabled: boolean }> {
-  if (!pairs) return {};
-  return pairs.reduce(
-    (acc, pair) => {
-      if (pair.key) {
-        acc[pair.key] = { value: pair.value, enabled: pair.enabled };
-      }
-      return acc;
-    },
-    {} as Record<string, { value: string; enabled: boolean }>,
-  );
-}
-
 export default function RestPage() {
   const { entityId } = useRestContext();
   const { layout } = useAppLayout();
   const { renderVariablePopover } = useVariablePopover();
-  const { data, isLoading, error, isSaving, updateField, save } = useRestEntity({
+  const { data, isLoading, error, saveError, isSaving, updateField, save } = useRestEntity({
     entityId,
   });
   const { state: requestState, execute, cancel } = useRestRequest({ entityId });
 
-  const [pathParams, setPathParams] = useState<Record<string, { value: string; enabled: boolean }>>({});
-
-  useEffect(() => {
-    if (data?.requestParameters) {
-      setPathParams(tabularPairsToRecord(data.requestParameters));
-    } else {
-      setPathParams({});
-    }
-  }, [entityId, data?.requestParameters]);
-
-  const isRequestActive = useMemo(
-    () =>
-      requestState.phase === 'pre-request-script' ||
-      requestState.phase === 'sending' ||
-      requestState.phase === 'post-response-script',
-    [requestState.phase],
-  );
+  const pathParams = useMemo(() => tabularPairsToRecord(data?.requestParameters), [data?.requestParameters]);
+  const isRequestActive =
+    requestState.phase === 'pre-request-script' ||
+    requestState.phase === 'sending' ||
+    requestState.phase === 'post-response-script';
 
   const isClassicLayout = layout === YasumuLayout.Classic;
 
   const handleMethodChange = useCallback(
     (method: string) => {
-      updateField('method', method as RestEntityRequestBody['type']);
+      updateField('method', method);
     },
     [updateField],
   );
@@ -82,6 +64,7 @@ export default function RestPage() {
     await save();
     await execute(data, pathParams);
   }, [data, pathParams, save, execute]);
+  const handleSendSafely = useMemo(() => withErrorHandler(handleSend), [handleSend]);
 
   const handleCancel = useCallback(() => {
     cancel();
@@ -95,14 +78,8 @@ export default function RestPage() {
   );
 
   const handlePathParamsChange = useCallback(
-    (params: Record<string, { value: string; enabled: boolean }>) => {
-      setPathParams(params);
-      const tabularParams = Object.entries(params).map(([key, val]) => ({
-        key,
-        value: val.value,
-        enabled: val.enabled,
-      }));
-      updateField('requestParameters', tabularParams);
+    (params: ToggleableValueRecord) => {
+      updateField('requestParameters', recordToTabularPairs(params));
     },
     [updateField],
   );
@@ -115,17 +92,7 @@ export default function RestPage() {
   );
 
   const handleBodyChange = useCallback(
-    (body: { type: string; data: unknown } | null) => {
-      if (!body) {
-        updateField('requestBody', null);
-        return;
-      }
-      updateField('requestBody', {
-        type: body.type as RestEntityRequestBody['type'],
-        value: body.data,
-        metadata: {},
-      });
-    },
+    (body: RestEntityRequestBody | null) => updateField('requestBody', body),
     [updateField],
   );
 
@@ -136,35 +103,22 @@ export default function RestPage() {
     [updateField],
   );
 
-  useHotkeys(
-    'mod+enter',
-    async () => {
-      await withErrorHandler(handleSend)();
-    },
-    { preventDefault: true, enableOnFormTags: false },
-  );
+  useHotkeys('mod+enter', () => void handleSendSafely(), { preventDefault: true, enableOnFormTags: false });
 
   if (!entityId) {
     return (
-      <main className="relative grid h-screen w-full place-items-center">
+      <main className="relative grid h-full min-h-0 w-full place-items-center">
         <YasumuBackgroundArt message="Yasumu" />
       </main>
     );
   }
 
-  if (isLoading || !data) {
-    return <LoadingScreen fullScreen />;
+  if (error) {
+    return <ErrorScreen fullScreen title="Failed to load entity" message={error.message} />;
   }
 
-  if (error) {
-    return (
-      <main className="relative grid h-screen w-full place-items-center">
-        <div className="space-y-2 text-center">
-          <p className="text-destructive font-medium">Failed to load entity</p>
-          <p className="text-muted-foreground text-sm">{error.message}</p>
-        </div>
-      </main>
-    );
+  if (isLoading || !data) {
+    return <LoadingScreen fullScreen />;
   }
 
   const requestEditor = (
@@ -204,13 +158,21 @@ export default function RestPage() {
           url={data.url || ''}
           onMethodChange={handleMethodChange}
           onUrlChange={handleUrlChange}
-          onSend={handleSend}
+          onSend={handleSendSafely}
           onCancel={handleCancel}
           onVariableClick={renderVariablePopover}
           isSending={isRequestActive}
           isSaving={isSaving}
         />
       </div>
+      {saveError ? (
+        <InlineErrorBanner
+          message={`Changes are not saved: ${saveError.message}`}
+          actionLabel="Retry save"
+          actionDisabled={isSaving}
+          onAction={() => void withErrorHandler(save)()}
+        />
+      ) : null}
       <Separator />
       <ResizablePanelGroup direction={isClassicLayout ? 'vertical' : 'horizontal'} className="min-h-0 flex-1">
         <ResizablePanel defaultSize={50} minSize={20}>

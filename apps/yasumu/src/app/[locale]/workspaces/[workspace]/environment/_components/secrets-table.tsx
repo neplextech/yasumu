@@ -1,12 +1,14 @@
 'use client';
 
-import { Environment, TabularPair } from '@yasumu/core';
+import type { Environment, TabularPair } from '@yasumu/core';
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Input } from '@yasumu/ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
-import { Trash, Plus, Eye, EyeOff, Save } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Eye, EyeOff, Plus, Save, Trash } from 'lucide-react';
+import { useEffect, useRef, useState, type ClipboardEvent } from 'react';
+
+import { useStableRowKeys } from '@/components/tables/use-stable-row-keys';
 
 import { parseEnvFormat } from './shared/env-parser';
 
@@ -18,20 +20,29 @@ interface SecretsTableProps {
 
 export default function SecretsTable({ environment, secrets, onSave }: SecretsTableProps) {
   const [localSecrets, setLocalSecrets] = useState<TabularPair[]>(secrets);
-  const [visibleIndices, setVisibleIndices] = useState<Set<number>>(new Set());
+  const previousSecretsRef = useRef(secrets);
+  const { rowKeys, insertKey, insertKeys, removeKey, resetKeys } = useStableRowKeys(secrets.length);
+  const [visibleRowKeys, setVisibleRowKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    setLocalSecrets(secrets);
-  }, [secrets]);
+    if (previousSecretsRef.current === secrets) return;
 
-  const toggleVisibility = (index: number) => {
-    const newVisible = new Set(visibleIndices);
-    if (newVisible.has(index)) {
-      newVisible.delete(index);
-    } else {
-      newVisible.add(index);
-    }
-    setVisibleIndices(newVisible);
+    previousSecretsRef.current = secrets;
+    setLocalSecrets(secrets);
+    resetKeys(secrets.length);
+    setVisibleRowKeys(new Set());
+  }, [resetKeys, secrets]);
+
+  const toggleVisibility = (rowKey: string) => {
+    setVisibleRowKeys((current) => {
+      const next = new Set(current);
+      if (next.has(rowKey)) {
+        next.delete(rowKey);
+      } else {
+        next.add(rowKey);
+      }
+      return next;
+    });
   };
 
   const updateSecret = (index: number, field: keyof TabularPair, value: string | boolean) => {
@@ -40,6 +51,7 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
   };
 
   const addSecret = () => {
+    insertKey(localSecrets.length);
     const updated = [
       ...localSecrets,
       {
@@ -52,18 +64,21 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
   };
 
   const deleteSecret = (index: number) => {
+    const rowKey = rowKeys[index];
+
     if (localSecrets.length > 1) {
-      const newVisible = new Set<number>();
-      visibleIndices.forEach((idx) => {
-        if (idx < index) newVisible.add(idx);
-        if (idx > index) newVisible.add(idx - 1);
+      removeKey(index);
+      setVisibleRowKeys((current) => {
+        const next = new Set(current);
+        next.delete(rowKey);
+        return next;
       });
-      setVisibleIndices(newVisible);
 
       const updated = localSecrets.filter((_, i) => i !== index);
       setLocalSecrets(updated);
     } else {
-      setVisibleIndices(new Set());
+      resetKeys(1);
+      setVisibleRowKeys(new Set());
       const updated = [
         {
           key: '',
@@ -79,7 +94,7 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
     onSave(environment, localSecrets);
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (e: ClipboardEvent<HTMLDivElement>) => {
     const pastedText = e.clipboardData.getData('text');
     if (!pastedText) return;
 
@@ -90,6 +105,7 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
     const newPairs = parsed.filter((p) => !existingKeys.has(p.key.trim().toLowerCase()));
 
     if (newPairs.length > 0) {
+      insertKeys(localSecrets.length, newPairs.length);
       const updated = [...localSecrets, ...newPairs];
       setLocalSecrets(updated);
     }
@@ -97,7 +113,7 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
 
   return (
     <div className="space-y-4" onPaste={handlePaste}>
-      <Table className="border">
+      <Table className="border" aria-label="Environment secrets">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Enabled</TableHead>
@@ -108,17 +124,22 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
         </TableHeader>
         <TableBody>
           {localSecrets.map((secret, index) => {
-            const isVisible = visibleIndices.has(index);
+            const rowKey = rowKeys[index];
+            const isVisible = visibleRowKeys.has(rowKey);
+            const secretLabel = secret.key.trim() || `row ${index + 1}`;
+
             return (
-              <TableRow key={index}>
+              <TableRow key={rowKey}>
                 <TableCell>
                   <Checkbox
+                    aria-label={`Enabled for secret ${secretLabel}`}
                     checked={secret.enabled}
                     onCheckedChange={(checked) => updateSecret(index, 'enabled', checked === true)}
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    aria-label={`Secret name for row ${index + 1}`}
                     placeholder="Secret name"
                     value={secret.key}
                     onChange={(e) => updateSecret(index, 'key', e.target.value)}
@@ -129,6 +150,7 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Input
+                      aria-label={`Value for secret ${secretLabel}`}
                       type={isVisible ? 'text' : 'password'}
                       placeholder="Secret value"
                       value={secret.value}
@@ -139,16 +161,23 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => toggleVisibility(index)}
+                      onClick={() => toggleVisibility(rowKey)}
                       disabled={!secret.enabled}
+                      aria-label={`${isVisible ? 'Hide' : 'Show'} value for secret ${secretLabel}`}
+                      aria-pressed={isVisible}
                     >
-                      {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {isVisible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                     </Button>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => deleteSecret(index)}>
-                    <Trash className="h-4 w-4 text-red-500" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteSecret(index)}
+                    aria-label={`Delete secret ${secretLabel}`}
+                  >
+                    <Trash className="text-destructive" aria-hidden="true" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -158,10 +187,10 @@ export default function SecretsTable({ environment, secrets, onSave }: SecretsTa
       </Table>
       <div className="flex items-center justify-between">
         <Button variant="link" onClick={addSecret} className="h-auto p-0 text-sm font-normal">
-          <Plus className="mr-1 h-3 w-3" /> Add new secret
+          <Plus data-icon="inline-start" aria-hidden="true" /> Add new secret
         </Button>
-        <Button onClick={handleSave} className="gap-2">
-          <Save className="h-4 w-4" />
+        <Button onClick={handleSave}>
+          <Save data-icon="inline-start" aria-hidden="true" />
           Save
         </Button>
       </div>

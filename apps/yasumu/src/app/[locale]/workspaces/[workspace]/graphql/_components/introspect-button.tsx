@@ -10,8 +10,16 @@ interface IntrospectButtonProps {
 
 export default function IntrospectButton({ onClick, isLoading, disabled }: IntrospectButtonProps) {
   return (
-    <Button variant="outline" onClick={onClick} disabled={isLoading || disabled}>
-      <RotateCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      aria-label={isLoading ? 'Introspecting GraphQL schema' : 'Introspect GraphQL schema'}
+      title="Introspect GraphQL schema"
+      onClick={onClick}
+      disabled={isLoading || disabled}
+    >
+      <RotateCw aria-hidden="true" className={cn('size-4', isLoading && 'animate-spin')} />
     </Button>
   );
 }

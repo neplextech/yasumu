@@ -1,8 +1,9 @@
 'use client';
 
+import { Input } from '@yasumu/ui/components/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@yasumu/ui/components/popover';
 import { cn } from '@yasumu/ui/lib/utils';
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 
@@ -14,14 +15,13 @@ interface VariableSegment {
   end: number;
 }
 
-export interface InteropableInputProps {
+export interface InteropableInputProps extends Omit<
+  React.ComponentPropsWithoutRef<'input'>,
+  'onChange' | 'type' | 'value'
+> {
   value: string;
   onChange?: (value: string) => void;
   onVariableClick?: (variableName: string) => React.ReactNode;
-  placeholder?: string;
-  className?: string;
-  disabled?: boolean;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const VARIABLE_PATTERN = /\{\{([^}]+)\}\}/g;
@@ -87,7 +87,7 @@ function parseVariableKey(name: string): {
 }
 
 function useIsVariableResolved(variableName: string | undefined): boolean {
-  const { selectedEnvironment } = useEnvironmentStore();
+  const selectedEnvironment = useEnvironmentStore((state) => state.selectedEnvironment);
 
   if (!variableName || !selectedEnvironment) return false;
 
@@ -123,6 +123,7 @@ function VariableBadge({ segment, onVariableClick }: VariableBadgeProps) {
   if (!onVariableClick || !popoverContent) {
     return (
       <span
+        aria-hidden="true"
         className={cn(
           'inline-flex items-center rounded px-1 py-0.5 font-mono text-xs font-medium cursor-default',
           baseClasses,
@@ -138,6 +139,7 @@ function VariableBadge({ segment, onVariableClick }: VariableBadgeProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
+          aria-label={`Inspect ${segment.variableName} (${isResolved ? 'resolved' : 'unresolved'})`}
           className={cn(
             'inline-flex items-center rounded px-1 py-0.5 font-mono text-xs font-medium transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1',
             baseClasses,
@@ -167,21 +169,28 @@ function VariableBadge({ segment, onVariableClick }: VariableBadgeProps) {
   );
 }
 
-export function InteropableInput({
-  value,
-  onChange,
-  onVariableClick,
-  placeholder,
-  className,
-  disabled,
-  onKeyDown,
-}: InteropableInputProps) {
+export const InteropableInput = forwardRef<HTMLInputElement, InteropableInputProps>(function InteropableInput(
+  { value, onChange, onVariableClick, placeholder, className, disabled, onBlur, onFocus, ...inputProps },
+  forwardedRef,
+) {
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const segments = useMemo(() => parseSegments(value), [value]);
   const hasVariables = segments.some((s) => s.type === 'variable');
+
+  const setInputRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      inputRef.current = node;
+
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        forwardedRef.current = node;
+      }
+    },
+    [forwardedRef],
+  );
 
   const handleContainerClick = useCallback(
     (e: React.MouseEvent) => {
@@ -190,14 +199,26 @@ export function InteropableInput({
       if (target.closest('[data-slot="popover-trigger"]')) return;
       if (target.closest('[data-slot="popover-content"]')) return;
       if (document.querySelector('[data-state="open"][data-slot="popover-content"]')) return;
-      setIsEditing(true);
+      inputRef.current?.focus();
     },
     [disabled],
   );
 
-  const handleInputBlur = useCallback(() => {
-    setIsEditing(false);
-  }, []);
+  const handleInputBlur = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsEditing(false);
+      onBlur?.(event);
+    },
+    [onBlur],
+  );
+
+  const handleInputFocus = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsEditing(true);
+      onFocus?.(event);
+    },
+    [onFocus],
+  );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,68 +227,69 @@ export function InteropableInput({
     [onChange],
   );
 
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
+  const input = (
+    <Input
+      {...inputProps}
+      ref={setInputRef}
+      type="text"
+      value={value}
+      onChange={handleInputChange}
+      onFocus={handleInputFocus}
+      onBlur={handleInputBlur}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={cn(
+        'font-mono',
+        hasVariables && !isEditing && 'pointer-events-none absolute inset-0 opacity-0',
+        className,
+      )}
+    />
+  );
 
-  if (isEditing || !hasVariables) {
-    return (
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={handleInputChange}
-        onBlur={handleInputBlur}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder}
-        disabled={disabled}
-        autoCapitalize="off"
-        autoCorrect="off"
-        spellCheck={false}
-        autoComplete="off"
-        className={cn(
-          'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-          'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-          'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
-          'font-mono',
-          className,
-        )}
-      />
-    );
+  if (!hasVariables) {
+    return input;
   }
 
   return (
-    <div
-      ref={containerRef}
-      data-interopable-input
-      onClick={handleContainerClick}
-      className={cn(
-        'relative flex items-center gap-0.5 flex-wrap',
-        'dark:bg-input/30 border-input h-auto min-h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1.5 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm',
-        'hover:border-ring/50 cursor-text',
-        disabled && 'pointer-events-none cursor-not-allowed opacity-50',
-        className,
-      )}
-    >
-      {segments.map((segment, index) => {
-        if (segment.type === 'variable') {
+    <div data-interopable-input className="relative w-full min-w-0">
+      {input}
+      <div
+        onClick={handleContainerClick}
+        className={cn(
+          'relative flex flex-wrap items-center gap-0.5',
+          'dark:bg-input/30 border-input h-auto min-h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1.5 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm',
+          'hover:border-ring/50 cursor-text',
+          isEditing && 'pointer-events-none absolute inset-0 opacity-0',
+          disabled && 'pointer-events-none cursor-not-allowed opacity-50',
+          className,
+        )}
+      >
+        {segments.map((segment) => {
+          if (segment.type === 'variable') {
+            return (
+              <VariableBadge
+                key={`${segment.start}-${segment.end}`}
+                segment={segment}
+                onVariableClick={onVariableClick}
+              />
+            );
+          }
           return (
-            <VariableBadge
+            <span
               key={`${segment.start}-${segment.end}`}
-              segment={segment}
-              onVariableClick={onVariableClick}
-            />
+              aria-hidden="true"
+              className="font-mono text-sm whitespace-pre"
+            >
+              {segment.content}
+            </span>
           );
-        }
-        return (
-          <span key={`${segment.start}-${segment.end}`} className="font-mono text-sm whitespace-pre">
-            {segment.content}
+        })}
+        {!value && placeholder ? (
+          <span aria-hidden="true" className="text-muted-foreground font-mono text-sm">
+            {placeholder}
           </span>
-        );
-      })}
-      {!value && placeholder && <span className="text-muted-foreground font-mono text-sm">{placeholder}</span>}
+        ) : null}
+      </div>
     </div>
   );
-}
+});

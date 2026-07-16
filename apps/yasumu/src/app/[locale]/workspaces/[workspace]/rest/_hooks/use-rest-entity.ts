@@ -1,9 +1,11 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { RestEntityData, RestEntityRequestBody, RestEntityUpdateOptions, TabularPair } from '@yasumu/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RestEntityData, RestEntityUpdateOptions } from '@yasumu/core';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useSerializedAutosave } from '@/app/[locale]/workspaces/[workspace]/_hooks/use-serialized-autosave';
+import { workspaceQueryKeys } from '@/app/[locale]/workspaces/[workspace]/_lib/workspace-query-keys';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
 const DEBOUNCE_DELAY = 500;
@@ -16,6 +18,7 @@ interface UseRestEntityReturn {
   data: RestEntityData | null;
   isLoading: boolean;
   error: Error | null;
+  saveError: Error | null;
   isSaving: boolean;
   updateField: <K extends keyof RestEntityUpdateOptions>(field: K, value: RestEntityUpdateOptions[K]) => void;
   updateFields: (fields: Partial<RestEntityUpdateOptions>) => void;
@@ -26,17 +29,12 @@ export function useRestEntity({ entityId }: UseRestEntityOptions): UseRestEntity
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [localData, setLocalData] = useState<RestEntityData | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const pendingUpdates = useRef<Partial<RestEntityUpdateOptions>>({});
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isMounted = useRef(true);
-
-  const queryKey = useMemo(() => ['rest-entity', workspace.id, entityId], [entityId, workspace.id]);
+  const queryKey = useMemo(() => workspaceQueryKeys.restEntity(workspace.id, entityId), [entityId, workspace.id]);
 
   const {
     data: serverData,
     isLoading,
-    error,
+    error: queryError,
     isFetched,
   } = useQuery({
     queryKey,
@@ -50,89 +48,59 @@ export function useRestEntity({ entityId }: UseRestEntityOptions): UseRestEntity
     refetchOnWindowFocus: false,
   });
 
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+  const persist = useCallback(
+    async (updates: Partial<RestEntityUpdateOptions>) => {
+      if (!entityId) throw new Error('Cannot save a REST entity without an id');
+      await workspace.rest.update(entityId, updates);
+    },
+    [entityId, workspace.rest],
+  );
+
+  const onSaved = useCallback(
+    (updates: Partial<RestEntityUpdateOptions>) => {
+      queryClient.setQueryData<RestEntityData | null>(queryKey, (old) => (old ? { ...old, ...updates } : old));
+      if (entityId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.restTab(workspace.id, entityId),
+        });
       }
-    };
-  }, []);
+    },
+    [entityId, queryClient, queryKey, workspace.id],
+  );
+
+  const { enqueue, flush, isSaving, hasUnsavedChanges, saveError } = useSerializedAutosave<
+    Partial<RestEntityUpdateOptions>
+  >({
+    identityKey: entityId ? `${workspace.id}:rest:${entityId}` : null,
+    persist,
+    onSaved,
+    debounceMs: DEBOUNCE_DELAY,
+  });
 
   useEffect(() => {
-    pendingUpdates.current = {};
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
     if (!entityId) {
       setLocalData(null);
       return;
     }
-    const cached = queryClient.getQueryData<RestEntityData>(queryKey);
-    if (cached) {
-      setLocalData(cached);
-    }
+
+    setLocalData(queryClient.getQueryData<RestEntityData>(queryKey) ?? null);
   }, [entityId, queryClient, queryKey]);
 
   useEffect(() => {
-    if (!serverData || !isFetched) return;
-
-    setLocalData((current) => {
-      if (current?.id === serverData.id) {
-        return current;
-      }
-
-      return serverData;
-    });
-  }, [serverData, isFetched]);
-
-  const flushSave = useCallback(async () => {
-    if (!entityId || Object.keys(pendingUpdates.current).length === 0) return;
-
-    const updates = { ...pendingUpdates.current };
-    pendingUpdates.current = {};
-
-    try {
-      setIsSaving(true);
-      await workspace.rest.update(entityId, updates);
-      queryClient.setQueryData(queryKey, (old: RestEntityData | null) => {
-        if (!old) return old;
-        return { ...old, ...updates };
-      });
-    } catch (err) {
-      console.error('Failed to save entity:', err);
-      pendingUpdates.current = { ...pendingUpdates.current, ...updates };
-    } finally {
-      if (isMounted.current) {
-        setIsSaving(false);
-      }
-    }
-  }, [entityId, workspace, queryClient, queryKey]);
-
-  const scheduleSave = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      flushSave();
-    }, DEBOUNCE_DELAY);
-  }, [flushSave]);
+    if (!serverData || !isFetched || hasUnsavedChanges) return;
+    setLocalData(serverData);
+  }, [hasUnsavedChanges, isFetched, serverData]);
 
   const updateFields = useCallback(
     (fields: Partial<RestEntityUpdateOptions>) => {
       if (!entityId) return;
-
-      setLocalData((prev) => {
-        if (!prev) return prev;
-        return { ...prev, ...fields };
-      });
-
-      pendingUpdates.current = { ...pendingUpdates.current, ...fields };
-      scheduleSave();
+      setLocalData((prev) => (prev ? { ...prev, ...fields } : prev));
+      queryClient.setQueryData<RestEntityData | null>(queryKey, (current) =>
+        current ? { ...current, ...fields } : current,
+      );
+      enqueue(fields);
     },
-    [entityId, scheduleSave],
+    [enqueue, entityId, queryClient, queryKey],
   );
 
   const updateField = useCallback(
@@ -142,21 +110,14 @@ export function useRestEntity({ entityId }: UseRestEntityOptions): UseRestEntity
     [updateFields],
   );
 
-  const save = useCallback(async () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-    await flushSave();
-  }, [flushSave]);
-
   return {
     data: localData,
     isLoading,
-    error: error as Error | null,
+    error: queryError instanceof Error ? queryError : null,
+    saveError,
     isSaving,
     updateField,
     updateFields,
-    save,
+    save: flush,
   };
 }

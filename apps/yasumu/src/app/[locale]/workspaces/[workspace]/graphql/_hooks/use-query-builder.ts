@@ -10,9 +10,6 @@ import {
   isObjectType,
   isListType,
   isNonNullType,
-  isEnumType,
-  isScalarType,
-  isInputObjectType,
 } from 'graphql';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 
@@ -150,10 +147,10 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
     if (subscriptionOp) ops.push(subscriptionOp);
 
     setOperations(ops);
-    if (ops.length > 0 && !ops.find((o) => o.type === activeOperation)) {
-      setActiveOperation(ops[0].type);
-    }
-  }, [schema, activeOperation]);
+    setActiveOperation((current) =>
+      ops.some((operation) => operation.type === current) ? current : (ops[0]?.type ?? 'query'),
+    );
+  }, [schema]);
 
   const currentOperation = useMemo(
     () => operations.find((o) => o.type === activeOperation) ?? null,
@@ -165,9 +162,13 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
       setOperations((prev) =>
         prev.map((op) => {
           if (op.type !== activeOperation) return op;
-          const newFields = [...op.fields];
-          toggleFieldAtPath(newFields, path, 0);
-          return { ...op, fields: newFields };
+          return {
+            ...op,
+            fields: updateFieldAtPath(op.fields, path, (field) => ({
+              ...field,
+              selected: !field.selected,
+            })),
+          };
         }),
       );
     },
@@ -179,9 +180,13 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
       setOperations((prev) =>
         prev.map((op) => {
           if (op.type !== activeOperation) return op;
-          const newFields = deepCloneFields(op.fields);
-          expandFieldAtPath(newFields, path, 0);
-          return { ...op, fields: newFields };
+          return {
+            ...op,
+            fields: updateFieldAtPath(op.fields, path, (field) => ({
+              ...field,
+              expanded: !field.expanded,
+            })),
+          };
         }),
       );
     },
@@ -193,9 +198,13 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
       setOperations((prev) =>
         prev.map((op) => {
           if (op.type !== activeOperation) return op;
-          const newFields = deepCloneFields(op.fields);
-          setArgValueAtPath(newFields, path, 0, argName, value);
-          return { ...op, fields: newFields };
+          return {
+            ...op,
+            fields: updateFieldAtPath(op.fields, path, (field) => ({
+              ...field,
+              argValues: { ...field.argValues, [argName]: value },
+            })),
+          };
         }),
       );
     },
@@ -225,59 +234,26 @@ export function useQueryBuilder(schema: GraphQLSchema | null) {
   };
 }
 
-function deepCloneFields(fields: FieldNode[]): FieldNode[] {
-  return fields.map((f) => ({
-    ...f,
-    argValues: { ...f.argValues },
-    fields: deepCloneFields(f.fields),
-  }));
-}
+function updateFieldAtPath(
+  fields: FieldNode[],
+  path: number[],
+  update: (field: FieldNode) => FieldNode,
+  depth = 0,
+): FieldNode[] {
+  const index = path[depth];
+  if (index === undefined || index < 0 || index >= fields.length) return fields;
 
-function toggleFieldAtPath(fields: FieldNode[], path: number[], depth: number): void {
-  if (depth >= path.length) return;
-  const idx = path[depth];
-  if (idx >= fields.length) return;
-
+  const current = fields[index];
+  let next: FieldNode;
   if (depth === path.length - 1) {
-    fields[idx] = {
-      ...fields[idx],
-      selected: !fields[idx].selected,
-      argValues: { ...fields[idx].argValues },
-      fields: deepCloneFields(fields[idx].fields),
-    };
+    next = update(current);
   } else {
-    fields[idx] = {
-      ...fields[idx],
-      argValues: { ...fields[idx].argValues },
-      fields: deepCloneFields(fields[idx].fields),
-    };
-    toggleFieldAtPath(fields[idx].fields, path, depth + 1);
+    const nextFields = updateFieldAtPath(current.fields, path, update, depth + 1);
+    next = nextFields === current.fields ? current : { ...current, fields: nextFields };
   }
-}
 
-function expandFieldAtPath(fields: FieldNode[], path: number[], depth: number): void {
-  if (depth >= path.length) return;
-  const idx = path[depth];
-  if (idx >= fields.length) return;
-
-  if (depth === path.length - 1) {
-    fields[idx] = { ...fields[idx], expanded: !fields[idx].expanded };
-  } else {
-    expandFieldAtPath(fields[idx].fields, path, depth + 1);
-  }
-}
-
-function setArgValueAtPath(fields: FieldNode[], path: number[], depth: number, argName: string, value: string): void {
-  if (depth >= path.length) return;
-  const idx = path[depth];
-  if (idx >= fields.length) return;
-
-  if (depth === path.length - 1) {
-    fields[idx] = {
-      ...fields[idx],
-      argValues: { ...fields[idx].argValues, [argName]: value },
-    };
-  } else {
-    setArgValueAtPath(fields[idx].fields, path, depth + 1, argName, value);
-  }
+  if (next === current) return fields;
+  const result = [...fields];
+  result[index] = next;
+  return result;
 }

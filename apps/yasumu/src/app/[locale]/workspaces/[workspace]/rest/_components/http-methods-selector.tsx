@@ -31,8 +31,8 @@ export default function HttpMethodSelector({ value, onChange }: HttpMethodSelect
         <SelectValue placeholder="Method" />
       </SelectTrigger>
       <SelectContent>
-        {HttpMethods.map((method, index) => (
-          <SelectItem key={index} value={method.name} className={cn('font-bold font-mono', method.color)}>
+        {HttpMethods.map((method) => (
+          <SelectItem key={method.name} value={method.name} className={cn('font-bold font-mono', method.color)}>
             {method.name}
           </SelectItem>
         ))}

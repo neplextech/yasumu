@@ -2,16 +2,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@yasumu/ui/components/card';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
-import React, { useEffect, useState } from 'react';
 
-import { useYasumu } from '@/components/providers/workspace-provider';
+import { useYasumuRuntime } from '@/components/providers/workspace-provider';
 import LoadingScreen from '@/components/visuals/loading-screen';
 
 import EmptyRecentWorkspace from './empty-recent-workspace';
-import RecentWorkspaceCard, { RecentWorkspace } from './recent-workspace-card';
+import RecentWorkspaceCard from './recent-workspace-card';
 
 export default function RecentWorkspaces() {
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
   const { data: recentWorkspaces, isLoading } = useQuery({
     queryKey: ['recent-workspaces'],
     queryFn: async () => {

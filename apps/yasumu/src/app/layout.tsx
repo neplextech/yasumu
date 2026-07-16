@@ -1,4 +1,3 @@
-// @ts-ignore type issue
 import '@yasumu/ui/globals.css';
 import { SidebarProvider } from '@yasumu/ui/components/sidebar';
 import { Toaster } from '@yasumu/ui/components/sonner';

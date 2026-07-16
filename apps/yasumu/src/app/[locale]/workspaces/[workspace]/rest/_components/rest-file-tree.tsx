@@ -3,9 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import type { RestTreeItem } from '@yasumu/core';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
-import { useCallback, useEffect, useEffectEvent, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
-import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
+import { useActiveWorkspace, useYasumuRuntime } from '@/components/providers/workspace-provider';
 import { FileTreeSidebar } from '@/components/sidebars/file-tree';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import { findFolderInWorkspaceTree, mapWorkspaceTreeToFileTree } from '@/components/workspace/file-tree-utils';
@@ -15,9 +15,9 @@ import { useRestContext } from '../_providers/rest-context';
 import { resolveHttpMethodIcon } from './http-methods';
 
 export function RestFileTree() {
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
   const workspace = useActiveWorkspace();
-  const { setEntityId, removeFromHistory } = useRestContext();
+  const { entityId, setEntityId, removeFromHistory } = useRestContext();
   const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } = useFileTreeContext();
   const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } = useFileTreeClipboardActions();
 
@@ -30,9 +30,9 @@ export function RestFileTree() {
     queryFn: () => workspace.rest.listTree(),
   });
 
-  const refetchRestEntities = useEffectEvent(() => {
+  const refetchRestEntities = useCallback(() => {
     return refetch();
-  });
+  }, [refetch]);
 
   const fileTree = useMemo(
     () =>
@@ -75,7 +75,7 @@ export function RestFileTree() {
       });
       await refetchRestEntities();
     },
-    [workspace.rest],
+    [refetchRestEntities, workspace.rest],
   );
 
   const duplicateFolder = useCallback(
@@ -119,7 +119,7 @@ export function RestFileTree() {
 
       await refetchRestEntities();
     },
-    [workspace.rest, restEntities],
+    [refetchRestEntities, restEntities, workspace.rest],
   );
 
   const handlePaste = useCallback(
@@ -160,7 +160,7 @@ export function RestFileTree() {
         clearClipboard();
       }
     },
-    [clipboard, workspace.rest, duplicateFolder, clearClipboard],
+    [clearClipboard, clipboard, duplicateFolder, refetchRestEntities, workspace.rest],
   );
 
   if (isLoadingRestEntities) {
@@ -169,12 +169,14 @@ export function RestFileTree() {
 
   return (
     <FileTreeSidebar
+      stateKey={`${workspace.id}:rest`}
       fileTree={fileTree}
       className="w-full font-sans"
       collapsible="none"
       enableFileSearch
       fileSearchPlaceholder="Search REST requests..."
       clipboard={clipboard}
+      selectedFileId={entityId}
       selectedFolderId={selectedFolderId}
       onFolderSelect={setSelectedFolderId}
       onFileSelect={withErrorHandler(async (id: string) => {

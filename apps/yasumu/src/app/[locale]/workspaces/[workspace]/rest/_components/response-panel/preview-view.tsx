@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactElement } from 'react';
+
 import {
   ImageViewer,
   VideoViewer,
@@ -41,12 +43,12 @@ export function PreviewView({ response, blobUrl }: PreviewViewProps) {
 
   const binaryFallback = <BinaryViewer contentType={contentType} />;
 
-  const withBlob = (render: (src: string) => JSX.Element) => (blobUrl ? render(blobUrl) : binaryFallback);
+  const withBlob = (render: (src: string) => ReactElement) => (blobUrl ? render(blobUrl) : binaryFallback);
 
-  const withText = (render: (body: string) => JSX.Element) =>
+  const withText = (render: (body: string) => ReactElement) =>
     response.textBody ? render(response.textBody) : binaryFallback;
 
-  const renderers: Record<string, () => JSX.Element> = {
+  const renderers: Record<string, () => ReactElement> = {
     image: () => withBlob((src) => <ImageViewer src={src} />),
     video: () => withBlob((src) => <VideoViewer src={src} />),
     audio: () => withBlob((src) => <AudioViewer src={src} />),

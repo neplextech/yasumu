@@ -13,9 +13,6 @@ const nextConfig: NextConfig = {
     viewTransition: true,
     turbopackFileSystemCacheForDev: true,
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   devIndicators: false,
   typedRoutes: true,
   transpilePackages: ['@yasumu/ui'],

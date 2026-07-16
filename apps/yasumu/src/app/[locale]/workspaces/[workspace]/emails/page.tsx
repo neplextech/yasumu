@@ -10,14 +10,14 @@ import SettingsTab from './_components/settings-tab';
 export default function MailboxPage() {
   const [activeTab, setActiveTab] = useQueryState(
     'tab',
-    parseAsStringEnum(['mailbox', 'settings'] as const).withDefault('mailbox'),
+    parseAsStringEnum(['mailbox', 'settings', 'scripts'] as const).withDefault('mailbox'),
   );
 
   return (
     <div className="bg-background flex h-full">
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as 'mailbox' | 'settings')}
+        onValueChange={(v) => setActiveTab(v as 'mailbox' | 'settings' | 'scripts')}
         className="flex flex-1 flex-col"
       >
         <div className="bg-background/50 border-b px-6 py-3 backdrop-blur">

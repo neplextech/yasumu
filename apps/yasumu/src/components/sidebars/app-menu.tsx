@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { open } from '@tauri-apps/plugin-dialog';
-import { asPathIdentifier, DEFAULT_WORKSPACE_PATH } from '@yasumu/tanxium/src/rpc/common/constants';
+import { asPathIdentifier, DEFAULT_WORKSPACE_PATH } from '@yasumu/core';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,30 +18,23 @@ import {
 import { SidebarMenuButton } from '@yasumu/ui/components/sidebar';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-// import { FaJava } from 'react-icons/fa';
-import {
-  //   SiGo,
-  //   SiInsomnia,
-  //   SiJavascript,
-  //   SiOpenapiinitiative,
-  SiPostman,
-  //   SiPython,
-  //   SiTypescript,
-} from 'react-icons/si';
+import { SiPostman } from 'react-icons/si';
 
-import { useYasumu } from '@/components/providers/workspace-provider';
+import { useYasumuRuntime } from '@/components/providers/workspace-provider';
 import YasumuLogo from '@/components/visuals/yasumu-logo';
 
 import PostmanImportDialog from '../dialogs/postman-import-dialog';
 
 export function AppMenu() {
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
   const [postmanImportDialog, setPostmanImportDialog] = useState(false);
-  const router = useRouter();
 
-  const { data: recentWorkspaces, isLoading } = useQuery({
+  const {
+    data: recentWorkspaces,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['recent-workspaces'],
     queryFn: async () => {
       const workspaces = await yasumu.workspaces.list({ take: 5 });
@@ -58,7 +51,6 @@ export function AppMenu() {
       await yasumu.workspaces.open({
         id: asPathIdentifier(DEFAULT_WORKSPACE_PATH),
       });
-      window.location.reload();
       return;
     }
 
@@ -77,13 +69,11 @@ export function AppMenu() {
         path: folder,
       },
     });
-    window.location.reload();
   });
 
   const handleOpenRecentWorkspace = (workspaceId: string) =>
     withErrorHandler(async () => {
       await yasumu.workspaces.open({ id: workspaceId });
-      window.location.reload();
     });
 
   const onImportFromPostman = () => {
@@ -93,36 +83,24 @@ export function AppMenu() {
   const handleCloseCurrentWorkspace = withErrorHandler(async () => {
     const activeWorkspace = yasumu.workspaces.getActiveWorkspace();
     if (!activeWorkspace) return;
-    router.replace('/');
     await yasumu.workspaces.close(activeWorkspace);
-    window.location.reload();
   });
 
   return (
     <>
-      <PostmanImportDialog
-        open={postmanImportDialog}
-        onOpenChange={(open) => {
-          setPostmanImportDialog(open);
-
-          if (!open) {
-            window.location.reload();
-          }
-        }}
-      />
+      <PostmanImportDialog open={postmanImportDialog} onOpenChange={setPostmanImportDialog} />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-            <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg bg-[#272a37]">
+          <SidebarMenuButton size="lg" className="md:h-8 md:p-0" aria-label="Open workspace menu">
+            <span className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg bg-[#272a37]">
               <YasumuLogo className="size-4" />
-            </div>
+            </span>
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           <DropdownMenuLabel>Workspace</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>New Workspace</DropdownMenuItem>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>Import Workspace</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
@@ -131,20 +109,10 @@ export function AppMenu() {
                     <SiPostman className="fill-[#ff6c37]" />
                     Import from Postman
                   </DropdownMenuItem>
-                  {/* <DropdownMenuItem>
-                  <SiInsomnia className="fill-[#5849be]" />
-                  Import from Insomnia
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <SiOpenapiinitiative className="fill-[#94c83d]" />
-                  Import from OpenAPI
-                </DropdownMenuItem> */}
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
-            {/* <DropdownMenuItem>Rename Workspace</DropdownMenuItem> */}
           </DropdownMenuGroup>
-          {/* <DropdownMenuSeparator /> */}
           <DropdownMenuItem onClick={() => handleOpenWorkspace(false)}>Open Workspace</DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleOpenWorkspace(true)}>Open Default Workspace</DropdownMenuItem>
           <DropdownMenuSub>
@@ -156,8 +124,10 @@ export function AppMenu() {
                     <Loader2 className="mr-2 size-4 animate-spin" />
                     Loading...
                   </DropdownMenuItem>
+                ) : isError ? (
+                  <DropdownMenuItem disabled>Could not load recent workspaces</DropdownMenuItem>
                 ) : !recentWorkspaces?.length ? (
-                  <DropdownMenuItem disabled>No recent data!</DropdownMenuItem>
+                  <DropdownMenuItem disabled>No recent workspaces</DropdownMenuItem>
                 ) : (
                   recentWorkspaces.map((workspace) => (
                     <DropdownMenuItem
@@ -176,118 +146,6 @@ export function AppMenu() {
             </DropdownMenuPortal>
           </DropdownMenuSub>
           <DropdownMenuItem onClick={handleCloseCurrentWorkspace}>Close Current Workspace</DropdownMenuItem>
-          {/* <DropdownMenuSeparator /> */}
-          {/* <DropdownMenuItem>Duplicate Workspace</DropdownMenuItem> */}
-          {/* <DropdownMenuSub>
-          <DropdownMenuSubTrigger>Export Workspace</DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem>
-                <YasumuLogo />
-                Export as Standalone
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <SiPostman className="fill-[#ff6c37]" />
-                Export as Postman
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <SiInsomnia className="fill-[#5849be]" />
-                Export as Insomnia
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <SiOpenapiinitiative className="fill-[#94c83d]" />
-                Export as OpenAPI
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub> */}
-          {/* <DropdownMenuSub>
-          <DropdownMenuSubTrigger>Generate</DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>API Client</DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem>
-                      <SiJavascript className="fill-[#f0db4f]" />
-                      JavaScript
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      {' '}
-                      <SiTypescript className="fill-[#007acc]" />
-                      TypeScript
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <SiPython className="fill-[#306998]" />
-                      Python
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <FaJava className="fill-[#5382a1]" />
-                      Java
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <SiGo className="fill-[#00add8]" />
-                      Go
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Types</DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem>
-                      <SiTypescript className="fill-[#007acc]" />
-                      TypeScript
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub> */}
-          <DropdownMenuSeparator />
-          {/* <DropdownMenuItem>Auto Save</DropdownMenuItem> */}
-          {/* <DropdownMenuSub>
-          <DropdownMenuSubTrigger>Tasks</DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Run</DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem>Run All</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Run REST</DropdownMenuItem>
-                    <DropdownMenuItem>Run GraphQL</DropdownMenuItem>
-                    <DropdownMenuItem>Run WebSocket</DropdownMenuItem>
-                    <DropdownMenuItem>Run SocketIO</DropdownMenuItem>
-                    <DropdownMenuItem>Run SSE</DropdownMenuItem>
-                    <DropdownMenuItem>Run Emails</DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Test</DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem>Test All</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Test REST</DropdownMenuItem>
-                    <DropdownMenuItem>Test GraphQL</DropdownMenuItem>
-                    <DropdownMenuItem>Test WebSocket</DropdownMenuItem>
-                    <DropdownMenuItem>Test SocketIO</DropdownMenuItem>
-                    <DropdownMenuItem>Test SSE</DropdownMenuItem>
-                    <DropdownMenuItem>Test Emails</DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-        <DropdownMenuItem>Manage Dependencies</DropdownMenuItem>
-        <DropdownMenuItem>View Documentation</DropdownMenuItem> */}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

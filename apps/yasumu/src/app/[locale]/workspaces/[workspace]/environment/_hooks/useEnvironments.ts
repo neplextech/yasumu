@@ -4,14 +4,26 @@ import { useCallback } from 'react';
 
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 
-const QUERY_KEY = ['environments'] as const;
+import { workspaceQueryKeys } from '../../_lib/workspace-query-keys';
 
 export function useEnvironments() {
   const workspace = useActiveWorkspace();
 
   return useQuery({
-    queryKey: QUERY_KEY,
+    queryKey: workspaceQueryKeys.environments(workspace.id),
     queryFn: () => workspace.environments.list(),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always' as const,
+  });
+}
+
+export function useActiveEnvironment() {
+  const workspace = useActiveWorkspace();
+
+  return useQuery({
+    queryKey: workspaceQueryKeys.activeEnvironment(workspace.id),
+    queryFn: () => workspace.environments.getActiveEnvironment(),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnMount: 'always' as const,
@@ -21,16 +33,18 @@ export function useEnvironments() {
 export function useUpdateEnvironments() {
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
+  const workspaceId = workspace.id;
 
   return useCallback(
     async (newEnvironments: Array<Environment>) => {
+      const queryKey = workspaceQueryKeys.environments(workspaceId);
       await queryClient.cancelQueries({
-        queryKey: QUERY_KEY,
+        queryKey,
       });
-      const environments = (await queryClient.getQueryData<Array<Environment>>(QUERY_KEY)) || [];
-      await queryClient.setQueryData(QUERY_KEY, newEnvironments);
+      const environments = queryClient.getQueryData<Array<Environment>>(queryKey) || [];
+      queryClient.setQueryData(queryKey, newEnvironments);
       return environments;
     },
-    [queryClient, workspace],
+    [queryClient, workspaceId],
   );
 }
