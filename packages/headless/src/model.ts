@@ -1,9 +1,4 @@
-import type {
-  JsonValue,
-  ScriptSource,
-  TestResult,
-  YasumuFileReference,
-} from '@yasumu/runtime-api';
+import type { JsonValue, ScriptSource, TestResult, YasumuFileReference } from '@yasumu/runtime-api';
 
 export interface SourceOrigin {
   kind: 'ysl' | 'sqlite' | 'memory' | 'remote';

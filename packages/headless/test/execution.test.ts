@@ -7,6 +7,8 @@ import type {
   YasumuScriptRuntime,
 } from '@yasumu/runtime-api';
 import { requestFromSnapshot, snapshotRequest, snapshotResponse } from '@yasumu/runtime-api';
+import { describe, expect, it } from 'vitest';
+
 import {
   HeadlessExecutionService,
   InMemoryEntityRepository,
@@ -15,8 +17,6 @@ import {
   type RequestTransportContext,
   YasumuErrorCodes,
 } from '../src/index.js';
-import { describe, expect, it } from 'vitest';
-
 import { environment, graphqlEntity, group, restEntity, script, workspace } from './fixtures.js';
 
 const capabilities: RuntimeCapabilities = {
@@ -103,24 +103,22 @@ class BehaviorRuntime implements YasumuScriptRuntime {
             ...invocation.environment,
             secrets: { ...invocation.environment.secrets, TOKEN: 'replacement-secret' },
           }
-      : invocation.environment;
+        : invocation.environment;
     return {
       request,
       mockResponse,
       environment,
       tests:
-        invocation.hook === 'onTest'
-          ? [{ test: invocation.source.id, result: 'pass', error: null, duration: 1 }]
-          : [],
+        invocation.hook === 'onTest' ? [{ test: invocation.source.id, result: 'pass', error: null, duration: 1 }] : [],
       logs: code.includes('set-new-secret')
         ? [{ level: 'info', message: 'script token=runtime-secret', timestamp: 1 }]
         : code.includes('rotate-secret')
           ? [{ level: 'info', message: `old=${secret}; new=replacement-secret`, timestamp: 1 }]
-        : code.includes('log-secret')
-        ? [{ level: 'info', message: `token=${secret}`, timestamp: 1 }]
-        : code.includes('child-log')
-          ? [{ level: 'info', message: 'child log', timestamp: 1 }]
-          : [],
+          : code.includes('log-secret')
+            ? [{ level: 'info', message: `token=${secret}`, timestamp: 1 }]
+            : code.includes('child-log')
+              ? [{ level: 'info', message: 'child log', timestamp: 1 }]
+              : [],
       diagnostics: [],
       cancelled: code.includes('cancel'),
       cancelReason: code.includes('cancel') ? 'script cancellation' : undefined,
@@ -205,7 +203,13 @@ describe('HeadlessExecutionService', () => {
       'onTest:entity-test',
     ]);
     expect(transport.requests[0]?.headers.get('x-mutated')).toBe('entity-life');
-    expect(result.tests.map((test) => test.test)).toEqual(['workspace', 'parent', 'child', 'entity-life', 'entity-test']);
+    expect(result.tests.map((test) => test.test)).toEqual([
+      'workspace',
+      'parent',
+      'child',
+      'entity-life',
+      'entity-test',
+    ]);
   });
 
   it('uses mocked responses without transport and still runs response/test hooks', async () => {
@@ -226,9 +230,7 @@ describe('HeadlessExecutionService', () => {
 
   it('applies body limits only to serialized output, not hooks or transport', async () => {
     const runtime = new BehaviorRuntime();
-    const transport = new RecordingTransport(
-      new Response('abcdefghij', { headers: { 'content-type': 'text/plain' } }),
-    );
+    const transport = new RecordingTransport(new Response('abcdefghij', { headers: { 'content-type': 'text/plain' } }));
     const entity = restEntity({
       method: 'POST',
       body: { type: 'text', value: '0123456789' },
@@ -328,10 +330,15 @@ describe('HeadlessExecutionService', () => {
     const events: unknown[] = [];
     const history: unknown[] = [];
     const entity = restEntity({ scripts: { lifecycle: script('secret-writer', 'set-new-secret') } });
-    const result = await serviceFor(new BehaviorRuntime(), new RecordingTransport(), workspace({ entities: [entity] }), {
-      events: { emit: (event) => void events.push(event) },
-      history: { save: async (record) => void history.push(record) },
-    }).execute({ workspaceId: 'workspace-1', entityId: entity.id });
+    const result = await serviceFor(
+      new BehaviorRuntime(),
+      new RecordingTransport(),
+      workspace({ entities: [entity] }),
+      {
+        events: { emit: (event) => void events.push(event) },
+        history: { save: async (record) => void history.push(record) },
+      },
+    ).execute({ workspaceId: 'workspace-1', entityId: entity.id });
 
     expect(result.logs.every((log) => !log.message.includes('runtime-secret'))).toBe(true);
     expect(JSON.stringify({ result, events, history })).not.toContain('runtime-secret');
@@ -356,7 +363,10 @@ describe('HeadlessExecutionService', () => {
 
   it('enforces the configured nested execution depth', async () => {
     const runtime = new BehaviorRuntime();
-    const recursive = restEntity({ id: 'recursive', scripts: { lifecycle: script('recursive-life', 'nested:rest:recursive') } });
+    const recursive = restEntity({
+      id: 'recursive',
+      scripts: { lifecycle: script('recursive-life', 'nested:rest:recursive') },
+    });
     const result = await serviceFor(runtime, new RecordingTransport(), workspace({ entities: [recursive] }), {
       maxNestingDepth: 1,
     }).execute({ workspaceId: 'workspace-1', entityId: recursive.id });

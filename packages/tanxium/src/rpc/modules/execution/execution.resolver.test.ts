@@ -1,18 +1,15 @@
-import assert from "node:assert/strict";
-import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
-import type { ExecutionResult } from "@yasumu/headless";
+import type { ExecutionResult } from '@yasumu/headless';
 
-import type {
-  ExecutionService,
-  GuiExecuteEntityInput,
-} from "./execution.service.ts";
+import type { ExecutionService, GuiExecuteEntityInput } from './execution.service.ts';
 
-const databaseRoot = Deno.makeTempDirSync({ prefix: "yasumu-execution-rpc-" });
+const databaseRoot = Deno.makeTempDirSync({ prefix: 'yasumu-execution-rpc-' });
 const literalDatabaseRoot = join(Deno.cwd(), `file:${databaseRoot}`);
 mkdirSync(literalDatabaseRoot, { recursive: true });
-Object.defineProperty(globalThis, "Yasumu", {
+Object.defineProperty(globalThis, 'Yasumu', {
   configurable: true,
   value: {
     cuid: () => crypto.randomUUID(),
@@ -24,67 +21,59 @@ Object.defineProperty(globalThis, "Yasumu", {
   writable: true,
 });
 
-Deno.test("execution resolver forwards workspace-scoped execution and file registration calls", async () => {
-  const { ExecutionResolver } = await import("./execution.resolver.ts");
+Deno.test('execution resolver forwards workspace-scoped execution and file registration calls', async () => {
+  const { ExecutionResolver } = await import('./execution.resolver.ts');
   const calls: unknown[][] = [];
   const expected = {
-    executionId: "execution",
-    status: "completed",
+    executionId: 'execution',
+    status: 'completed',
   } as ExecutionResult;
   const service = {
     execute(workspaceId: string, input: GuiExecuteEntityInput) {
-      calls.push(["execute", workspaceId, input]);
+      calls.push(['execute', workspaceId, input]);
       return Promise.resolve(expected);
     },
     cancel(workspaceId: string, executionId: string, reason?: string) {
-      calls.push(["cancel", workspaceId, executionId, reason]);
+      calls.push(['cancel', workspaceId, executionId, reason]);
       return true;
     },
     active(workspaceId: string) {
-      calls.push(["active", workspaceId]);
-      return ["execution"];
+      calls.push(['active', workspaceId]);
+      return ['execution'];
     },
-    registerFile(
-      workspaceId: string,
-      file: { name: string; bytes: number[]; mimeType?: string },
-    ) {
-      calls.push(["registerFile", workspaceId, file]);
+    registerFile(workspaceId: string, file: { name: string; bytes: number[]; mimeType?: string }) {
+      calls.push(['registerFile', workspaceId, file]);
       return {
-        id: "host:file",
+        id: 'host:file',
         name: file.name,
         size: file.bytes.length,
-        source: { type: "host-handle" as const, handleId: "file" },
+        source: { type: 'host-handle' as const, handleId: 'file' },
       };
     },
   };
-  const resolver = new ExecutionResolver(
-    service as unknown as ExecutionService,
-  );
+  const resolver = new ExecutionResolver(service as unknown as ExecutionService);
 
-  assert.equal(
-    await resolver.execute("workspace", { entityId: "entity" }),
-    expected,
-  );
-  assert.equal(await resolver.cancel("workspace", "execution", "stop"), true);
-  assert.deepEqual(await resolver.active("workspace"), ["execution"]);
-  const file = { name: "fixture.txt", bytes: [111, 107] };
-  assert.deepEqual(await resolver.registerFile("workspace", file), {
-    id: "host:file",
-    name: "fixture.txt",
+  assert.equal(await resolver.execute('workspace', { entityId: 'entity' }), expected);
+  assert.equal(await resolver.cancel('workspace', 'execution', 'stop'), true);
+  assert.deepEqual(await resolver.active('workspace'), ['execution']);
+  const file = { name: 'fixture.txt', bytes: [111, 107] };
+  assert.deepEqual(await resolver.registerFile('workspace', file), {
+    id: 'host:file',
+    name: 'fixture.txt',
     size: 2,
-    source: { type: "host-handle", handleId: "file" },
+    source: { type: 'host-handle', handleId: 'file' },
   });
   assert.deepEqual(calls, [
-    ["execute", "workspace", { entityId: "entity" }],
-    ["cancel", "workspace", "execution", "stop"],
-    ["active", "workspace"],
-    ["registerFile", "workspace", file],
+    ['execute', 'workspace', { entityId: 'entity' }],
+    ['cancel', 'workspace', 'execution', 'stop'],
+    ['active', 'workspace'],
+    ['registerFile', 'workspace', file],
   ]);
 
-  const { db } = await import("../../../database/index.ts");
+  const { db } = await import('../../../database/index.ts');
   db.$client.close();
   await Promise.all([
     Deno.remove(databaseRoot, { recursive: true }),
-    Deno.remove(join(Deno.cwd(), "file:"), { recursive: true }),
+    Deno.remove(join(Deno.cwd(), 'file:'), { recursive: true }),
   ]);
 });

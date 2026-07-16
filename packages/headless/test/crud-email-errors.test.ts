@@ -4,6 +4,8 @@ import type {
   ScriptHookInvocation,
   YasumuScriptRuntime,
 } from '@yasumu/runtime-api';
+import { describe, expect, it } from 'vitest';
+
 import {
   EmailHookService,
   EntityCrudService,
@@ -14,8 +16,6 @@ import {
   YasumuError,
   YasumuErrorCodes,
 } from '../src/index.js';
-import { describe, expect, it } from 'vitest';
-
 import { environment, graphqlEntity, group, restEntity, script, workspace } from './fixtures.js';
 
 describe('headless CRUD services', () => {
@@ -29,15 +29,17 @@ describe('headless CRUD services', () => {
     const entity = restEntity({ groupId: 'group-1' });
 
     await expect(entities.create(fixture.id, entity)).resolves.toEqual(entity);
-    await expect(entities.create(fixture.id, entity)).rejects.toMatchObject({ code: YasumuErrorCodes.DuplicateEntityId });
+    await expect(entities.create(fixture.id, entity)).rejects.toMatchObject({
+      code: YasumuErrorCodes.DuplicateEntityId,
+    });
     const updated = { ...entity, name: 'Updated' };
     await expect(entities.update(fixture.id, entity.id, updated)).resolves.toEqual(updated);
     await expect(entities.update(fixture.id, entity.id, { ...updated, id: 'replacement-id' })).rejects.toMatchObject({
       code: YasumuErrorCodes.InvalidReference,
     });
-    await expect(
-      entities.update(fixture.id, entity.id, graphqlEntity({ id: entity.id })),
-    ).rejects.toMatchObject({ code: YasumuErrorCodes.InvalidEntity });
+    await expect(entities.update(fixture.id, entity.id, graphqlEntity({ id: entity.id }))).rejects.toMatchObject({
+      code: YasumuErrorCodes.InvalidEntity,
+    });
     await entities.delete(fixture.id, entity.id);
 
     expect(events).toEqual([
@@ -167,7 +169,9 @@ describe('email hook lifecycle', () => {
     expect(result.status).toBe('completed');
     expect(JSON.stringify(result)).not.toContain('mail-secret');
     expect(result.logs[0]?.message).toBe('received Welcome with [REDACTED]');
-    expect(invocations.every((invocation) => invocation.environment.variables.MAILBOX === 'user@example.test')).toBe(true);
+    expect(invocations.every((invocation) => invocation.environment.variables.MAILBOX === 'user@example.test')).toBe(
+      true,
+    );
   });
 
   it('stops the email cascade when a script cancels', async () => {

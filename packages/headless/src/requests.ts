@@ -41,7 +41,13 @@ async function buildRestRequest(
   interpolator: Interpolator,
   options: BuildRequestOptions,
 ): Promise<Request> {
-  const url = buildUrl(entity.url, entity.pathParameters, entity.searchParameters, interpolator, options.pathParameters);
+  const url = buildUrl(
+    entity.url,
+    entity.pathParameters,
+    entity.searchParameters,
+    interpolator,
+    options.pathParameters,
+  );
   const headers = buildHeaders(entity.headers, interpolator);
   const body = await buildBody(workspace, entity.body, headers, interpolator, options.fileResolver, options.signal);
   return new Request(url, {
@@ -58,7 +64,13 @@ async function buildGraphQLRequest(
   interpolator: Interpolator,
   options: BuildRequestOptions,
 ): Promise<Request> {
-  const url = buildUrl(entity.url, entity.pathParameters, entity.searchParameters, interpolator, options.pathParameters);
+  const url = buildUrl(
+    entity.url,
+    entity.pathParameters,
+    entity.searchParameters,
+    interpolator,
+    options.pathParameters,
+  );
   const headers = buildHeaders(entity.headers, interpolator);
   if (!headers.has('content-type')) headers.set('content-type', 'application/json');
 
@@ -99,7 +111,8 @@ function buildUrl(
 ): string {
   if (!value) throw new YasumuError(YasumuErrorCodes.InvalidEntity, 'Request URL is required');
   const resolved = interpolator.interpolateString(value);
-  if (typeof resolved !== 'string') throw new YasumuError(YasumuErrorCodes.InvalidEntity, 'Request URL must be a string');
+  if (typeof resolved !== 'string')
+    throw new YasumuError(YasumuErrorCodes.InvalidEntity, 'Request URL must be a string');
 
   const configured = new Map(
     configuredPathParameters
@@ -151,7 +164,10 @@ async function buildBody(
   switch (body.type) {
     case 'json': {
       if (!headers.has('content-type')) headers.set('content-type', 'application/json');
-      const value = typeof body.value === 'string' ? parseOrInterpolateJson(body.value, interpolator) : interpolator.interpolate(body.value);
+      const value =
+        typeof body.value === 'string'
+          ? parseOrInterpolateJson(body.value, interpolator)
+          : interpolator.interpolate(body.value);
       return JSON.stringify(value);
     }
     case 'text':

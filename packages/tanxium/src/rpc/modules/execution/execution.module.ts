@@ -1,7 +1,7 @@
-import { Module } from "@yasumu/den";
+import { Module } from '@yasumu/den';
 
-import { ExecutionResolver } from "./execution.resolver.ts";
-import { ExecutionService } from "./execution.service.ts";
+import { ExecutionResolver } from './execution.resolver.ts';
+import { ExecutionService } from './execution.service.ts';
 
 @Module({
   providers: [ExecutionService],

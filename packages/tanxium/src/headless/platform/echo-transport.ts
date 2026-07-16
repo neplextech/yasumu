@@ -1,15 +1,9 @@
-import type {
-  RequestTransport,
-  RequestTransportContext,
-} from "@yasumu/headless";
+import type { RequestTransport, RequestTransportContext } from '@yasumu/headless';
 
-export const GUI_ECHO_HOSTNAME = "echo.yasumu.local";
+export const GUI_ECHO_HOSTNAME = 'echo.yasumu.local';
 
 export type EchoServerPortProvider = () => number | null | undefined;
-export type FetchImplementation = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<Response>;
+export type FetchImplementation = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 let activeEchoServerPort: number | null = null;
 
@@ -32,11 +26,7 @@ export class GuiFetchTransport implements RequestTransport {
     private readonly fetchImplementation: FetchImplementation = fetch,
   ) {}
 
-  public send(
-    request: Request,
-    context: RequestTransportContext,
-    signal: AbortSignal,
-  ): Promise<Response> {
+  public send(request: Request, context: RequestTransportContext, signal: AbortSignal): Promise<Response> {
     signal.throwIfAborted();
     const url = rewriteGuiEchoUrl(request.url, this.port());
     return this.fetchImplementation(
@@ -45,28 +35,25 @@ export class GuiFetchTransport implements RequestTransport {
         headers: request.headers,
         method: request.method,
         signal,
-        redirect: context.followRedirects === false ? "manual" : "follow",
+        redirect: context.followRedirects === false ? 'manual' : 'follow',
         // Request streams require this in Node-compatible fetch implementations.
-        duplex: request.body ? "half" : undefined,
+        duplex: request.body ? 'half' : undefined,
       } as RequestInit),
     );
   }
 }
 
-export function rewriteGuiEchoUrl(
-  value: string | URL,
-  port: number | null | undefined,
-): URL {
+export function rewriteGuiEchoUrl(value: string | URL, port: number | null | undefined): URL {
   const url = new URL(value);
   if (url.hostname !== GUI_ECHO_HOSTNAME) return url;
   if (port === null || port === undefined) {
-    throw new Error("The embedded Yasumu echo server is not available");
+    throw new Error('The embedded Yasumu echo server is not available');
   }
   if (!Number.isInteger(port) || port < 1 || port > 65_535) {
     throw new RangeError(`Invalid echo server port: ${port}`);
   }
-  url.protocol = "http:";
-  url.hostname = "127.0.0.1";
+  url.protocol = 'http:';
+  url.hostname = '127.0.0.1';
   url.port = String(port);
   return url;
 }

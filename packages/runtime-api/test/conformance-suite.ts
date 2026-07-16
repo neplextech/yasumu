@@ -1,4 +1,4 @@
-import { snapshotRequest, snapshotResponse } from "../src/serialization.ts";
+import { snapshotRequest, snapshotResponse } from '../src/serialization.ts';
 import type {
   RuntimeHostCallHandler,
   ScriptHookInvocation,
@@ -6,12 +6,12 @@ import type {
   WorkspaceEmail,
   YasumuRuntimeSession,
   YasumuScriptRuntime,
-} from "../src/types.ts";
+} from '../src/types.ts';
 
 const workspace = {
-  id: "workspace-1",
-  name: "Workspace",
-  root: ".",
+  id: 'workspace-1',
+  name: 'Workspace',
+  root: '.',
 };
 
 let executionSequence = 0;
@@ -28,13 +28,12 @@ export interface RuntimeConformanceCase {
 
 export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
   {
-    name:
-      "standard Request and Response contexts, entity identity, TypeScript, mocks, and logs",
+    name: 'standard Request and Response contexts, entity identity, TypeScript, mocks, and logs',
     async run(factory) {
       await withSession(factory, async (session) => {
         const result = await session.invokeHook(
           await invocation(
-            "onRequest",
+            'onRequest',
             `
               interface Payload { value: number }
               export async function onRequest(ctx: {
@@ -60,36 +59,27 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           ),
         );
 
-        equal(
-          result.request?.url,
-          "https://example.test/request?changed=1",
-          "mutated request URL",
-        );
-        equal(result.mockResponse?.status, 201, "mock response status");
+        equal(result.request?.url, 'https://example.test/request?changed=1', 'mutated request URL');
+        equal(result.mockResponse?.status, 201, 'mock response status');
         matches(
           result.mockResponse?.body,
-          { kind: "json", value: { doubled: 6, contextId: "entity-1" } },
-          "mock response body",
+          { kind: 'json', value: { doubled: 6, contextId: 'entity-1' } },
+          'mock response body',
         );
-        equal(result.logs[0]?.level, "info", "log level");
-        equal(result.logs[0]?.message, "request value 3", "formatted log");
-        matches(
-          result.logs[0]?.data,
-          ["request value", 3],
-          "structured log data",
-        );
+        equal(result.logs[0]?.level, 'info', 'log level');
+        equal(result.logs[0]?.message, 'request value 3', 'formatted log');
+        matches(result.logs[0]?.data, ['request value', 3], 'structured log data');
       });
     },
   },
   {
-    name:
-      "setRequest rejects consumed standard Request bodies deterministically",
+    name: 'setRequest rejects consumed standard Request bodies deterministically',
     async run(factory) {
       await withSession(factory, async (session) => {
         await rejectsWith(
           session.invokeHook(
             await invocation(
-              "onRequest",
+              'onRequest',
               `
                 export async function onRequest(ctx) {
                   const consumed = new Request('https://example.test/consumed', {
@@ -103,22 +93,21 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
             ),
           ),
           {
-            code: "SCRIPT_INVALID_REQUEST",
-            message: "setRequest requires an unconsumed standard Request",
+            code: 'SCRIPT_INVALID_REQUEST',
+            message: 'setRequest requires an unconsumed standard Request',
           },
         );
       });
     },
   },
   {
-    name:
-      "large request and response bodies reach hooks and consumed requests are restored untruncated",
+    name: 'large request and response bodies reach hooks and consumed requests are restored untruncated',
     async run(factory) {
       await withSession(factory, async (session) => {
-        const requestBody = "r".repeat(1024 * 1024 + 257);
-        const responseBody = "s".repeat(1024 * 1024 + 513);
+        const requestBody = 'r'.repeat(1024 * 1024 + 257);
+        const responseBody = 's'.repeat(1024 * 1024 + 513);
         const hookInvocation = await invocation(
-          "onResponse",
+          'onResponse',
           `
             import { env } from 'yasumu:env';
             export async function onResponse(ctx) {
@@ -130,52 +119,32 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           `,
         );
         hookInvocation.request = await snapshotRequest(
-          new Request("https://example.test/large", {
-            method: "POST",
-            headers: { "content-type": "text/plain" },
+          new Request('https://example.test/large', {
+            method: 'POST',
+            headers: { 'content-type': 'text/plain' },
             body: requestBody,
           }),
           Number.POSITIVE_INFINITY,
         );
         hookInvocation.response = await snapshotResponse(
           new Response(responseBody, {
-            headers: { "content-type": "text/plain" },
+            headers: { 'content-type': 'text/plain' },
           }),
           Number.POSITIVE_INFINITY,
         );
 
         const result = await session.invokeHook(hookInvocation);
-        equal(
-          result.environment.variables.requestLength,
-          requestBody.length,
-          "large request hook length",
-        );
-        equal(
-          result.environment.variables.responseLength,
-          responseBody.length,
-          "large response hook length",
-        );
-        equal(
-          result.request?.body.kind,
-          "text",
-          "restored large request body kind",
-        );
-        if (result.request?.body.kind !== "text") return;
-        equal(
-          result.request.body.text.length,
-          requestBody.length,
-          "restored large request body length",
-        );
-        equal(
-          result.request.body.truncated,
-          false,
-          "restored large request truncation",
-        );
+        equal(result.environment.variables.requestLength, requestBody.length, 'large request hook length');
+        equal(result.environment.variables.responseLength, responseBody.length, 'large response hook length');
+        equal(result.request?.body.kind, 'text', 'restored large request body kind');
+        if (result.request?.body.kind !== 'text') return;
+        equal(result.request.body.text.length, requestBody.length, 'restored large request body length');
+        equal(result.request.body.truncated, false, 'restored large request truncation');
       });
     },
   },
   {
-    name: "persistent module state and execution-local environment snapshots",
+    name: 'persistent module state and execution-local environment snapshots',
     async run(factory) {
       await withSession(factory, async (session) => {
         const code = `
@@ -191,98 +160,88 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           }
         `;
         const first = await session.invokeHook(
-          await invocation("onRequest", code, {
-            sourceId: "persistent-script",
+          await invocation('onRequest', code, {
+            sourceId: 'persistent-script',
           }),
         );
         const second = await session.invokeHook(
-          await invocation("onRequest", code, {
-            sourceId: "persistent-script",
+          await invocation('onRequest', code, {
+            sourceId: 'persistent-script',
           }),
         );
 
         matches(
           first.mockResponse?.body,
-          { kind: "json", value: { calls: 1, inherited: "clean" } },
-          "first persistent result",
+          { kind: 'json', value: { calls: 1, inherited: 'clean' } },
+          'first persistent result',
         );
         matches(
           second.mockResponse?.body,
-          { kind: "json", value: { calls: 2, inherited: "clean" } },
-          "second persistent result",
+          { kind: 'json', value: { calls: 2, inherited: 'clean' } },
+          'second persistent result',
         );
-        equal(
-          first.environment.variables.mutated,
-          1,
-          "first environment mutation",
-        );
-        equal(
-          second.environment.variables.mutated,
-          2,
-          "second environment mutation",
-        );
+        equal(first.environment.variables.mutated, 1, 'first environment mutation');
+        equal(second.environment.variables.mutated, 2, 'second environment mutation');
       });
     },
   },
   {
-    name: "workspace virtual module and every host-call-backed script API",
+    name: 'workspace virtual module and every host-call-backed script API',
     async run(factory) {
       const methods: string[] = [];
       let emailIndex = 0;
-      const matchingEmail = email("email-2", "match");
+      const matchingEmail = email('email-2', 'match');
       const hostCall: RuntimeHostCallHandler = async (method) => {
         methods.push(method);
         switch (method) {
-          case "entity.get":
-            return { id: "nested", name: "Nested", kind: "rest" } as never;
-          case "entity.list":
-            return [{ id: "nested", name: "Nested", kind: "rest" }] as never;
-          case "entity.execute":
+          case 'entity.get':
+            return { id: 'nested', name: 'Nested', kind: 'rest' } as never;
+          case 'entity.list':
+            return [{ id: 'nested', name: 'Nested', kind: 'rest' }] as never;
+          case 'entity.execute':
             return {
-              executionId: "child",
-              entityId: "nested",
-              status: "completed",
+              executionId: 'child',
+              entityId: 'nested',
+              status: 'completed',
               tests: [],
               logs: [],
               diagnostics: [],
             } as never;
-          case "email.list":
-            return { emails: [matchingEmail], cursor: "list-cursor" } as never;
-          case "email.next":
+          case 'email.list':
+            return { emails: [matchingEmail], cursor: 'list-cursor' } as never;
+          case 'email.next':
             emailIndex += 1;
             return {
-              email: emailIndex === 1
-                ? email("email-1", "ignore")
-                : matchingEmail,
+              email: emailIndex === 1 ? email('email-1', 'ignore') : matchingEmail,
               cursor: `cursor-${emailIndex}`,
             } as never;
-          case "file.resolve":
+          case 'file.resolve':
             return {
-              id: "file-1",
-              name: "fixture.txt",
-              mimeType: "text/plain",
+              id: 'file-1',
+              name: 'fixture.txt',
+              mimeType: 'text/plain',
               size: 7,
-              source: { type: "workspace-path", path: "fixture.txt" },
-              resolvedPath: "/virtual/fixture.txt",
+              source: { type: 'workspace-path', path: 'fixture.txt' },
+              resolvedPath: '/virtual/fixture.txt',
             } as never;
-          case "file.open":
+          case 'file.open':
             return {
               file: {
-                id: "file-1",
-                name: "fixture.txt",
-                mimeType: "text/plain",
+                id: 'file-1',
+                name: 'fixture.txt',
+                mimeType: 'text/plain',
                 size: 7,
-                source: { type: "workspace-path", path: "fixture.txt" },
-                resolvedPath: "/virtual/fixture.txt",
+                source: { type: 'workspace-path', path: 'fixture.txt' },
+                resolvedPath: '/virtual/fixture.txt',
               },
-              bytes: [...new TextEncoder().encode("fixture")],
+              bytes: [...new TextEncoder().encode('fixture')],
             } as never;
-          case "permission.request":
+          case 'permission.request':
             return { granted: true } as never;
         }
       };
       const workspaceModule: ScriptSource = {
-        id: "workspace-module",
+        id: 'workspace-module',
         code: `
           export const sharedPrefix: string = 'shared';
           export function decorate(value: string): string { return sharedPrefix + ':' + value; }
@@ -294,7 +253,7 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
         async (session) => {
           const result = await session.invokeHook(
             await invocation(
-              "onRequest",
+              'onRequest',
               `
                 import { decorate, workspace } from 'yasumu:workspace';
                 import { runtime } from 'yasumu:runtime';
@@ -334,38 +293,34 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           matches(
             result.mockResponse?.body,
             {
-              kind: "json",
+              kind: 'json',
               value: {
-                label: "shared:Nested",
+                label: 'shared:Nested',
                 entityCount: 1,
-                child: "child",
+                child: 'child',
                 listed: 1,
-                next: "email-2",
-                file: "fixture",
+                next: 'email-2',
+                file: 'fixture',
                 allowed: true,
               },
             },
-            "host-backed module result",
+            'host-backed module result',
           );
-          equal(
-            result.environment.secrets.runtime,
-            factory.kind,
-            "runtime descriptor kind",
-          );
+          equal(result.environment.secrets.runtime, factory.kind, 'runtime descriptor kind');
           deepEqual(
             methods,
             [
-              "entity.get",
-              "entity.list",
-              "entity.execute",
-              "email.list",
-              "email.next",
-              "email.next",
-              "file.resolve",
-              "file.open",
-              "permission.request",
+              'entity.get',
+              'entity.list',
+              'entity.execute',
+              'email.list',
+              'email.next',
+              'email.next',
+              'file.resolve',
+              'file.open',
+              'permission.request',
             ],
-            "host call order",
+            'host call order',
           );
         },
         hostCall,
@@ -374,19 +329,18 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
     },
   },
   {
-    name:
-      "email waiting uses one absolute deadline across nonmatching candidates",
+    name: 'email waiting uses one absolute deadline across nonmatching candidates',
     async run(factory) {
       const remainingTimeouts: number[] = [];
       const hostCall: RuntimeHostCallHandler = async (method, input) => {
-        if (method !== "email.next") {
+        if (method !== 'email.next') {
           throw new Error(`Unexpected host call: ${method}`);
         }
         const timeoutMs = (input as { timeoutMs?: number }).timeoutMs;
         if (timeoutMs !== undefined) remainingTimeouts.push(timeoutMs);
         await new Promise((resolve) => setTimeout(resolve, 18));
         return {
-          email: email(`candidate-${remainingTimeouts.length}`, "not a match"),
+          email: email(`candidate-${remainingTimeouts.length}`, 'not a match'),
           cursor: `cursor-${remainingTimeouts.length}`,
         } as never;
       };
@@ -397,7 +351,7 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           await rejectsWith(
             session.invokeHook(
               await invocation(
-                "onRequest",
+                'onRequest',
                 `
                   import { workspace } from 'yasumu:workspace';
                   export async function onRequest() {
@@ -409,31 +363,28 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
                 `,
               ),
             ),
-            { code: "SCRIPT_EMAIL_TIMEOUT" },
+            { code: 'SCRIPT_EMAIL_TIMEOUT' },
           );
         },
         hostCall,
       );
 
-      assert(
-        remainingTimeouts.length >= 2,
-        "email wait should inspect multiple candidates",
-      );
+      assert(remainingTimeouts.length >= 2, 'email wait should inspect multiple candidates');
       for (let index = 1; index < remainingTimeouts.length; index += 1) {
         assert(
           remainingTimeouts[index] < remainingTimeouts[index - 1],
-          "email wait should pass the remaining absolute timeout",
+          'email wait should pass the remaining absolute timeout',
         );
       }
     },
   },
   {
-    name: "async tests, nested suite names, and deterministic outcomes",
+    name: 'async tests, nested suite names, and deterministic outcomes',
     async run(factory) {
       await withSession(factory, async (session) => {
         const result = await session.invokeHook(
           await invocation(
-            "onTest",
+            'onTest',
             `
               import { describe, expect, test } from 'yasumu:test';
 
@@ -450,7 +401,7 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
                 test('explicit success', (control) => control.succeed());
               }
             `,
-            { mode: "test" },
+            { mode: 'test' },
           ),
         );
 
@@ -461,22 +412,22 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
             status,
           })),
           [
-            { suite: ["outer"], test: "passes", status: "pass" },
-            { suite: ["outer", "inner"], test: "skips", status: "skip" },
-            { suite: undefined, test: "explicit success", status: "pass" },
+            { suite: ['outer'], test: 'passes', status: 'pass' },
+            { suite: ['outer', 'inner'], test: 'skips', status: 'skip' },
+            { suite: undefined, test: 'explicit success', status: 'pass' },
           ],
-          "test results",
+          'test results',
         );
       });
     },
   },
   {
-    name: "legacy request mutation and YasumuResponse mocks",
+    name: 'legacy request mutation and YasumuResponse mocks',
     async run(factory) {
       await withSession(factory, async (session) => {
         const result = await session.invokeHook(
           await invocation(
-            "onRequest",
+            'onRequest',
             `
               export function onRequest(req) {
                 req.url = 'https://example.test/legacy';
@@ -489,37 +440,23 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           ),
         );
 
-        equal(
-          result.request?.url,
-          "https://example.test/legacy",
-          "legacy URL mutation",
-        );
-        equal(result.request?.method, "PUT", "legacy method mutation");
+        equal(result.request?.url, 'https://example.test/legacy', 'legacy URL mutation');
+        equal(result.request?.method, 'PUT', 'legacy method mutation');
         assert(
-          result.request?.headers.some(([name, value]) =>
-            name === "x-legacy" && value === "yes"
-          ) === true,
-          "legacy header mutation",
+          result.request?.headers.some(([name, value]) => name === 'x-legacy' && value === 'yes') === true,
+          'legacy header mutation',
         );
-        matches(
-          result.mockResponse?.body,
-          { kind: "json", value: { received: 3 } },
-          "legacy response body",
-        );
-        equal(result.mockResponse?.status, 202, "legacy response status");
-        equal(
-          result.environment.variables.legacy,
-          true,
-          "legacy environment mutation",
-        );
+        matches(result.mockResponse?.body, { kind: 'json', value: { received: 3 } }, 'legacy response body');
+        equal(result.mockResponse?.status, 202, 'legacy response status');
+        equal(result.environment.variables.legacy, true, 'legacy environment mutation');
       });
     },
   },
   {
-    name: "hook selection, ordering, and response and email contexts",
+    name: 'hook selection, ordering, and response and email contexts',
     async run(factory) {
       await withSession(factory, async (session) => {
-        const sourceId = "ordered-hooks";
+        const sourceId = 'ordered-hooks';
         const code = `
           import { env } from 'yasumu:env';
           const order: string[] = [];
@@ -544,135 +481,73 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
           }
         `;
 
-        const requestResult = await session.invokeHook(
-          await invocation("onRequest", code, { sourceId }),
-        );
-        const responseResult = await session.invokeHook(
-          await invocation("onResponse", code, { sourceId }),
-        );
-        const emailInvocation = await invocation("onEmail", code, { sourceId });
-        emailInvocation.email = email("email-hook", "email hook subject");
+        const requestResult = await session.invokeHook(await invocation('onRequest', code, { sourceId }));
+        const responseResult = await session.invokeHook(await invocation('onResponse', code, { sourceId }));
+        const emailInvocation = await invocation('onEmail', code, { sourceId });
+        emailInvocation.email = email('email-hook', 'email hook subject');
         const emailResult = await session.invokeHook(emailInvocation);
 
-        deepEqual(
-          requestResult.environment.variables.order,
-          ["onRequest"],
-          "request hook order",
-        );
-        deepEqual(
-          responseResult.environment.variables.order,
-          ["onRequest", "onResponse"],
-          "response hook order",
-        );
-        equal(
-          responseResult.environment.variables.responseBody,
-          true,
-          "response context body",
-        );
-        equal(
-          responseResult.environment.variables.isMock,
-          false,
-          "mock response flag",
-        );
-        equal(
-          responseResult.mockResponse,
-          undefined,
-          "response return is not a mock",
-        );
-        deepEqual(
-          emailResult.environment.variables.order,
-          ["onRequest", "onResponse", "onEmail"],
-          "email hook order",
-        );
-        equal(
-          emailResult.environment.variables.subject,
-          "email hook subject",
-          "email context",
-        );
+        deepEqual(requestResult.environment.variables.order, ['onRequest'], 'request hook order');
+        deepEqual(responseResult.environment.variables.order, ['onRequest', 'onResponse'], 'response hook order');
+        equal(responseResult.environment.variables.responseBody, true, 'response context body');
+        equal(responseResult.environment.variables.isMock, false, 'mock response flag');
+        equal(responseResult.mockResponse, undefined, 'response return is not a mock');
+        deepEqual(emailResult.environment.variables.order, ['onRequest', 'onResponse', 'onEmail'], 'email hook order');
+        equal(emailResult.environment.variables.subject, 'email hook subject', 'email context');
       });
     },
   },
   {
-    name: "every missing lifecycle hook is a deterministic no-op",
+    name: 'every missing lifecycle hook is a deterministic no-op',
     async run(factory) {
       await withSession(factory, async (session) => {
-        const source = "export const onlySharedState = true;";
-        const requestResult = await session.invokeHook(
-          await invocation("onRequest", source),
-        );
-        const responseResult = await session.invokeHook(
-          await invocation("onResponse", source),
-        );
-        const testResult = await session.invokeHook(
-          await invocation("onTest", source, { mode: "test" }),
-        );
-        const emailInvocation = await invocation("onEmail", source);
-        emailInvocation.email = email("missing-hook", "unused");
+        const source = 'export const onlySharedState = true;';
+        const requestResult = await session.invokeHook(await invocation('onRequest', source));
+        const responseResult = await session.invokeHook(await invocation('onResponse', source));
+        const testResult = await session.invokeHook(await invocation('onTest', source, { mode: 'test' }));
+        const emailInvocation = await invocation('onEmail', source);
+        emailInvocation.email = email('missing-hook', 'unused');
         const emailResult = await session.invokeHook(emailInvocation);
 
-        for (
-          const result of [
-            requestResult,
-            responseResult,
-            testResult,
-            emailResult,
-          ]
-        ) {
-          deepEqual(result.tests, [], "missing hook tests");
-          deepEqual(result.logs, [], "missing hook logs");
-          deepEqual(result.diagnostics, [], "missing hook diagnostics");
-          deepEqual(result.environment.variables, {}, "missing hook variables");
-          deepEqual(result.environment.secrets, {}, "missing hook secrets");
+        for (const result of [requestResult, responseResult, testResult, emailResult]) {
+          deepEqual(result.tests, [], 'missing hook tests');
+          deepEqual(result.logs, [], 'missing hook logs');
+          deepEqual(result.diagnostics, [], 'missing hook diagnostics');
+          deepEqual(result.environment.variables, {}, 'missing hook variables');
+          deepEqual(result.environment.secrets, {}, 'missing hook secrets');
         }
-        equal(
-          requestResult.mockResponse,
-          undefined,
-          "missing request hook mock",
-        );
+        equal(requestResult.mockResponse, undefined, 'missing request hook mock');
       });
     },
   },
   {
-    name: "script cancellation and structured hook and compile errors",
+    name: 'script cancellation and structured hook and compile errors',
     async run(factory) {
       await withSession(factory, async (session) => {
         const cancelled = await session.invokeHook(
-          await invocation(
-            "onRequest",
-            "export function onRequest(ctx) { ctx.cancel('stop here'); }",
-          ),
+          await invocation('onRequest', "export function onRequest(ctx) { ctx.cancel('stop here'); }"),
         );
-        equal(cancelled.cancelled, true, "script cancellation flag");
-        equal(
-          cancelled.cancelReason,
-          "stop here",
-          "script cancellation reason",
-        );
+        equal(cancelled.cancelled, true, 'script cancellation flag');
+        equal(cancelled.cancelReason, 'stop here', 'script cancellation reason');
 
         await rejectsWith(
           session.invokeHook(
-            await invocation(
-              "onRequest",
-              "export function onRequest() { throw new TypeError('broken hook'); }",
-            ),
+            await invocation('onRequest', "export function onRequest() { throw new TypeError('broken hook'); }"),
           ),
           {
-            code: "SCRIPT_HOOK_ERROR",
-            message: "broken hook",
-            name: "TypeError",
+            code: 'SCRIPT_HOOK_ERROR',
+            message: 'broken hook',
+            name: 'TypeError',
           },
         );
-        await rejectsWith(
-          session.invokeHook(
-            await invocation("onRequest", "export function onRequest( {"),
-          ),
-          { code: "SCRIPT_COMPILE_ERROR" },
-        );
+        await rejectsWith(session.invokeHook(await invocation('onRequest', 'export function onRequest( {')), {
+          code: 'SCRIPT_COMPILE_ERROR',
+        });
       });
     },
   },
   {
-    name: "external cancellation, hard timeouts, worker recovery, and disposal",
+    name: 'external cancellation, hard timeouts, worker recovery, and disposal',
     async run(factory) {
       const runtime = factory.create({ defaultTimeoutMs: 80 });
       const session = await runtime.createSession({
@@ -682,31 +557,23 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
       const controller = new AbortController();
       try {
         const externallyCancelled = session.invokeHook(
-          await invocation(
-            "onRequest",
-            "export async function onRequest() { await new Promise(() => undefined); }",
-          ),
+          await invocation('onRequest', 'export async function onRequest() { await new Promise(() => undefined); }'),
           { signal: controller.signal },
         );
-        setTimeout(() => controller.abort("terminal signal"), 20);
+        setTimeout(() => controller.abort('terminal signal'), 20);
         await rejectsWith(externallyCancelled, {
-          code: "SCRIPT_CANCELLED",
-          message: "terminal signal",
+          code: 'SCRIPT_CANCELLED',
+          message: 'terminal signal',
         });
 
         await rejectsWith(
-          session.invokeHook(
-            await invocation(
-              "onRequest",
-              "export function onRequest() { while (true) {} }",
-            ),
-          ),
-          { code: "SCRIPT_TIMEOUT" },
+          session.invokeHook(await invocation('onRequest', 'export function onRequest() { while (true) {} }')),
+          { code: 'SCRIPT_TIMEOUT' },
         );
 
         const recovered = await session.invokeHook(
           await invocation(
-            "onRequest",
+            'onRequest',
             `
               export function onRequest() {
                 return new Response('recovered', { headers: { 'content-type': 'text/plain' } });
@@ -714,19 +581,12 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
             `,
           ),
         );
-        matches(
-          recovered.mockResponse?.body,
-          { kind: "text", text: "recovered" },
-          "worker recovery",
-        );
+        matches(recovered.mockResponse?.body, { kind: 'text', text: 'recovered' }, 'worker recovery');
 
         await session.dispose();
-        await rejectsWith(
-          session.invokeHook(
-            await invocation("onRequest", "export function onRequest() {}"),
-          ),
-          { code: "SCRIPT_SESSION_DISPOSED" },
-        );
+        await rejectsWith(session.invokeHook(await invocation('onRequest', 'export function onRequest() {}')), {
+          code: 'SCRIPT_SESSION_DISPOSED',
+        });
       } finally {
         await session.dispose();
       }
@@ -734,9 +594,7 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
   },
 ];
 
-export async function runRuntimeConformance(
-  factory: RuntimeConformanceFactory,
-): Promise<string[]> {
+export async function runRuntimeConformance(factory: RuntimeConformanceFactory): Promise<string[]> {
   const completed: string[] = [];
   for (const testCase of runtimeConformanceCases) {
     await testCase.run(factory);
@@ -764,22 +622,22 @@ async function withSession(
 }
 
 async function invocation(
-  hook: ScriptHookInvocation["hook"],
+  hook: ScriptHookInvocation['hook'],
   code: string,
-  options: { mode?: "run" | "test"; sourceId?: string } = {},
+  options: { mode?: 'run' | 'test'; sourceId?: string } = {},
 ): Promise<ScriptHookInvocation> {
   executionSequence += 1;
   const request = await snapshotRequest(
-    new Request("https://example.test/request", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+    new Request('https://example.test/request', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ value: 3 }),
     }),
   );
   const response = await snapshotResponse(
     new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { "content-type": "application/json" },
+      headers: { 'content-type': 'application/json' },
     }),
   );
   const executionId = `execution-${executionSequence}`;
@@ -788,12 +646,12 @@ async function invocation(
     hook,
     source: { id: options.sourceId ?? `script-${executionSequence}`, code },
     workspace,
-    entity: { id: "entity-1", name: "Entity", kind: "rest" },
+    entity: { id: 'entity-1', name: 'Entity', kind: 'rest' },
     execution: {
       id: executionId,
       rootId: executionId,
       depth: 0,
-      mode: options.mode ?? "run",
+      mode: options.mode ?? 'run',
       startedAt: Date.now(),
     },
     environment: { variables: {}, secrets: {} },
@@ -810,11 +668,11 @@ const rejectingHostCall: RuntimeHostCallHandler = async (method) => {
 function email(id: string, subject: string): WorkspaceEmail {
   return {
     id,
-    from: "sender@example.test",
-    to: ["receiver@example.test"],
+    from: 'sender@example.test',
+    to: ['receiver@example.test'],
     cc: [],
     subject,
-    html: "",
+    html: '',
     text: subject,
     createdAt: Date.now(),
   };
@@ -826,11 +684,7 @@ function assert(condition: boolean, label: string): asserts condition {
 
 function equal(actual: unknown, expected: unknown, label: string): void {
   if (!Object.is(actual, expected)) {
-    throw new Error(
-      `Conformance assertion failed: ${label}\nExpected: ${
-        format(expected)
-      }\nActual: ${format(actual)}`,
-    );
+    throw new Error(`Conformance assertion failed: ${label}\nExpected: ${format(expected)}\nActual: ${format(actual)}`);
   }
 }
 
@@ -838,9 +692,7 @@ function deepEqual(actual: unknown, expected: unknown, label: string): void {
   const actualValue = JSON.stringify(actual);
   const expectedValue = JSON.stringify(expected);
   if (actualValue !== expectedValue) {
-    throw new Error(
-      `Conformance assertion failed: ${label}\nExpected: ${expectedValue}\nActual: ${actualValue}`,
-    );
+    throw new Error(`Conformance assertion failed: ${label}\nExpected: ${expectedValue}\nActual: ${actualValue}`);
   }
 }
 
@@ -848,46 +700,31 @@ function matches(actual: unknown, expected: unknown, label: string): void {
   if (Array.isArray(expected)) {
     assert(Array.isArray(actual), label);
     equal(actual.length, expected.length, `${label} length`);
-    expected.forEach((value, index) =>
-      matches(actual[index], value, `${label}[${index}]`)
-    );
+    expected.forEach((value, index) => matches(actual[index], value, `${label}[${index}]`));
     return;
   }
-  if (expected !== null && typeof expected === "object") {
-    assert(actual !== null && typeof actual === "object", label);
+  if (expected !== null && typeof expected === 'object') {
+    assert(actual !== null && typeof actual === 'object', label);
     for (const [key, value] of Object.entries(expected)) {
-      matches(
-        (actual as Record<string, unknown>)[key],
-        value,
-        `${label}.${key}`,
-      );
+      matches((actual as Record<string, unknown>)[key], value, `${label}.${key}`);
     }
     return;
   }
   equal(actual, expected, label);
 }
 
-async function rejectsWith(
-  promise: Promise<unknown>,
-  expected: Readonly<Record<string, unknown>>,
-): Promise<void> {
+async function rejectsWith(promise: Promise<unknown>, expected: Readonly<Record<string, unknown>>): Promise<void> {
   try {
     await promise;
   } catch (error) {
     for (const [key, value] of Object.entries(expected)) {
-      equal(
-        (error as Record<string, unknown>)[key],
-        value,
-        `rejected error ${key}`,
-      );
+      equal((error as Record<string, unknown>)[key], value, `rejected error ${key}`);
     }
     return;
   }
-  throw new Error(
-    `Conformance assertion failed: expected rejection ${format(expected)}`,
-  );
+  throw new Error(`Conformance assertion failed: expected rejection ${format(expected)}`);
 }
 
 function format(value: unknown): string {
-  return typeof value === "string" ? value : JSON.stringify(value);
+  return typeof value === 'string' ? value : JSON.stringify(value);
 }

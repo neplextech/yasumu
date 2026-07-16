@@ -1,9 +1,9 @@
-import { expect as stdExpect } from "@std/expect";
+import { expect as stdExpect } from '@std/expect';
 
 export interface TestResult {
   suite?: string[];
   test: string;
-  result: "pass" | "fail" | "skip";
+  result: 'pass' | 'fail' | 'skip';
   error: string | null;
   duration: number;
 }
@@ -43,22 +43,22 @@ let activeTestSuite: string[] = [];
 
 class SkipTestError extends Error {
   constructor() {
-    super("Test skipped");
-    this.name = "SkipTestError";
+    super('Test skipped');
+    this.name = 'SkipTestError';
   }
 }
 
 class FailTestError extends Error {
   constructor(message?: string) {
-    super(message ?? "Test failed");
-    this.name = "FailTestError";
+    super(message ?? 'Test failed');
+    this.name = 'FailTestError';
   }
 }
 
 class SucceedTestError extends Error {
   constructor() {
-    super("Test passed");
-    this.name = "SucceedTestError";
+    super('Test passed');
+    this.name = 'SucceedTestError';
   }
 }
 
@@ -89,7 +89,7 @@ async function executeTest(entry: TestEntry): Promise<TestResult> {
     return {
       suite: entry.suite.length > 0 ? entry.suite : undefined,
       test: entry.name,
-      result: "pass",
+      result: 'pass',
       error: null,
       duration: performance.now() - start,
     };
@@ -98,7 +98,7 @@ async function executeTest(entry: TestEntry): Promise<TestResult> {
       return {
         suite: entry.suite.length > 0 ? entry.suite : undefined,
         test: entry.name,
-        result: "skip",
+        result: 'skip',
         error: null,
         duration: performance.now() - start,
       };
@@ -107,7 +107,7 @@ async function executeTest(entry: TestEntry): Promise<TestResult> {
       return {
         suite: entry.suite.length > 0 ? entry.suite : undefined,
         test: entry.name,
-        result: "pass",
+        result: 'pass',
         error: null,
         duration: performance.now() - start,
       };
@@ -116,7 +116,7 @@ async function executeTest(entry: TestEntry): Promise<TestResult> {
       return {
         suite: entry.suite.length > 0 ? entry.suite : undefined,
         test: entry.name,
-        result: "fail",
+        result: 'fail',
         error: err.message,
         duration: performance.now() - start,
       };
@@ -124,16 +124,14 @@ async function executeTest(entry: TestEntry): Promise<TestResult> {
     return {
       suite: entry.suite.length > 0 ? entry.suite : undefined,
       test: entry.name,
-      result: "fail",
+      result: 'fail',
       error: formatError(err),
       duration: performance.now() - start,
     };
   }
 }
 
-export async function runTest(
-  fn: () => void | Promise<void>,
-): Promise<TestRunResult> {
+export async function runTest(fn: () => void | Promise<void>): Promise<TestRunResult> {
   const store: TestStore = {
     tests: [],
     pendingSuites: [],
@@ -164,7 +162,7 @@ export type TestFunction = (ctx: TestContext) => void | Promise<void>;
 function proxyExpectStub(): ReturnType<typeof stdExpect> {
   const handler: ProxyHandler<object> = {
     get(_target, prop) {
-      if (prop === "then") return undefined;
+      if (prop === 'then') return undefined;
       return new Proxy(() => {}, handler);
     },
     apply() {
@@ -191,10 +189,7 @@ export function test(name: string, fn: TestFunction): void {
   });
 }
 
-export function describe(
-  name: string,
-  fn: () => void | Promise<void>,
-): void | Promise<void> {
+export function describe(name: string, fn: () => void | Promise<void>): void | Promise<void> {
   const store = activeTestStore;
   if (!store) return;
 
@@ -222,5 +217,5 @@ export function describe(
 }
 
 function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
-  return typeof value === "object" && value !== null && "then" in value;
+  return typeof value === 'object' && value !== null && 'then' in value;
 }

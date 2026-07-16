@@ -1,12 +1,12 @@
 'use client';
 
+import type { YasumuFileReference } from '@yasumu/core';
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Input } from '@yasumu/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
 import { Plus, Trash } from 'lucide-react';
-import type { YasumuFileReference } from '@yasumu/core';
 
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';

@@ -1,8 +1,8 @@
-import { EntityCrudService } from "@yasumu/headless";
-import { Injectable } from "@yasumu/den";
+import { Injectable } from '@yasumu/den';
+import { EntityCrudService } from '@yasumu/headless';
 
-import { db } from "../../../database/index.ts";
-import { createDrizzleHeadlessPersistence } from "../../../headless/persistence/index.ts";
+import { db } from '../../../database/index.ts';
+import { createDrizzleHeadlessPersistence } from '../../../headless/persistence/index.ts';
 
 /** Shared domain CRUD assembly used by the desktop REST and GraphQL adapters. */
 @Injectable()
@@ -11,9 +11,6 @@ export class HeadlessCrudService {
 
   public constructor() {
     const persistence = createDrizzleHeadlessPersistence(db);
-    this.entities = new EntityCrudService(
-      persistence.entities,
-      persistence.workspaces,
-    );
+    this.entities = new EntityCrudService(persistence.entities, persistence.workspaces);
   }
 }

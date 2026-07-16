@@ -1,8 +1,6 @@
-import type { ExecutionEvent, ExecutionEventSink } from "@yasumu/headless";
+import type { ExecutionEvent, ExecutionEventSink } from '@yasumu/headless';
 
-export type GuiExecutionEventPublisher = (
-  event: ExecutionEvent,
-) => void | Promise<void>;
+export type GuiExecutionEventPublisher = (event: ExecutionEvent) => void | Promise<void>;
 
 /** Publishes canonical lifecycle events through the desktop subscription bridge. */
 export class GuiExecutionEventSink implements ExecutionEventSink {

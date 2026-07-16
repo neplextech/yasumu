@@ -10,15 +10,16 @@ The project consists of three major layers:
 
 - **Yasumu**: the desktop application (Next.js + Tauri)
 - **Tanxium**: an embeddable JavaScript/TypeScript runtime
-- **Shared packages**: schemas, RPC contracts, UI, utilities and testing
+- **Shared packages**: schemas, RPC contracts, UI, utilities and
+  testing
 
 This repository is simultaneously:
 
 - a pnpm workspace
 - a Cargo workspace
 
-Both ecosystems are first-class citizens. Changes should preserve clear
-boundaries between them.
+Both ecosystems are first-class citizens. Changes should preserve
+clear boundaries between them.
 
 ---
 
@@ -98,8 +99,8 @@ The codebase values:
 - strong typing
 - low coupling
 
-If multiple implementations need the same behavior, move the shared logic
-to the correct layer instead of duplicating it.
+If multiple implementations need the same behavior, move the shared
+logic to the correct layer instead of duplicating it.
 
 ---
 
@@ -228,7 +229,8 @@ The runtime should not assume it is executing inside Yasumu.
 
 New capabilities should first be designed as generic runtime APIs.
 
-Host integrations should adapt those APIs rather than extending the runtime with application-specific behavior.
+Host integrations should adapt those APIs rather than extending the
+runtime with application-specific behavior.
 
 When introducing a runtime feature:
 
@@ -335,7 +337,8 @@ Before making architectural changes:
 - preserve dependency direction
 - avoid introducing coupling between unrelated packages
 
-When code-review graph tools are available, prefer them over repository-wide searches.
+When code-review graph tools are available, prefer them over
+repository-wide searches.
 
 Otherwise use targeted `rg` searches.
 

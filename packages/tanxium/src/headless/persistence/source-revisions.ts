@@ -1,19 +1,14 @@
-import type { SourceEntityKind } from "@yasumu/common";
-import type { SourceOrigin } from "@yasumu/headless";
-import type { JsonValue } from "@yasumu/runtime-api";
-import { and, eq } from "drizzle-orm";
+import type { SourceEntityKind } from '@yasumu/common';
+import type { SourceOrigin } from '@yasumu/headless';
+import type { JsonValue } from '@yasumu/runtime-api';
+import { and, eq } from 'drizzle-orm';
 
-import { sourceRevisions } from "../../database/schema.ts";
-import type { HeadlessDrizzleConnection } from "./database.ts";
-import type { SourceRevisionRow } from "./mappers.ts";
+import { sourceRevisions } from '../../database/schema.ts';
+import type { HeadlessDrizzleConnection } from './database.ts';
+import type { SourceRevisionRow } from './mappers.ts';
 
-export function loadSourceRevisions(
-  connection: HeadlessDrizzleConnection,
-  workspaceId: string,
-): SourceRevisionRow[] {
-  return connection.select().from(sourceRevisions).where(
-    eq(sourceRevisions.workspaceId, workspaceId),
-  ).all();
+export function loadSourceRevisions(connection: HeadlessDrizzleConnection, workspaceId: string): SourceRevisionRow[] {
+  return connection.select().from(sourceRevisions).where(eq(sourceRevisions.workspaceId, workspaceId)).all();
 }
 
 export function loadSourceRevision(
@@ -46,14 +41,10 @@ export function persistSourceRevision(
     databaseSnapshot?: JsonValue | null;
   },
 ): void {
-  if (
-    input.origin.kind !== "ysl" || !input.origin.path || !input.origin.revision
-  ) return;
+  if (input.origin.kind !== 'ysl' || !input.origin.path || !input.origin.revision) return;
 
   const updatedAt = Date.now();
-  const databaseSnapshot = input.databaseSnapshot === undefined
-    ? input.sourceSnapshot
-    : input.databaseSnapshot;
+  const databaseSnapshot = input.databaseSnapshot === undefined ? input.sourceSnapshot : input.databaseSnapshot;
   connection
     .insert(sourceRevisions)
     .values({
@@ -66,11 +57,7 @@ export function persistSourceRevision(
       databaseSnapshot,
     })
     .onConflictDoUpdate({
-      target: [
-        sourceRevisions.workspaceId,
-        sourceRevisions.entityKind,
-        sourceRevisions.entityId,
-      ],
+      target: [sourceRevisions.workspaceId, sourceRevisions.entityKind, sourceRevisions.entityId],
       set: {
         sourcePath: input.origin.path,
         sourceRevision: input.origin.revision,

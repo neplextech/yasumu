@@ -4,13 +4,13 @@ import type { editor, Position as MonacoPosition } from 'monaco-editor';
 export type YasumuSnippets = Record<string, string>;
 
 const REQUEST_SCRIPT_SNIPPETS: YasumuSnippets = {
-  '!req': "export async function onRequest(ctx) {\n\t$0\n}",
-  '!res': "export async function onResponse(ctx) {\n\t$0\n}",
-  '!test': "export async function onTest(ctx) {\n\t$0\n}",
+  '!req': 'export async function onRequest(ctx) {\n\t$0\n}',
+  '!res': 'export async function onResponse(ctx) {\n\t$0\n}',
+  '!test': 'export async function onTest(ctx) {\n\t$0\n}',
 };
 
 const EMAIL_SCRIPT_SNIPPETS: YasumuSnippets = {
-  '!email': "export async function onEmail(ctx) {\n\t$0\n}",
+  '!email': 'export async function onEmail(ctx) {\n\t$0\n}',
 };
 
 export const REST_SCRIPT_SNIPPETS = REQUEST_SCRIPT_SNIPPETS;

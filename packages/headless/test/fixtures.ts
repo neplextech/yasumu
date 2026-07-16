@@ -1,12 +1,6 @@
 import type { ScriptSource } from '@yasumu/runtime-api';
 
-import type {
-  GraphQLEntity,
-  RestEntity,
-  WorkspaceEnvironment,
-  WorkspaceGroup,
-  YasumuWorkspace,
-} from '../src/index.js';
+import type { GraphQLEntity, RestEntity, WorkspaceEnvironment, WorkspaceGroup, YasumuWorkspace } from '../src/index.js';
 
 const origin = { kind: 'memory' as const };
 

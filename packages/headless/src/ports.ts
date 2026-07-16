@@ -49,7 +49,11 @@ export interface RequestTransport {
 }
 
 export interface EmailProvider {
-  list(workspaceId: string, options: { since: number; limit?: number }, signal?: AbortSignal): Promise<WorkspaceEmail[]>;
+  list(
+    workspaceId: string,
+    options: { since: number; limit?: number },
+    signal?: AbortSignal,
+  ): Promise<WorkspaceEmail[]>;
   next(
     workspaceId: string,
     options: { since: number; cursor?: string; timeoutMs?: number },

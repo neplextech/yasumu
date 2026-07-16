@@ -131,9 +131,10 @@ braces:
 url: "{{API_URL}}/users?apiKey={{API_KEY}}"
 ```
 
-When you send a request, the shared headless resolver builds one effective
-environment for the complete hook and request lifecycle. The desktop supplies
-locally stored secret values; the CLI requires explicit secret sources.
+When you send a request, the shared headless resolver builds one
+effective environment for the complete hook and request lifecycle. The
+desktop supplies locally stored secret values; the CLI requires
+explicit secret sources.
 
 From highest to lowest precedence:
 
@@ -146,8 +147,8 @@ programmatic execution values
   → workspace defaults
 ```
 
-For the CLI, process values may use `YASUMU_VAR_<NAME>` for variables and
-`YASUMU_ENV_<NAME>` for defined secrets.
+For the CLI, process values may use `YASUMU_VAR_<NAME>` for variables
+and `YASUMU_ENV_<NAME>` for defined secrets.
 
 ## Switching Environments
 
@@ -168,19 +169,22 @@ export function onRequest(ctx: RequestHookContext) {
 }
 ```
 
-`setVariable()` and `setSecret()` modify execution-scoped state for later
-hooks and nested requests. They do not silently persist to YSL or SQLite.
+`setVariable()` and `setSecret()` modify execution-scoped state for
+later hooks and nested requests. They do not silently persist to YSL
+or SQLite.
 
-Secrets are centrally redacted from logs, diagnostics, request/response
-snapshots, test output, errors, and execution history.
+Secrets are centrally redacted from logs, diagnostics,
+request/response snapshots, test output, errors, and execution
+history.
 
 ## Typed interpolation
 
-When a JSON body or GraphQL variable is exactly `{{VALUE}}`, the resolved
-boolean, number, `null`, array, or object keeps its type. References embedded
-inside a larger string become text. Missing values, recursive cycles, and
-excessive expansion depth produce structured interpolation errors instead of
-silently sending an unresolved request.
+When a JSON body or GraphQL variable is exactly `{{VALUE}}`, the
+resolved boolean, number, `null`, array, or object keeps its type.
+References embedded inside a larger string become text. Missing
+values, recursive cycles, and excessive expansion depth produce
+structured interpolation errors instead of silently sending an
+unresolved request.
 
 ## Example Environments
 

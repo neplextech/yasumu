@@ -1,23 +1,13 @@
-import { HeadlessExecutionService } from "@yasumu/headless";
-import type { YasumuScriptRuntime } from "@yasumu/runtime-api";
+import { HeadlessExecutionService } from '@yasumu/headless';
+import type { YasumuScriptRuntime } from '@yasumu/runtime-api';
 
-import type { HeadlessDrizzleDatabase } from "../persistence/database.ts";
-import { createDrizzleHeadlessPersistence } from "../persistence/index.ts";
-import {
-  type EchoServerPortProvider,
-  type FetchImplementation,
-  GuiFetchTransport,
-} from "./echo-transport.ts";
-import { GuiEmailHookService } from "./email-hook.ts";
-import {
-  type GuiExecutionEventPublisher,
-  GuiExecutionEventSink,
-} from "./event-sink.ts";
-import { type GuiFileHandleStore, GuiFileResolver } from "./file-resolver.ts";
-import {
-  type GuiConfirmationHandler,
-  GuiPermissionProvider,
-} from "./permission-provider.ts";
+import type { HeadlessDrizzleDatabase } from '../persistence/database.ts';
+import { createDrizzleHeadlessPersistence } from '../persistence/index.ts';
+import { type EchoServerPortProvider, type FetchImplementation, GuiFetchTransport } from './echo-transport.ts';
+import { GuiEmailHookService } from './email-hook.ts';
+import { type GuiExecutionEventPublisher, GuiExecutionEventSink } from './event-sink.ts';
+import { type GuiFileHandleStore, GuiFileResolver } from './file-resolver.ts';
+import { type GuiConfirmationHandler, GuiPermissionProvider } from './permission-provider.ts';
 
 export interface GuiHeadlessExecutionOptions {
   database: HeadlessDrizzleDatabase;
@@ -30,15 +20,10 @@ export interface GuiHeadlessExecutionOptions {
 }
 
 /** Fully assembled desktop host for the canonical headless execution lifecycle. */
-export function createGuiHeadlessExecutionPlatform(
-  options: GuiHeadlessExecutionOptions,
-) {
+export function createGuiHeadlessExecutionPlatform(options: GuiHeadlessExecutionOptions) {
   const persistence = createDrizzleHeadlessPersistence(options.database);
   const files = new GuiFileResolver(options.fileHandles);
-  const transport = new GuiFetchTransport(
-    options.echoServerPort,
-    options.fetch,
-  );
+  const transport = new GuiFetchTransport(options.echoServerPort, options.fetch);
   const permissions = new GuiPermissionProvider(options.confirmPermission);
   const events = new GuiExecutionEventSink(options.publishExecutionEvent);
   const execution = new HeadlessExecutionService({
@@ -73,6 +58,4 @@ export function createGuiHeadlessExecutionPlatform(
   };
 }
 
-export type GuiHeadlessExecutionPlatform = ReturnType<
-  typeof createGuiHeadlessExecutionPlatform
->;
+export type GuiHeadlessExecutionPlatform = ReturnType<typeof createGuiHeadlessExecutionPlatform>;

@@ -22,7 +22,11 @@ import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
 import { restResponseFromExecution, type RestResponse } from '../_lib/rest-request';
 
-export type { RequestPhase, ScriptOutputEntry, ScriptOutputType } from '@/app/[locale]/workspaces/[workspace]/_lib/headless-execution';
+export type {
+  RequestPhase,
+  ScriptOutputEntry,
+  ScriptOutputType,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/headless-execution';
 
 export interface RequestState {
   phase: RequestPhase;

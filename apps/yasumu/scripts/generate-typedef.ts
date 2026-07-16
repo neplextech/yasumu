@@ -385,10 +385,18 @@ function generateYasumuTypes(): string {
 
   // Yasumu module declarations
   parts.push(`declare module "yasumu:collection" {\n  export { Collection };\n}`);
-  parts.push(`declare module "yasumu:workspace" {\n  const workspace: ScriptWorkspace;\n  export default workspace;\n  export { workspace };\n}`);
-  parts.push(`declare module "yasumu:runtime" {\n  const runtime: RuntimeDescriptor;\n  export default runtime;\n  export { runtime };\n}`);
-  parts.push(`declare module "yasumu:env" {\n  const env: EnvironmentScriptAPI;\n  export default env;\n  export { env };\n}`);
-  parts.push(`declare module "yasumu:files" {\n  const files: ScriptFileAPI;\n  export default files;\n  export { files };\n}`);
+  parts.push(
+    `declare module "yasumu:workspace" {\n  const workspace: ScriptWorkspace;\n  export default workspace;\n  export { workspace };\n}`,
+  );
+  parts.push(
+    `declare module "yasumu:runtime" {\n  const runtime: RuntimeDescriptor;\n  export default runtime;\n  export { runtime };\n}`,
+  );
+  parts.push(
+    `declare module "yasumu:env" {\n  const env: EnvironmentScriptAPI;\n  export default env;\n  export { env };\n}`,
+  );
+  parts.push(
+    `declare module "yasumu:files" {\n  const files: ScriptFileAPI;\n  export default files;\n  export { files };\n}`,
+  );
 
   // Testing API types (hand-written, stable)
   parts.push(TESTING_API_TYPES.trim());

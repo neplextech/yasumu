@@ -44,7 +44,10 @@ export class EmailHookService {
         logs: [],
         tests: [],
         diagnostics: [],
-        error: serializeYasumuError(new Error(`Workspace not found: ${workspaceId}`), YasumuErrorCodes.WorkspaceNotFound),
+        error: serializeYasumuError(
+          new Error(`Workspace not found: ${workspaceId}`),
+          YasumuErrorCodes.WorkspaceNotFound,
+        ),
       };
     }
     const sources = [workspace.script, workspace.smtp?.script].filter((source) => source !== undefined);

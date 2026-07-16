@@ -1,17 +1,18 @@
 ---
 title: SMTP Server
-description: Capture local email and automate mail-driven API workflows.
+description:
+  Capture local email and automate mail-driven API workflows.
 ---
 
 # SMTP Server
 
-Each Yasumu workspace can run a local catch-all SMTP server. Messages are
-stored in the workspace mailbox, appear in the desktop app in real time, and
-can participate in request executions and scripts.
+Each Yasumu workspace can run a local catch-all SMTP server. Messages
+are stored in the workspace mailbox, appear in the desktop app in real
+time, and can participate in request executions and scripts.
 
 <Callout type="warn" title="Development use only">
-  The built-in SMTP server is intended for local development and automated
-  testing. Do not expose it as a production mail server.
+  The built-in SMTP server is intended for local development and
+  automated testing. Do not expose it as a production mail server.
 </Callout>
 
 ## Mailbox
@@ -25,14 +26,15 @@ Open **Emails** in the workspace sidebar to:
 - edit the workspace's incoming-email script
 - start, stop, and configure the SMTP server
 
-Messages received while an API execution is running are available to that
-execution's email API even when they arrive before the script starts waiting.
+Messages received while an API execution is running are available to
+that execution's email API even when they arrive before the script
+starts waiting.
 
 ## Configuration
 
 The workspace SMTP configuration contains a stable ID, port, optional
-username, optional local password, and an optional `onEmail` script. Exported
-YSL does not write a usable password.
+username, optional local password, and an optional `onEmail` script.
+Exported YSL does not write a usable password.
 
 ```d
 @smtp
@@ -47,8 +49,8 @@ metadata {
 script null
 ```
 
-Common local ports are `1025` and `2525`. Ensure the selected port is not
-already in use.
+Common local ports are `1025` and `2525`. Ensure the selected port is
+not already in use.
 
 ## Sending mail to Yasumu
 
@@ -84,9 +86,9 @@ swaks --server 127.0.0.1:1025 \
 
 ## Email scripting
 
-The SMTP script exports one optional hook. It receives the same base context
-as request scripts, with a structured `ctx.email` instead of a request or
-response:
+The SMTP script exports one optional hook. It receives the same base
+context as request scripts, with a structured `ctx.email` instead of a
+request or response:
 
 ```ts
 export function onEmail(ctx: EmailHookContext) {
@@ -97,21 +99,21 @@ export function onEmail(ctx: EmailHookContext) {
 
 `WorkspaceEmail` contains:
 
-| Property | Type | Description |
-| :------- | :--- | :---------- |
-| `id` | `string` | Stable message ID |
-| `from` | `string` | Sender address |
-| `to` | `string[]` | Recipient addresses |
-| `cc` | `string[]` | CC addresses |
-| `subject` | `string` | Subject line |
-| `text` | `string` | Plain-text body |
-| `html` | `string` | HTML body |
-| `createdAt` | `number` | Receive timestamp in milliseconds |
-| `updatedAt` | `number \| undefined` | Last-update timestamp |
-| `unread` | `boolean \| undefined` | Read state |
+| Property    | Type                   | Description                       |
+| :---------- | :--------------------- | :-------------------------------- |
+| `id`        | `string`               | Stable message ID                 |
+| `from`      | `string`               | Sender address                    |
+| `to`        | `string[]`             | Recipient addresses               |
+| `cc`        | `string[]`             | CC addresses                      |
+| `subject`   | `string`               | Subject line                      |
+| `text`      | `string`               | Plain-text body                   |
+| `html`      | `string`               | HTML body                         |
+| `createdAt` | `number`               | Receive timestamp in milliseconds |
+| `updatedAt` | `number \| undefined`  | Last-update timestamp             |
+| `unread`    | `boolean \| undefined` | Read state                        |
 
-The context also exposes `id`, `entity`, `execution`, `signal`, `cancel()`, and
-the complete `ctx.workspace` API.
+The context also exposes `id`, `entity`, `execution`, `signal`,
+`cancel()`, and the complete `ctx.workspace` API.
 
 ### Extract a verification code
 
@@ -125,9 +127,9 @@ export function onEmail(ctx: EmailHookContext) {
 }
 ```
 
-Environment changes made by scripts are execution-scoped. Persisting a value
-requires an explicit host or user action; scripts never silently write secrets
-to YSL or SQLite.
+Environment changes made by scripts are execution-scoped. Persisting a
+value requires an explicit host or user action; scripts never silently
+write secrets to YSL or SQLite.
 
 ### Chain another entity
 
@@ -141,7 +143,8 @@ export async function onEmail(ctx: EmailHookContext) {
 }
 ```
 
-Nested runs inherit cancellation and emit their own child execution events.
+Nested runs inherit cancellation and emit their own child execution
+events.
 
 ## Waiting for mail from a request
 
@@ -156,7 +159,8 @@ export async function onResponse(ctx: ResponseHookContext) {
     { timeoutMs: 30_000, signal: ctx.signal },
   );
 
-  if (!email.text.includes('Code:')) throw new Error('Verification code missing');
+  if (!email.text.includes('Code:'))
+    throw new Error('Verification code missing');
 }
 ```
 
@@ -169,24 +173,29 @@ The lifecycle-safe algorithm:
 5. honors timeout and cancellation
 6. removes subscriptions when the wait ends
 
-This closes the race where mail arrives after the request starts but before
-`awaitEmail` is called. Multiple waits maintain independent cursors.
+This closes the race where mail arrives after the request starts but
+before `awaitEmail` is called. Multiple waits maintain independent
+cursors.
 
-Use `ctx.workspace.email.list({ since, limit })` when no wait is needed.
+Use `ctx.workspace.email.list({ since, limit })` when no wait is
+needed.
 
 ## Diagnostics and privacy
 
-Email timeouts, permission denial, runtime failures, and cancellation use the
-same structured error model as request execution. SMTP credentials and active
-environment secrets are redacted from logs, diagnostics, and history.
+Email timeouts, permission denial, runtime failures, and cancellation
+use the same structured error model as request execution. SMTP
+credentials and active environment secrets are redacted from logs,
+diagnostics, and history.
 
 ## Troubleshooting
 
-- **Connection refused:** start the workspace SMTP server and verify the port.
-- **Port already in use:** choose another local port and update the sender.
-- **Authentication fails:** make the sender credentials match the workspace
-  configuration.
-- **A wait times out:** verify the recipient/subject predicate and increase
-  `timeoutMs` when the sender is intentionally slow.
-- **A script does not run:** ensure it exports `onEmail(ctx)`; missing hooks are
-  valid no-ops.
+- **Connection refused:** start the workspace SMTP server and verify
+  the port.
+- **Port already in use:** choose another local port and update the
+  sender.
+- **Authentication fails:** make the sender credentials match the
+  workspace configuration.
+- **A wait times out:** verify the recipient/subject predicate and
+  increase `timeoutMs` when the sender is intentionally slow.
+- **A script does not run:** ensure it exports `onEmail(ctx)`; missing
+  hooks are valid no-ops.

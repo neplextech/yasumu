@@ -1,8 +1,11 @@
 # Yasumu Headless Runtime Extraction and Unified Execution Architecture
 
-You are responsible for designing and implementing a new headless architecture for Yasumu.
+You are responsible for designing and implementing a new headless
+architecture for Yasumu.
 
-The objective is to extract request execution, scripting, workspace operations, environment handling, variable interpolation, entity management, test execution, and related domain logic from:
+The objective is to extract request execution, scripting, workspace
+operations, environment handling, variable interpolation, entity
+management, test execution, and related domain logic from:
 
 - `./packages/tanxium`
 - `./apps/yasumu/src`
@@ -14,15 +17,18 @@ into reusable headless packages that can be assembled by:
 - `./packages/tanxium`
 - future Node.js, Bun, Deno, server, CI, and automation integrations
 
-The CLI and GUI must ultimately use the same domain logic, execution pipeline, scripting API, validation rules, and behavioral semantics.
+The CLI and GUI must ultimately use the same domain logic, execution
+pipeline, scripting API, validation rules, and behavioral semantics.
 
-The implementation is the primary deliverable. Do not return only an architecture proposal.
+The implementation is the primary deliverable. Do not return only an
+architecture proposal.
 
 ---
 
 # 1. Core objective
 
-Create a runtime-agnostic Yasumu headless system that becomes the single source of truth for:
+Create a runtime-agnostic Yasumu headless system that becomes the
+single source of truth for:
 
 - workspace loading
 - `.ysl` parsing and validation
@@ -58,9 +64,11 @@ The architecture must separate:
 5. application UI
 6. CLI presentation
 
-Tanxium must become only one JavaScript runtime adapter used by the Tauri GUI.
+Tanxium must become only one JavaScript runtime adapter used by the
+Tauri GUI.
 
-Node.js, Bun, Deno, and future runtimes must be able to execute the same Yasumu scripts by implementing a common runtime adapter contract.
+Node.js, Bun, Deno, and future runtimes must be able to execute the
+same Yasumu scripts by implementing a common runtime adapter contract.
 
 ---
 
@@ -123,9 +131,12 @@ apps/
     headless core assembly
 ```
 
-This structure is illustrative. Inspect the repository and choose names and package boundaries that fit the existing monorepo conventions.
+This structure is illustrative. Inspect the repository and choose
+names and package boundaries that fit the existing monorepo
+conventions.
 
-Do not blindly create packages matching this example if a better structure already exists.
+Do not blindly create packages matching this example if a better
+structure already exists.
 
 ---
 
@@ -148,7 +159,9 @@ You must:
 11. validate builds and tests
 12. remove or deprecate duplicated execution paths
 
-Do not ask for approval between phases unless a truly blocking product decision cannot be inferred from existing code, tests, schema, or UI behavior.
+Do not ask for approval between phases unless a truly blocking product
+decision cannot be inferred from existing code, tests, schema, or UI
+behavior.
 
 When behavior is ambiguous:
 
@@ -230,7 +243,9 @@ Search for all implementations related to:
 - `test`
 - `expect`
 
-Do not assume the current architecture based only on filenames. Trace the actual execution paths from UI or CLI entry point to network execution and script lifecycle completion.
+Do not assume the current architecture based only on filenames. Trace
+the actual execution paths from UI or CLI entry point to network
+execution and script lifecycle completion.
 
 ## 4.3 Behavioral inventory
 
@@ -290,7 +305,8 @@ load entity
 
 REST and GraphQL should share as much infrastructure as possible.
 
-GraphQL execution may specialize request construction but must not create an unrelated execution architecture.
+GraphQL execution may specialize request construction but must not
+create an unrelated execution architecture.
 
 ## 5.2 Runtime-agnostic domain layer
 
@@ -318,7 +334,8 @@ It may depend on standard Web APIs where practical:
 - `Blob`
 - `FormData`
 
-Where Web API behavior differs across runtimes, normalize it inside runtime or platform adapters.
+Where Web API behavior differs across runtimes, normalize it inside
+runtime or platform adapters.
 
 ## 5.3 Dependency inversion
 
@@ -368,15 +385,18 @@ The core must not write directly to:
 - terminal spinners
 - process exit codes
 
-The CLI should translate structured execution results and events into terminal output.
+The CLI should translate structured execution results and events into
+terminal output.
 
 ---
 
 # 6. Headless workspace model
 
-Implement a canonical workspace model that can be loaded from different sources.
+Implement a canonical workspace model that can be loaded from
+different sources.
 
-The headless core should work with a normalized workspace representation regardless of whether the source is:
+The headless core should work with a normalized workspace
+representation regardless of whether the source is:
 
 - `.ysl` files
 - SQLite
@@ -398,13 +418,15 @@ interface YasumuWorkspace {
 
 Use the schema package as the authoritative definition where possible.
 
-Avoid maintaining separate incompatible types in the CLI, GUI, schema package, and runtime.
+Avoid maintaining separate incompatible types in the CLI, GUI, schema
+package, and runtime.
 
 ---
 
 # 7. `.ysl` workspace behavior
 
-Yasumu workspace files use the `.ysl` format powered by `packages/schema`.
+Yasumu workspace files use the `.ysl` format powered by
+`packages/schema`.
 
 ## 7.1 CLI workspace loading
 
@@ -431,7 +453,8 @@ The loader must:
 - detect invalid references
 - resolve workspace-level configuration
 - load environment definitions
-- resolve file references relative to the correct workspace or entity file
+- resolve file references relative to the correct workspace or entity
+  file
 - avoid nondeterministic file ordering
 - support incremental loading where practical
 
@@ -441,7 +464,8 @@ Do not silently skip invalid files.
 
 ## 7.2 GUI workspace persistence
 
-The GUI reads canonical application state from its internal SQLite database using Drizzle.
+The GUI reads canonical application state from its internal SQLite
+database using Drizzle.
 
 It must also reconcile changes from `.ysl` files.
 
@@ -487,15 +511,18 @@ Do not use file modification time as the only source of truth.
 
 Use stable hashes or revisions.
 
-Keep the reconciliation engine headless and independent from UI presentation.
+Keep the reconciliation engine headless and independent from UI
+presentation.
 
-The GUI may provide a conflict resolution interface later, but the reconciliation engine must expose structured conflicts now.
+The GUI may provide a conflict resolution interface later, but the
+reconciliation engine must expose structured conflicts now.
 
 ---
 
 # 8. Entity CRUD
 
-Implement headless CRUD services for all supported Yasumu entity types.
+Implement headless CRUD services for all supported Yasumu entity
+types.
 
 At minimum:
 
@@ -516,7 +543,8 @@ CRUD services must:
 - be usable by CLI tooling and GUI commands
 - emit domain events where appropriate
 
-Do not embed CRUD behavior separately in React components and CLI commands.
+Do not embed CRUD behavior separately in React components and CLI
+commands.
 
 ---
 
@@ -565,7 +593,9 @@ Do not require these exact names. Use types that match the repository.
 
 The execution result must be serializable.
 
-Raw `Request` and `Response` objects may be used during execution, but results crossing process, worker, Tauri, or persistence boundaries need explicit serializable representations.
+Raw `Request` and `Response` objects may be used during execution, but
+results crossing process, worker, Tauri, or persistence boundaries
+need explicit serializable representations.
 
 ---
 
@@ -590,7 +620,8 @@ Scripts should be able to:
 await honoApp.fetch(ctx.req);
 ```
 
-The execution pipeline must account for the one-shot nature of request bodies.
+The execution pipeline must account for the one-shot nature of request
+bodies.
 
 Clone or snapshot requests where needed so that:
 
@@ -627,7 +658,8 @@ export async function onRequest(ctx: RequestHookContext) {
 }
 ```
 
-However, if direct assignment complicates cross-runtime serialization, define an explicit API such as:
+However, if direct assignment complicates cross-runtime serialization,
+define an explicit API such as:
 
 ```ts
 ctx.setRequest(new Request(...));
@@ -743,9 +775,12 @@ interface TestHookContext extends ResponseHookContext {
 
 `onTest` should only run in test mode.
 
-`describe`, `test`, and `expect` must only be available inside the active asynchronous `onTest` AsyncLocalStorage context. Calling `describe`/`test`/`expect` outside of that context will be no-op.
+`describe`, `test`, and `expect` must only be available inside the
+active asynchronous `onTest` AsyncLocalStorage context. Calling
+`describe`/`test`/`expect` outside of that context will be no-op.
 
-Preserve the current test behavior unless the existing behavior is incorrect or nondeterministic.
+Preserve the current test behavior unless the existing behavior is
+incorrect or nondeterministic.
 
 ---
 
@@ -775,7 +810,8 @@ interface ScriptWorkspace {
 }
 ```
 
-Only expose capabilities that are safe, useful, and implementable across runtimes.
+Only expose capabilities that are safe, useful, and implementable
+across runtimes.
 
 Avoid exposing internal repositories or persistence models.
 
@@ -793,7 +829,8 @@ const result = await ctx.workspace.rest.execute('rest-entity-id', {
 });
 ```
 
-REST scripts must be able to invoke GraphQL entities and GraphQL scripts must be able to invoke REST entities.
+REST scripts must be able to invoke GraphQL entities and GraphQL
+scripts must be able to invoke REST entities.
 
 Example:
 
@@ -821,7 +858,8 @@ interface NestedExecutionOptions {
 }
 ```
 
-The default for `withResponse` should be `false` unless repository behavior requires otherwise.
+The default for `withResponse` should be `false` unless repository
+behavior requires otherwise.
 
 Clarify what the method returns when `withResponse` is false.
 
@@ -865,7 +903,8 @@ export async function onResponse(ctx) {
 
 The email API must support the execution lifecycle window.
 
-An email received after the request started but before `onResponse` calls `awaitEmail` must still be discoverable.
+An email received after the request started but before `onResponse`
+calls `awaitEmail` must still be discoverable.
 
 The implementation should:
 
@@ -903,20 +942,23 @@ interface AwaitEmailOptions {
 }
 ```
 
-Predicates crossing worker boundaries may not be directly serializable.
+Predicates crossing worker boundaries may not be directly
+serializable.
 
 Design a safe runtime protocol.
 
 Possible solutions include:
 
-- execute the predicate inside the script worker against serialized email data
+- execute the predicate inside the script worker against serialized
+  email data
 - stream candidate emails into the worker
 - define structured filters for optimized common cases
 - combine structured filters with worker-side predicates
 
 Do not use `eval` in the host process.
 
-Emails also have a dedicated script that listens to `onEmail(ctx)` hook.
+Emails also have a dedicated script that listens to `onEmail(ctx)`
+hook.
 
 ```ts
 export async function onEmail(ctx: EmailHookContext) {
@@ -963,7 +1005,8 @@ interface EnvironmentScriptAPI {
 }
 ```
 
-Decide whether script mutations persist or only exist for the current execution.
+Decide whether script mutations persist or only exist for the current
+execution.
 
 The safer default is:
 
@@ -1038,9 +1081,12 @@ Define:
 - secret redaction
 - type preservation
 
-Avoid converting every interpolated value to a string when the target supports typed values.
+Avoid converting every interpolated value to a string when the target
+supports typed values.
 
-For example, GraphQL variables and JSON bodies should preserve boolean, number, null, array, and object values where the whole value is a variable reference.
+For example, GraphQL variables and JSON bodies should preserve
+boolean, number, null, array, and object values where the whole value
+is a variable reference.
 
 Add focused tests for interpolation edge cases.
 
@@ -1064,7 +1110,8 @@ Both GUI and headless execution must fully support:
 - files selected through GUI
 - files referenced through CLI workspace paths
 
-Do not require transferring entire file contents repeatedly between workers if avoidable.
+Do not require transferring entire file contents repeatedly between
+workers if avoidable.
 
 Create a runtime-independent file reference model.
 
@@ -1100,7 +1147,8 @@ Important requirements:
 - scripts can identify which files are attached
 - scripts can intentionally attach workspace files
 - the host controls actual file access
-- large files should not be copied through multiple serialization boundaries without reason
+- large files should not be copied through multiple serialization
+  boundaries without reason
 - path traversal outside allowed roots must be prevented
 - GUI file handles must be resolved through a host adapter
 - CLI file paths must be resolved relative to deterministic roots
@@ -1130,7 +1178,8 @@ Choose semantics that can work across Node.js, Bun, Deno, and Tanxium.
 
 # 18. Runtime API package
 
-Create a runtime API package containing the canonical script-facing contracts.
+Create a runtime API package containing the canonical script-facing
+contracts.
 
 This package should define:
 
@@ -1146,7 +1195,8 @@ This package should define:
 - serialization contracts
 - runtime capability definitions
 
-There must not be manually duplicated API definitions between TypeScript and Rust.
+There must not be manually duplicated API definitions between
+TypeScript and Rust.
 
 The same API contract must drive:
 
@@ -1162,7 +1212,8 @@ The same API contract must drive:
 
 # 19. Cross-runtime API generation
 
-The Yasumu scripting API must remain synchronized across TypeScript and Tanxium.
+The Yasumu scripting API must remain synchronized across TypeScript
+and Tanxium.
 
 Implement a code-generation or schema-driven system.
 
@@ -1193,9 +1244,11 @@ Generated files must clearly indicate that they are generated.
 
 CI or tests must fail when generated output is stale.
 
-Do not attempt to generate executable Rust behavior from arbitrary TypeScript.
+Do not attempt to generate executable Rust behavior from arbitrary
+TypeScript.
 
-Generate contracts and binding glue while keeping runtime-specific implementations explicit.
+Generate contracts and binding glue while keeping runtime-specific
+implementations explicit.
 
 ---
 
@@ -1239,13 +1292,15 @@ interface RuntimeCapabilities {
 }
 ```
 
-The headless core must use the common contract, not Tanxium-specific calls.
+The headless core must use the common contract, not Tanxium-specific
+calls.
 
 ---
 
 # 21. Worker execution
 
-Extract script execution so that it can operate in workers or worker threads.
+Extract script execution so that it can operate in workers or worker
+threads.
 
 Major JavaScript runtimes support isolated workers:
 
@@ -1270,7 +1325,8 @@ The implementation should:
 - preserve async context for test APIs
 - support execution-scoped state
 
-Do not assume all runtime objects can be transferred across worker boundaries.
+Do not assume all runtime objects can be transferred across worker
+boundaries.
 
 Use explicit serialized messages.
 
@@ -1285,7 +1341,8 @@ import { expect, test, describe } from 'yasumu:test';
 import { workspace } from 'yasumu:workspace';
 ```
 
-Inspect all existing `yasumu:` modules and preserve or improve their behavior.
+Inspect all existing `yasumu:` modules and preserve or improve their
+behavior.
 
 Use runtime-specific module resolution hooks:
 
@@ -1294,7 +1351,8 @@ Use runtime-specific module resolution hooks:
 - Bun plugin or loader APIs where supported
 - Tanxium module loader integration
 
-Virtual module definitions must originate from the shared runtime API contract.
+Virtual module definitions must originate from the shared runtime API
+contract.
 
 Do not maintain unrelated handwritten versions for each runtime.
 
@@ -1310,7 +1368,8 @@ yasumu:files
 
 Only add modules that provide clear value.
 
-Prefer passing hook context explicitly over hiding everything in global modules.
+Prefer passing hook context explicitly over hiding everything in
+global modules.
 
 Virtual modules should mainly support:
 
@@ -1323,7 +1382,8 @@ Virtual modules should mainly support:
 
 # 23. Workspace script module
 
-Support a workspace-level script module that can export shared values and utilities.
+Support a workspace-level script module that can export shared values
+and utilities.
 
 For example:
 
@@ -1384,9 +1444,11 @@ Requirements:
 - test registration does not leak across executions
 - concurrent executions do not share test context
 
-Use AsyncLocalStorage in Node.js where appropriate, but do not make the domain API depend on Node.js AsyncLocalStorage.
+Use AsyncLocalStorage in Node.js where appropriate, but do not make
+the domain API depend on Node.js AsyncLocalStorage.
 
-Each runtime adapter may implement asynchronous test context using its native facilities.
+Each runtime adapter may implement asynchronous test context using its
+native facilities.
 
 ---
 
@@ -1413,7 +1475,8 @@ ctx.signal;
 
 for standard cancellation-aware APIs.
 
-Cancellation should produce a structured result rather than an arbitrary runtime exception.
+Cancellation should produce a structured result rather than an
+arbitrary runtime exception.
 
 Distinguish:
 
@@ -1451,13 +1514,15 @@ Support:
 - proxy configuration where applicable
 - request and response size limits where applicable
 
-Do not place runtime-specific TLS or proxy configuration in the domain execution pipeline.
+Do not place runtime-specific TLS or proxy configuration in the domain
+execution pipeline.
 
 ---
 
 # 27. Permissions and capabilities
 
-Tanxium currently provides runtime capabilities and permission behavior.
+Tanxium currently provides runtime capabilities and permission
+behavior.
 
 Preserve the security model while making it runtime-independent.
 
@@ -1476,7 +1541,8 @@ Define capabilities such as:
 
 Scripts should request or declare capabilities where appropriate.
 
-The runtime adapter or host application decides how permissions are approved.
+The runtime adapter or host application decides how permissions are
+approved.
 
 For example:
 
@@ -1551,11 +1617,14 @@ The GUI must:
 - use the same script lifecycle
 - use the same nested execution behavior
 
-Remove duplicate GUI-only execution logic after parity has been demonstrated.
+Remove duplicate GUI-only execution logic after parity has been
+demonstrated.
 
-Do not retain the old implementation indefinitely behind unclear compatibility paths.
+Do not retain the old implementation indefinitely behind unclear
+compatibility paths.
 
-If a staged migration is needed, use an explicit feature flag and remove it after tests pass.
+If a staged migration is needed, use an explicit feature flag and
+remove it after tests pass.
 
 ---
 
@@ -1631,7 +1700,8 @@ Errors must include:
 - safe diagnostic details
 - redacted sensitive values
 
-CLI and GUI should present the same underlying error differently without changing its meaning.
+CLI and GUI should present the same underlying error differently
+without changing its meaning.
 
 ---
 
@@ -1748,9 +1818,11 @@ Perform the migration incrementally.
 
 ## Phase 6: Node.js runtime adapter
 
-Implement a functional Node.js runtime adapter using worker threads and module loading hooks.
+Implement a functional Node.js runtime adapter using worker threads
+and module loading hooks.
 
-This serves as proof that the headless architecture is not coupled to Tanxium.
+This serves as proof that the headless architecture is not coupled to
+Tanxium.
 
 It must support:
 
@@ -1886,7 +1958,8 @@ Using `test-workspace/yasumu`, test:
 
 ## 35.4 GUI integration tests
 
-Test the headless GUI assembly without requiring the full visual UI where possible.
+Test the headless GUI assembly without requiring the full visual UI
+where possible.
 
 Test:
 
@@ -1904,7 +1977,8 @@ Test:
 
 The GUI and CLI must behave predictably and consistently.
 
-For the same workspace, entity, environment, and secrets, they should produce equivalent:
+For the same workspace, entity, environment, and secrets, they should
+produce equivalent:
 
 - request URL
 - request method
@@ -1997,9 +2071,12 @@ Ensure examples match the final implemented API exactly.
 - Do not use modification time as the only reconciliation mechanism.
 - Do not use global mutable state for active tests.
 - Do not let nested executions recurse indefinitely.
-- Do not leave placeholder implementations where repository behavior can be completed.
-- Do not introduce speculative abstractions unrelated to current requirements.
-- Do not create a generic framework detached from Yasumu's actual use cases.
+- Do not leave placeholder implementations where repository behavior
+  can be completed.
+- Do not introduce speculative abstractions unrelated to current
+  requirements.
+- Do not create a generic framework detached from Yasumu's actual use
+  cases.
 - Do not retain obsolete execution paths after migration.
 - Do not change the visual design of the GUI as part of this task.
 - Do not perform unrelated frontend cleanup.
@@ -2033,12 +2110,14 @@ The task is complete only when:
 21. the CLI uses the headless implementation.
 22. the GUI uses the headless implementation.
 23. SQLite and `.ysl` reconciliation exists.
-24. runtime API definitions are generated or validated from one source.
+24. runtime API definitions are generated or validated from one
+    source.
 25. runtime conformance tests pass for Node.js and Tanxium.
 26. CLI and GUI parity tests pass.
 27. obsolete duplicate execution logic is removed.
 28. documentation reflects the implemented design.
-29. all relevant formatting, lint, type-checking, Rust, test, and build commands pass.
+29. all relevant formatting, lint, type-checking, Rust, test, and
+    build commands pass.
 
 ---
 
@@ -2090,6 +2169,8 @@ At the end, provide a concise implementation report containing:
 
 ## Remaining limitations
 
-Clearly state any behavior that could not safely be migrated, including the exact reason and affected files.
+Clearly state any behavior that could not safely be migrated,
+including the exact reason and affected files.
 
-Do not claim completion for partially implemented adapters or placeholder code.
+Do not claim completion for partially implemented adapters or
+placeholder code.

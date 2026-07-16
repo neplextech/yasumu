@@ -8,7 +8,6 @@ import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import ErrorScreen from '../visuals/error-screen';
 import LoadingScreen from '../visuals/loading-screen';
-
 import { type YasumuSnippets, registerYasumuSnippets } from './yasumu-snippets';
 
 export interface TypeDefinition {

@@ -1,11 +1,7 @@
-import type { WorkspaceSource } from '../src/index.js';
-import {
-  HeadlessWorkspaceLoader,
-  reconcileThreeWay,
-  stableHash,
-  WorkspaceValidationError,
-} from '../src/index.js';
 import { describe, expect, it } from 'vitest';
+
+import type { WorkspaceSource } from '../src/index.js';
+import { HeadlessWorkspaceLoader, reconcileThreeWay, stableHash, WorkspaceValidationError } from '../src/index.js';
 
 const workspaceYsl = `@workspace
 metadata {
@@ -91,7 +87,9 @@ describe('HeadlessWorkspaceLoader', () => {
     expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(
       expect.arrayContaining(['DUPLICATE_ENTITY_ID', 'INVALID_REFERENCE', 'INVALID_YSL']),
     );
-    await expect(new HeadlessWorkspaceLoader().loadOrThrow(source([]))).rejects.toBeInstanceOf(WorkspaceValidationError);
+    await expect(new HeadlessWorkspaceLoader().loadOrThrow(source([]))).rejects.toBeInstanceOf(
+      WorkspaceValidationError,
+    );
   });
 
   it('reuses revision-aware parsing while returning fresh normalized models', async () => {

@@ -1,12 +1,10 @@
-import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from "./common/worker-heartbeat.ts";
-import { getRuntimeWorkerSupportSource } from "./runtime-worker-preload.ts";
+import { SCRIPT_WORKER_HEARTBEAT_TIMEOUT } from './common/worker-heartbeat.ts';
+import { getRuntimeWorkerSupportSource } from './runtime-worker-preload.ts';
 
 // a pure function that the worker can use to generate its preload script
 // this function is stringified and sent to the worker at runtime
 // deno-lint-ignore no-explicit-any
-export type ScriptContextFunction<T extends any[] = [], R = any> = (
-  ...args: T
-) => R;
+export type ScriptContextFunction<T extends any[] = [], R = any> = (...args: T) => R;
 
 export interface BuiltContextExtractor {
   // deno-lint-ignore no-explicit-any
@@ -29,24 +27,16 @@ export interface ScriptContextExtractorResult {
 
 export interface ContextHandlerDefinition {
   type: string;
-  builder:
-    | string
-    | ScriptContextFunction<
-      [context: Record<string, unknown>],
-      ScriptContextBuilderResult
-    >;
+  builder: string | ScriptContextFunction<[context: Record<string, unknown>], ScriptContextBuilderResult>;
   extractor:
     | string
-    | ScriptContextFunction<
-      [result: unknown, builtContext: BuiltContextExtractor],
-      ScriptContextExtractorResult
-    >;
+    | ScriptContextFunction<[result: unknown, builtContext: BuiltContextExtractor], ScriptContextExtractorResult>;
 }
 
-export type WorkerTransport = "web" | "worker-threads";
+export type WorkerTransport = 'web' | 'worker-threads';
 
 function getWorkerTransportPrelude(transport: WorkerTransport): string {
-  if (transport === "worker-threads") {
+  if (transport === 'worker-threads') {
     return /* javascript */ `
   import { parentPort } from 'node:worker_threads';
 
@@ -63,7 +53,7 @@ function getWorkerTransportPrelude(transport: WorkerTransport): string {
 
 export function generateWorkerPreload(
   handlers: ContextHandlerDefinition[],
-  transport: WorkerTransport = "web",
+  transport: WorkerTransport = 'web',
 ): string {
   const handlerEntries = handlers
     .map(
@@ -71,21 +61,21 @@ export function generateWorkerPreload(
   '${h.type}': {
     build: (context) => {
       ${
-        typeof h.builder === "string"
+        typeof h.builder === 'string'
           ? `${h.builder}\nreturn { args, getContext };`
           : `return (${h.builder.toString()})(context);`
       }
     },
     extract: (result, builtContext) => {
       ${
-        typeof h.extractor === "string"
+        typeof h.extractor === 'string'
           ? `const { getContext } = builtContext;\n${h.extractor}\nreturn { updatedContext, extractedResult };`
           : `return (${h.extractor.toString()})(result, builtContext);`
       }
     },
   }`,
     )
-    .join(",\n");
+    .join(',\n');
 
   return /* javascript */ `
   import { createRequire } from 'node:module';
@@ -264,8 +254,6 @@ ${getRuntimeWorkerSupportSource()}
 `;
 }
 
-export function getHeadlessWorkerPreload(
-  transport: WorkerTransport = "web",
-): string {
+export function getHeadlessWorkerPreload(transport: WorkerTransport = 'web'): string {
   return generateWorkerPreload([], transport);
 }

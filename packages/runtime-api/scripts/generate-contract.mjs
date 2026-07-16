@@ -23,11 +23,12 @@ export const RUNTIME_WORKER_MESSAGE_TYPES = [${tuple(contract.workerMessages)}] 
 export const RUNTIME_HOST_METHODS = [${tuple(contract.hostMethods)}] as const;
 `;
 
-const rustVariant = (value) => value
-  .split(/[^A-Za-z0-9]+/)
-  .filter(Boolean)
-  .map((part) => part[0].toUpperCase() + part.slice(1))
-  .join('');
+const rustVariant = (value) =>
+  value
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join('');
 const rustSlice = (declaration, values) => {
   const compact = `${declaration}&[${tuple(values)}];`;
   if (compact.length <= 100) return compact;

@@ -12,13 +12,13 @@ const base = {
 
 describe('headless execution UI mapping', () => {
   it('maps backend lifecycle events to the existing request phases', () => {
-    expect(phaseFromExecutionEvent({ ...base, type: 'hook-started', hook: 'onRequest', sourceId: 'script' }, 'idle')).toBe(
-      'pre-request-script',
-    );
+    expect(
+      phaseFromExecutionEvent({ ...base, type: 'hook-started', hook: 'onRequest', sourceId: 'script' }, 'idle'),
+    ).toBe('pre-request-script');
     expect(phaseFromExecutionEvent({ ...base, type: 'request-sent' }, 'pre-request-script')).toBe('sending');
-    expect(phaseFromExecutionEvent({ ...base, type: 'hook-started', hook: 'onResponse', sourceId: 'script' }, 'sending')).toBe(
-      'post-response-script',
-    );
+    expect(
+      phaseFromExecutionEvent({ ...base, type: 'hook-started', hook: 'onResponse', sourceId: 'script' }, 'sending'),
+    ).toBe('post-response-script');
     expect(phaseFromExecutionEvent({ ...base, type: 'execution-cancelled' }, 'sending')).toBe('cancelled');
   });
 

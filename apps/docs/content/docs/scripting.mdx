@@ -1,13 +1,15 @@
 ---
 title: Scripting
-description: Standard Web API hooks, workspace services, mocks, and portable Yasumu scripts.
+description:
+  Standard Web API hooks, workspace services, mocks, and portable
+  Yasumu scripts.
 ---
 
 # Scripting
 
-Yasumu request scripts are TypeScript or JavaScript modules that run through
-the same lifecycle in the desktop app and CLI. Hook contexts use standard Web
-APIs and are typed by the shared runtime contract.
+Yasumu request scripts are TypeScript or JavaScript modules that run
+through the same lifecycle in the desktop app and CLI. Hook contexts
+use standard Web APIs and are typed by the shared runtime contract.
 
 ```ts
 export async function onRequest(ctx: RequestHookContext) {}
@@ -19,8 +21,8 @@ All hooks are optional. Missing exports are no-ops.
 
 ## Lifecycle and cascade
 
-For each phase, Yasumu runs scripts from the workspace level down through the
-entity's parent groups and finally the entity itself:
+For each phase, Yasumu runs scripts from the workspace level down
+through the entity's parent groups and finally the entity itself:
 
 ```d
 workspace → outer group → inner group → entity
@@ -34,19 +36,20 @@ onRequest → mock or transport → onResponse → onTest (test mode only)
 
 Every context includes:
 
-| Property | Description |
-| :------- | :---------- |
-| `ctx.id` | The current entity ID |
-| `ctx.entity` | A safe description of the current entity |
-| `ctx.workspace` | Workspace execution, environment, email, and file APIs |
-| `ctx.execution` | Execution ID, parent/root IDs, depth, mode, and start time |
-| `ctx.signal` | The execution's `AbortSignal` |
-| `ctx.cancel(reason?)` | Cancel this run and its nested work |
+| Property              | Description                                                |
+| :-------------------- | :--------------------------------------------------------- |
+| `ctx.id`              | The current entity ID                                      |
+| `ctx.entity`          | A safe description of the current entity                   |
+| `ctx.workspace`       | Workspace execution, environment, email, and file APIs     |
+| `ctx.execution`       | Execution ID, parent/root IDs, depth, mode, and start time |
+| `ctx.signal`          | The execution's `AbortSignal`                              |
+| `ctx.cancel(reason?)` | Cancel this run and its nested work                        |
 
 ## Requests
 
-`ctx.req` is a Web [`Request`](https://developer.mozilla.org/docs/Web/API/Request).
-Clone it before reading a body that another consumer will also need.
+`ctx.req` is a Web
+[`Request`](https://developer.mozilla.org/docs/Web/API/Request). Clone
+it before reading a body that another consumer will also need.
 
 Use `ctx.setRequest()` to replace the outgoing request predictably:
 
@@ -60,8 +63,8 @@ export async function onRequest(ctx: RequestHookContext) {
 }
 ```
 
-`ctx.req` is updated after `setRequest`, and the final request is passed to the
-next script in the cascade and then to the transport.
+`ctx.req` is updated after `setRequest`, and the final request is
+passed to the next script in the cascade and then to the transport.
 
 ## Mock responses
 
@@ -75,15 +78,15 @@ export function onRequest(ctx: RequestHookContext) {
 }
 ```
 
-A mock follows the normal remainder of the lifecycle. `onResponse` and, in
-test mode, `onTest` still run. The result and execution events identify it with
-`isMockResponse`.
+A mock follows the normal remainder of the lifecycle. `onResponse`
+and, in test mode, `onTest` still run. The result and execution events
+identify it with `isMockResponse`.
 
 ## Responses
 
 `ctx.res` is a read-only Web
-[`Response`](https://developer.mozilla.org/docs/Web/API/Response). Use a clone
-when reading its body:
+[`Response`](https://developer.mozilla.org/docs/Web/API/Response). Use
+a clone when reading its body:
 
 ```ts
 export async function onResponse(ctx: ResponseHookContext) {
@@ -112,9 +115,10 @@ export async function onTest(ctx: TestHookContext) {
 }
 ```
 
-`describe`, `test`, and `expect` are active only inside the asynchronous
-`onTest` context. Registrations do not leak between concurrent executions.
-See [Testing](/docs/testing) for matchers and result behavior.
+`describe`, `test`, and `expect` are active only inside the
+asynchronous `onTest` context. Registrations do not leak between
+concurrent executions. See [Testing](/docs/testing) for matchers and
+result behavior.
 
 ## Environment API
 
@@ -128,14 +132,14 @@ ctx.workspace.env.setVariable('USER_ID', '42');
 ctx.workspace.env.setSecret('ACCESS_TOKEN', 'execution-only-value');
 ```
 
-Getters read the effective environment. Setters affect the current execution
-and later hooks or nested runs in that execution; they do not silently persist
-values or secrets to YSL or SQLite.
+Getters read the effective environment. Setters affect the current
+execution and later hooks or nested runs in that execution; they do
+not silently persist values or secrets to YSL or SQLite.
 
 Available methods are `getVariable`, `getSecret`, `getAllVariables`,
-`getAllSecrets`, `setVariable`, `setSecret`, `hasVariable`, and `hasSecret`.
-Secrets are centrally redacted from logs, diagnostics, snapshots, errors, and
-history.
+`getAllSecrets`, `setVariable`, `setSecret`, `hasVariable`, and
+`hasSecret`. Secrets are centrally redacted from logs, diagnostics,
+snapshots, errors, and history.
 
 ## Chaining requests
 
@@ -143,10 +147,13 @@ REST and GraphQL entities can invoke each other:
 
 ```ts
 export async function onResponse(ctx: ResponseHookContext) {
-  const result = await ctx.workspace.graphql.execute('get-current-user', {
-    variables: { id: '42' },
-    withResponse: true,
-  });
+  const result = await ctx.workspace.graphql.execute(
+    'get-current-user',
+    {
+      variables: { id: '42' },
+      withResponse: true,
+    },
+  );
 
   if (result.status !== 'completed') {
     throw new Error(result.error?.message ?? 'Nested request failed');
@@ -155,16 +162,16 @@ export async function onResponse(ctx: ResponseHookContext) {
 ```
 
 Use `ctx.workspace.rest.get/list/execute` and
-`ctx.workspace.graphql.get/list/execute`. Nested runs inherit the workspace,
-environment, and cancellation signal, get a child execution ID, emit normal
-events, and are protected by a maximum depth. `withResponse` defaults to
-`false`.
+`ctx.workspace.graphql.get/list/execute`. Nested runs inherit the
+workspace, environment, and cancellation signal, get a child execution
+ID, emit normal events, and are protected by a maximum depth.
+`withResponse` defaults to `false`.
 
 ## Waiting for email
 
-The email API checks messages received since the execution began before it
-waits for a future message, so an email that arrives between the request and
-the hook is not missed:
+The email API checks messages received since the execution began
+before it waits for a future message, so an email that arrives between
+the request and the hook is not missed:
 
 ```ts
 export async function onResponse(ctx: ResponseHookContext) {
@@ -178,21 +185,24 @@ export async function onResponse(ctx: ResponseHookContext) {
 }
 ```
 
-`ctx.workspace.email.list({ since, limit })` queries buffered or persisted
-messages. Predicates run in the script worker against serialized email
-candidates; the host process does not evaluate script text.
+`ctx.workspace.email.list({ since, limit })` queries buffered or
+persisted messages. Predicates run in the script worker against
+serialized email candidates; the host process does not evaluate script
+text.
 
-Incoming SMTP messages can also invoke the dedicated `onEmail(ctx)` hook. See
-[SMTP Server](/docs/smtp-server#email-scripting).
+Incoming SMTP messages can also invoke the dedicated `onEmail(ctx)`
+hook. See [SMTP Server](/docs/smtp-server#email-scripting).
 
 ## Files and multipart bodies
 
-Scripts receive metadata-first file references. The host controls access to
-workspace paths and GUI handles:
+Scripts receive metadata-first file references. The host controls
+access to workspace paths and GUI handles:
 
 ```ts
 export async function onRequest(ctx: RequestHookContext) {
-  const avatar = await ctx.workspace.files.open('fixtures/avatar.png');
+  const avatar = await ctx.workspace.files.open(
+    'fixtures/avatar.png',
+  );
   const body = new FormData();
   body.append('displayName', 'Ada');
   body.append('avatar', avatar, avatar.name);
@@ -202,21 +212,21 @@ export async function onRequest(ctx: RequestHookContext) {
 ```
 
 `files.resolve(path)` returns serializable metadata;
-`files.open(pathOrReference)` returns a Web `File` inside the runtime. CLI
-workspace paths are confined to the workspace root, while the desktop resolves
-selected files through its host adapter.
+`files.open(pathOrReference)` returns a Web `File` inside the runtime.
+CLI workspace paths are confined to the workspace root, while the
+desktop resolves selected files through its host adapter.
 
 ## Virtual modules
 
 The runtime contract defines these modules:
 
-| Module | Exports |
-| :----- | :------ |
-| `yasumu:test` | `describe`, `test`, `expect` |
+| Module             | Exports                                                     |
+| :----------------- | :---------------------------------------------------------- |
+| `yasumu:test`      | `describe`, `test`, `expect`                                |
 | `yasumu:workspace` | `workspace` plus declared exports from the workspace script |
-| `yasumu:runtime` | Runtime descriptor and capabilities |
-| `yasumu:env` | Active execution environment API |
-| `yasumu:files` | Active file API |
+| `yasumu:runtime`   | Runtime descriptor and capabilities                         |
+| `yasumu:env`       | Active execution environment API                            |
+| `yasumu:files`     | Active file API                                             |
 
 ```ts
 import { expect, test } from 'yasumu:test';
@@ -224,23 +234,25 @@ import { workspace } from 'yasumu:workspace';
 import env from 'yasumu:env';
 ```
 
-Workspace module state is scoped to the runtime session and never shared
-between workspaces.
+Workspace module state is scoped to the runtime session and never
+shared between workspaces.
 
 ## Runtime capabilities
 
-Portable scripts should prefer Web APIs and the `ctx.workspace` services.
-The desktop Tanxium adapter additionally exposes its approved Deno and Node
-compatibility capabilities. The Node CLI exposes approved Node built-ins.
-Filesystem, network, environment, subprocess, FFI, native module, email, and
-nested execution access are capability-controlled by the host.
+Portable scripts should prefer Web APIs and the `ctx.workspace`
+services. The desktop Tanxium adapter additionally exposes its
+approved Deno and Node compatibility capabilities. The Node CLI
+exposes approved Node built-ins. Filesystem, network, environment,
+subprocess, FFI, native module, email, and nested execution access are
+capability-controlled by the host.
 
 ## Cancellation and failures
 
-Use `ctx.signal` with cancellation-aware APIs or call `ctx.cancel()`. Yasumu
-distinguishes user cancellation, timeouts, runtime failures, network errors,
-permission denial, and email timeouts in structured execution results. Workers,
-email subscriptions, and nested executions are disposed when a run finishes.
+Use `ctx.signal` with cancellation-aware APIs or call `ctx.cancel()`.
+Yasumu distinguishes user cancellation, timeouts, runtime failures,
+network errors, permission denial, and email timeouts in structured
+execution results. Workers, email subscriptions, and nested executions
+are disposed when a run finishes.
 
 ## Complete example
 

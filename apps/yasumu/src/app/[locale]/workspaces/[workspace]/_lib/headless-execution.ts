@@ -46,13 +46,16 @@ export function outputFromExecutionEvent(event: ExecutionEvent): ScriptOutputEnt
     case 'test-completed':
       return {
         message: `[Test] ${event.test.test}: ${event.test.result}`,
-        type:
-          event.test.result === 'pass' ? 'test-pass' : event.test.result === 'fail' ? 'test-fail' : 'test-skip',
+        type: event.test.result === 'pass' ? 'test-pass' : event.test.result === 'fail' ? 'test-fail' : 'test-skip',
         timestamp: event.timestamp,
       };
     case 'response-received':
       return event.mocked
-        ? { message: '[Response] Script returned a mock; network transport was skipped', type: 'warning', timestamp: event.timestamp }
+        ? {
+            message: '[Response] Script returned a mock; network transport was skipped',
+            type: 'warning',
+            timestamp: event.timestamp,
+          }
         : null;
     default:
       return null;

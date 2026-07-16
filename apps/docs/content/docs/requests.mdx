@@ -1,12 +1,15 @@
 ---
 title: Requests
-description: Build, script, and execute REST requests consistently in the desktop app and CLI.
+description:
+  Build, script, and execute REST requests consistently in the desktop
+  app and CLI.
 ---
 
 # Requests
 
-REST entities are stored in YSL, normalized into the shared workspace model,
-and executed by the same headless pipeline in the desktop app and CLI.
+REST entities are stored in YSL, normalized into the shared workspace
+model, and executed by the same headless pipeline in the desktop app
+and CLI.
 
 ## Creating a request
 
@@ -50,40 +53,42 @@ script null
 test null
 ```
 
-Entity IDs remain stable across the filesystem, SQLite import, CLI, scripts,
-and execution history. The loader rejects duplicate IDs and invalid group or
-dependency references with source-located diagnostics.
+Entity IDs remain stable across the filesystem, SQLite import, CLI,
+scripts, and execution history. The loader rejects duplicate IDs and
+invalid group or dependency references with source-located
+diagnostics.
 
 ## Supported request data
 
 Yasumu supports standard HTTP methods and these body types:
 
-| Body type | Behavior |
-| :-------- | :------- |
-| JSON | Preserves typed whole-value interpolation |
-| Text | Sends text with deterministic encoding |
-| Binary | Resolves a runtime-independent file reference |
-| Form data | Supports repeated text fields and multiple files |
+| Body type   | Behavior                                         |
+| :---------- | :----------------------------------------------- |
+| JSON        | Preserves typed whole-value interpolation        |
+| Text        | Sends text with deterministic encoding           |
+| Binary      | Resolves a runtime-independent file reference    |
+| Form data   | Supports repeated text fields and multiple files |
 | URL encoded | Builds `application/x-www-form-urlencoded` pairs |
 
-Enabled headers, path parameters, and search parameters are interpolated at
-execution time. Disabled rows are ignored.
+Enabled headers, path parameters, and search parameters are
+interpolated at execution time. Disabled rows are ignored.
 
 ## Variable interpolation
 
-Use `{{NAME}}` in URLs, keys, headers, parameters, bodies, GraphQL variables,
-and eligible file paths:
+Use `{{NAME}}` in URLs, keys, headers, parameters, bodies, GraphQL
+variables, and eligible file paths:
 
 ```d
 url: "{{API_URL}}/teams/:teamId"
 ```
 
-When a JSON or GraphQL value consists entirely of one reference, booleans,
-numbers, `null`, arrays, and objects keep their type. Embedded references are
-rendered as strings. Recursive values have a depth limit and cycles or missing
-values produce structured errors.
+When a JSON or GraphQL value consists entirely of one reference,
+booleans, numbers, `null`, arrays, and objects keep their type.
+Embedded references are rendered as strings. Recursive values have a
+depth limit and cycles or missing values produce structured errors.
 
-See [Environments](/docs/environments) for precedence and secret handling.
+See [Environments](/docs/environments) for precedence and secret
+handling.
 
 ## Files and form data
 
@@ -93,14 +98,15 @@ File values use a serializable reference whose source is one of:
 - a desktop host handle
 - inline bytes selected by the renderer
 
-The desktop resolves GUI selections in the backend. The CLI resolves YSL paths
-relative to the workspace and blocks traversal or symlink escape. Scripts can
-inspect metadata or intentionally open workspace files through
-`ctx.workspace.files`.
+The desktop resolves GUI selections in the backend. The CLI resolves
+YSL paths relative to the workspace and blocks traversal or symlink
+escape. Scripts can inspect metadata or intentionally open workspace
+files through `ctx.workspace.files`.
 
-Multipart requests preserve repeated fields, file names, MIME types, multiple
-files, and empty files. Request snapshots record metadata and bounded bodies;
-they do not duplicate unbounded binary content across workers.
+Multipart requests preserve repeated fields, file names, MIME types,
+multiple files, and empty files. Request snapshots record metadata and
+bounded bodies; they do not duplicate unbounded binary content across
+workers.
 
 ## Script lifecycle
 
@@ -122,9 +128,10 @@ export function onTest(ctx: TestHookContext) {
 }
 ```
 
-Workspace and nested group hooks cascade before the entity hook. Returning a
-Web `Response` from `onRequest` skips transport but still runs `onResponse` and
-`onTest`. Read [Scripting](/docs/scripting) for the complete contract.
+Workspace and nested group hooks cascade before the entity hook.
+Returning a Web `Response` from `onRequest` skips transport but still
+runs `onResponse` and `onTest`. Read [Scripting](/docs/scripting) for
+the complete contract.
 
 ## Execution results
 
@@ -138,29 +145,33 @@ The headless result is serializable and includes:
 - tests, logs, diagnostics, and nested executions
 - a redacted structured error when execution fails
 
-The desktop maps this result into the existing response panel and subscribes
-to execution events for live phases and console output. The CLI renders the
-same underlying result as human-readable or JSON output.
+The desktop maps this result into the existing response panel and
+subscribes to execution events for live phases and console output. The
+CLI renders the same underlying result as human-readable or JSON
+output.
 
 ## Cancellation and timeouts
 
-Cancelling from the desktop or pressing `Ctrl+C` in the CLI aborts transport,
-hooks, tests, nested requests, file work, email waits, and the runtime session.
-Timeouts and user cancellation remain distinct error categories.
+Cancelling from the desktop or pressing `Ctrl+C` in the CLI aborts
+transport, hooks, tests, nested requests, file work, email waits, and
+the runtime session. Timeouts and user cancellation remain distinct
+error categories.
 
 ## Dependencies and chaining
 
-YSL dependencies are validated as references. Scripts can directly execute
-another REST or GraphQL entity through `ctx.workspace.rest.execute()` or
-`ctx.workspace.graphql.execute()`. Nested execution inherits the active
-environment and cancellation signal, emits child events, and has a maximum
-depth to prevent recursion.
+YSL dependencies are validated as references. Scripts can directly
+execute another REST or GraphQL entity through
+`ctx.workspace.rest.execute()` or `ctx.workspace.graphql.execute()`.
+Nested execution inherits the active environment and cancellation
+signal, emits child events, and has a maximum depth to prevent
+recursion.
 
 ## Best practices
 
 1. Use stable IDs and descriptive names.
 2. Keep endpoints and credentials in environments.
-3. Store secrets outside YSL and supply them explicitly in headless runs.
+3. Store secrets outside YSL and supply them explicitly in headless
+   runs.
 4. Prefer Web `Request`/`Response` APIs in scripts.
 5. Use workspace paths, not absolute paths, for portable fixtures.
 6. Add `onTest` assertions so the same workspace can run in CI.

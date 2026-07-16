@@ -1,13 +1,15 @@
 ---
 title: Testing
-description: Define deterministic API tests with the shared Yasumu test lifecycle.
+description:
+  Define deterministic API tests with the shared Yasumu test
+  lifecycle.
 ---
 
 # Testing
 
-Tests are declared in `onTest(ctx)` and run after `onResponse` only when an
-entity is executed in test mode. The desktop app and CLI return the same
-structured test results.
+Tests are declared in `onTest(ctx)` and run after `onResponse` only
+when an entity is executed in test mode. The desktop app and CLI
+return the same structured test results.
 
 ```ts
 export async function onTest(ctx: TestHookContext) {
@@ -21,9 +23,9 @@ export async function onTest(ctx: TestHookContext) {
 ```
 
 <Callout type="warn" title="Active test context required">
-  `describe`, `test`, and `expect` are active only inside the asynchronous
-  `onTest` context. Calls from `onRequest`, `onResponse`, module initialization,
-  or a completed hook are no-ops.
+  `describe`, `test`, and `expect` are active only inside the
+  asynchronous `onTest` context. Calls from `onRequest`, `onResponse`,
+  module initialization, or a completed hook are no-ops.
 </Callout>
 
 ## Lifecycle
@@ -37,14 +39,15 @@ workspace/group/entity onRequest
   → workspace/group/entity onTest
 ```
 
-`ctx` contains the final standard Web `Request`, the read-only Web `Response`,
-`isMockResponse`, workspace APIs, execution metadata, and the execution's
-`AbortSignal`. Use `clone()` before reading a body more than once.
+`ctx` contains the final standard Web `Request`, the read-only Web
+`Response`, `isMockResponse`, workspace APIs, execution metadata, and
+the execution's `AbortSignal`. Use `clone()` before reading a body
+more than once.
 
 ## Imports and globals
 
-The testing functions are available as globals and through the generated
-virtual module:
+The testing functions are available as globals and through the
+generated virtual module:
 
 ```ts
 import { describe, expect, test } from 'yasumu:test';
@@ -54,14 +57,17 @@ Both forms share the same isolated test context.
 
 ## Grouping tests
 
-Suites may be nested. Registration and result ordering are deterministic:
+Suites may be nested. Registration and result ordering are
+deterministic:
 
 ```ts
 export function onTest(ctx: TestHookContext) {
   describe('users', () => {
     describe('response metadata', () => {
       test('is JSON', () => {
-        expect(ctx.res.headers.get('content-type')).toContain('application/json');
+        expect(ctx.res.headers.get('content-type')).toContain(
+          'application/json',
+        );
       });
     });
   });
@@ -83,8 +89,8 @@ export function onTest(ctx: TestHookContext) {
 }
 ```
 
-Thrown errors and rejected promises become failed test results. Test execution
-honors the hook timeout and cancellation signal.
+Thrown errors and rejected promises become failed test results. Test
+execution honors the hook timeout and cancellation signal.
 
 ## Test controls
 
@@ -104,12 +110,13 @@ export function onTest(ctx: TestHookContext) {
 }
 ```
 
-`skip()`, `fail(message?)`, and `succeed()` end the current test with the
-corresponding result.
+`skip()`, `fail(message?)`, and `succeed()` end the current test with
+the corresponding result.
 
 ## Common matchers
 
-Yasumu's `expect` API follows familiar Jest/Vitest conventions, including:
+Yasumu's `expect` API follows familiar Jest/Vitest conventions,
+including:
 
 - equality: `toBe`, `toEqual`, `toStrictEqual`, `toMatchObject`
 - presence: `toBeDefined`, `toBeUndefined`, `toBeNull`
@@ -134,19 +141,22 @@ export async function onTest(ctx: TestHookContext) {
 
 ## Mocks and nested requests
 
-Tests run for responses returned by `onRequest` exactly as they do for network
-responses. `ctx.isMockResponse` lets a test assert which path ran.
+Tests run for responses returned by `onRequest` exactly as they do for
+network responses. `ctx.isMockResponse` lets a test assert which path
+ran.
 
-Nested REST and GraphQL runs can enable tests with `runTests: true`. Their test
-results, logs, diagnostics, and child execution ID are returned in the nested
-summary and remain observable through execution events.
+Nested REST and GraphQL runs can enable tests with `runTests: true`.
+Their test results, logs, diagnostics, and child execution ID are
+returned in the nested summary and remain observable through execution
+events.
 
 ## Isolation
 
-Each runtime session owns its test registration. Concurrent runs, separate
-workers, and separate workspaces do not share suites or assertions. The Node
-adapter uses asynchronous context internally; Tanxium implements the same
-contract without exposing runtime-specific state to scripts.
+Each runtime session owns its test registration. Concurrent runs,
+separate workers, and separate workspaces do not share suites or
+assertions. The Node adapter uses asynchronous context internally;
+Tanxium implements the same contract without exposing runtime-specific
+state to scripts.
 
 ## CLI usage
 
@@ -161,8 +171,8 @@ yasumu test --environment CI
 yasumu test --environment CI --json
 ```
 
-The CLI exits with `1` when an assertion or execution fails, `2` for invalid
-workspace or input, and `130` when cancelled.
+The CLI exits with `1` when an assertion or execution fails, `2` for
+invalid workspace or input, and `130` when cancelled.
 
 ## Complete example
 

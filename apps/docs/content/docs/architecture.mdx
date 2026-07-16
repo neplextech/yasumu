@@ -1,14 +1,16 @@
 ---
 title: Architecture
-description: How Yasumu shares one headless execution engine between the desktop app and CLI.
+description:
+  How Yasumu shares one headless execution engine between the desktop
+  app and CLI.
 ---
 
 # Architecture
 
-Yasumu separates API-workspace behavior from the host that presents it. The
-desktop app and CLI load the same normalized workspace model, build requests
-with the same rules, and run the same script lifecycle through different
-runtime adapters.
+Yasumu separates API-workspace behavior from the host that presents
+it. The desktop app and CLI load the same normalized workspace model,
+build requests with the same rules, and run the same script lifecycle
+through different runtime adapters.
 
 ```d
                     ┌─────────────────────────────┐
@@ -37,20 +39,21 @@ runtime adapters.
 
 ## Package responsibilities
 
-| Package | Responsibility |
-| :------ | :------------- |
-| `@yasumu/schema` | Canonical YSL schemas, parsing, validation, and source ranges |
-| `@yasumu/headless` | Runtime- and persistence-independent workspace model, CRUD, environment resolution, interpolation, request building, execution, reconciliation, events, files, and email lifecycle |
-| `@yasumu/runtime-api` | Generated script hook names, virtual modules, host methods, serializable protocol, and public TypeScript contracts |
-| `@yasumu/runtime-node` | Node.js worker-thread implementation of the shared script runtime contract |
-| `@yasumu/cli` | Filesystem and terminal adapters around the headless services |
-| `@yasumu/tanxium` | Desktop SQLite, file, email, event, transport, and Tanxium runtime adapters plus RPC assembly |
-| `crates/tanxium` | Embeddable Deno runtime, module loading, worker lifecycle, permissions, and generated contract bindings; it contains no request-domain policy |
-| `@yasumu/core` / `@yasumu/rpc` | Typed desktop client and RPC contracts |
+| Package                        | Responsibility                                                                                                                                                                     |
+| :----------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@yasumu/schema`               | Canonical YSL schemas, parsing, validation, and source ranges                                                                                                                      |
+| `@yasumu/headless`             | Runtime- and persistence-independent workspace model, CRUD, environment resolution, interpolation, request building, execution, reconciliation, events, files, and email lifecycle |
+| `@yasumu/runtime-api`          | Generated script hook names, virtual modules, host methods, serializable protocol, and public TypeScript contracts                                                                 |
+| `@yasumu/runtime-node`         | Node.js worker-thread implementation of the shared script runtime contract                                                                                                         |
+| `@yasumu/cli`                  | Filesystem and terminal adapters around the headless services                                                                                                                      |
+| `@yasumu/tanxium`              | Desktop SQLite, file, email, event, transport, and Tanxium runtime adapters plus RPC assembly                                                                                      |
+| `crates/tanxium`               | Embeddable Deno runtime, module loading, worker lifecycle, permissions, and generated contract bindings; it contains no request-domain policy                                      |
+| `@yasumu/core` / `@yasumu/rpc` | Typed desktop client and RPC contracts                                                                                                                                             |
 
-Dependencies point inward: hosts depend on ports exposed by the headless and
-runtime API packages. The headless package does not depend on React, Tauri,
-Node worker threads, Deno, SQLite, Drizzle, or terminal output.
+Dependencies point inward: hosts depend on ports exposed by the
+headless and runtime API packages. The headless package does not
+depend on React, Tauri, Node worker threads, Deno, SQLite, Drizzle, or
+terminal output.
 
 ## Execution lifecycle
 
@@ -60,73 +63,76 @@ Every REST and GraphQL run uses one pipeline:
 2. Resolve the selected environment, variables, and secrets.
 3. Interpolate typed values and resolve file references.
 4. Build a Web `Request`.
-5. Create a runtime session and run `onRequest` from workspace to parent
-   groups to the entity.
-6. Use a returned Web `Response` as a mock, or send the request through the
-   host transport.
+5. Create a runtime session and run `onRequest` from workspace to
+   parent groups to the entity.
+6. Use a returned Web `Response` as a mock, or send the request
+   through the host transport.
 7. Run `onResponse` through the same hierarchy.
 8. Run `onTest` only in test mode.
-9. Collect serializable snapshots, logs, tests, diagnostics, nested runs, and
-   timing data.
+9. Collect serializable snapshots, logs, tests, diagnostics, nested
+   runs, and timing data.
 10. Persist history and emit the final structured event.
 
-Cancellation, timeouts, nested execution, email waits, and worker cleanup all
-share the execution's `AbortSignal`.
+Cancellation, timeouts, nested execution, email waits, and worker
+cleanup all share the execution's `AbortSignal`.
 
 ## Script runtimes
 
-A runtime implements `YasumuScriptRuntime` and creates an isolated session
-with `invokeHook()` and `dispose()`. The host handles explicitly typed calls
-for nested entity execution, email candidates, workspace files, and permission
-requests. Objects crossing a worker or RPC boundary use snapshots; scripts
-still receive real Web `Request`, `Response`, `File`, and `AbortSignal`
-objects inside the worker.
+A runtime implements `YasumuScriptRuntime` and creates an isolated
+session with `invokeHook()` and `dispose()`. The host handles
+explicitly typed calls for nested entity execution, email candidates,
+workspace files, and permission requests. Objects crossing a worker or
+RPC boundary use snapshots; scripts still receive real Web `Request`,
+`Response`, `File`, and `AbortSignal` objects inside the worker.
 
-The Node adapter proves that scripts do not depend on Tanxium. The desktop
-uses the Tanxium adapter so it retains Deno APIs, module loading, and native
-permission behavior.
+The Node adapter proves that scripts do not depend on Tanxium. The
+desktop uses the Tanxium adapter so it retains Deno APIs, module
+loading, and native permission behavior.
 
 ## Runtime contract generation
 
-`packages/runtime-api/contract/runtime-api.json` is the neutral contract. Its
-generator deterministically writes TypeScript constants and Rust bindings.
-The editor declarations, Node loader, and Tanxium loader consume that shared
-contract. `pnpm --filter @yasumu/runtime-api check:generated` fails when a
+`packages/runtime-api/contract/runtime-api.json` is the neutral
+contract. Its generator deterministically writes TypeScript constants
+and Rust bindings. The editor declarations, Node loader, and Tanxium
+loader consume that shared contract.
+`pnpm --filter @yasumu/runtime-api check:generated` fails when a
 generated file is stale.
 
 ## Desktop persistence
 
-The desktop reads canonical state from SQLite through Drizzle repositories.
-YSL imports are normalized through the same workspace loader as the CLI.
-Source revisions store the last imported source snapshot and revision, which
-allows a three-way comparison between:
+The desktop reads canonical state from SQLite through Drizzle
+repositories. YSL imports are normalized through the same workspace
+loader as the CLI. Source revisions store the last imported source
+snapshot and revision, which allows a three-way comparison between:
 
 ```d
 last imported source  ↔  current YSL source  ↔  current SQLite state
 ```
 
 Unilateral changes are applied automatically. Independent changes to
-different fields are merged. Concurrent changes to the same field produce a
-structured conflict and are not destructively overwritten. File modification
-time is not used as the source of truth.
+different fields are merged. Concurrent changes to the same field
+produce a structured conflict and are not destructively overwritten.
+File modification time is not used as the source of truth.
 
 ## Desktop data flow
 
-The renderer sends only a serializable execution input over the typed RPC
-client. The backend assembles SQLite repositories, Tanxium, the echo-aware
-transport, GUI file handling, email integration, native permission prompts,
-history, and an execution event sink. The renderer subscribes to those events
-for progress, logs, tests, errors, and cancellation; it does not build or send
-the HTTP request itself.
+The renderer sends only a serializable execution input over the typed
+RPC client. The backend assembles SQLite repositories, Tanxium, the
+echo-aware transport, GUI file handling, email integration, native
+permission prompts, history, and an execution event sink. The renderer
+subscribes to those events for progress, logs, tests, errors, and
+cancellation; it does not build or send the HTTP request itself.
 
 ## Adding another runtime
 
 1. Implement `YasumuScriptRuntime` and `YasumuRuntimeSession` from
    `@yasumu/runtime-api`.
-2. Implement the generated virtual modules and typed host-call protocol.
+2. Implement the generated virtual modules and typed host-call
+   protocol.
 3. Reconstruct Web API objects from snapshots inside the runtime.
 4. Isolate test context and script state for each execution.
 5. Run the shared runtime conformance suite.
 
-Domain behavior should not be copied into the adapter. Runtime-specific
-capabilities and permission approval stay with the host.
+Domain behavior should not be copied into the adapter.
+Runtime-specific capabilities and permission approval stay with the
+host.

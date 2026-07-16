@@ -169,21 +169,27 @@ function validateGroupGraph(groups: WorkspaceGroup[]): void {
       }
       seen.add(current.id);
       const parent = byId.get(current.parentId);
-      if (!parent) throw new YasumuError(YasumuErrorCodes.InvalidReference, `Invalid parent group: ${current.parentId}`);
+      if (!parent)
+        throw new YasumuError(YasumuErrorCodes.InvalidReference, `Invalid parent group: ${current.parentId}`);
       current = parent;
     }
   }
 }
 
 function validateEntity(workspace: YasumuWorkspace, entity: ExecutableEntity): void {
-  if (entity.workspaceId !== workspace.id) throw new YasumuError(YasumuErrorCodes.InvalidReference, 'Entity belongs to another workspace');
+  if (entity.workspaceId !== workspace.id)
+    throw new YasumuError(YasumuErrorCodes.InvalidReference, 'Entity belongs to another workspace');
   if (!entity.name.trim()) throw new YasumuError(YasumuErrorCodes.InvalidEntity, 'Entity name is required');
-  if (entity.groupId && !workspace.groups.some((group) => group.id === entity.groupId && group.entityKind === entity.kind)) {
+  if (
+    entity.groupId &&
+    !workspace.groups.some((group) => group.id === entity.groupId && group.entityKind === entity.kind)
+  ) {
     throw new YasumuError(YasumuErrorCodes.InvalidReference, `Invalid group reference: ${entity.groupId}`);
   }
   const entityIds = new Set(workspace.entities.map((candidate) => candidate.id));
   for (const dependency of entity.dependencies) {
-    if (!entityIds.has(dependency)) throw new YasumuError(YasumuErrorCodes.InvalidReference, `Invalid dependency: ${dependency}`);
+    if (!entityIds.has(dependency))
+      throw new YasumuError(YasumuErrorCodes.InvalidReference, `Invalid dependency: ${dependency}`);
   }
   assertSerializable(entity.metadata);
 }

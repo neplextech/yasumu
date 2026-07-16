@@ -178,7 +178,6 @@ export class EmailService {
       });
     }
   }
-
 }
 
 function toWorkspaceEmail(email: EmailData): WorkspaceEmail {
@@ -197,5 +196,10 @@ function toWorkspaceEmail(email: EmailData): WorkspaceEmail {
 }
 
 function splitAddresses(value: string | null): string[] {
-  return value?.split(',').map((address) => address.trim()).filter(Boolean) ?? [];
+  return (
+    value
+      ?.split(',')
+      .map((address) => address.trim())
+      .filter(Boolean) ?? []
+  );
 }

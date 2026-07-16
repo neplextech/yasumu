@@ -25,17 +25,7 @@
     "email",
     "nestedExecution"
   ],
-  "workerMessages": [
-    "ready",
-    "invoke",
-    "result",
-    "error",
-    "log",
-    "host-call",
-    "host-result",
-    "cancel",
-    "dispose"
-  ],
+  "workerMessages": ["ready", "invoke", "result", "error", "log", "host-call", "host-result", "cancel", "dispose"],
   "hostMethods": [
     "entity.get",
     "entity.list",

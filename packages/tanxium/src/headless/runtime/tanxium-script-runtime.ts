@@ -6,14 +6,10 @@ import type {
   ScriptHookResult,
   YasumuRuntimeSession,
   YasumuScriptRuntime,
-} from "../../../../runtime-api/src/types.ts";
-
-import {
-  ScriptWorker,
-  TanxiumRuntimeError,
-} from "../../workers/script-worker.ts";
-import { WorkerThreadsStrategy } from "../../workers/strategies/worker-threads.strategy.ts";
-import { getHeadlessWorkerPreload } from "../../workers/worker-preload-core.ts";
+} from '../../../../runtime-api/src/types.ts';
+import { ScriptWorker, TanxiumRuntimeError } from '../../workers/script-worker.ts';
+import { WorkerThreadsStrategy } from '../../workers/strategies/worker-threads.strategy.ts';
+import { getHeadlessWorkerPreload } from '../../workers/worker-preload-core.ts';
 
 const TANXIUM_CAPABILITIES = Object.freeze({
   workers: true,
@@ -38,19 +34,16 @@ export interface TanxiumScriptRuntimeOptions {
 }
 
 export class TanxiumScriptRuntime implements YasumuScriptRuntime {
-  public readonly kind = "tanxium";
+  public readonly kind = 'tanxium';
   public readonly capabilities = TANXIUM_CAPABILITIES;
 
   readonly #defaultTimeoutMs: number;
 
   public constructor(options: TanxiumScriptRuntimeOptions = {}) {
-    this.#defaultTimeoutMs = options.defaultTimeoutMs ??
-      DEFAULT_EXECUTION_TIMEOUT;
+    this.#defaultTimeoutMs = options.defaultTimeoutMs ?? DEFAULT_EXECUTION_TIMEOUT;
   }
 
-  public async createSession(
-    input: CreateRuntimeSessionInput,
-  ): Promise<YasumuRuntimeSession> {
+  public async createSession(input: CreateRuntimeSessionInput): Promise<YasumuRuntimeSession> {
     const session = new TanxiumRuntimeSession(input, this.#defaultTimeoutMs);
     try {
       await session.start();
@@ -62,9 +55,7 @@ export class TanxiumScriptRuntime implements YasumuScriptRuntime {
   }
 }
 
-export function createTanxiumScriptRuntime(
-  options?: TanxiumScriptRuntimeOptions,
-): TanxiumScriptRuntime {
+export function createTanxiumScriptRuntime(options?: TanxiumScriptRuntimeOptions): TanxiumScriptRuntime {
   return new TanxiumScriptRuntime(options);
 }
 
@@ -78,14 +69,11 @@ class TanxiumRuntimeSession implements YasumuRuntimeSession {
   #disposed = false;
   #queue: Promise<void> = Promise.resolve();
 
-  public constructor(
-    input: CreateRuntimeSessionInput,
-    defaultTimeoutMs: number,
-  ) {
+  public constructor(input: CreateRuntimeSessionInput, defaultTimeoutMs: number) {
     this.#input = input;
     this.#defaultTimeoutMs = defaultTimeoutMs;
     this.#worker = new ScriptWorker({
-      source: getHeadlessWorkerPreload("worker-threads"),
+      source: getHeadlessWorkerPreload('worker-threads'),
       strategy: new WorkerThreadsStrategy(),
     });
 
@@ -101,13 +89,8 @@ class TanxiumRuntimeSession implements YasumuRuntimeSession {
     return this.#worker.start();
   }
 
-  public invokeHook(
-    invocation: ScriptHookInvocation,
-    options: InvokeHookOptions = {},
-  ): Promise<ScriptHookResult> {
-    const operation = this.#queue.then(() =>
-      this.#invokeNow(invocation, options)
-    );
+  public invokeHook(invocation: ScriptHookInvocation, options: InvokeHookOptions = {}): Promise<ScriptHookResult> {
+    const operation = this.#queue.then(() => this.#invokeNow(invocation, options));
     this.#queue = operation.then(
       () => undefined,
       () => undefined,
@@ -121,63 +104,41 @@ class TanxiumRuntimeSession implements YasumuRuntimeSession {
     this.#worker.dispose();
   }
 
-  async #invokeNow(
-    invocation: ScriptHookInvocation,
-    options: InvokeHookOptions,
-  ): Promise<ScriptHookResult> {
+  async #invokeNow(invocation: ScriptHookInvocation, options: InvokeHookOptions): Promise<ScriptHookResult> {
     this.#assertActive();
     if (invocation.workspace.id !== this.#input.workspace.id) {
       throw runtimeError(
-        "SCRIPT_WORKSPACE_MISMATCH",
+        'SCRIPT_WORKSPACE_MISMATCH',
         `Runtime session belongs to workspace ${this.#input.workspace.id}, not ${invocation.workspace.id}`,
       );
     }
 
     const code = this.#workspaceModuleKey
-      ? rewriteWorkspaceModuleImports(
-        invocation.source.code,
-        this.#workspaceModuleKey,
-      )
+      ? rewriteWorkspaceModuleImports(invocation.source.code, this.#workspaceModuleKey)
       : invocation.source.code;
-    const moduleKey = this.#worker.registerModule(
-      `runtime/${this.#id}/entity/${invocation.source.id}`,
-      code,
-    );
+    const moduleKey = this.#worker.registerModule(`runtime/${this.#id}/entity/${invocation.source.id}`, code);
 
-    return this.#worker.invokeRuntimeHook(
-      moduleKey,
-      invocation,
-      this.#input.hostCall,
-      {
-        ...options,
-        timeoutMs: options.timeoutMs ?? this.#defaultTimeoutMs,
-      },
-    );
+    return this.#worker.invokeRuntimeHook(moduleKey, invocation, this.#input.hostCall, {
+      ...options,
+      timeoutMs: options.timeoutMs ?? this.#defaultTimeoutMs,
+    });
   }
 
   #assertActive(): void {
     if (this.#disposed) {
-      throw runtimeError(
-        "SCRIPT_SESSION_DISPOSED",
-        "The Tanxium runtime session was disposed",
-      );
+      throw runtimeError('SCRIPT_SESSION_DISPOSED', 'The Tanxium runtime session was disposed');
     }
   }
 }
 
-function rewriteWorkspaceModuleImports(
-  code: string,
-  workspaceModuleKey: string,
-): string {
+function rewriteWorkspaceModuleImports(code: string, workspaceModuleKey: string): string {
   const specifier = `yasumu:virtual/${workspaceModuleKey}`;
-  return code
-    .replaceAll("'yasumu:workspace'", `'${specifier}'`)
-    .replaceAll('"yasumu:workspace"', `"${specifier}"`);
+  return code.replaceAll("'yasumu:workspace'", `'${specifier}'`).replaceAll('"yasumu:workspace"', `"${specifier}"`);
 }
 
 function runtimeError(code: string, message: string): TanxiumRuntimeError {
   return new TanxiumRuntimeError({
-    name: "TanxiumRuntimeError",
+    name: 'TanxiumRuntimeError',
     code,
     message,
   });

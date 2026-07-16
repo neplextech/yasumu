@@ -9,11 +9,8 @@ import {
   type PermissionProvider,
   type WorkspaceRepository,
   type YasumuWorkspace,
-} from "@yasumu/headless";
-import type {
-  WorkspaceEmail,
-  YasumuScriptRuntime,
-} from "@yasumu/runtime-api";
+} from '@yasumu/headless';
+import type { WorkspaceEmail, YasumuScriptRuntime } from '@yasumu/runtime-api';
 
 export interface GuiEmailHookDependencies {
   workspaces: WorkspaceRepository;
@@ -29,13 +26,8 @@ export interface GuiEmailHookDependencies {
 export class GuiEmailHookService {
   public constructor(private readonly dependencies: GuiEmailHookDependencies) {}
 
-  public async handle(
-    workspaceId: string,
-    email: WorkspaceEmail,
-    signal?: AbortSignal,
-  ): Promise<EmailHookResult> {
-    const workspace = await this.dependencies.workspaces.get(workspaceId) ??
-      missingWorkspace(workspaceId);
+  public async handle(workspaceId: string, email: WorkspaceEmail, signal?: AbortSignal): Promise<EmailHookResult> {
+    const workspace = (await this.dependencies.workspaces.get(workspaceId)) ?? missingWorkspace(workspaceId);
     const hostCall = createWorkspaceRuntimeHost(
       {
         entities: this.dependencies.entities,
@@ -49,7 +41,7 @@ export class GuiEmailHookService {
             environmentId: request.options?.environmentId,
             variables: request.options?.variables,
             secrets: request.options?.secrets,
-            mode: request.options?.runTests ? "test" : "run",
+            mode: request.options?.runTests ? 'test' : 'run',
             options: { timeoutMs: request.options?.timeoutMs },
             signal: nestedSignal,
           });
@@ -57,9 +49,7 @@ export class GuiEmailHookService {
             executionId: result.executionId,
             entityId: result.entityId,
             status: result.status,
-            response: request.options?.withResponse
-              ? result.response
-              : undefined,
+            response: request.options?.withResponse ? result.response : undefined,
             tests: result.tests,
             logs: result.logs,
             diagnostics: result.diagnostics,
@@ -92,6 +82,6 @@ function missingWorkspace(workspaceId: string): YasumuWorkspace {
     groups: [],
     environments: [],
     metadata: {},
-    origin: { kind: "memory" },
+    origin: { kind: 'memory' },
   };
 }

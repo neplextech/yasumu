@@ -16,7 +16,11 @@ import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
 import { graphqlResponseFromExecution, type GraphqlResponse } from '../_lib/graphql-request';
 
-export type { RequestPhase, ScriptOutputEntry, ScriptOutputType } from '@/app/[locale]/workspaces/[workspace]/_lib/headless-execution';
+export type {
+  RequestPhase,
+  ScriptOutputEntry,
+  ScriptOutputType,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/headless-execution';
 
 export interface RequestState {
   phase: RequestPhase;

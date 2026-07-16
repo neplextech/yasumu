@@ -1,4 +1,4 @@
-import { serializeError } from "../../../runtime-api/src/serialization.ts";
+import { serializeError } from '../../../runtime-api/src/serialization.ts';
 import type {
   InvokeHookOptions,
   RuntimeHostCall,
@@ -8,22 +8,21 @@ import type {
   ScriptHookInvocation,
   ScriptHookResult,
   SerializedExecutionError,
-} from "../../../runtime-api/src/types.ts";
-
-import { computeScriptHash, makeModuleKey } from "./common/script-hash.ts";
+} from '../../../runtime-api/src/types.ts';
+import { computeScriptHash, makeModuleKey } from './common/script-hash.ts';
 import {
   SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
   SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT,
-} from "./common/worker-heartbeat.ts";
-import type { ScriptWorkerStrategy } from "./strategies/types.ts";
-import { WebWorkerStrategy } from "./strategies/web-worker.strategy.ts";
+} from './common/worker-heartbeat.ts';
+import type { ScriptWorkerStrategy } from './strategies/types.ts';
+import { WebWorkerStrategy } from './strategies/web-worker.strategy.ts';
 import {
   ScriptExecutionRequest,
   ScriptExecutionResponse,
   WorkerInboundMessage,
   WorkerOutboundMessage,
   WorkerState,
-} from "./types.ts";
+} from './types.ts';
 
 declare const Yasumu: {
   registerVirtualModule(name: string, code: string): void;
@@ -49,16 +48,16 @@ interface RuntimeExecutionRequest {
 
 export class TanxiumRuntimeError extends Error {
   public readonly code: string;
-  public readonly details?: SerializedExecutionError["details"];
+  public readonly details?: SerializedExecutionError['details'];
 
   public constructor(error: SerializedExecutionError) {
     super(error.message);
-    this.name = error.name || "TanxiumRuntimeError";
+    this.name = error.name || 'TanxiumRuntimeError';
     this.code = error.code;
     this.details = error.details;
     if (error.stack) this.stack = error.stack;
     if (error.cause) {
-      Object.defineProperty(this, "cause", {
+      Object.defineProperty(this, 'cause', {
         value: new TanxiumRuntimeError(error.cause),
       });
     }
@@ -70,16 +69,10 @@ const EXECUTION_TIMEOUT = 30_000;
 export class ScriptWorker {
   private strategy: ScriptWorkerStrategy;
   private readonly ownsStrategy: boolean;
-  private readonly pendingRequests = new Map<
-    string,
-    ScriptExecutionRequest<unknown>
-  >();
-  private readonly pendingRuntimeRequests = new Map<
-    string,
-    RuntimeExecutionRequest
-  >();
+  private readonly pendingRequests = new Map<string, ScriptExecutionRequest<unknown>>();
+  private readonly pendingRuntimeRequests = new Map<string, RuntimeExecutionRequest>();
   private readonly registeredModules = new Set<string>();
-  private state: WorkerState = "terminated";
+  private state: WorkerState = 'terminated';
   private lastHeartbeat = Date.now();
   private heartbeatCheckId: ReturnType<typeof setTimeout> | null = null;
   private readyPromise: Promise<void> | null = null;
@@ -100,11 +93,11 @@ export class ScriptWorker {
   }
 
   private ensureWorker(): Promise<void> {
-    if (this.state !== "terminated") {
+    if (this.state !== 'terminated') {
       return this.readyPromise!;
     }
 
-    this.state = "initializing";
+    this.state = 'initializing';
     this.lastHeartbeat = Date.now();
 
     const { promise, resolve, reject } = Promise.withResolvers<void>();
@@ -119,33 +112,31 @@ export class ScriptWorker {
         onExit: this.handleExit.bind(this),
       });
     } catch (error) {
-      this.handleError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      this.handleError(error instanceof Error ? error : new Error(String(error)));
     }
 
-    if (this.state !== "terminated") this.startHeartbeatMonitor();
+    if (this.state !== 'terminated') this.startHeartbeatMonitor();
 
     return promise;
   }
 
   private handleMessage(message: WorkerOutboundMessage<unknown>) {
     switch (message.type) {
-      case "heartbeat":
+      case 'heartbeat':
         this.lastHeartbeat = Date.now();
         break;
 
-      case "ready":
-        this.state = "ready";
+      case 'ready':
+        this.state = 'ready';
         this.readyResolve?.();
         break;
 
-      case "execution-success": {
+      case 'execution-success': {
         const request = this.pendingRequests.get(message.requestId);
         if (request) {
           if (request.timeoutId) clearTimeout(request.timeoutId);
           this.pendingRequests.delete(message.requestId);
-          this.state = "ready";
+          this.state = 'ready';
           request.resolve({
             context: message.context,
             success: true,
@@ -155,12 +146,12 @@ export class ScriptWorker {
         break;
       }
 
-      case "execution-error": {
+      case 'execution-error': {
         const request = this.pendingRequests.get(message.requestId);
         if (request) {
           if (request.timeoutId) clearTimeout(request.timeoutId);
           this.pendingRequests.delete(message.requestId);
-          this.state = "ready";
+          this.state = 'ready';
           request.resolve({
             context: message.context,
             success: false,
@@ -170,17 +161,15 @@ export class ScriptWorker {
         break;
       }
 
-      case "log": {
-        this.pendingRuntimeRequests.get(message.requestId)?.logs.push(
-          message.log,
-        );
+      case 'log': {
+        this.pendingRuntimeRequests.get(message.requestId)?.logs.push(message.log);
         break;
       }
 
-      case "result": {
+      case 'result': {
         const request = this.takeRuntimeRequest(message.requestId);
         if (request) {
-          this.state = "ready";
+          this.state = 'ready';
           request.resolve({
             ...message.result,
             logs: [...request.logs, ...message.result.logs],
@@ -189,28 +178,24 @@ export class ScriptWorker {
         break;
       }
 
-      case "error": {
+      case 'error': {
         const request = this.takeRuntimeRequest(message.requestId);
         if (request) {
-          this.state = "ready";
+          this.state = 'ready';
           request.reject(new TanxiumRuntimeError(message.error));
         }
         break;
       }
 
-      case "host-call":
+      case 'host-call':
         void this.handleRuntimeHostCall(message.requestId, message.call);
         break;
     }
   }
 
   private handleError(error: Error) {
-    const workerError = runtimeError(
-      "SCRIPT_WORKER_ERROR",
-      `Worker error: ${error.message}`,
-      error,
-    );
-    if (this.state === "initializing") {
+    const workerError = runtimeError('SCRIPT_WORKER_ERROR', `Worker error: ${error.message}`, error);
+    if (this.state === 'initializing') {
       this.readyReject?.(workerError);
     }
 
@@ -221,21 +206,18 @@ export class ScriptWorker {
     this.pendingRequests.clear();
     this.rejectRuntimeRequests(workerError);
 
-    if (this.state !== "terminated") {
-      this.state = "terminated";
+    if (this.state !== 'terminated') {
+      this.state = 'terminated';
       this.cleanupWorker();
       this.options.onTerminate?.();
     }
   }
 
   private handleExit(code: number) {
-    if (this.state !== "terminated") {
-      const workerError = runtimeError(
-        "SCRIPT_WORKER_EXITED",
-        `Worker exited with code ${code}`,
-      );
-      if (this.state === "initializing") this.readyReject?.(workerError);
-      this.state = "terminated";
+    if (this.state !== 'terminated') {
+      const workerError = runtimeError('SCRIPT_WORKER_EXITED', `Worker exited with code ${code}`);
+      if (this.state === 'initializing') this.readyReject?.(workerError);
+      this.state = 'terminated';
 
       for (const request of this.pendingRequests.values()) {
         if (request.timeoutId) clearTimeout(request.timeoutId);
@@ -263,29 +245,22 @@ export class ScriptWorker {
 
   private startHeartbeatMonitor() {
     const check = () => {
-      if (this.state === "terminated") return;
+      if (this.state === 'terminated') return;
 
       const elapsed = Date.now() - this.lastHeartbeat;
       if (elapsed >= SCRIPT_WORKER_TERMINATE_WITHOUT_HEARTBEAT_TIMEOUT) {
-        this.terminateWithError(
-          "Worker heartbeat timeout - worker may be frozen",
-        );
+        this.terminateWithError('Worker heartbeat timeout - worker may be frozen');
         return;
       }
 
-      this.heartbeatCheckId = setTimeout(
-        check,
-        SCRIPT_WORKER_HEARTBEAT_TIMEOUT,
-      );
+      this.heartbeatCheckId = setTimeout(check, SCRIPT_WORKER_HEARTBEAT_TIMEOUT);
     };
 
     this.heartbeatCheckId = setTimeout(check, SCRIPT_WORKER_HEARTBEAT_TIMEOUT);
   }
 
   private terminateWithError(errorMessage: string) {
-    this.resetWorker(
-      runtimeError("SCRIPT_WORKER_HEARTBEAT_TIMEOUT", errorMessage),
-    );
+    this.resetWorker(runtimeError('SCRIPT_WORKER_HEARTBEAT_TIMEOUT', errorMessage));
   }
 
   public registerModule(entityId: string, code: string): string {
@@ -298,13 +273,10 @@ export class ScriptWorker {
     return moduleKey;
   }
 
-  public async publishMessage<T = unknown>(
-    event: string,
-    data: T,
-  ): Promise<void> {
+  public async publishMessage<T = unknown>(event: string, data: T): Promise<void> {
     await this.ensureWorker();
     this.strategy.postMessage({
-      type: "publish-message",
+      type: 'publish-message',
       event,
       data,
     });
@@ -341,10 +313,10 @@ export class ScriptWorker {
       };
 
       this.pendingRequests.set(requestId, request);
-      this.state = "executing";
+      this.state = 'executing';
 
       const message: WorkerInboundMessage<Context> = {
-        type: "execute",
+        type: 'execute',
         requestId,
         moduleKey,
         invocationTarget,
@@ -381,12 +353,9 @@ export class ScriptWorker {
 
       if (options.signal) {
         request.abortListener = () => {
-          this.hardCancelRuntimeRequest(
-            requestId,
-            cancellationError(options.signal?.reason),
-          );
+          this.hardCancelRuntimeRequest(requestId, cancellationError(options.signal?.reason));
         };
-        options.signal.addEventListener("abort", request.abortListener, {
+        options.signal.addEventListener('abort', request.abortListener, {
           once: true,
         });
       }
@@ -395,90 +364,67 @@ export class ScriptWorker {
         request.timeoutId = setTimeout(() => {
           this.hardCancelRuntimeRequest(
             requestId,
-            runtimeError(
-              "SCRIPT_TIMEOUT",
-              `Script hook exceeded the ${timeout}ms timeout`,
-            ),
+            runtimeError('SCRIPT_TIMEOUT', `Script hook exceeded the ${timeout}ms timeout`),
           );
         }, timeout);
       }
 
       this.pendingRuntimeRequests.set(requestId, request);
-      this.state = "executing";
-      this.strategy.postMessage(
-        {
-          type: "invoke",
-          requestId,
-          moduleKey,
-          invocation,
-          timeoutMs: timeout,
-        } satisfies WorkerInboundMessage,
-      );
+      this.state = 'executing';
+      this.strategy.postMessage({
+        type: 'invoke',
+        requestId,
+        moduleKey,
+        invocation,
+        timeoutMs: timeout,
+      } satisfies WorkerInboundMessage);
     });
   }
 
-  private async handleRuntimeHostCall(
-    requestId: string,
-    call: RuntimeHostCall,
-  ): Promise<void> {
+  private async handleRuntimeHostCall(requestId: string, call: RuntimeHostCall): Promise<void> {
     const request = this.pendingRuntimeRequests.get(requestId);
     if (!request) return;
 
     let result: RuntimeHostCallResult;
     try {
-      result = await dispatchHostCall(
-        call,
-        request.hostCall,
-        request.controller.signal,
-      );
+      result = await dispatchHostCall(call, request.hostCall, request.controller.signal);
     } catch (error) {
       result = {
         id: call.id,
         method: call.method,
-        error: serializeError(error, "SCRIPT_HOST_CALL_ERROR"),
+        error: serializeError(error, 'SCRIPT_HOST_CALL_ERROR'),
       };
     }
 
-    if (
-      !this.pendingRuntimeRequests.has(requestId) || this.state === "terminated"
-    ) return;
-    this.strategy.postMessage(
-      { type: "host-result", requestId, result } satisfies WorkerInboundMessage,
-    );
+    if (!this.pendingRuntimeRequests.has(requestId) || this.state === 'terminated') return;
+    this.strategy.postMessage({ type: 'host-result', requestId, result } satisfies WorkerInboundMessage);
   }
 
-  private hardCancelRuntimeRequest(
-    requestId: string,
-    error: TanxiumRuntimeError,
-  ): void {
+  private hardCancelRuntimeRequest(requestId: string, error: TanxiumRuntimeError): void {
     const request = this.takeRuntimeRequest(requestId);
     if (!request) return;
     request.controller.abort(error);
     request.reject(error);
 
     try {
-      this.strategy.postMessage(
-        {
-          type: "cancel",
-          requestId,
-          reason: error.message,
-        } satisfies WorkerInboundMessage,
-      );
+      this.strategy.postMessage({
+        type: 'cancel',
+        requestId,
+        reason: error.message,
+      } satisfies WorkerInboundMessage);
     } catch {
       // A frozen worker can disappear before cancellation is posted.
     }
     this.resetWorker(error);
   }
 
-  private takeRuntimeRequest(
-    requestId: string,
-  ): RuntimeExecutionRequest | undefined {
+  private takeRuntimeRequest(requestId: string): RuntimeExecutionRequest | undefined {
     const request = this.pendingRuntimeRequests.get(requestId);
     if (!request) return undefined;
     this.pendingRuntimeRequests.delete(requestId);
     if (request.timeoutId) clearTimeout(request.timeoutId);
     if (request.signal && request.abortListener) {
-      request.signal.removeEventListener("abort", request.abortListener);
+      request.signal.removeEventListener('abort', request.abortListener);
     }
     return request;
   }
@@ -500,37 +446,25 @@ export class ScriptWorker {
     this.pendingRequests.clear();
     if (error instanceof TanxiumRuntimeError) this.rejectRuntimeRequests(error);
 
-    if (this.state === "terminated") return;
-    this.state = "terminated";
+    if (this.state === 'terminated') return;
+    this.state = 'terminated';
     this.cleanupWorker();
     this.options.onTerminate?.();
   }
 
   public terminate() {
-    this.resetWorker(
-      runtimeError(
-        "SCRIPT_WORKER_TERMINATED",
-        "The script worker was terminated",
-      ),
-    );
+    this.resetWorker(runtimeError('SCRIPT_WORKER_TERMINATED', 'The script worker was terminated'));
   }
 
   public dispose(): void {
-    if (this.state !== "terminated") {
+    if (this.state !== 'terminated') {
       try {
-        this.strategy.postMessage(
-          { type: "dispose" } satisfies WorkerInboundMessage,
-        );
+        this.strategy.postMessage({ type: 'dispose' } satisfies WorkerInboundMessage);
       } catch {
         // Disposal still terminates and cleans up modules when the worker is unavailable.
       }
     }
-    this.resetWorker(
-      runtimeError(
-        "SCRIPT_SESSION_DISPOSED",
-        "The runtime session was disposed",
-      ),
-    );
+    this.resetWorker(runtimeError('SCRIPT_SESSION_DISPOSED', 'The runtime session was disposed'));
     for (const moduleKey of this.registeredModules) {
       Yasumu.unregisterVirtualModule(moduleKey);
     }
@@ -542,11 +476,11 @@ export class ScriptWorker {
   }
 
   public isTerminated(): boolean {
-    return this.state === "terminated";
+    return this.state === 'terminated';
   }
 
   public isReady(): boolean {
-    return this.state === "ready" || this.state === "executing";
+    return this.state === 'ready' || this.state === 'executing';
   }
 }
 
@@ -556,49 +490,49 @@ async function dispatchHostCall(
   signal: AbortSignal,
 ): Promise<RuntimeHostCallResult> {
   switch (call.method) {
-    case "entity.get":
+    case 'entity.get':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "entity.list":
+    case 'entity.list':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "entity.execute":
+    case 'entity.execute':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "email.list":
+    case 'email.list':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "email.next":
+    case 'email.next':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "file.resolve":
+    case 'file.resolve':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "file.open":
+    case 'file.open':
       return {
         id: call.id,
         method: call.method,
         output: await handler(call.method, call.input, signal),
       };
-    case "permission.request":
+    case 'permission.request':
       return {
         id: call.id,
         method: call.method,
@@ -607,13 +541,9 @@ async function dispatchHostCall(
   }
 }
 
-function runtimeError(
-  code: string,
-  message: string,
-  cause?: Error,
-): TanxiumRuntimeError {
+function runtimeError(code: string, message: string, cause?: Error): TanxiumRuntimeError {
   return new TanxiumRuntimeError({
-    name: "TanxiumRuntimeError",
+    name: 'TanxiumRuntimeError',
     code,
     message,
     stack: cause?.stack,
@@ -621,10 +551,7 @@ function runtimeError(
 }
 
 function cancellationError(reason: unknown): TanxiumRuntimeError {
-  const message = reason instanceof Error
-    ? reason.message
-    : typeof reason === "string"
-    ? reason
-    : "Script execution cancelled";
-  return runtimeError("SCRIPT_CANCELLED", message);
+  const message =
+    reason instanceof Error ? reason.message : typeof reason === 'string' ? reason : 'Script execution cancelled';
+  return runtimeError('SCRIPT_CANCELLED', message);
 }

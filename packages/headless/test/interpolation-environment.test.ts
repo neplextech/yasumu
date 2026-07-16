@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  Interpolator,
-  parseDotenv,
-  resolveEnvironment,
-  SecretRedactor,
-  YasumuError,
-} from '../src/index.js';
+import { Interpolator, parseDotenv, resolveEnvironment, SecretRedactor, YasumuError } from '../src/index.js';
 import { environment } from './fixtures.js';
 
 describe('Interpolator', () => {

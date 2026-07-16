@@ -1,8 +1,8 @@
 import { Analytics } from '@vercel/analytics/next';
-import type { Metadata } from 'next';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 import './global.css';
-import { RootProvider } from 'fumadocs-ui/provider/next';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({

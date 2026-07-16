@@ -1,20 +1,20 @@
-import "./preflight.d.ts";
+import './preflight.d.ts';
 
 // run migrations
 async function runMigrations() {
   try {
     // dynamically import dependencies
     // to avoid instantiating the server before migrations are run
-    const { join } = await import("node:path");
-    const { migrate } = await import("./database/sqlite/migrator.ts");
-    const { db } = await import("./database/index.ts");
+    const { join } = await import('node:path');
+    const { migrate } = await import('./database/sqlite/migrator.ts');
+    const { db } = await import('./database/index.ts');
 
-    const migrationsFolder = join(Yasumu.getServerEntrypoint(), "drizzle");
+    const migrationsFolder = join(Yasumu.getServerEntrypoint(), 'drizzle');
     console.log(`Migrations folder: ${migrationsFolder}`);
     await migrate(db, {
       migrationsFolder,
     });
-    console.log("Migrations completed");
+    console.log('Migrations completed');
   } catch (error) {
     const err = Error.isError(error) ? error.stack : null;
     throw new Error(`Database migration failed:\n\n${err || error}`, {
@@ -29,30 +29,24 @@ export async function startServer() {
 
   // dynamically import the server
   // to avoid instantiating the server before migrations are run
-  const { app } = await import("./backend/server.ts");
-  const { rpcServer } = await import("./rpc/rpc-server.ts");
-  const { echoServer } = await import("./echo-server/server.ts");
-  const { createMcpServer } = await import("./mcp/server.ts");
+  const { app } = await import('./backend/server.ts');
+  const { rpcServer } = await import('./rpc/rpc-server.ts');
+  const { echoServer } = await import('./echo-server/server.ts');
+  const { createMcpServer } = await import('./mcp/server.ts');
 
   const server = Deno.serve({ port: 0 }, app.fetch);
   Yasumu.setRpcPort(server.addr.port);
 
   const echoServerResult = Deno.serve({ port: 0 }, echoServer.fetch);
-  (await import("./headless/platform/echo-transport.ts")).setGuiEchoServerPort(
-    echoServerResult.addr.port,
-  );
+  (await import('./headless/platform/echo-transport.ts')).setGuiEchoServerPort(echoServerResult.addr.port);
   Yasumu.setEchoServerPort(echoServerResult.addr.port);
 
   const mcpServer = createMcpServer(rpcServer);
   const mcpServerResult = Deno.serve({ port: 0 }, mcpServer.fetch);
   Yasumu.setMcpServerPort(mcpServerResult.addr.port);
 
-  console.log(
-    `Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`,
-  );
-  console.log(
-    `Yasumu MCP server started on http://127.0.0.1:${mcpServerResult.addr.port}`,
-  );
+  console.log(`Tanxium server started on port http://${server.addr.hostname}:${server.addr.port}`);
+  console.log(`Yasumu MCP server started on http://127.0.0.1:${mcpServerResult.addr.port}`);
 
   return {
     app,
@@ -62,4 +56,4 @@ export async function startServer() {
   };
 }
 
-export type { AppType } from "./backend/server.ts";
+export type { AppType } from './backend/server.ts';

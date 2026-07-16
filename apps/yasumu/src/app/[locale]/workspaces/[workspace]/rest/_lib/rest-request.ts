@@ -24,9 +24,7 @@ export function restResponseFromExecution(result: ExecutionResult): RestResponse
   if (!response) return null;
 
   const headers = Object.fromEntries(response.headers);
-  const cookies = response.headers
-    .filter(([name]) => name.toLowerCase() === 'set-cookie')
-    .map(([, value]) => value);
+  const cookies = response.headers.filter(([name]) => name.toLowerCase() === 'set-cookie').map(([, value]) => value);
   const body = response.body;
 
   if (body.kind === 'binary') {
@@ -45,8 +43,7 @@ export function restResponseFromExecution(result: ExecutionResult): RestResponse
     };
   }
 
-  const textBody =
-    body.kind === 'empty' ? '' : body.kind === 'json' ? JSON.stringify(body.value) : body.text;
+  const textBody = body.kind === 'empty' ? '' : body.kind === 'json' ? JSON.stringify(body.value) : body.text;
   return {
     status: response.status,
     statusText: response.statusText,

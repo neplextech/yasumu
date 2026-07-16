@@ -1,7 +1,7 @@
-import type { FileOpenResult, FileResolver } from '../src/index.js';
-import { buildEntityRequest } from '../src/index.js';
 import { describe, expect, it } from 'vitest';
 
+import type { FileOpenResult, FileResolver } from '../src/index.js';
+import { buildEntityRequest } from '../src/index.js';
 import { graphqlEntity, restEntity, workspace } from './fixtures.js';
 
 const environment = {

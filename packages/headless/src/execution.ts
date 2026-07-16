@@ -272,7 +272,9 @@ export class HeadlessExecutionService {
         } else {
           accumulator.request = await snapshotRequest(request.clone(), input.options?.maxRequestBodyBytes);
         }
-        await this.emit(redactor.redactValue(baseEvent('request-prepared', { method: request.method, url: request.url })));
+        await this.emit(
+          redactor.redactValue(baseEvent('request-prepared', { method: request.method, url: request.url })),
+        );
 
         if (session) {
           for (const source of hookSources) {
@@ -292,9 +294,7 @@ export class HeadlessExecutionService {
         }
 
         throwIfAborted(controller.signal);
-        const transportRequest = accumulator.runtimeRequest
-          ? requestFromSnapshot(accumulator.runtimeRequest)
-          : request;
+        const transportRequest = accumulator.runtimeRequest ? requestFromSnapshot(accumulator.runtimeRequest) : request;
         accumulator.request = accumulator.runtimeRequest
           ? await limitRequestSnapshot(accumulator.runtimeRequest, input.options?.maxRequestBodyBytes)
           : await snapshotRequest(transportRequest.clone(), input.options?.maxRequestBodyBytes);
@@ -312,10 +312,7 @@ export class HeadlessExecutionService {
             controller.signal,
           );
           if (session) {
-            accumulator.runtimeResponse = await snapshotResponse(
-              transportResponse,
-              Number.POSITIVE_INFINITY,
-            );
+            accumulator.runtimeResponse = await snapshotResponse(transportResponse, Number.POSITIVE_INFINITY);
             accumulator.response = await limitResponseSnapshot(
               accumulator.runtimeResponse,
               responseBodyLimit(input.options),
@@ -388,7 +385,8 @@ export class HeadlessExecutionService {
       return result;
     } catch (error) {
       const completedAt = this.clock.now();
-      const timedOut = controller.signal.reason instanceof DOMException && controller.signal.reason.name === 'TimeoutError';
+      const timedOut =
+        controller.signal.reason instanceof DOMException && controller.signal.reason.name === 'TimeoutError';
       const cancelled = controller.signal.aborted || isAbortError(error);
       const code = timedOut
         ? YasumuErrorCodes.RequestTimeout
@@ -429,7 +427,10 @@ export class HeadlessExecutionService {
 
     function baseEvent<T extends ExecutionEvent['type']>(
       type: T,
-      detail: Omit<Extract<ExecutionEvent, { type: T }>, 'type' | 'executionId' | 'workspaceId' | 'entityId' | 'timestamp' | 'parentExecutionId'>,
+      detail: Omit<
+        Extract<ExecutionEvent, { type: T }>,
+        'type' | 'executionId' | 'workspaceId' | 'entityId' | 'timestamp' | 'parentExecutionId'
+      >,
     ): Extract<ExecutionEvent, { type: T }> {
       return {
         type,
@@ -543,7 +544,8 @@ export class HeadlessExecutionService {
         test,
       });
     }
-    if (result.cancelled) controller.abort(new DOMException(result.cancelReason ?? 'Cancelled by script', 'AbortError'));
+    if (result.cancelled)
+      controller.abort(new DOMException(result.cancelReason ?? 'Cancelled by script', 'AbortError'));
     await this.emit({
       type: 'hook-completed',
       executionId,
@@ -692,7 +694,8 @@ function groupLineage(groups: WorkspaceGroup[], groupId: string | null): Workspa
   const seen = new Set<string>();
   let current = byId.get(groupId);
   while (current) {
-    if (seen.has(current.id)) throw new YasumuError(YasumuErrorCodes.InvalidReference, `Group cycle detected at ${current.id}`);
+    if (seen.has(current.id))
+      throw new YasumuError(YasumuErrorCodes.InvalidReference, `Group cycle detected at ${current.id}`);
     seen.add(current.id);
     lineage.unshift(current);
     current = current.parentId ? byId.get(current.parentId) : undefined;
@@ -721,7 +724,10 @@ function linkedAbortController(primary?: AbortSignal, timeoutMs?: number, second
     }
   }
   if (!controller.signal.aborted && timeoutMs && timeoutMs > 0) {
-    const timer = setTimeout(() => controller.abort(new DOMException(`Execution timed out after ${timeoutMs}ms`, 'TimeoutError')), timeoutMs);
+    const timer = setTimeout(
+      () => controller.abort(new DOMException(`Execution timed out after ${timeoutMs}ms`, 'TimeoutError')),
+      timeoutMs,
+    );
     timer.unref?.();
     disposers.push(() => clearTimeout(timer));
   }

@@ -1,12 +1,5 @@
 import type { Diagnostic, JsonValue, ScriptSource, SourceRange, YasumuFileReference } from '@yasumu/runtime-api';
-import {
-  deserialize,
-  EnvironmentSchema,
-  GraphqlSchema,
-  RestSchema,
-  SmtpSchema,
-  WorkspaceSchema,
-} from '@yasumu/schema';
+import { deserialize, EnvironmentSchema, GraphqlSchema, RestSchema, SmtpSchema, WorkspaceSchema } from '@yasumu/schema';
 
 import { WorkspaceValidationError, YasumuErrorCodes } from './errors.js';
 import type {
@@ -100,7 +93,9 @@ export class HeadlessWorkspaceLoader {
 
   async load(source: WorkspaceSource): Promise<WorkspaceLoadResult> {
     const diagnostics: Diagnostic[] = [];
-    const files = (await source.list()).filter((file) => file.path.endsWith('.ysl')).sort((a, b) => a.path.localeCompare(b.path));
+    const files = (await source.list())
+      .filter((file) => file.path.endsWith('.ysl'))
+      .sort((a, b) => a.path.localeCompare(b.path));
     const parsed: ParsedFile[] = [];
 
     for (const file of files) {
@@ -111,7 +106,9 @@ export class HeadlessWorkspaceLoader {
       }
     }
 
-    const workspaceFiles = parsed.filter((file): file is Extract<ParsedFile, { kind: 'workspace' }> => file.kind === 'workspace');
+    const workspaceFiles = parsed.filter(
+      (file): file is Extract<ParsedFile, { kind: 'workspace' }> => file.kind === 'workspace',
+    );
     if (workspaceFiles.length === 0) {
       diagnostics.push({
         code: YasumuErrorCodes.WorkspaceNotFound,
@@ -157,13 +154,28 @@ export class HeadlessWorkspaceLoader {
     let parsed: ParsedFile;
     switch (annotation) {
       case 'workspace':
-        parsed = { kind: 'workspace', path: file.path, revision, value: deserialize(file.content, WorkspaceSchema) as ParsedWorkspace };
+        parsed = {
+          kind: 'workspace',
+          path: file.path,
+          revision,
+          value: deserialize(file.content, WorkspaceSchema) as ParsedWorkspace,
+        };
         break;
       case 'rest':
-        parsed = { kind: 'rest', path: file.path, revision, value: deserialize(file.content, RestSchema) as ParsedRest };
+        parsed = {
+          kind: 'rest',
+          path: file.path,
+          revision,
+          value: deserialize(file.content, RestSchema) as ParsedRest,
+        };
         break;
       case 'graphql':
-        parsed = { kind: 'graphql', path: file.path, revision, value: deserialize(file.content, GraphqlSchema) as ParsedGraphQL };
+        parsed = {
+          kind: 'graphql',
+          path: file.path,
+          revision,
+          value: deserialize(file.content, GraphqlSchema) as ParsedGraphQL,
+        };
         break;
       case 'environment':
         parsed = {
@@ -174,7 +186,12 @@ export class HeadlessWorkspaceLoader {
         };
         break;
       case 'smtp':
-        parsed = { kind: 'smtp', path: file.path, revision, value: deserialize(file.content, SmtpSchema) as ParsedSmtp };
+        parsed = {
+          kind: 'smtp',
+          path: file.path,
+          revision,
+          value: deserialize(file.content, SmtpSchema) as ParsedSmtp,
+        };
         break;
       default:
         throw new Error(`Unsupported or missing Yasumu annotation${annotation ? `: @${annotation}` : ''}`);
@@ -222,7 +239,11 @@ function normalizeWorkspace(
   );
   const smtpFiles = files.filter((file): file is Extract<ParsedFile, { kind: 'smtp' }> => file.kind === 'smtp');
   if (smtpFiles.length > 1) {
-    diagnostics.push({ code: YasumuErrorCodes.InvalidYsl, message: 'Only one @smtp file is supported', severity: 'error' });
+    diagnostics.push({
+      code: YasumuErrorCodes.InvalidYsl,
+      message: 'Only one @smtp file is supported',
+      severity: 'error',
+    });
   }
 
   return {
@@ -393,16 +414,19 @@ function normalizeGraphQLBody(
 
 function normalizeFormData(value: JsonValue, file: string, diagnostics: Diagnostic[]): FormDataEntry[] {
   if (!Array.isArray(value)) {
-    diagnostics.push({ code: YasumuErrorCodes.InvalidEntity, message: 'Form data must be an array', severity: 'error', file });
+    diagnostics.push({
+      code: YasumuErrorCodes.InvalidEntity,
+      message: 'Form data must be an array',
+      severity: 'error',
+      file,
+    });
     return [];
   }
   return value.flatMap((entry): FormDataEntry[] => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry) || typeof entry.key !== 'string') return [];
     if (entry.kind === 'file' || (entry.file && typeof entry.file === 'object')) {
       const reference = normalizeFileReference(entry.file ?? entry.value);
-      return reference
-        ? [{ kind: 'file', key: entry.key, file: reference, enabled: entry.enabled !== false }]
-        : [];
+      return reference ? [{ kind: 'file', key: entry.key, file: reference, enabled: entry.enabled !== false }] : [];
     }
     return [
       {
@@ -441,7 +465,8 @@ function normalizeTabular(value: JsonValue, file: string, diagnostics: Diagnosti
 function normalizeFileReference(value: JsonValue | undefined): YasumuFileReference | null {
   if (typeof value === 'string') return workspacePathFile(value);
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  if (typeof value.path === 'string') return workspacePathFile(value.path, typeof value.name === 'string' ? value.name : undefined);
+  if (typeof value.path === 'string')
+    return workspacePathFile(value.path, typeof value.name === 'string' ? value.name : undefined);
   return null;
 }
 
@@ -504,8 +529,15 @@ function validateWorkspace(workspace: YasumuWorkspace, diagnostics: Diagnostic[]
 
   const groups = new Map(workspace.groups.map((group) => [group.id, group]));
   for (const group of workspace.groups) {
-    if (group.workspaceId !== workspace.id) invalidReference(`Group ${group.id} has the wrong workspace ID`, group.id, diagnostics, group.origin.path);
-    if (group.parentId && !groups.has(group.parentId)) invalidReference(`Group ${group.id} references unknown parent ${group.parentId}`, group.id, diagnostics, group.origin.path);
+    if (group.workspaceId !== workspace.id)
+      invalidReference(`Group ${group.id} has the wrong workspace ID`, group.id, diagnostics, group.origin.path);
+    if (group.parentId && !groups.has(group.parentId))
+      invalidReference(
+        `Group ${group.id} references unknown parent ${group.parentId}`,
+        group.id,
+        diagnostics,
+        group.origin.path,
+      );
     const seen = new Set<string>([group.id]);
     let parent = group.parentId;
     while (parent) {
@@ -522,11 +554,29 @@ function validateWorkspace(workspace: YasumuWorkspace, diagnostics: Diagnostic[]
   for (const entity of workspace.entities) {
     if (entity.groupId) {
       const group = groups.get(entity.groupId);
-      if (!group) invalidReference(`Entity ${entity.id} references unknown group ${entity.groupId}`, entity.id, diagnostics, entity.origin.path);
-      else if (group.entityKind !== entity.kind) invalidReference(`Entity ${entity.id} is assigned to a ${group.entityKind} group`, entity.id, diagnostics, entity.origin.path);
+      if (!group)
+        invalidReference(
+          `Entity ${entity.id} references unknown group ${entity.groupId}`,
+          entity.id,
+          diagnostics,
+          entity.origin.path,
+        );
+      else if (group.entityKind !== entity.kind)
+        invalidReference(
+          `Entity ${entity.id} is assigned to a ${group.entityKind} group`,
+          entity.id,
+          diagnostics,
+          entity.origin.path,
+        );
     }
     for (const dependency of entity.dependencies) {
-      if (!entityIds.has(dependency)) invalidReference(`Entity ${entity.id} references unknown dependency ${dependency}`, entity.id, diagnostics, entity.origin.path);
+      if (!entityIds.has(dependency))
+        invalidReference(
+          `Entity ${entity.id} references unknown dependency ${dependency}`,
+          entity.id,
+          diagnostics,
+          entity.origin.path,
+        );
     }
   }
 }
@@ -537,7 +587,9 @@ function invalidReference(message: string, entityId: string, diagnostics: Diagno
 
 function diagnosticFromParseError(file: string, error: unknown): Diagnostic {
   const record = error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined;
-  const range = isSourceRange(record?.range) ? record.range : rangeFromMessage(error instanceof Error ? error.message : '');
+  const range = isSourceRange(record?.range)
+    ? record.range
+    : rangeFromMessage(error instanceof Error ? error.message : '');
   return {
     code: YasumuErrorCodes.InvalidYsl,
     message: error instanceof Error ? error.message : String(error),
@@ -554,7 +606,12 @@ function isSourceRange(value: unknown): value is SourceRange {
 }
 
 function isPosition(value: unknown): value is SourceRange['start'] {
-  return !!value && typeof value === 'object' && typeof (value as Record<string, unknown>).line === 'number' && typeof (value as Record<string, unknown>).column === 'number';
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    typeof (value as Record<string, unknown>).line === 'number' &&
+    typeof (value as Record<string, unknown>).column === 'number'
+  );
 }
 
 function rangeFromMessage(message: string): SourceRange | undefined {
