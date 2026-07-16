@@ -1,0 +1,44 @@
+{
+  "name": "@yasumu/headless",
+  "version": "0.1.0",
+  "description": "Runtime-independent Yasumu workspace, domain, and execution services",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "deno": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "node": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@yasumu/runtime-api": "workspace:*",
+    "@yasumu/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:build",
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
+    "typescript": "catalog:build",
+    "vitest": "catalog:test"
+  }
+}

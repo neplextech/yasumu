@@ -78,6 +78,10 @@ export interface RestEntityData extends CommonEntity {
    */
   script: YasumuEmbeddedScript;
   /**
+   * The test script of this entity.
+   */
+  testScript: YasumuEmbeddedScript | null;
+  /**
    * The dependencies of this entity.
    */
   dependencies: string[];
@@ -124,6 +128,10 @@ export interface RestEntityCreateOptions extends CustomMetadata {
    */
   script?: YasumuEmbeddedScript;
   /**
+   * The test script of this entity.
+   */
+  testScript?: YasumuEmbeddedScript | null;
+  /**
    * The dependencies of this entity.
    */
   dependencies?: string[];
@@ -169,6 +177,10 @@ export interface RestEntityUpdateOptions extends CustomMetadata {
    * The script of this entity.
    */
   script?: YasumuEmbeddedScript;
+  /**
+   * The test script of this entity.
+   */
+  testScript?: YasumuEmbeddedScript | null;
   /**
    * The dependencies of this entity.
    */

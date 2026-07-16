@@ -1,0 +1,11 @@
+@workspace
+
+metadata {
+  id: "invalid-workspace"
+  name: "Invalid CLI fixture"
+  version: 1
+}
+
+snapshot 1
+
+groups {}

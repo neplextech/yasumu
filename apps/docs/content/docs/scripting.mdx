@@ -1,666 +1,277 @@
 ---
 title: Scripting
-description: Pre-request and post-response scripting in Yasumu.
+description:
+  Standard Web API hooks, workspace services, mocks, and portable
+  Yasumu scripts.
 ---
 
 # Scripting
 
-Yasumu provides a powerful scripting system that allows you to modify
-requests before they're sent and process responses after they're
-received. Scripts are written in `JavaScript` or `TypeScript` and have
-access to request, response, and environment data.
+Yasumu request scripts are TypeScript or JavaScript modules that run
+through the same lifecycle in the desktop app and CLI. Hook contexts
+use standard Web APIs and are typed by the shared runtime contract.
 
-<Callout type="tip" title="Scripting Language">
-  Yasumu supports both `JavaScript` and `TypeScript` syntax for
-  scripting out-of-the-box. The editor also provides type definitions
-  and autocomplete for the request and response objects.
-</Callout>
+```ts
+export async function onRequest(ctx: RequestHookContext) {}
+export async function onResponse(ctx: ResponseHookContext) {}
+export async function onTest(ctx: TestHookContext) {}
+```
 
-## Overview
+All hooks are optional. Missing exports are no-ops.
 
-Each request in Yasumu can have a script that exports two lifecycle
-functions:
+## Lifecycle and cascade
 
-- **`onRequest(req)`** — Runs before the request is sent
-- **`onResponse(req, res)`** — Runs after the response is received
+For each phase, Yasumu runs scripts from the workspace level down
+through the entity's parent groups and finally the entity itself:
 
-<Callout type="info" title="Looking for e-mail scripting?">
-  Please refer to the [E-mail
-  Scripting](/docs/smtp-server#email-scripting) guide for detailed
-  overviews on how to add email listener in Yasumu.
-</Callout>
+```d
+workspace → outer group → inner group → entity
+```
 
-## Script Structure
+The complete lifecycle is:
 
-Scripts are written in the **Scripts** tab of the request editor:
+```d
+onRequest → mock or transport → onResponse → onTest (test mode only)
+```
 
-![Scripts Tab](/scripts.png)
+Every context includes:
 
-```javascript
-export function onRequest(req) {
-  // Modify the request before sending
-  req.headers.set('X-Custom-Header', 'value');
-}
+| Property              | Description                                                |
+| :-------------------- | :--------------------------------------------------------- |
+| `ctx.id`              | The current entity ID                                      |
+| `ctx.entity`          | A safe description of the current entity                   |
+| `ctx.workspace`       | Workspace execution, environment, email, and file APIs     |
+| `ctx.execution`       | Execution ID, parent/root IDs, depth, mode, and start time |
+| `ctx.signal`          | The execution's `AbortSignal`                              |
+| `ctx.cancel(reason?)` | Cancel this run and its nested work                        |
 
-export function onResponse(req, res) {
-  // Process the response
-  console.log('Status:', res.status);
-  console.log('Body:', res.json());
+## Requests
+
+`ctx.req` is a Web
+[`Request`](https://developer.mozilla.org/docs/Web/API/Request). Clone
+it before reading a body that another consumer will also need.
+
+Use `ctx.setRequest()` to replace the outgoing request predictably:
+
+```ts
+export async function onRequest(ctx: RequestHookContext) {
+  const token = ctx.workspace.env.getSecret('API_TOKEN');
+  const headers = new Headers(ctx.req.headers);
+  if (token) headers.set('authorization', `Bearer ${token}`);
+
+  ctx.setRequest(new Request(ctx.req, { headers }));
 }
 ```
 
-<Callout type="info" title="Optional Functions">
-  Both functions are optional. You can export just `onRequest`, just
-  `onResponse`, or both depending on your needs.
-</Callout>
+`ctx.req` is updated after `setRequest`, and the final request is
+passed to the next script in the cascade and then to the transport.
 
-## The Request Object (`req`)
+## Mock responses
 
-The `req` object represents the HTTP request and is available in both
-`onRequest` and `onResponse` functions.
+Return a Web `Response` from `onRequest` to bypass the network:
 
-### Properties
-
-| Property    | Type                         | Description                                      |
-| :---------- | :--------------------------- | :----------------------------------------------- |
-| `url`       | `string`                     | The request URL (can be modified in `onRequest`) |
-| `method`    | `string`                     | HTTP method (GET, POST, etc.)                    |
-| `headers`   | `YasumuHeaders`              | Request headers object                           |
-| `body`      | `unknown`                    | Request body                                     |
-| `params`    | `YasumuURLSearchParams`      | URL search parameters                            |
-| `env`       | `YasumuWorkspaceEnvironment` | Environment access                               |
-| `workspace` | `YasumuWorkspace`            | The current workspace object                     |
-
-### Methods
-
-| Method    | Returns         | Description                  |
-| :-------- | :-------------- | :--------------------------- |
-| `json()`  | `unknown`       | Parse body as JSON           |
-| `text()`  | `string`        | Get body as text             |
-| `clone()` | `YasumuRequest` | Create a copy of the request |
-
-### Modifying Headers
-
-```javascript
-export function onRequest(req) {
-  // Set a header
-  req.headers.set('Authorization', 'Bearer my-token');
-
-  // Append to existing header
-  req.headers.append('Accept', 'application/json');
-
-  // Delete a header
-  req.headers.delete('X-Unwanted');
-
-  // Check if header exists
-  if (req.headers.has('Content-Type')) {
-    console.log('Content-Type:', req.headers.get('Content-Type'));
+```ts
+export function onRequest(ctx: RequestHookContext) {
+  if (new URL(ctx.req.url).pathname === '/preview') {
+    return Response.json({ source: 'mock' }, { status: 200 });
   }
 }
 ```
 
-### Modifying URL and Method
+A mock follows the normal remainder of the lifecycle. `onResponse`
+and, in test mode, `onTest` still run. The result and execution events
+identify it with `isMockResponse`.
 
-```javascript
-export function onRequest(req) {
-  // Change the URL
-  req.url = 'https://api.example.com/v2/users';
+## Responses
 
-  // Change the HTTP method
-  req.method = 'POST';
+`ctx.res` is a read-only Web
+[`Response`](https://developer.mozilla.org/docs/Web/API/Response). Use
+a clone when reading its body:
+
+```ts
+export async function onResponse(ctx: ResponseHookContext) {
+  const body = await ctx.res.clone().json();
+  console.log('status', ctx.res.status, body);
+  console.log('mocked', ctx.isMockResponse);
 }
 ```
 
-### Modifying Body
+`onResponse` cannot replace the final response.
 
-```javascript
-export function onRequest(req) {
-  // Set a JSON body
-  req.body = JSON.stringify({ name: 'John', age: 30 });
-}
-```
+## Tests
 
-## The Response Object (`res`)
+`onTest` runs only when the execution mode is `test`:
 
-The `res` object represents the HTTP response and is only available in
-the `onResponse` function.
+```ts
+export async function onTest(ctx: TestHookContext) {
+  const body = await ctx.res.clone().json();
 
-### Properties
-
-| Property     | Type                         | Description                  |
-| :----------- | :--------------------------- | :--------------------------- |
-| `status`     | `number`                     | HTTP status code             |
-| `statusText` | `string`                     | HTTP status message          |
-| `ok`         | `boolean`                    | `true` if status is 200-299  |
-| `headers`    | `YasumuHeaders`              | Response headers             |
-| `body`       | `unknown`                    | Response body                |
-| `env`        | `YasumuWorkspaceEnvironment` | Environment access           |
-| `workspace`  | `YasumuWorkspace`            | The current workspace object |
-
-### Methods
-
-| Method    | Returns          | Description                   |
-| :-------- | :--------------- | :---------------------------- |
-| `json()`  | `unknown`        | Parse body as JSON            |
-| `text()`  | `string`         | Get body as text              |
-| `clone()` | `YasumuResponse` | Create a copy of the response |
-
-### Reading Response Data
-
-```javascript
-export function onResponse(req, res) {
-  // Check status
-  if (!res.ok) {
-    console.log('Request failed with status:', res.status);
-    return;
-  }
-
-  // Read JSON body
-  const data = res.json();
-  console.log('User:', data.user);
-
-  // Read headers
-  const contentType = res.headers.get('Content-Type');
-  console.log('Content-Type:', contentType);
-}
-```
-
-## Environment Access
-
-Both `req` and `res` objects provide access to the current environment
-through the `env` property.
-
-### Getting Variables and Secrets
-
-```javascript
-export function onRequest(req) {
-  // Get a variable
-  const apiUrl = req.env.getVariable('API_URL');
-
-  // Get a secret
-  const apiKey = req.env.getSecret('API_KEY');
-
-  // Use in headers
-  req.headers.set('Authorization', `Bearer ${apiKey}`);
-}
-```
-
-### Setting Variables
-
-You can set variables from scripts, which will be persisted to the
-environment:
-
-```javascript
-export function onResponse(req, res) {
-  const data = res.json();
-
-  // Save a value from the response to the environment
-  res.env.setVariable('AUTH_TOKEN', data.token);
-  res.env.setVariable('USER_ID', data.user.id);
-}
-```
-
-<Callout type="info" title="Environment Persistence">
-  Variables set via `setVariable()` are automatically saved to the
-  active environment after the script completes. This allows you to
-  chain requests and pass data between them.
-</Callout>
-
-### Setting Secrets
-
-```javascript
-export function onResponse(req, res) {
-  const data = res.json();
-
-  // Save a sensitive value as a secret
-  res.env.setSecret('REFRESH_TOKEN', data.refreshToken);
-}
-```
-
-### Environment Methods
-
-| Method                    | Description                                        |
-| :------------------------ | :------------------------------------------------- |
-| `getVariable(key)`        | Get a variable value (returns `null` if not found) |
-| `setVariable(key, value)` | Set a variable value                               |
-| `deleteVariable(key)`     | Delete a variable                                  |
-| `hasVariable(key)`        | Check if variable exists                           |
-| `getSecret(key)`          | Get a secret value (returns `null` if not found)   |
-| `setSecret(key, value)`   | Set a secret value                                 |
-| `deleteSecret(key)`       | Delete a secret                                    |
-| `hasSecret(key)`          | Check if secret exists                             |
-| `getAllVariables()`       | Get all variables as an object                     |
-| `getAllSecrets()`         | Get all secrets as an object                       |
-
-## Mock Responses
-
-You can return a `YasumuResponse` from `onRequest` to skip the actual
-HTTP request and return a mock response:
-
-```javascript
-export function onRequest(req) {
-  // Return a mock response instead of making the actual request
-  if (req.url.includes('/mock')) {
-    return new YasumuResponse(
-      JSON.stringify({ message: 'This is a mock response' }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-  }
-}
-```
-
-This is useful for:
-
-- Testing without hitting the actual API
-- Simulating error responses
-- Development when the backend isn't available
-
-## Awaiting Emails
-
-Yasumu offers a powerful API for programmatically awaiting incoming
-emails within your scripts. This functionality is particularly
-valuable for testing and development scenarios that require
-verification of email delivery as part of an automated workflow.
-
-```javascript
-export async function onRequest(req: YasumuRequest) {
-  // Wait for an email to arrive in the workspace's mailbox.
-  // The predicate should return true for emails that match your criteria.
-  // The optional timeout (in milliseconds) determines how long to wait.
-  const email = await req.workspace.emails.awaitEmail(
-    (email) => /* your predicate logic here */,
-    /* timeout */ 30_000
-  );
-  console.log('Received email:', email);
-  // Received email:
-  // {
-  //   id: '123',
-  //   from: 'sender@example.com',
-  //   to: 'recipient@example.com',
-  //   subject: 'Test Email',
-  //   text: 'This is a test email',
-  //   html: '<p>This is a test email</p>',
-  //   cc: null,
-  //   unread: true,
-  //   createdAt: 1715769600000,
-  //   updatedAt: 1715769600000,
-  // }
-}
-
-// It may also be added in the `onResponse` function to await an email after a request is made.
-export async function onResponse(req: YasumuResponse) {
-  const email = await req.workspace.emails.awaitEmail(
-    (email) => /* your predicate logic here */,
-    /* timeout */ 30_000
-  );
-  console.log('Received email:', email);
-}
-```
-
-For detailed examples and advanced features, please refer to the
-dedicated [E-mail Scripting](/docs/smtp-server#email-scripting) guide.
-
-## Console Output
-
-Use `console.log()` in your scripts to output debug information. The
-output appears inside the **Console** section on the status bar, which
-is available at the bottom right side of the screen.
-
-```javascript
-export function onRequest(req) {
-  console.log('Request URL:', req.url);
-  console.log('Request Method:', req.method);
-}
-
-export function onResponse(req, res) {
-  console.log('Response Status:', res.status);
-  console.log('Response Body:', res.json());
-}
-```
-
-#### Example of console
-
-![Console Output](/view-console-logs.png)
-
-## Runtime APIs
-
-Yasumu scripts run in a Deno-based runtime, giving you access to
-modern JavaScript features and many Node.js/Deno APIs.
-
-### Web Standard APIs
-
-These APIs are available in all modern JavaScript environments:
-
-| API                          | Description                                   |
-| :--------------------------- | :-------------------------------------------- |
-| `crypto`                     | Web Crypto API for hashing, encryption, etc.  |
-| `TextEncoder`                | Encode strings to Uint8Array                  |
-| `TextDecoder`                | Decode Uint8Array to strings                  |
-| `atob` / `btoa`              | Base64 encoding/decoding                      |
-| `fetch`                      | Make HTTP requests (use sparingly in scripts) |
-| `URL` / `URLSearchParams`    | URL manipulation                              |
-| `setTimeout` / `setInterval` | Timers (async operations)                     |
-| `JSON`                       | JSON parsing and stringification              |
-| `console`                    | Logging to the console tab                    |
-
-### Node.js APIs
-
-You can import Node.js built-in modules using the `node:` prefix:
-
-```javascript
-import { Buffer } from 'node:buffer';
-import { createHash, createHmac } from 'node:crypto';
-import path from 'node:path';
-
-export function onRequest(req) {
-  // Using Node.js Buffer
-  const data = Buffer.from('Hello, World!', 'utf-8');
-  const base64 = data.toString('base64');
-  req.headers.set('X-Encoded', base64);
-
-  // Using Node.js crypto
-  const hash = createHash('sha256').update(req.url).digest('hex');
-  req.headers.set('X-URL-Hash', hash);
-}
-```
-
-#### Example of some of the available Node.js modules
-
-| Module        | Import                                 | Description             |
-| :------------ | :------------------------------------- | :---------------------- |
-| `buffer`      | `import { Buffer } from 'node:buffer'` | Binary data handling    |
-| `crypto`      | `import crypto from 'node:crypto'`     | Cryptographic functions |
-| `path`        | `import path from 'node:path'`         | Path manipulation       |
-| `util`        | `import util from 'node:util'`         | Utility functions       |
-| `querystring` | `import qs from 'node:querystring'`    | Query string parsing    |
-| `url`         | `import { URL } from 'node:url'`       | URL parsing             |
-| `assert`      | `import assert from 'node:assert'`     | Assertions for testing  |
-
-### Deno APIs
-
-Deno-specific APIs are available through the global `Deno` object:
-
-```javascript
-export function onRequest(req) {
-  // Get environment variables (from system, not Yasumu env)
-  const nodeEnv = Deno.env.get('NODE_ENV');
-  console.log('NODE_ENV:', nodeEnv);
-
-  // Check Deno version
-  console.log('Deno version:', Deno.version.deno);
-}
-```
-
-<Callout type="warn" title="Permission System">
-  Yasumu runs scripts in a sandboxed environment. When a script attempts to perform dangerous operations (like file system access), you'll be prompted to grant permission:
-
-![Permission Prompt](/dangerous-script-asks-for-permission-prompt.png)
-
-</Callout>
-
-#### Example of some of the available Deno APIs
-
-| API                   | Description                           |
-| :-------------------- | :------------------------------------ |
-| `Deno.version`        | Get Deno, V8, and TypeScript versions |
-| `Deno.env.get(key)`   | Read system environment variables     |
-| `Deno.inspect(value)` | Pretty-print any value for debugging  |
-| `Deno.noColor`        | Check if color output is disabled     |
-
-### Yasumu-Specific APIs
-
-Yasumu provides additional utilities through the global `Yasumu`
-object:
-
-| API                            | Description                                      |
-| :----------------------------- | :----------------------------------------------- |
-| `Yasumu.cuid()`                | Generate a collision-resistant unique identifier |
-| `Yasumu.version`               | Get the current Yasumu version                   |
-| `Yasumu.ui.showNotification()` | Show a toast notification in the UI              |
-
-```javascript
-export function onRequest(req) {
-  // Generate unique ID
-  const id = Yasumu.cuid();
-  req.headers.set('X-Request-ID', id);
-
-  // Log Yasumu version
-  console.log('Yasumu version:', Yasumu.version);
-}
-```
-
-### UI Notifications
-
-You can display toast notifications in the Yasumu UI from your
-scripts:
-
-```javascript
-export function onResponse(req, res) {
-  if (res.ok) {
-    await Yasumu.ui.showNotification({
-      title: 'Success',
-      message: 'Request completed successfully!',
-      variant: 'success',
+  describe('current user', () => {
+    test('returns an identifier', () => {
+      expect(ctx.res.status).toBe(200);
+      expect(body.id).toBeDefined();
     });
-  } else {
-    await Yasumu.ui.showNotification({
-      title: 'Error',
-      message: `Request failed with status ${res.status}`,
-      variant: 'error',
-    });
-  }
+  });
 }
 ```
 
-#### Notification Options
+`describe`, `test`, and `expect` are active only inside the
+asynchronous `onTest` context. Registrations do not leak between
+concurrent executions. See [Testing](/docs/testing) for matchers and
+result behavior.
 
-| Property  | Type     | Description                                                     |
-| :-------- | :------- | :-------------------------------------------------------------- |
-| `title`   | `string` | The title of the notification                                   |
-| `message` | `string` | The message body of the notification                            |
-| `variant` | `string` | Style variant: `default`, `success`, `warning`, `info`, `error` |
+## Environment API
 
-```javascript
-// Different notification variants
-await Yasumu.ui.showNotification({
-  title: 'Info',
-  message: 'Processing your request...',
-  variant: 'info',
-});
+The active environment is available through `ctx.workspace.env`:
 
-await Yasumu.ui.showNotification({
-  title: 'Warning',
-  message: 'Rate limit approaching',
-  variant: 'warning',
-});
+```ts
+const apiUrl = ctx.workspace.env.getVariable('API_URL');
+const token = ctx.workspace.env.getSecret('API_TOKEN');
+
+ctx.workspace.env.setVariable('USER_ID', '42');
+ctx.workspace.env.setSecret('ACCESS_TOKEN', 'execution-only-value');
 ```
 
-### Cryptographic Operations
+Getters read the effective environment. Setters affect the current
+execution and later hooks or nested runs in that execution; they do
+not silently persist values or secrets to YSL or SQLite.
 
-Use the Web Crypto API for secure hashing and encryption:
+Available methods are `getVariable`, `getSecret`, `getAllVariables`,
+`getAllSecrets`, `setVariable`, `setSecret`, `hasVariable`, and
+`hasSecret`. Secrets are centrally redacted from logs, diagnostics,
+snapshots, errors, and history.
 
-```javascript
-export async function onRequest(req) {
-  const apiKey = req.env.getSecret('API_KEY');
-  const timestamp = Date.now().toString();
+## Chaining requests
 
-  // Create HMAC signature
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(apiKey);
-  const message = encoder.encode(
-    `${req.method}:${req.url}:${timestamp}`,
+REST and GraphQL entities can invoke each other:
+
+```ts
+export async function onResponse(ctx: ResponseHookContext) {
+  const result = await ctx.workspace.graphql.execute(
+    'get-current-user',
+    {
+      variables: { id: '42' },
+      withResponse: true,
+    },
   );
 
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
+  if (result.status !== 'completed') {
+    throw new Error(result.error?.message ?? 'Nested request failed');
+  }
+}
+```
+
+Use `ctx.workspace.rest.get/list/execute` and
+`ctx.workspace.graphql.get/list/execute`. Nested runs inherit the
+workspace, environment, and cancellation signal, get a child execution
+ID, emit normal events, and are protected by a maximum depth.
+`withResponse` defaults to `false`.
+
+## Waiting for email
+
+The email API checks messages received since the execution began
+before it waits for a future message, so an email that arrives between
+the request and the hook is not missed:
+
+```ts
+export async function onResponse(ctx: ResponseHookContext) {
+  const email = await ctx.workspace.email.awaitEmail(
+    (candidate) => candidate.to.includes('user@example.com'),
+    { timeoutMs: 30_000, signal: ctx.signal },
   );
 
-  const signature = await crypto.subtle.sign('HMAC', key, message);
-  const signatureHex = Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  req.headers.set('X-Timestamp', timestamp);
-  req.headers.set('X-Signature', signatureHex);
+  const code = email.text.match(/\b\d{6}\b/)?.[0];
+  if (code) ctx.workspace.env.setVariable('VERIFICATION_CODE', code);
 }
 ```
 
-### Generating UUIDs
+`ctx.workspace.email.list({ since, limit })` queries buffered or
+persisted messages. Predicates run in the script worker against
+serialized email candidates; the host process does not evaluate script
+text.
 
-```javascript
-export function onRequest(req) {
-  const requestId = crypto.randomUUID();
-  req.headers.set('X-Request-ID', requestId);
+Incoming SMTP messages can also invoke the dedicated `onEmail(ctx)`
+hook. See [SMTP Server](/docs/smtp-server#email-scripting).
+
+## Files and multipart bodies
+
+Scripts receive metadata-first file references. The host controls
+access to workspace paths and GUI handles:
+
+```ts
+export async function onRequest(ctx: RequestHookContext) {
+  const avatar = await ctx.workspace.files.open(
+    'fixtures/avatar.png',
+  );
+  const body = new FormData();
+  body.append('displayName', 'Ada');
+  body.append('avatar', avatar, avatar.name);
+
+  ctx.setRequest(new Request(ctx.req, { method: 'POST', body }));
 }
 ```
 
-### Generating CUIDs
+`files.resolve(path)` returns serializable metadata;
+`files.open(pathOrReference)` returns a Web `File` inside the runtime.
+CLI workspace paths are confined to the workspace root, while the
+desktop resolves selected files through its host adapter.
 
-Yasumu provides a built-in method to generate collision-resistant
-unique identifiers (CUIDs):
+## Virtual modules
 
-```javascript
-export function onRequest(req) {
-  const requestId = Yasumu.cuid();
-  req.headers.set('X-Request-ID', requestId);
-  console.log('Generated CUID:', requestId);
-}
+The runtime contract defines these modules:
+
+| Module             | Exports                                                     |
+| :----------------- | :---------------------------------------------------------- |
+| `yasumu:test`      | `describe`, `test`, `expect`                                |
+| `yasumu:workspace` | `workspace` plus declared exports from the workspace script |
+| `yasumu:runtime`   | Runtime descriptor and capabilities                         |
+| `yasumu:env`       | Active execution environment API                            |
+| `yasumu:files`     | Active file API                                             |
+
+```ts
+import { expect, test } from 'yasumu:test';
+import { workspace } from 'yasumu:workspace';
+import env from 'yasumu:env';
 ```
 
-<Callout type="info" title="CUID vs UUID">
-  CUIDs are shorter, URL-safe, and designed to be monotonically
-  increasing, making them ideal for database IDs and distributed
-  systems.
-</Callout>
+Workspace module state is scoped to the runtime session and never
+shared between workspaces.
 
-### Hashing Data
+## Runtime capabilities
 
-```javascript
-export async function onResponse(req, res) {
-  const body = res.text();
-  const encoder = new TextEncoder();
-  const data = encoder.encode(body);
+Portable scripts should prefer Web APIs and the `ctx.workspace`
+services. The desktop Tanxium adapter additionally exposes its
+approved Deno and Node compatibility capabilities. The Node CLI
+exposes approved Node built-ins. Filesystem, network, environment,
+subprocess, FFI, native module, email, and nested execution access are
+capability-controlled by the host.
 
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+## Cancellation and failures
 
-  console.log('Response SHA-256:', hashHex);
+Use `ctx.signal` with cancellation-aware APIs or call `ctx.cancel()`.
+Yasumu distinguishes user cancellation, timeouts, runtime failures,
+network errors, permission denial, and email timeouts in structured
+execution results. Workers, email subscriptions, and nested executions
+are disposed when a run finishes.
+
+## Complete example
+
+```ts
+import { expect, test } from 'yasumu:test';
+
+export function onRequest(ctx: RequestHookContext) {
+  const headers = new Headers(ctx.req.headers);
+  headers.set('x-trace-id', ctx.execution.id);
+  ctx.setRequest(new Request(ctx.req, { headers }));
+}
+
+export async function onResponse(ctx: ResponseHookContext) {
+  console.log('received', ctx.res.status, 'for', ctx.id);
+}
+
+export function onTest(ctx: TestHookContext) {
+  test('request completed successfully', () => {
+    expect(ctx.res.ok).toBe(true);
+  });
 }
 ```
-
-### Base64 Encoding
-
-```javascript
-export function onRequest(req) {
-  const username = req.env.getVariable('USERNAME');
-  const password = req.env.getSecret('PASSWORD');
-
-  // Basic Auth header
-  const credentials = btoa(`${username}:${password}`);
-  req.headers.set('Authorization', `Basic ${credentials}`);
-}
-```
-
-<Callout type="info" title="Async Functions">
-  Scripts support `async`/`await`. If you use async APIs like
-  `crypto.subtle`, make sure to declare your function as `async` and
-  `await` the results.
-</Callout>
-
-## Common Use Cases
-
-### Authentication
-
-Add authentication headers dynamically:
-
-```javascript
-export function onRequest(req) {
-  const token = req.env.getSecret('AUTH_TOKEN');
-  if (token) {
-    req.headers.set('Authorization', `Bearer ${token}`);
-  }
-}
-```
-
-### Token Refresh
-
-Save tokens from login responses for use in subsequent requests:
-
-```javascript
-export function onResponse(req, res) {
-  if (res.ok && req.url.includes('/login')) {
-    const data = res.json();
-    res.env.setSecret('AUTH_TOKEN', data.accessToken);
-    res.env.setSecret('REFRESH_TOKEN', data.refreshToken);
-    console.log('Tokens saved to environment');
-  }
-}
-```
-
-### Request Signing
-
-Add signatures or timestamps to requests:
-
-```javascript
-export function onRequest(req) {
-  const timestamp = Date.now().toString();
-  req.headers.set('X-Timestamp', timestamp);
-
-  // Add a simple signature (in practice, use proper HMAC)
-  const apiKey = req.env.getSecret('API_KEY');
-  req.headers.set('X-Signature', btoa(`${apiKey}:${timestamp}`));
-}
-```
-
-### Response Validation
-
-Validate responses and log warnings:
-
-```javascript
-export function onResponse(req, res) {
-  const data = res.json();
-
-  if (!data.id) {
-    console.warn('Response missing required field: id');
-  }
-
-  if (res.status === 401) {
-    console.error('Authentication failed - token may be expired');
-  }
-}
-```
-
-### Extracting Data for Chaining
-
-Save response data for use in other requests:
-
-```javascript
-export function onResponse(req, res) {
-  const data = res.json();
-
-  // Save the created resource ID for later requests
-  res.env.setVariable('LAST_CREATED_ID', data.id);
-  res.env.setVariable('LAST_CREATED_AT', data.createdAt);
-}
-```
-
-## Best Practices
-
-1. **Keep scripts focused** — Each script should do one thing well
-2. **Use environment variables** — Don't hardcode sensitive values in
-   scripts
-3. **Handle errors gracefully** — Check for null values and error
-   responses
-4. **Use console.log for debugging** — Output helps trace issues
-5. **Document complex logic** — Add comments for non-obvious code
-6. **Test incrementally** — Test scripts after each change

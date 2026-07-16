@@ -73,6 +73,10 @@ export interface GraphqlEntityData extends CommonEntity {
    */
   script: YasumuEmbeddedScript;
   /**
+   * The test script of this entity.
+   */
+  testScript: YasumuEmbeddedScript | null;
+  /**
    * The dependencies of this entity.
    */
   dependencies: string[];
@@ -114,6 +118,10 @@ export interface GraphqlEntityCreateOptions extends CustomMetadata {
    * The script of this entity.
    */
   script?: YasumuEmbeddedScript;
+  /**
+   * The test script of this entity.
+   */
+  testScript?: YasumuEmbeddedScript | null;
   /**
    * The dependencies of this entity.
    */
@@ -166,6 +174,10 @@ export interface GraphqlEntityUpdateOptions extends CustomMetadata {
    * The script of this entity.
    */
   script?: YasumuEmbeddedScript;
+  /**
+   * The test script of this entity.
+   */
+  testScript?: YasumuEmbeddedScript | null;
   /**
    * The dependencies of this entity.
    */

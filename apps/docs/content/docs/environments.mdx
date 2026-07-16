@@ -131,16 +131,60 @@ braces:
 url: "{{API_URL}}/users?apiKey={{API_KEY}}"
 ```
 
-When you send a request, Yasumu resolves:
+When you send a request, the shared headless resolver builds one
+effective environment for the complete hook and request lifecycle. The
+desktop supplies locally stored secret values; the CLI requires
+explicit secret sources.
 
-1. `{{API_URL}}` from the `variables` array
-2. `{{API_KEY}}` from the `secrets` array (using your local value)
+From highest to lowest precedence:
+
+```d
+programmatic execution values
+  → CLI or host overrides
+  → process environment
+  → selected dotenv values
+  → selected environment
+  → workspace defaults
+```
+
+For the CLI, process values may use `YASUMU_VAR_<NAME>` for variables
+and `YASUMU_ENV_<NAME>` for defined secrets.
 
 ## Switching Environments
 
 Switch environments using the environment selector in the toolbar.
 When you switch environments, all variable references are resolved
 using the new environment's values.
+
+## Script access
+
+Scripts read the active environment through `ctx.workspace.env`:
+
+```ts
+export function onRequest(ctx: RequestHookContext) {
+  const token = ctx.workspace.env.getSecret('API_TOKEN');
+  const headers = new Headers(ctx.req.headers);
+  if (token) headers.set('authorization', `Bearer ${token}`);
+  ctx.setRequest(new Request(ctx.req, { headers }));
+}
+```
+
+`setVariable()` and `setSecret()` modify execution-scoped state for
+later hooks and nested requests. They do not silently persist to YSL
+or SQLite.
+
+Secrets are centrally redacted from logs, diagnostics,
+request/response snapshots, test output, errors, and execution
+history.
+
+## Typed interpolation
+
+When a JSON body or GraphQL variable is exactly `{{VALUE}}`, the
+resolved boolean, number, `null`, array, or object keeps its type.
+References embedded inside a larger string become text. Missing
+values, recursive cycles, and excessive expansion depth produce
+structured interpolation errors instead of silently sending an
+unresolved request.
 
 ## Example Environments
 

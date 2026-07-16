@@ -1,4 +1,8 @@
+import type { ExecutionEvent } from '@yasumu/headless';
+
 export interface RpcSubscriptionEvents {
+  /** A structured event from the canonical headless execution lifecycle. */
+  'execution-event': ExecutionEvent;
   /**
    * The event for when a rest entity is updated.
    */

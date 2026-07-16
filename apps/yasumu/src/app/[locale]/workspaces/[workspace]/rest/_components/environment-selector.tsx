@@ -1,5 +1,4 @@
 'use client';
-import { useQueries } from '@tanstack/react-query';
 import {
   Select,
   SelectContent,
@@ -13,43 +12,33 @@ import { Plus, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId } from 'react';
 
-import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import {
+  useActiveEnvironment,
+  useEnvironments,
+} from '@/app/[locale]/workspaces/[workspace]/environment/_hooks/useEnvironments';
 
 import { useEnvironmentStore } from '../../../_stores/environment-store';
 
 export default function EnvironmentSelector() {
-  const { environments, selectedEnvironment, setEnvironments, setSelectedEnvironment } = useEnvironmentStore();
-  const workspace = useActiveWorkspace();
+  const environments = useEnvironmentStore((state) => state.environments);
+  const selectedEnvironment = useEnvironmentStore((state) => state.selectedEnvironment);
+  const setEnvironments = useEnvironmentStore((state) => state.setEnvironments);
+  const setSelectedEnvironment = useEnvironmentStore((state) => state.setSelectedEnvironment);
   const router = useRouter();
   const nullId = useId();
-  const [
-    { data: environmentsData, isLoading: isLoadingEnvironments },
-    { data: selectedEnvironmentData, isLoading: isLoadingSelectedEnvironment },
-  ] = useQueries({
-    queries: [
-      {
-        queryKey: ['environments'],
-        queryFn: () => workspace.environments.list(),
-        enabled: environments.length === 0,
-      },
-      {
-        queryKey: ['selectedEnvironment'],
-        queryFn: () => workspace.environments.getActiveEnvironment(),
-        enabled: !selectedEnvironment,
-      },
-    ],
-  });
+  const { data: environmentsData, isLoading: isLoadingEnvironments } = useEnvironments();
+  const { data: selectedEnvironmentData, isLoading: isLoadingSelectedEnvironment } = useActiveEnvironment();
 
   useEffect(() => {
     if (environmentsData) {
       setEnvironments(environmentsData);
     }
-  }, [environmentsData]);
+  }, [environmentsData, setEnvironments]);
 
   useEffect(() => {
     if (selectedEnvironmentData === undefined) return;
     setSelectedEnvironment(selectedEnvironmentData);
-  }, [selectedEnvironmentData]);
+  }, [selectedEnvironmentData, setSelectedEnvironment]);
 
   return (
     <Select
@@ -66,8 +55,8 @@ export default function EnvironmentSelector() {
         const targetEnvironment = environments.find((env) => env.id === id);
 
         if (targetEnvironment) {
-          setSelectedEnvironment(targetEnvironment);
           await targetEnvironment.setActive();
+          setSelectedEnvironment(targetEnvironment);
         }
       })}
     >

@@ -34,7 +34,7 @@ function parseVariableName(name: string): ParsedVariable {
 }
 
 export function VariablePopoverContent({ variableName, onValueChange }: VariablePopoverContentProps) {
-  const { selectedEnvironment } = useEnvironmentStore();
+  const selectedEnvironment = useEnvironmentStore((state) => state.selectedEnvironment);
   const { explicitType, key } = parseVariableName(variableName);
 
   const resolution = useMemo(() => {

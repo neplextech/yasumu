@@ -1,6 +1,4 @@
-import type { ComponentType } from 'react';
-
-import type { FileTreeItem } from '@/components/sidebars/file-tree';
+import type { FileTreeIcon, FileTreeItem } from '@/components/sidebars/file-tree';
 
 export interface WorkspaceTreeFolder<TItem> {
   id: string;
@@ -23,38 +21,70 @@ export function mapWorkspaceTreeToFileTree<TItem extends WorkspaceTreeItem<TItem
   options: {
     folderFallbackName: string;
     fileFallbackName: string;
-    resolveFileIcon: (item: Extract<TItem, { type: 'file' }>) => ComponentType;
+    resolveFileIcon: (item: Extract<TItem, { type: 'file' }>) => FileTreeIcon;
   },
 ): FileTreeItem[] {
-  return items.map((item): FileTreeItem => {
+  const result: FileTreeItem[] = [];
+  const visitedKeys = new Set<string>();
+  const stack: Array<{ source: TItem[]; target: FileTreeItem[]; index: number }> = [
+    { source: items, target: result, index: 0 },
+  ];
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1];
+    if (frame.index >= frame.source.length) {
+      stack.pop();
+      continue;
+    }
+
+    const item = frame.source[frame.index];
+    frame.index += 1;
+    const itemKey = `${item.type}:${item.id}`;
+    if (visitedKeys.has(itemKey)) continue;
+    visitedKeys.add(itemKey);
+
     if (item.type === 'folder') {
-      return {
+      const children: FileTreeItem[] = [];
+      frame.target.push({
         id: item.id,
         name: item.name ?? options.folderFallbackName,
         type: 'folder',
-        children: mapWorkspaceTreeToFileTree(item.children ?? [], options),
-      };
+        children,
+      });
+      if (item.children?.length) stack.push({ source: item.children, target: children, index: 0 });
+      continue;
     }
 
-    return {
+    frame.target.push({
       id: item.id,
       name: item.name ?? options.fileFallbackName,
       type: 'file',
       icon: options.resolveFileIcon(item as Extract<TItem, { type: 'file' }>),
-    };
-  });
+    });
+  }
+
+  return result;
 }
 
 export function findFolderInWorkspaceTree<TItem extends WorkspaceTreeItem<TItem>>(
   items: TItem[],
   folderId: string,
 ): Extract<TItem, { type: 'folder' }> | null {
-  for (const item of items) {
+  const stack = [...items].reverse();
+  const visitedKeys = new Set<string>();
+
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
+    const itemKey = `${item.type}:${item.id}`;
+    if (visitedKeys.has(itemKey)) continue;
+    visitedKeys.add(itemKey);
+
     if (item.type === 'folder') {
       if (item.id === folderId) return item as Extract<TItem, { type: 'folder' }>;
-
-      const found = findFolderInWorkspaceTree(item.children ?? [], folderId);
-      if (found) return found;
+      if (item.children) {
+        for (let index = item.children.length - 1; index >= 0; index -= 1) stack.push(item.children[index]);
+      }
     }
   }
 
@@ -65,8 +95,15 @@ export function flattenWorkspaceFolders<TItem extends WorkspaceTreeItem<TItem>>(
   items: TItem[],
 ): { id: string; name: string; parentId?: string | null }[] {
   const folders: { id: string; name: string; parentId?: string | null }[] = [];
+  const stack = [...items].reverse();
+  const visitedKeys = new Set<string>();
 
-  for (const item of items) {
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
+    const itemKey = `${item.type}:${item.id}`;
+    if (visitedKeys.has(itemKey)) continue;
+    visitedKeys.add(itemKey);
     if (item.type !== 'folder') continue;
 
     folders.push({
@@ -74,7 +111,9 @@ export function flattenWorkspaceFolders<TItem extends WorkspaceTreeItem<TItem>>(
       name: item.name ?? 'Untitled Folder',
       parentId: item.parentId,
     });
-    folders.push(...flattenWorkspaceFolders(item.children ?? []));
+    if (item.children) {
+      for (let index = item.children.length - 1; index >= 0; index -= 1) stack.push(item.children[index]);
+    }
   }
 
   return folders;

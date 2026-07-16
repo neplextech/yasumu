@@ -1,0 +1,32 @@
+@environment
+
+metadata {
+  id: "integration-env"
+  name: "Integration"
+}
+
+variables [
+  {
+    key: "BASE_URL"
+    value: "http://127.0.0.1:1"
+    enabled: true
+  },
+  {
+    key: "DELAY"
+    value: "0"
+    enabled: true
+  },
+  {
+    key: "SOURCE"
+    value: "workspace"
+    enabled: true
+  }
+]
+
+secrets [
+  {
+    key: "TOKEN"
+    value: ""
+    enabled: true
+  }
+]

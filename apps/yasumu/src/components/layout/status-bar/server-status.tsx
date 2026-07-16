@@ -25,13 +25,18 @@ export function ServerStatus({ label, port, icon: Icon, active = false, href, on
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
+            aria-label={`${label}: ${port ? `port ${port}` : 'not running'}${href ? '. Open status page' : ''}`}
             className="hover:bg-muted/50 text-muted-foreground hover:text-foreground flex h-full items-center gap-1.5 px-2 transition-colors"
             onClick={handleClick}
             disabled={!href}
           >
-            <Icon className="size-3.5" />
+            <span aria-hidden="true">
+              <Icon className="size-3.5" />
+            </span>
             <span className="font-mono text-xs">{port != null ? `${port}` : '—'}</span>
             <VscCircleFilled
+              aria-hidden="true"
               className={cn('size-2', active && port ? 'text-emerald-500' : 'text-muted-foreground/50')}
             />
           </button>

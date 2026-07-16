@@ -1,0 +1,11 @@
+@workspace
+
+metadata {
+  id: "cli-workspace"
+  name: "CLI integration"
+  version: 1
+}
+
+snapshot 1
+
+groups {}

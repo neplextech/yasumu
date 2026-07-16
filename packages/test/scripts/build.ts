@@ -14,6 +14,7 @@ const outputDir = join(
   'public-modules',
   'yasumu__test',
 );
+const tanxiumOutput = join(Deno.cwd(), '..', '..', 'crates', 'tanxium', 'src', 'runtime', 'modules', 'test.js');
 
 await Deno.remove(outputDir, { recursive: true }).catch(Object);
 
@@ -55,3 +56,4 @@ if (result.outputFiles) {
 }
 
 await cp(join(Deno.cwd(), 'dist'), outputDir, { recursive: true });
+await cp(join(Deno.cwd(), 'dist', 'index.js'), tanxiumOutput);

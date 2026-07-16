@@ -49,7 +49,7 @@ export function getGlobalScriptWorker(strategy: WorkerTransport = 'web'): Script
 
 export function terminateGlobalScriptWorker(): void {
   if (globalWorker) {
-    globalWorker.terminate();
+    globalWorker.dispose();
     globalWorker = null;
     lastWorkerTransport = null;
   }

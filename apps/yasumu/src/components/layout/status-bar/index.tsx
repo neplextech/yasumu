@@ -1,13 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useEffectEvent } from 'react';
 import { LuMail, LuRadio, LuServer } from 'react-icons/lu';
 import { LuPlugZap } from 'react-icons/lu';
 
 import { trackEvent } from '@/lib/instrumentation/analytics';
 
-import { useYasumu, useActiveWorkspace } from '../../providers/workspace-provider';
+import { useActiveWorkspace, useYasumuRuntime } from '../../providers/workspace-provider';
 import { ConsoleButton } from './console-button';
 import { ConsoleSheet } from './console-sheet';
 import { ServerStatus } from './server-status';
@@ -17,26 +16,15 @@ function StatusBarDivider() {
 }
 
 export function StatusBar() {
-  const { port, echoServerPort, mcpServerPort } = useYasumu();
+  const { port, echoServerPort, mcpServerPort } = useYasumuRuntime();
   const workspace = useActiveWorkspace(false);
 
-  const { data: smtpPort, refetch: refetchSmtpPort } = useQuery({
+  const { data: smtpPort } = useQuery({
     queryKey: ['smtp-port', workspace?.id],
     queryFn: () => workspace?.emails.getSmtpPort().catch(() => null) ?? null,
     enabled: !!workspace,
     staleTime: 10000,
   });
-
-  const fetchSmtpPort = useEffectEvent(() => {
-    if (smtpPort == null) {
-      refetchSmtpPort().catch(Object);
-    }
-  });
-
-  useEffect(() => {
-    if (!workspace) return;
-    fetchSmtpPort();
-  }, [workspace]);
 
   if (!workspace) return null;
 

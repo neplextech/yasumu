@@ -21,10 +21,9 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
 import { MdDeveloperMode } from 'react-icons/md';
 
-import { useYasumu } from '@/components/providers/workspace-provider';
+import { useYasumuRuntime } from '@/components/providers/workspace-provider';
 
 import { useCommandPalette, useRegisterCommands } from './command-context';
 import type { YasumuCommand } from './commands';
@@ -32,7 +31,7 @@ import type { YasumuCommand } from './commands';
 export function useBuiltinCommands() {
   const router = useRouter();
   const { openSubDialog, setIsOpen } = useCommandPalette();
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
 
   const handleOpenWorkspace = React.useCallback(() => {
     setIsOpen(false);
@@ -240,7 +239,7 @@ export function useBuiltinCommands() {
         },
       },
     ];
-  }, [router, openSubDialog, handleOpenWorkspace, setIsOpen]);
+  }, [handleOpenWorkspace, openSubDialog, router, setIsOpen, yasumu]);
 
   useRegisterCommands(commands);
 }

@@ -18,7 +18,7 @@ export class YasumuSchemaParsableUnion<E extends _YasumuSchemaParsableUnionExpec
     this.expect = expect;
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     for (const x of this.expect) {
       if (x.canParse(parser)) {
         return true;
@@ -33,11 +33,10 @@ export class YasumuSchemaParsableUnion<E extends _YasumuSchemaParsableUnionExpec
         return x.parse(parser) as _YasumuSchemaParsableUnionReturn<E>;
       }
     }
-    const { line, column } = parser.currentToken!.span.start;
-    throw new YasumuSchemaParserError(`No matching parsable parsable in union (at line ${line}, column ${column})`);
+    throw new YasumuSchemaParserError('No matching parsable in union', parser.currentToken.span);
   }
 
-  canSerialize(serializer: YasumuSchemaSerializer, value: any) {
+  override canSerialize(serializer: YasumuSchemaSerializer, value: any) {
     for (const x of this.expect) {
       if (x.canSerialize(serializer, value)) {
         return true;

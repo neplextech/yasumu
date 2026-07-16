@@ -8,7 +8,7 @@ export class YasumuSchemaParsableNull extends YasumuSchemaParsable<null> {
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.NULL);
   }
 
@@ -17,7 +17,7 @@ export class YasumuSchemaParsableNull extends YasumuSchemaParsable<null> {
     return null;
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return value === undefined || value === null;
   }
 

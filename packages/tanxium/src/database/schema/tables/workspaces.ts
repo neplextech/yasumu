@@ -1,6 +1,7 @@
+import type { YasumuEmbeddedScript } from '@yasumu/common';
 import { AnySQLiteColumn, int, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import { commonColumns, timestamp } from '../../common/index.ts';
+import { commonColumns, json, timestamp } from '../../common/index.ts';
 import { environments } from './environments.ts';
 
 export interface WorkspaceMetadata {
@@ -19,4 +20,5 @@ export const workspaces = sqliteTable('workspaces', {
   activeEnvironmentId: text('activeEnvironmentId').references((): AnySQLiteColumn => environments.id, {
     onDelete: 'set null',
   }),
+  script: json<YasumuEmbeddedScript>('script'),
 });

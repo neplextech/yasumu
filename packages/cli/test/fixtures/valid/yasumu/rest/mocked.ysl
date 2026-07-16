@@ -1,0 +1,31 @@
+@rest
+
+metadata {
+  name: "Mocked response"
+  method: "GET"
+  id: "mocked"
+  groupId: null
+}
+
+request {
+  url: "https://example.invalid/mocked"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  export function onRequest() {
+    return new Response(JSON.stringify({ mocked: true }), {
+      status: 202,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  export function onResponse() {}
+}
+
+test null

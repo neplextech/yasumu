@@ -1,6 +1,11 @@
 import type { YasumuSchemaParsable, YasumuSchemaParsableToType } from './parsable.js';
 import { YasumuSchemaScanner } from './scanner.js';
-import { type YasumuSchemaToken, type YasumuSchemaTokenType, YasumuSchemaTokenTypes } from './tokens.js';
+import {
+  type YasumuSchemaToken,
+  type YasumuSchemaTokenSpan,
+  type YasumuSchemaTokenType,
+  YasumuSchemaTokenTypes,
+} from './tokens.js';
 
 export class YasumuSchemaParser {
   currentToken = DUMMY_TOKEN;
@@ -32,9 +37,10 @@ export class YasumuSchemaParser {
 
   ensure(type: YasumuSchemaTokenType) {
     if (this.currentToken.type !== type) {
-      const { line, column } = this.currentToken!.span.start;
+      const scannerError = this.currentToken.error ? `: ${this.currentToken.error}` : '';
       throw new YasumuSchemaParserError(
-        `Expected '${type}' token, received '${this.currentToken.type}' (at line ${line}, column ${column})`,
+        `Expected '${type}' token, received '${this.currentToken.type}'${scannerError}`,
+        this.currentToken.span,
       );
     }
   }
@@ -65,8 +71,14 @@ const DUMMY_TOKEN: YasumuSchemaToken = {
 };
 
 export class YasumuSchemaParserError extends Error {
-  constructor(message: string) {
-    super(message);
+  override readonly name = 'YasumuSchemaParserError';
+
+  constructor(
+    message: string,
+    public readonly span?: YasumuSchemaTokenSpan,
+  ) {
+    const location = span ? ` (at line ${span.start.line}, column ${span.start.column})` : '';
+    super(`${message}${location}`);
   }
 }
 

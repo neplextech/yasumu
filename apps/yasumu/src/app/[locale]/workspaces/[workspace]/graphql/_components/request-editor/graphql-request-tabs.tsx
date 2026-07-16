@@ -8,7 +8,7 @@ import type { GraphQLSchema } from 'graphql';
 import { useQueryState, parseAsStringEnum } from 'nuqs';
 import { useCallback, useMemo } from 'react';
 
-import { TextEditor } from '@/components/editors';
+import { TextEditor, GRAPHQL_SCRIPT_SNIPPETS } from '@/components/editors';
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import KeyValueTable, { type KeyValuePair } from '@/components/tables/key-value-table';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
@@ -148,6 +148,7 @@ export function GraphqlRequestTabs({
             <div className="mb-2 flex shrink-0 items-center gap-1">
               <button
                 type="button"
+                aria-pressed={querySubTab === 'editor'}
                 onClick={() => setQuerySubTab('editor')}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'editor'
@@ -159,6 +160,7 @@ export function GraphqlRequestTabs({
               </button>
               <button
                 type="button"
+                aria-pressed={querySubTab === 'query-builder'}
                 onClick={() => setQuerySubTab('query-builder')}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'query-builder'
@@ -170,6 +172,7 @@ export function GraphqlRequestTabs({
               </button>
               <button
                 type="button"
+                aria-pressed={querySubTab === 'docs'}
                 onClick={() => setQuerySubTab('docs')}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   querySubTab === 'docs'
@@ -280,13 +283,14 @@ export function GraphqlRequestTabs({
             <div className="flex shrink-0 items-center justify-between">
               <span className="text-muted-foreground text-sm font-medium">Request Scripts</span>
               <span className="text-muted-foreground font-mono text-xs">
-                onRequest(req) · onResponse(req, res) · onTest(req, res)
+                onRequest(ctx) · onResponse(ctx) · onTest(ctx)
               </span>
             </div>
             <TextEditor
               value={script?.code || ''}
               onChange={handleScriptCodeChange}
               typeDefinitions={YASUMU_TYPE_DEFINITIONS}
+              snippets={GRAPHQL_SCRIPT_SNIPPETS}
               placeholder={
                 <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
                   <h1 className="font-bold underline">Edit to hide this example placeholder</h1>

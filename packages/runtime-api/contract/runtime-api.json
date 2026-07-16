@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "yasumu-runtime-api",
+  "version": 1,
+  "hooks": ["onRequest", "onResponse", "onTest", "onEmail"],
+  "virtualModules": {
+    "yasumu:test": ["describe", "test", "expect"],
+    "yasumu:workspace": ["workspace"],
+    "yasumu:runtime": ["runtime"],
+    "yasumu:env": ["env"],
+    "yasumu:files": ["files"]
+  },
+  "capabilities": [
+    "workers",
+    "nodeBuiltins",
+    "filesystemRead",
+    "filesystemWrite",
+    "network",
+    "environment",
+    "subprocess",
+    "ffi",
+    "nativeModules",
+    "virtualModules",
+    "workspaceFiles",
+    "email",
+    "nestedExecution"
+  ],
+  "workerMessages": ["ready", "invoke", "result", "error", "log", "host-call", "host-result", "cancel", "dispose"],
+  "hostMethods": [
+    "entity.get",
+    "entity.list",
+    "entity.execute",
+    "email.list",
+    "email.next",
+    "file.resolve",
+    "file.open",
+    "permission.request"
+  ]
+}

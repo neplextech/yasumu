@@ -2,7 +2,7 @@ import { Button } from '@yasumu/ui/components/button';
 import Link from 'next/link';
 import React from 'react';
 import { FaArrowRight, FaDownload, FaGithub } from 'react-icons/fa6';
-import { MdCode, MdBolt, MdGridView, MdLock, MdFolderOpen, MdPublic } from 'react-icons/md';
+import { MdCode, MdBolt, MdTerminal, MdLock, MdFolderOpen, MdPublic } from 'react-icons/md';
 import { SiDeno, SiRust, SiTauri, SiTypescript } from 'react-icons/si';
 
 import AppPreview from '../components/app-preview';
@@ -35,8 +35,8 @@ export default function Home() {
           </h1>
 
           <p className="text-text-secondary mx-auto mt-4 max-w-2xl text-xl leading-relaxed">
-            Design, test, and debug your API workflows with a fast, open-source tool built for the modern web.
-            Experience a beautiful, monochromatic interface that gets out of your way.
+            Design, test, and automate API workflows with a fast, open-source desktop app and headless CLI. One
+            git-friendly workspace behaves consistently on your machine and in CI.
           </p>
 
           <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
@@ -89,13 +89,13 @@ export default function Home() {
               icon={<MdBolt />}
               color="blue"
               title="Lightweight & Fast"
-              description="Built with Tauri and Deno runtime for lightweight and better performance compared to traditional Electron-based alternatives."
+              description="A Tauri desktop shell, Tanxium scripting runtime, and shared headless execution engine without the weight of an Electron app."
             />
             <FeatureCard
-              icon={<MdGridView />}
+              icon={<MdTerminal />}
               color="purple"
-              title="Clean Interface"
-              description="A distraction-free, monochromatic environment inspired by modern design principles."
+              title="Desktop and CLI"
+              description="Run the same REST and GraphQL requests, scripts, tests, files, variables, and mocks interactively or in automated CI jobs."
             />
             <FeatureCard
               icon={<MdLock />}
@@ -106,8 +106,8 @@ export default function Home() {
             <FeatureCard
               icon={<MdCode />}
               color="orange"
-              title="Scripting"
-              description="Write scripts to automate your workflows. Use the built-in script editor to write scripts for your requests."
+              title="Portable Scripting"
+              description="Use standard Web Request and Response APIs, typed hooks, request chaining, virtual modules, email waits, and isolated runtimes."
             />
             <FeatureCard
               icon={<MdFolderOpen />}
@@ -189,21 +189,15 @@ export default function Home() {
                 <div className="h-3 w-3 rounded-full bg-[#FFBD2E]"></div>
                 <div className="h-3 w-3 rounded-full bg-[#27C93F]"></div>
               </div>
-              <div className="text-gray-400 select-none"># Clone the repository</div>
-              <div className="text-white">
-                $ git clone{' '}
-                <a href="https://github.com/neplextech/yasumu" target="_blank" rel="noopener noreferrer">
-                  <span className="text-blue-400 hover:underline">https://github.com/neplextech/yasumu</span>
-                </a>
-              </div>
-              <div className="mb-2 text-gray-500">Cloning into 'yasumu'...</div>
-              <div className="mt-4 text-gray-400 select-none"># Run the development server</div>
-              <div className="text-white">$ pnpm i && pnpm build:app && pnpm app</div>
-              <div className="text-gray-500"> Compiling yasumu v1.0.0 (/path/to/yasumu)</div>
-              <div className="text-green-400"> Finished dev [unoptimized + debuginfo] target(s) in 2.34s</div>
+              <div className="text-gray-400 select-none"># Validate the complete YSL workspace</div>
+              <div className="text-white">$ yasumu validate</div>
+              <div className="mb-2 text-green-400">✓ Workspace is valid</div>
+              <div className="mt-4 text-gray-400 select-none"># Run the same tests in headless mode</div>
+              <div className="text-white">$ yasumu test --environment CI</div>
+              <div className="text-gray-400">GET Current user · 200 · 84 ms</div>
+              <div className="text-green-400">2 passed, 0 failed, 0 skipped</div>
               <div className="flex items-center text-white">
-                {' '}
-                Running `target/debug/yasumu`
+                REST and GraphQL execution complete
                 <span className="ml-1 inline-block h-4 w-2 animate-pulse bg-gray-400"></span>
               </div>
             </div>

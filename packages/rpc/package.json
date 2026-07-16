@@ -27,7 +27,8 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@yasumu/common": "workspace:*"
+    "@yasumu/common": "workspace:*",
+    "@yasumu/headless": "workspace:*"
   },
   "devDependencies": {
     "@yasumu/shared": "workspace:*",

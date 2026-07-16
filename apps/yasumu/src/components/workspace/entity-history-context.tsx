@@ -2,9 +2,10 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { EntityHistoryData } from '@yasumu/core';
-import { createContext, useCallback, useContext, useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { toast } from '@yasumu/ui/components/sonner';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
+import { useActiveWorkspace, useYasumuRuntime } from '@/components/providers/workspace-provider';
 import { trackEvent } from '@/lib/instrumentation/analytics';
 
 export type EntityHistoryScope = 'rest' | 'graphql';
@@ -33,7 +34,7 @@ export function EntityHistoryProvider({
   upsertHistory,
   deleteHistory,
 }: EntityHistoryProviderProps) {
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
   const workspace = useActiveWorkspace();
   const queryClient = useQueryClient();
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
@@ -55,9 +56,9 @@ export function EntityHistoryProvider({
 
   const entityId = selectedEntityId && history.includes(selectedEntityId) ? selectedEntityId : (history[0] ?? null);
 
-  const refetchHistory = useEffectEvent(() => {
-    return refetch();
-  });
+  const refetchHistory = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -94,7 +95,12 @@ export function EntityHistoryProvider({
         ];
       });
 
-      await upsertHistory(id);
+      try {
+        await upsertHistory(id);
+      } catch (error) {
+        await queryClient.invalidateQueries({ queryKey });
+        toast.error(error instanceof Error ? error.message : 'Failed to update the recent entity list');
+      }
     },
     [history, queryClient, queryKey, scope, upsertHistory, workspace.id],
   );
@@ -117,7 +123,12 @@ export function EntityHistoryProvider({
         setSelectedEntityId(nextId);
       }
 
-      await deleteHistory(id);
+      try {
+        await deleteHistory(id);
+      } catch (error) {
+        await queryClient.invalidateQueries({ queryKey });
+        toast.error(error instanceof Error ? error.message : 'Failed to remove the entity from the recent list');
+      }
     },
     [deleteHistory, entityId, history, queryClient, queryKey, scope, workspace.id],
   );

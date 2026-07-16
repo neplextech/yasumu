@@ -19,20 +19,19 @@ export class YasumuSchemaParsableEnum<E extends _YasumuSchemaParsableEnumExpect>
     this.expect = expect;
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.IDENTIFIER);
   }
 
   parse(parser: YasumuSchemaParser) {
     const identifier = parser.consume(YasumuSchemaTokenTypes.IDENTIFIER);
     if (!this.expect.includes(identifier.value)) {
-      const { line, column } = parser.currentToken!.span.start;
-      throw new YasumuSchemaParserError(`Invalid enum value "${identifier.value}" (at line ${line}, column ${column})`);
+      throw new YasumuSchemaParserError(`Invalid enum value "${identifier.value}"`, identifier.span);
     }
     return identifier.value as _YasumuSchemaParsableEnumReturn<E>;
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return typeof value === 'string';
   }
 

@@ -12,7 +12,7 @@ export class YasumuSchemaParsableList<E extends YasumuSchemaParsable<unknown>> e
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.LEFT_SQUARE_BRACKET);
   }
 
@@ -28,7 +28,7 @@ export class YasumuSchemaParsableList<E extends YasumuSchemaParsable<unknown>> e
     return list as _YasumuSchemaParsableListReturn<E>;
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return Array.isArray(value);
   }
 

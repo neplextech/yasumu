@@ -12,9 +12,10 @@ import {
 import { Input } from '@yasumu/ui/components/input';
 import { Label } from '@yasumu/ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
-import { isObjectType, isLeafType, GraphQLField, isListType, isNonNullType, GraphQLType } from 'graphql';
+import { isLeafType, isListType, isNonNullType, isObjectType } from 'graphql';
+import type { GraphQLField, GraphQLObjectType, GraphQLType } from 'graphql';
 import { Wand2, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useGraphqlIntrospection } from '../../_hooks/use-graphql-introspection';
 
@@ -34,6 +35,8 @@ interface GeneratorDialogProps {
   ) => Promise<void>;
 }
 
+type OperationType = 'query' | 'mutation' | 'subscription';
+
 export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: GeneratorDialogProps) {
   const [url, setUrl] = useState('');
   const [targetFolderId, setTargetFolderId] = useState<string>('root');
@@ -43,6 +46,13 @@ export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: Gen
   const [includeQueries, setIncludeQueries] = useState(true);
   const [includeMutations, setIncludeMutations] = useState(true);
   const [includeSubscriptions, setIncludeSubscriptions] = useState(true);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   const handleIntrospect = async () => {
     if (!url) return;
@@ -60,10 +70,10 @@ export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: Gen
         type: 'query' | 'mutation' | 'subscription';
       }[] = [];
 
-      const processType = (type: any, operationType: 'query' | 'mutation' | 'subscription') => {
+      const processType = (type: GraphQLObjectType | null | undefined, operationType: OperationType) => {
         if (!type) return;
         const fields = type.getFields();
-        Object.values(fields).forEach((field: any) => {
+        Object.values(fields).forEach((field) => {
           const query = generateOperation(field, operationType);
           operations.push({
             name: field.name,
@@ -87,10 +97,11 @@ export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: Gen
 
       await onGenerate(url, targetFolderId === 'root' ? null : targetFolderId, filtered);
       setGeneratedCount(filtered.length);
-      setTimeout(() => {
+      closeTimerRef.current = setTimeout(() => {
         onOpenChange(false);
         setGeneratedCount(null);
         setUrl('');
+        closeTimerRef.current = null;
       }, 2000);
     } catch (e) {
       console.error(e);
@@ -98,13 +109,6 @@ export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: Gen
       setIsGenerating(false);
     }
   };
-
-  const folderOptions = useMemo(() => {
-    // Flatten folders with some indentation or path indication could be nice,
-    // but for now simple list is okay as per requirement "select desired folder".
-    // We might want to show path if possible, but flat list is start.
-    return folders;
-  }, [folders]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -159,7 +163,7 @@ export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: Gen
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="root">Root</SelectItem>
-                {folderOptions.map((folder) => (
+                {folders.map((folder) => (
                   <SelectItem key={folder.id} value={folder.id}>
                     {folder.name}
                   </SelectItem>
@@ -224,10 +228,7 @@ export function GeneratorDialog({ open, onOpenChange, folders, onGenerate }: Gen
   );
 }
 
-function generateOperation(
-  field: GraphQLField<any, any>,
-  operationType: 'query' | 'mutation' | 'subscription',
-): string {
+function generateOperation(field: GraphQLField<unknown, unknown>, operationType: OperationType): string {
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
   const operationName = capitalize(field.name);

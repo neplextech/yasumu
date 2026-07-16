@@ -10,8 +10,8 @@
   },
   "type": "module",
   "exports": {
-    "./globals.css": "./src/styles/globals.css",
-    "./postcss.config": "./postcss.config.mjs",
+    "./globals.css": "./src/globals.css",
+    "./postcss.config": "./postcss.config.js",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
@@ -55,9 +55,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.475.0",
     "next-themes": "^0.4.6",
-    "react": "^19.1.1",
     "react-day-picker": "^9.11.0",
-    "react-dom": "^19.1.1",
     "react-hook-form": "^7.64.0",
     "react-resizable-panels": "^3.0.6",
     "recharts": "2.15.4",
@@ -71,11 +69,18 @@
     "@tailwindcss/postcss": "^4.1.11",
     "@turbo/gen": "^2.5.5",
     "@types/node": "catalog:build",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
+    "@types/react": "catalog:react",
+    "@types/react-dom": "catalog:react",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
+    "eslint": "^9.32.0",
+    "react": "catalog:react",
+    "react-dom": "catalog:react",
     "tailwindcss": "^4.1.11",
     "typescript": "catalog:build"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
   }
 }

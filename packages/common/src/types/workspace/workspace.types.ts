@@ -1,4 +1,4 @@
-import type { CommonEntity, CustomMetadata } from '../common/common.types.js';
+import type { CommonEntity, CustomMetadata, YasumuEmbeddedScript } from '../common/common.types.js';
 
 /**
  * A partial workspace object.
@@ -16,6 +16,10 @@ export interface PartialWorkspace extends CommonEntity {
    * The date and time the workspace was last opened.
    */
   lastOpenedAt: number | null;
+  /**
+   * The optional workspace-level script module.
+   */
+  script: YasumuEmbeddedScript | null;
 }
 
 /**
@@ -42,6 +46,10 @@ export interface WorkspaceData extends CommonEntity {
    * The ID of the active environment.
    */
   activeEnvironmentId: string | null;
+  /**
+   * The optional workspace-level script module.
+   */
+  script: YasumuEmbeddedScript | null;
 }
 
 /**

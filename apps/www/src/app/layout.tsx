@@ -18,6 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://yasumu.dev'),
   title: 'Yasumu - The Modern API Laboratory',
   description: 'A modern, free, and open-source API laboratory for designing and testing API workflows.',
   openGraph: {
@@ -55,10 +56,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning suppressContentEditableWarning className="dark">
       <head>
         <link rel="icon" href="/logo-dark-glow.png" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} bg-background-dark selection:bg-primary font-sans text-gray-100 antialiased selection:text-white`}

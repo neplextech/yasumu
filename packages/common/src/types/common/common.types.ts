@@ -1,6 +1,15 @@
 import type { EnvironmentData } from '../environment/environment.types.js';
 import type { YasumuScriptingLanguage } from './constants.js';
 
+/** A JSON primitive value. */
+export type JsonPrimitive = string | number | boolean | null;
+
+/** A JSON object with recursively serializable values. */
+export type JsonObject = { [key: string]: JsonValue };
+
+/** A value that can be serialized to JSON without custom handling. */
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+
 export interface YasumuEmbeddedScript {
   /**
    * The language of the script.

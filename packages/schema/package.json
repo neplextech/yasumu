@@ -24,15 +24,30 @@
   "main": "dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    "deno": "./src/index.ts",
-    "bun": "./src/index.ts",
-    "node": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+    ".": {
+      "deno": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "node": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./yasumu": {
+      "deno": "./src/yasumu/index.ts",
+      "bun": "./src/yasumu/index.ts",
+      "node": {
+        "types": "./dist/yasumu/index.d.ts",
+        "import": "./dist/yasumu/index.js"
+      },
+      "types": "./dist/yasumu/index.d.ts",
+      "import": "./dist/yasumu/index.js"
     }
   },
   "scripts": {
     "build": "rimraf dist && tsc && tsc-alias",
+    "test": "vitest run",
     "example": "tsx example/example.ts",
     "example2": "tsx example/workspace.ts"
   },
@@ -41,6 +56,7 @@
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.20.6",
-    "typescript": "catalog:build"
+    "typescript": "catalog:build",
+    "vitest": "catalog:test"
   }
 }

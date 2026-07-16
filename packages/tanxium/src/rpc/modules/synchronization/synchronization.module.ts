@@ -1,5 +1,5 @@
 import { Module } from '@yasumu/den';
-import { ConflictResolver, LockFileService, YslService } from '@yasumu/sync';
+import { LockFileService, YslService } from '@yasumu/sync';
 
 import { EmailModule } from '../email/email.module.ts';
 import { EntityGroupModule } from '../entity-group/entity-group.module.ts';
@@ -14,14 +14,7 @@ import { SynchronizationService } from './synchronization.service.ts';
 
 @Module({
   imports: [WorkspacesModule, RestModule, GraphqlModule, EntityGroupModule, EnvironmentModule, EmailModule],
-  providers: [
-    SynchronizationService,
-    SynchronizationLoader,
-    SynchronizationPusher,
-    YslService,
-    LockFileService,
-    ConflictResolver,
-  ],
+  providers: [SynchronizationService, SynchronizationLoader, SynchronizationPusher, YslService, LockFileService],
   resolvers: [SynchronizationResolver],
   exports: [SynchronizationService, LockFileService],
 })

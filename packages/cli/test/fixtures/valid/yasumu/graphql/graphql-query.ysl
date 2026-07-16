@@ -1,0 +1,24 @@
+@graphql
+
+metadata {
+  name: "GraphQL query"
+  id: "graphql-query"
+  groupId: null
+}
+
+request {
+  url: "{{BASE_URL}}/graphql"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: {
+    type: "graphql"
+    content: "query CliIntegration { status }"
+  }
+}
+
+dependencies []
+
+script null
+
+test null

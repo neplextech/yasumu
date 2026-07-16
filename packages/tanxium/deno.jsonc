@@ -8,6 +8,8 @@
     "../../packages/den",
     "../../packages/schema",
     "../../packages/echo-server",
+    "../../packages/headless",
+    "../../packages/runtime-api",
     "../../packages/workspace-importer",
     "../../packages/sync",
   ],

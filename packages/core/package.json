@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@yasumu/common": "workspace:*",
+    "@yasumu/headless": "workspace:*",
     "@yasumu/rpc": "workspace:*"
   },
   "devDependencies": {

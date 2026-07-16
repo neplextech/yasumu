@@ -10,7 +10,7 @@ export class YasumuSchemaParsableNullable<
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.NULL) || this.expect.canParse(parser);
   }
 
@@ -21,7 +21,7 @@ export class YasumuSchemaParsableNullable<
     return this.expect.parse(parser) as YasumuSchemaParsableToType<E>;
   }
 
-  canSerialize(serializer: YasumuSchemaSerializer, value: any) {
+  override canSerialize(serializer: YasumuSchemaSerializer, value: any) {
     return value === undefined || value === null || this.expect.canSerialize(serializer, value);
   }
 

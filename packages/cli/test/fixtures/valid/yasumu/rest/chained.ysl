@@ -1,0 +1,37 @@
+@rest
+
+metadata {
+  name: "Chained response"
+  method: "GET"
+  id: "chained"
+  groupId: null
+}
+
+request {
+  url: "https://example.invalid/chained"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies ["mocked"]
+
+script {
+  import { workspace } from "yasumu:workspace";
+
+  export async function onRequest() {
+    const child = await workspace.rest.execute("mocked", { withResponse: true });
+    return new Response(JSON.stringify({
+      childId: child.entityId,
+      childStatus: child.response?.status,
+    }), {
+      status: 207,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  export function onResponse() {}
+}
+
+test null

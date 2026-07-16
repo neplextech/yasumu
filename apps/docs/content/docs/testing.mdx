@@ -1,525 +1,200 @@
 ---
 title: Testing
-description: Write and run tests for your API requests in Yasumu.
+description:
+  Define deterministic API tests with the shared Yasumu test
+  lifecycle.
 ---
 
 # Testing
 
-Yasumu includes a built-in testing framework that lets you write tests
-for your API requests. Tests run only in test mode, after a request
-completes and can validate response data, status codes, headers, and
-more.
+Tests are declared in `onTest(ctx)` and run after `onResponse` only
+when an entity is executed in test mode. The desktop app and CLI
+return the same structured test results.
 
-<Callout type="tip" title="Global APIs">
-  The `test`, `expect` and `describe` functions are available globally
-  in your scripts. No imports needed.
+```ts
+export async function onTest(ctx: TestHookContext) {
+  const body = await ctx.res.clone().json();
+
+  test('returns the current user', () => {
+    expect(ctx.res.status).toBe(200);
+    expect(body.id).toBeDefined();
+  });
+}
+```
+
+<Callout type="warn" title="Active test context required">
+  `describe`, `test`, and `expect` are active only inside the
+  asynchronous `onTest` context. Calls from `onRequest`, `onResponse`,
+  module initialization, or a completed hook are no-ops.
 </Callout>
 
-<Callout type="warn" title="Test Context Required">
-  The `test()` and `expect()` functions only work inside the
-  `onTest()` function. Calling them in `onRequest()` or `onResponse()`
-  will have no effect as they are silently ignored in non-test mode.
-</Callout>
+## Lifecycle
 
-## Why Tests Live with Scripts
+Test mode follows the complete request lifecycle:
 
-In Yasumu, tests are defined alongside your request scripts in the
-same file. This is a deliberate design choice that differs from tools
-like Postman, where tests are often managed separately or in different
-tabs.
-
-### The Unified Script Model
-
-Yasumu uses a single script file per request with three lifecycle
-functions:
-
-- **`onRequest`** — Modify the request before sending
-- **`onResponse`** — Process the response after receiving
-- **`onTest`** — Validate the response with assertions
-
-```javascript
-export function onRequest(req) {
-  req.headers.set(
-    'Authorization',
-    `Bearer ${req.env.getSecret('TOKEN')}`,
-  );
-}
-
-export function onResponse(req, res) {
-  res.env.setVariable('USER_ID', res.json().id);
-}
-
-export function onTest(req, res) {
-  test('should return user', () => {
-    expect(res.json().id).toBeDefined();
-  });
-}
+```d
+workspace/group/entity onRequest
+  → mocked or real response
+  → workspace/group/entity onResponse
+  → workspace/group/entity onTest
 ```
 
-### Benefits of This Approach
+`ctx` contains the final standard Web `Request`, the read-only Web
+`Response`, `isMockResponse`, workspace APIs, execution metadata, and
+the execution's `AbortSignal`. Use `clone()` before reading a body
+more than once.
 
-| **Benefit**                    | **Description**                                                                                                        |
-| :----------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
-| **Single Source of Truth**     | Everything about your request—including tests—lives together. No context-switching, no forgotten test files.           |
-| **Maximum Reusability**        | Easily share functions, values, and objects between your request logic and your tests.                                 |
-| **Rich Shared Context**        | Tests receive the same `req` (request) and `res` (response) objects used throughout the script, ensuring full context. |
-| **Better Version Control**     | Keeping everything in one file means smaller, more focused diffs and easier code reviews.                              |
-| **Seamless Portability**       | Clone a request and its tests just come along—no hunting for corresponding files or missing assertions.                |
-| **Effortless Discoverability** | New contributors and teammates always find tests exactly where they expect: beside the request logic itself.           |
-| **Reduced Drift**              | Tests are always in sync with the code they verify, so they don’t become outdated or disconnected from script changes. |
+## Imports and globals
 
-### Familiar Testing API
+The testing functions are available as globals and through the
+generated virtual module:
 
-Yasumu uses the similar testing API as **Jest**, **Vitest**, and other
-popular JavaScript testing frameworks. If you've written tests in any
-modern JS project, you already know how to write tests in Yasumu:
-
-```javascript
-// Yasumu - uses standard Jest/Vitest API
-export function onTest(req, res) {
-  test('should return user', () => {
-    expect(res.json().name).toBe('John');
-    expect(res.status).toBeGreaterThanOrEqual(200);
-  });
-}
+```ts
+import { describe, expect, test } from 'yasumu:test';
 ```
 
-Compare this to **Postman's** proprietary API:
+Both forms share the same isolated test context.
 
-```javascript
-// Postman - uses custom pm.* API
-pm.test('should return user', function () {
-  const json = pm.response.json();
-  pm.expect(json.name).to.eql('John');
-  pm.expect(pm.response.code).to.be.at.least(200);
-});
-```
+## Grouping tests
 
-| Aspect              | Yasumu                            | Postman                            |
-| :------------------ | :-------------------------------- | :--------------------------------- |
-| API Style           | Jest/Vitest (`expect().toBe()`)   | Chai-like (`pm.expect().to.eql()`) |
-| Learning Curve      | Familiar if you know Jest         | Requires learning `pm.*` APIs      |
-| Transferable Skills | Yes — same patterns as unit tests | No — Postman-specific knowledge    |
+Suites may be nested. Registration and result ordering are
+deterministic:
 
-### Comparison with Other Tools
-
-In **Postman**, tests are written in a separate "Tests" (or
-Post-Response Script) tab using a different API (`pm.test`,
-`pm.expect`). Since pre-request and test scripts are managed
-independently, which can lead to:
-
-- Duplicated setup logic between pre-request and test scripts
-- Context switching when debugging request flows
-- Tests that drift out of sync with the request they validate
-
-## Overview
-
-Tests are defined in the `onTest` function within your request script.
-This function receives `req` and `res` as arguments — the same objects
-used in `onRequest` and `onResponse` — giving you full access to both
-request and response data.
-
-```javascript
-export function onTest(req, res) {
-  test('should return 200 status', () => {
-    expect(res.status).toBe(200);
-  });
-
-  test('should return valid JSON', () => {
-    const data = res.json();
-    expect(data).toBeDefined();
-  });
-}
-```
-
-## Writing Tests
-
-### Basic Test Structure
-
-Each test is defined using the `test` function with a name and a
-callback:
-
-```javascript
-export function onTest(req, res) {
-  test('test name', () => {
-    // Your assertions here
-  });
-}
-```
-
-The `onTest` function receives the same `req` and `res` objects used
-throughout the script, so you can reference them directly in your
-tests via closure.
-
-### Function Arguments
-
-| Argument | Type             | Description         |
-| :------- | :--------------- | :------------------ |
-| `req`    | `YasumuRequest`  | The request object  |
-| `res`    | `YasumuResponse` | The response object |
-
-### Accessing Response Data
-
-```javascript
-export function onTest(req, res) {
-  test('response body is valid', () => {
-    const body = res.json();
-    expect(body.name).toBe('John');
-    expect(body.email).toContain('@');
-  });
-
-  test('status is successful', () => {
-    expect(res.status).toBe(200);
-    expect(res.ok).toBe(true);
-  });
-
-  test('content-type is JSON', () => {
-    const contentType = res.headers.get('Content-Type');
-    expect(contentType).toContain('application/json');
-  });
-}
-```
-
-### Accessing Request Data
-
-```javascript
-export function onTest(req, res) {
-  test('request was sent with correct method', () => {
-    expect(req.method).toBe('POST');
-  });
-
-  test('request URL is correct', () => {
-    expect(req.url).toContain('/api/users');
-  });
-}
-```
-
-## Grouping Tests
-
-Use `describe` to group related tests together:
-
-```javascript
-export function onTest(req, res) {
-  describe('User Response', () => {
-    test('has user id', () => {
-      const user = res.json();
-      expect(user.id).toBeDefined();
-    });
-
-    test('has user email', () => {
-      const user = res.json();
-      expect(user.email).toBeDefined();
-    });
-  });
-
-  describe('Response Headers', () => {
-    test('has content-type', () => {
-      expect(res.headers.has('Content-Type')).toBe(true);
-    });
-
-    test('has cache-control', () => {
-      expect(res.headers.has('Cache-Control')).toBe(true);
+```ts
+export function onTest(ctx: TestHookContext) {
+  describe('users', () => {
+    describe('response metadata', () => {
+      test('is JSON', () => {
+        expect(ctx.res.headers.get('content-type')).toContain(
+          'application/json',
+        );
+      });
     });
   });
 }
 ```
 
-## Test Context
+Suite paths are included in serializable results.
 
-Each test function receives a `ctx` object with methods to control
-test execution:
+## Async tests
 
-| Method              | Description                              |
-| :------------------ | :--------------------------------------- |
-| `ctx.skip()`        | Skip the current test                    |
-| `ctx.fail(message)` | Explicitly fail with an optional message |
-| `ctx.succeed()`     | Explicitly pass and exit early           |
+Test callbacks may return promises:
 
-### Skipping Tests
-
-Use `ctx.skip()` to conditionally skip a test:
-
-```javascript
-export function onTest(req, res) {
-  test('only run in production', (ctx) => {
-    const env = req.env.getVariable('ENVIRONMENT');
-    if (env !== 'production') {
-      ctx.skip();
-    }
-
-    expect(res.status).toBe(200);
+```ts
+export function onTest(ctx: TestHookContext) {
+  test('contains a user', async () => {
+    const body = await ctx.res.clone().json();
+    expect(body.user.email).toContain('@');
   });
 }
 ```
 
-Skipped tests are marked as `skip` in the test results rather than
-`pass` or `fail`.
+Thrown errors and rejected promises become failed test results. Test
+execution honors the hook timeout and cancellation signal.
 
-### Failing Tests Explicitly
+## Test controls
 
-Use `ctx.fail()` to explicitly fail a test with a custom message:
+Each callback receives a control object:
 
-```javascript
-export function onTest(req, res) {
-  test('should have valid token', (ctx) => {
-    const token = res.headers.get('X-Auth-Token');
-    if (!token) {
-      ctx.fail('Missing authentication token');
-    }
+```ts
+export function onTest(ctx: TestHookContext) {
+  test('production-only assertion', (testContext) => {
+    if (ctx.workspace.env.name !== 'Production') testContext.skip();
+    expect(ctx.res.ok).toBe(true);
+  });
 
-    expect(token).toMatch(/^[a-zA-Z0-9]+$/);
+  test('explicit result', (testContext) => {
+    if (ctx.res.status === 204) testContext.succeed();
+    if (!ctx.res.ok) testContext.fail(`Unexpected ${ctx.res.status}`);
   });
 }
 ```
 
-### Early Success
+`skip()`, `fail(message?)`, and `succeed()` end the current test with
+the corresponding result.
 
-Use `ctx.succeed()` to pass a test early and skip remaining
-assertions:
+## Common matchers
 
-```javascript
-export function onTest(req, res) {
-  test('should handle optional field', (ctx) => {
-    const data = res.json();
+Yasumu's `expect` API follows familiar Jest/Vitest conventions,
+including:
 
-    // If field is missing, that's acceptable
-    if (!data.optionalField) {
-      ctx.succeed();
-    }
+- equality: `toBe`, `toEqual`, `toStrictEqual`, `toMatchObject`
+- presence: `toBeDefined`, `toBeUndefined`, `toBeNull`
+- truth: `toBeTruthy`, `toBeFalsy`
+- collections: `toContain`, `toContainEqual`, `toHaveLength`
+- numbers: `toBeGreaterThan`, `toBeLessThan`, `toBeCloseTo`
+- objects: `toHaveProperty`, `toBeInstanceOf`
+- errors: `toThrow`
+- modifiers: `.not`, `.resolves`, `.rejects`
 
-    // Only validate if the field exists
-    expect(data.optionalField).toMatch(/^[A-Z]+$/);
+```ts
+export async function onTest(ctx: TestHookContext) {
+  const data = await ctx.res.clone().json();
+
+  test('response contract', () => {
+    expect(ctx.res.ok).toBe(true);
+    expect(data).toMatchObject({ active: true });
+    expect(data.roles).toContain('user');
   });
 }
 ```
 
-## Assertions
+## Mocks and nested requests
 
-The `expect` function provides a rich set of matchers for assertions.
-It uses the same API as Jest and Vitest.
+Tests run for responses returned by `onRequest` exactly as they do for
+network responses. `ctx.isMockResponse` lets a test assert which path
+ran.
 
-### Common Matchers
+Nested REST and GraphQL runs can enable tests with `runTests: true`.
+Their test results, logs, diagnostics, and child execution ID are
+returned in the nested summary and remain observable through execution
+events.
 
-| Matcher              | Description                      |
-| :------------------- | :------------------------------- |
-| `toBe(value)`        | Strict equality (`===`)          |
-| `toEqual(value)`     | Deep equality for objects/arrays |
-| `toBeDefined()`      | Not `undefined`                  |
-| `toBeUndefined()`    | Is `undefined`                   |
-| `toBeNull()`         | Is `null`                        |
-| `toBeTruthy()`       | Truthy value                     |
-| `toBeFalsy()`        | Falsy value                      |
-| `toContain(item)`    | Array/string contains item       |
-| `toHaveLength(n)`    | Array/string has length n        |
-| `toBeGreaterThan(n)` | Number is greater than n         |
-| `toBeLessThan(n)`    | Number is less than n            |
-| `toMatch(regex)`     | String matches regex             |
-| `toThrow()`          | Function throws an error         |
+## Isolation
 
-### Examples
+Each runtime session owns its test registration. Concurrent runs,
+separate workers, and separate workspaces do not share suites or
+assertions. The Node adapter uses asynchronous context internally;
+Tanxium implements the same contract without exposing runtime-specific
+state to scripts.
 
-```javascript
-export function onTest(req, res) {
-  test('equality checks', () => {
-    const data = res.json();
+## CLI usage
 
-    // Strict equality
-    expect(data.status).toBe('active');
+```bash
+# One entity
+yasumu test get-current-user
 
-    // Deep equality for objects
-    expect(data.user).toEqual({
-      id: 1,
-      name: 'John',
-    });
-  });
+# Every REST and GraphQL entity
+yasumu test --environment CI
 
-  test('truthiness checks', () => {
-    const data = res.json();
+# Machine-readable CI result
+yasumu test --environment CI --json
+```
 
-    expect(data.enabled).toBeTruthy();
-    expect(data.deleted).toBeFalsy();
-    expect(data.id).toBeDefined();
-  });
+The CLI exits with `1` when an assertion or execution fails, `2` for
+invalid workspace or input, and `130` when cancelled.
 
-  test('number comparisons', () => {
-    const data = res.json();
+## Complete example
 
-    expect(data.count).toBeGreaterThan(0);
-    expect(data.items.length).toBeLessThanOrEqual(100);
-  });
+```ts
+import { describe, expect, test } from 'yasumu:test';
 
-  test('string matching', () => {
-    const data = res.json();
+export function onRequest(ctx: RequestHookContext) {
+  const headers = new Headers(ctx.req.headers);
+  headers.set('accept', 'application/json');
+  ctx.setRequest(new Request(ctx.req, { headers }));
+}
 
-    expect(data.email).toContain('@');
-    expect(data.email).toMatch(/^[\w.-]+@[\w.-]+\.\w+$/);
-  });
+export async function onResponse(ctx: ResponseHookContext) {
+  console.log('status', ctx.res.status);
+}
 
-  test('array checks', () => {
-    const data = res.json();
+export async function onTest(ctx: TestHookContext) {
+  const body = await ctx.res.clone().json();
 
-    expect(data.items).toHaveLength(5);
-    expect(data.tags).toContain('important');
+  describe('GET user', () => {
+    test('succeeds', () => expect(ctx.res.status).toBe(200));
+    test('has an ID', () => expect(body.id).toBeDefined());
   });
 }
 ```
-
-### Negating Matchers
-
-Use `.not` to negate any matcher:
-
-```javascript
-export function onTest(req, res) {
-  test('negative assertions', () => {
-    const data = res.json();
-
-    expect(data.error).not.toBeDefined();
-    expect(data.status).not.toBe('error');
-    expect(data.items).not.toHaveLength(0);
-  });
-}
-```
-
-## Async Tests
-
-Test functions can be async if you need to perform async operations:
-
-```javascript
-export function onTest(req, res) {
-  test('async validation', async () => {
-    const data = res.json();
-
-    // Async operations are supported
-    const hash = await computeHash(data.token);
-    expect(hash).toBeDefined();
-  });
-}
-```
-
-## Test Results
-
-After running tests, Yasumu displays results for each test:
-
-| Result | Description               |
-| :----- | :------------------------ |
-| `pass` | Test passed successfully  |
-| `fail` | Test failed with an error |
-| `skip` | Test was skipped          |
-
-Each test result includes:
-
-- **Test name** — The name you provided
-- **Result** — pass, fail, or skip
-- **Duration** — How long the test took
-- **Error** — Error message if the test failed
-
-### Test Results View
-
-The **Tests** tab displays a summary of all test results with
-color-coded icons:
-
-![Test results view showing passed tests](/test-result.png)
-
-### Console View
-
-The **Console** tab shows detailed script execution logs with
-timestamps and color-coded status messages:
-
-![Console view with script execution logs](/test-console-view.png)
-
-<Callout type="info" title="Tests Only Run in onTest">
-  If you accidentally call `onTest()` inside `onRequest` or
-  `onResponse`, it will only produce log output — no tests are
-  actually executed. This is by design to ensure tests only run in
-  test mode.
-</Callout>
-
-![Console showing onTest calls being ignored](/test-console-log.png)
-
-## Complete Example
-
-Here's a comprehensive example testing a user API endpoint:
-
-```javascript
-export function onRequest(req) {
-  req.headers.set(
-    'Authorization',
-    `Bearer ${req.env.getSecret('API_TOKEN')}`,
-  );
-}
-
-export function onResponse(req, res) {
-  if (res.ok) {
-    const data = res.json();
-    res.env.setVariable('LAST_USER_ID', data.id);
-  }
-}
-
-export function onTest(req, res) {
-  describe('Response Status', () => {
-    test('returns 200 OK', () => {
-      expect(res.status).toBe(200);
-      expect(res.ok).toBe(true);
-    });
-
-    test('has correct content-type', () => {
-      const contentType = res.headers.get('Content-Type');
-      expect(contentType).toContain('application/json');
-    });
-  });
-
-  describe('User Data', () => {
-    test('has required fields', () => {
-      const user = res.json();
-
-      expect(user.id).toBeDefined();
-      expect(user.name).toBeDefined();
-      expect(user.email).toBeDefined();
-    });
-
-    test('email is valid format', () => {
-      const user = res.json();
-
-      expect(user.email).toMatch(/^[\w.-]+@[\w.-]+\.\w+$/);
-    });
-
-    test('timestamps are present', () => {
-      const user = res.json();
-
-      expect(user.createdAt).toBeDefined();
-      expect(user.updatedAt).toBeDefined();
-    });
-  });
-
-  describe('Response Performance', () => {
-    test('response time is acceptable', (ctx) => {
-      // Skip if not in production
-      const env = req.env.getVariable('ENVIRONMENT');
-      if (env !== 'production') {
-        ctx.skip();
-      }
-
-      // Custom performance check could be added here
-      expect(res.ok).toBe(true);
-    });
-  });
-}
-```
-
-## Best Practices
-
-1. **Write descriptive test names** — Make it clear what each test
-   validates
-2. **One assertion per test** — Keep tests focused for clearer failure
-   messages
-3. **Use `describe` for organization** — Group related tests together
-4. **Test edge cases** — Include tests for error responses and edge
-   cases
-5. **Use `ctx.skip()` wisely** — Skip tests that don't apply to the
-   current context
-6. **Keep tests fast** — Avoid heavy computations in tests
-
-<Callout type="info" title="Test Execution">
-  Tests run synchronously in the order they're defined. The `onTest`
-  function is called after `onResponse` completes.
-</Callout>

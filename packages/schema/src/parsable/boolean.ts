@@ -8,7 +8,7 @@ export class YasumuSchemaParsableBoolean extends YasumuSchemaParsable<boolean> {
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.TRUE) || parser.check(YasumuSchemaTokenTypes.FALSE);
   }
 
@@ -19,14 +19,14 @@ export class YasumuSchemaParsableBoolean extends YasumuSchemaParsable<boolean> {
     if (parser.match(YasumuSchemaTokenTypes.FALSE)) {
       return false;
     }
-    const { type, span } = parser.currentToken!;
-    const { line, column } = span.start;
+    const { type, span } = parser.currentToken;
     throw new YasumuSchemaParserError(
-      `Expected '${YasumuSchemaTokenTypes.TRUE}' or '${YasumuSchemaTokenTypes.FALSE}', received '${type}' (at line ${line}, column ${column})`,
+      `Expected '${YasumuSchemaTokenTypes.TRUE}' or '${YasumuSchemaTokenTypes.FALSE}', received '${type}'`,
+      span,
     );
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return typeof value === 'boolean';
   }
 

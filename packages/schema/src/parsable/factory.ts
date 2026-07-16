@@ -6,6 +6,7 @@ import { YasumuSchemaParsableNull } from './null.js';
 import { YasumuSchemaParsableNullable } from './nullable.js';
 import { YasumuSchemaParsableNumber } from './number.js';
 import { YasumuSchemaParsableObject, type _YasumuSchemaParsableObjectExpect } from './object.js';
+import { YasumuSchemaParsableOptional } from './optional.js';
 import type { YasumuSchemaParsable } from './parsable.js';
 import { YasumuSchemaParsableRecord } from './record.js';
 import { YasumuSchemaParsableScript, type _YasumuSchemaParsableScriptExpect } from './script.js';
@@ -51,6 +52,10 @@ export class YasumuSchemaFactory {
 
   nullable<E extends YasumuSchemaParsable<unknown>>(expect: E) {
     return new YasumuSchemaParsableNullable(expect);
+  }
+
+  optional<E extends YasumuSchemaParsable<unknown>>(expect: E) {
+    return new YasumuSchemaParsableOptional(expect);
   }
 
   union<E extends _YasumuSchemaParsableUnionExpect>(...expect: E) {

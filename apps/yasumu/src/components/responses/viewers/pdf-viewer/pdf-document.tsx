@@ -62,10 +62,17 @@ export default function PdfDocument({ data }: PdfDocumentProps) {
         className="flex flex-col items-center gap-4"
         loading={null}
       >
-        {numPages &&
-          Array.from({ length: numPages }, (_, i) => (
-            <Page key={i} pageNumber={i + 1} className="shadow-lg" renderTextLayer renderAnnotationLayer />
-          ))}
+        {numPages
+          ? Array.from({ length: numPages }, (_, index) => (
+              <Page
+                key={index + 1}
+                pageNumber={index + 1}
+                className="shadow-lg"
+                renderTextLayer
+                renderAnnotationLayer
+              />
+            ))
+          : null}
       </Document>
     </div>
   );

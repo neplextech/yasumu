@@ -3,9 +3,11 @@
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
-import { Trash, Plus } from 'lucide-react';
+import { Plus, Trash } from 'lucide-react';
 
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
+
+import { useStableRowKeys } from './use-stable-row-keys';
 
 export interface KeyValuePair {
   key: string;
@@ -14,43 +16,31 @@ export interface KeyValuePair {
   onChange?: (pair: KeyValuePair) => void;
 }
 
-export default function KeyValueTable(props: { onChange?: (pairs: KeyValuePair[]) => void; pairs?: KeyValuePair[] }) {
+const EMPTY_PAIR: KeyValuePair = { key: '', value: '', enabled: true };
+
+export default function KeyValueTable({
+  onChange,
+  pairs: providedPairs,
+}: {
+  onChange?: (pairs: KeyValuePair[]) => void;
+  pairs?: KeyValuePair[];
+}) {
   const { renderVariablePopover } = useVariablePopover();
-  const pairs = props.pairs?.length ? props.pairs : [{ key: '', value: '', enabled: true }];
+  const pairs = providedPairs?.length ? providedPairs : [EMPTY_PAIR];
+  const { rowKeys, insertKey, removeKey } = useStableRowKeys(pairs.length);
 
-  const updatePairs = (newPairs: KeyValuePair[]) => {
-    props.onChange?.(newPairs);
+  const addPair = (index = pairs.length) => {
+    insertKey(index);
+    onChange?.([...pairs.slice(0, index), { ...EMPTY_PAIR }, ...pairs.slice(index)]);
   };
-
-  const addNewPair = (index = pairs.length) => {
-    const newPairs = [...pairs.slice(0, index), { key: '', value: '', enabled: true }, ...pairs.slice(index)];
-    updatePairs(newPairs);
-  };
-
   const deletePair = (index: number) => {
-    const newPairs = pairs.filter((_, i) => i !== index);
-    updatePairs(newPairs.length ? newPairs : [{ key: '', value: '', enabled: true }]);
+    if (pairs.length > 1) removeKey(index);
+    const nextPairs = pairs.filter((_, pairIndex) => pairIndex !== index);
+    onChange?.(nextPairs.length ? nextPairs : [{ ...EMPTY_PAIR }]);
   };
-
-  const updatePair = (index: number, field: keyof KeyValuePair, value: string | boolean) => {
-    const newPairs = pairs.map((pair, i) => (i === index ? { ...pair, [field]: value } : pair));
-    updatePairs(newPairs);
+  const updatePair = (index: number, updates: Partial<KeyValuePair>) => {
+    onChange?.(pairs.map((pair, pairIndex) => (pairIndex === index ? { ...pair, ...updates } : pair)));
   };
-
-  function handleKeyDown(e: React.KeyboardEvent, index: number) {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      addNewPair(index + 1);
-    }
-    if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      deletePair(index);
-    }
-    if (e.key === 't' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      updatePair(index, 'enabled', !pairs[index].enabled);
-    }
-  }
 
   return (
     <div className="space-y-4">
@@ -63,27 +53,38 @@ export default function KeyValueTable(props: { onChange?: (pairs: KeyValuePair[]
           </TableRow>
         </TableHeader>
         <TableBody>
-          {pairs.map((pair, i) => (
+          {pairs.map((pair, index) => (
             <TableRow
-              key={i}
-              onKeyDown={(e) => {
-                handleKeyDown(e, i);
+              key={rowKeys[index]}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  addPair(index + 1);
+                } else if (event.key === 'd' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  deletePair(index);
+                } else if (event.key === 't' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  updatePair(index, { enabled: !pair.enabled });
+                }
               }}
             >
               <TableCell>
                 <InteropableInput
+                  aria-label={`Name for row ${index + 1}`}
                   placeholder="Name"
                   value={pair.key}
-                  onChange={(val) => updatePair(i, 'key', val)}
+                  onChange={(key) => updatePair(index, { key })}
                   onVariableClick={renderVariablePopover}
                   disabled={!pair.enabled}
                 />
               </TableCell>
               <TableCell>
                 <InteropableInput
+                  aria-label={`Value for ${pair.key || `row ${index + 1}`}`}
                   placeholder="Value"
                   value={pair.value}
-                  onChange={(val) => updatePair(i, 'value', val)}
+                  onChange={(value) => updatePair(index, { value })}
                   onVariableClick={renderVariablePopover}
                   disabled={!pair.enabled}
                 />
@@ -91,11 +92,18 @@ export default function KeyValueTable(props: { onChange?: (pairs: KeyValuePair[]
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Checkbox
+                    aria-label={`${pair.enabled ? 'Disable' : 'Enable'} row ${index + 1}`}
                     checked={pair.enabled}
-                    onCheckedChange={(checked) => updatePair(i, 'enabled', checked === true)}
+                    onCheckedChange={(checked) => updatePair(index, { enabled: checked === true })}
                   />
-                  <Button variant="ghost" size="icon" onClick={() => deletePair(i)} disabled={pairs.length === 1}>
-                    <Trash className="h-4 w-4 text-red-500" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Delete row ${index + 1}`}
+                    onClick={() => deletePair(index)}
+                    disabled={pairs.length === 1}
+                  >
+                    <Trash className="text-destructive size-4" aria-hidden="true" />
                   </Button>
                 </div>
               </TableCell>
@@ -103,8 +111,8 @@ export default function KeyValueTable(props: { onChange?: (pairs: KeyValuePair[]
           ))}
         </TableBody>
       </Table>
-      <Button variant="link" onClick={() => addNewPair()} className="h-auto p-0 text-sm font-normal">
-        <Plus className="mr-1 h-3 w-3" /> Add new row
+      <Button variant="link" onClick={() => addPair()} className="h-auto p-0 text-sm font-normal">
+        <Plus className="mr-1 size-3" aria-hidden="true" /> Add new row
       </Button>
     </div>
   );

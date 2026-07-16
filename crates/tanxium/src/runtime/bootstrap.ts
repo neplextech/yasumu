@@ -1,7 +1,8 @@
 /// <reference types="./internal.d.ts" />
 import './patches.ts';
-import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
 import { join } from 'node:path';
+
+import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
 
 const {
   op_get_resources_dir,

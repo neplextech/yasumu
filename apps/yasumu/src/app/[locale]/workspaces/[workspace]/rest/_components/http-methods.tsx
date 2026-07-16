@@ -1,4 +1,5 @@
-import { HttpMethod } from '@yasumu/core';
+import type { HttpMethod } from '@yasumu/core';
+import type { ComponentType } from 'react';
 
 const HTTP_METHOD_COLORS: Record<string, string> = {
   GET: 'text-green-500',
@@ -9,6 +10,10 @@ const HTTP_METHOD_COLORS: Record<string, string> = {
   OPTIONS: 'text-purple-500',
   HEAD: 'text-teal-500',
 };
+
+type ResolvedHttpMethodIcon = ComponentType<{ short?: boolean }>;
+
+const resolvedHttpMethodIcons = new Map<string, ResolvedHttpMethodIcon>();
 
 export function HttpMethodIcon({ method, short }: { method: HttpMethod | (string & {}); short?: boolean }) {
   const methodName = method.toUpperCase();
@@ -53,5 +58,15 @@ export function HeadMethodIcon({ short }: { short?: boolean }) {
 }
 
 export function resolveHttpMethodIcon(method: HttpMethod | (string & {}), { short }: { short?: boolean }) {
-  return () => <HttpMethodIcon method={method} short={short} />;
+  const normalizedMethod = method.toUpperCase();
+  const cacheKey = `${normalizedMethod}:${short ? 'short' : 'full'}`;
+  const cachedIcon = resolvedHttpMethodIcons.get(cacheKey);
+  if (cachedIcon) return cachedIcon;
+
+  const ResolvedIcon: ResolvedHttpMethodIcon = ({ short: renderShort }) => (
+    <HttpMethodIcon method={normalizedMethod} short={renderShort ?? short} />
+  );
+  resolvedHttpMethodIcons.set(cacheKey, ResolvedIcon);
+
+  return ResolvedIcon;
 }

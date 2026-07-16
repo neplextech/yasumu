@@ -209,6 +209,7 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
     const namedType = getNamedType(type);
     return (
       <button
+        type="button"
         onClick={() => handleTypeClick(namedType.name)}
         className="text-primary cursor-pointer font-mono text-xs hover:underline"
       >
@@ -479,7 +480,7 @@ export function DocumentationView({ schema }: DocumentationViewProps) {
                     <Boxes className="h-4 w-4" /> Possible Types
                   </h2>
                   <div className="flex flex-col gap-2">
-                    {selectedTypeObj.getTypes().map((type, i) => (
+                    {selectedTypeObj.getTypes().map((type) => (
                       <div key={type.name} className="flex items-center gap-2">
                         <div className="flex flex-col items-start">
                           <div className="text-primary/80 font-mono text-xs font-bold">{renderTypeLink(type)}</div>

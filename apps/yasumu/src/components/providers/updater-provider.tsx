@@ -1,6 +1,6 @@
 'use client';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { check, Update } from '@tauri-apps/plugin-updater';
+import { check, type Update } from '@tauri-apps/plugin-updater';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,7 @@ import { Button } from '@yasumu/ui/components/button';
 import { Progress } from '@yasumu/ui/components/progress';
 import { toast } from '@yasumu/ui/components/sonner';
 import { Copy, Loader2 } from 'lucide-react';
-import { useEffect, useEffectEvent, createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 type UpdatePhase = 'idle' | 'downloading' | 'installing' | 'complete' | 'error';
 
@@ -102,8 +102,10 @@ export function UpdateDialog({
                     size="sm"
                     className="w-full"
                     onClick={() => {
-                      navigator.clipboard.writeText(error ?? 'Unknown error');
-                      toast.success('Error copied to clipboard');
+                      void navigator.clipboard
+                        .writeText(error ?? 'Unknown error')
+                        .then(() => toast.success('Error copied to clipboard'))
+                        .catch(() => toast.error('Failed to copy the error'));
                     }}
                   >
                     <Copy className="mr-2 h-3 w-3" />
@@ -163,10 +165,12 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
     percentage: 0,
   });
   const downloadedRef = useRef(0);
+  const isCheckingRef = useRef(false);
 
-  const checkForUpdates = useEffectEvent(async (showNotification = false) => {
-    if (isChecking) return;
+  const checkForUpdates = useCallback(async (showNotification = false) => {
+    if (isCheckingRef.current) return;
 
+    isCheckingRef.current = true;
     setIsChecking(true);
     try {
       const result = await check({ allowDowngrades: false });
@@ -183,14 +187,15 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
       setError(null);
       setProgress({ downloaded: 0, total: 0, percentage: 0 });
       downloadedRef.current = 0;
-    } catch (err) {
+    } catch {
       if (showNotification) {
         toast.error('Failed to check for updates');
       }
     } finally {
+      isCheckingRef.current = false;
       setIsChecking(false);
     }
-  });
+  }, []);
 
   const handleCancelUpdate = useCallback(async () => {
     await update?.close();
@@ -220,7 +225,7 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
               percentage: 0,
             });
             break;
-          case 'Progress':
+          case 'Progress': {
             downloadedRef.current += event.data.chunkLength;
             const total = contentLength || downloadedRef.current;
             const percentage = Math.min(Math.round((downloadedRef.current / total) * 100), 100);
@@ -230,6 +235,7 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
               percentage,
             });
             break;
+          }
           case 'Finished':
             setPhase('installing');
             break;
@@ -264,10 +270,12 @@ export default function UpdaterProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     void checkForUpdates();
-  }, []);
+  }, [checkForUpdates]);
+
+  const contextValue = useMemo(() => ({ checkForUpdates, isChecking }), [checkForUpdates, isChecking]);
 
   return (
-    <UpdaterContext.Provider value={{ checkForUpdates, isChecking }}>
+    <UpdaterContext.Provider value={contextValue}>
       {update && (
         <UpdateDialog
           update={update}

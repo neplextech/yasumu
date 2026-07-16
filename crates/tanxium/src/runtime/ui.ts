@@ -1,4 +1,5 @@
 import { tanxiumOps } from 'ext:tanxium_rt_ops/ops.js';
+
 import { rendererEventQueue, isWorkerEnvironment } from './utils.ts';
 
 const { op_show_confirmation_dialog_sync } = tanxiumOps;

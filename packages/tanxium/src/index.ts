@@ -38,6 +38,7 @@ export async function startServer() {
   Yasumu.setRpcPort(server.addr.port);
 
   const echoServerResult = Deno.serve({ port: 0 }, echoServer.fetch);
+  (await import('./headless/platform/echo-transport.ts')).setGuiEchoServerPort(echoServerResult.addr.port);
   Yasumu.setEchoServerPort(echoServerResult.addr.port);
 
   const mcpServer = createMcpServer(rpcServer);

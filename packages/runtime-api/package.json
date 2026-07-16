@@ -1,0 +1,44 @@
+{
+  "name": "@yasumu/runtime-api",
+  "version": "0.1.0",
+  "description": "Canonical cross-runtime Yasumu scripting and worker protocol contracts",
+  "license": "AGPL-3.0",
+  "author": "Neplex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neplextech/yasumu.git"
+  },
+  "files": [
+    "dist",
+    "contract",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "deno": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "node": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./contract": "./contract/runtime-api.json"
+  },
+  "scripts": {
+    "generate": "node ./scripts/generate-contract.mjs",
+    "check:generated": "node ./scripts/generate-contract.mjs --check",
+    "build": "pnpm check:generated && tsc",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:build",
+    "@yasumu/shared": "workspace:*",
+    "@yasumu/tsconfig": "workspace:*",
+    "typescript": "catalog:build",
+    "vitest": "catalog:test"
+  }
+}

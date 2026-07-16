@@ -40,7 +40,10 @@ function ConsoleLogRow({ log }: { log: ConsoleLogEntry }) {
 }
 
 export function ConsoleSheet() {
-  const { logs, isOpen, setOpen, clearLogs } = useConsoleStore();
+  const logs = useConsoleStore((state) => state.logs);
+  const isOpen = useConsoleStore((state) => state.isOpen);
+  const setOpen = useConsoleStore((state) => state.setOpen);
+  const clearLogs = useConsoleStore((state) => state.clearLogs);
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>

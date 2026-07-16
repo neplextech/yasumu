@@ -1,24 +1,22 @@
-import { EmailData, ExecutableScript, ListEmailOptions, PaginatedResult, SmtpConfig } from '@yasumu/common';
-import { EmailScriptContext } from '@yasumu/common';
+import { EmailData, ListEmailOptions, PaginatedResult, SmtpConfig } from '@yasumu/common';
 import { Injectable } from '@yasumu/den';
+import type { WorkspaceEmail } from '@yasumu/runtime-api';
 import { and, asc, count, desc, eq, or } from 'drizzle-orm';
 import { ilike } from 'drizzle-orm/sql';
 
-import { emails, environments, smtp, workspaces } from '@/database/schema.ts';
+import { emails, smtp } from '@/database/schema.ts';
 import { createSmtpServer, SMTPServerInstance } from '@/smtp/server.ts';
 
-import { db } from '../../../database/index.ts';
-import { areDifferentByKeys, assertFound } from '../../common/utils.ts';
+import { areDifferentByKeys } from '../../common/utils.ts';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
-import { ScriptRuntimeService } from '../script-runtime/script-runtime.service.ts';
-import { EMAIL_CONTEXT_TYPE } from './email-script-preload.ts';
+import { ExecutionService } from '../execution/execution.service.ts';
 
 @Injectable()
 export class EmailService {
   private readonly servers = new Map<string, SMTPServerInstance>();
   public constructor(
     private readonly connection: TransactionalConnection,
-    private readonly scriptRuntimeService: ScriptRuntimeService,
+    private readonly executionService: ExecutionService,
   ) {}
 
   public getActiveSmtpPort(workspaceId: string): number | null {
@@ -66,13 +64,8 @@ export class EmailService {
       port: config.port,
       smtpId: config.id,
       onEmailReceived: async (workspaceId, email) => {
-        await this.scriptRuntimeService.publishEvent('yasumu:new-email', {
-          workspaceId,
-          email,
-        });
-        await this.executeScript(workspaceId, email).catch((e) => {
-          console.error('Failed to execute email script', e);
-        });
+        const result = await this.executionService.handleEmail(workspaceId, toWorkspaceEmail(email));
+        if (result.status === 'failed') console.error('Failed to execute email hook', result.error);
       },
     });
 
@@ -185,84 +178,28 @@ export class EmailService {
       });
     }
   }
+}
 
-  public async executeScript(workspaceId: string, emailOrId: EmailData | string) {
-    const smtp = await this.getSmtp(workspaceId);
+function toWorkspaceEmail(email: EmailData): WorkspaceEmail {
+  return {
+    id: email.id,
+    from: email.from,
+    to: splitAddresses(email.to),
+    cc: splitAddresses(email.cc),
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    unread: email.unread,
+    createdAt: email.createdAt,
+    updatedAt: email.updatedAt,
+  };
+}
 
-    // script not configured
-    if (!smtp.script?.code?.trim()) return;
-
-    const email = typeof emailOrId === 'string' ? await this.getEmail(workspaceId, emailOrId, false) : emailOrId;
-
-    // invalid email
-    if (!email) return;
-
-    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
-
-    assertFound(workspace, 'Workspace not found');
-
-    const [env] = workspace.activeEnvironmentId
-      ? await db
-          .select()
-          .from(environments)
-          .where(and(eq(environments.id, workspace.activeEnvironmentId), eq(environments.workspaceId, workspaceId)))
-          .limit(1)
-      : [];
-
-    const context: EmailScriptContext = {
-      workspace: {
-        id: workspaceId,
-        name: workspace.name,
-        path: workspace.path,
-      },
-      environment: env ?? null,
-      email,
-    };
-
-    const script: ExecutableScript<EmailScriptContext> = {
-      context,
-      entityId: smtp.id,
-      invocationTarget: 'onEmail',
-      script: smtp.script,
-    };
-
-    const result = await this.scriptRuntimeService.executeScript<
-      EmailScriptContext,
-      ExecutableScript<EmailScriptContext>
-    >(workspaceId, script, EMAIL_CONTEXT_TYPE);
-
-    if (result?.context?.environment) {
-      const [existingEnv] = await db
-        .select()
-        .from(environments)
-        .where(and(eq(environments.id, workspace.activeEnvironmentId ?? ''), eq(environments.workspaceId, workspaceId)))
-        .limit(1);
-
-      if (!existingEnv) return;
-
-      // Create maps for efficient lookup and merge (new values override existing)
-      const variablesMap = new Map(existingEnv.variables.map((v) => [v.key, v]));
-      for (const variable of result.context.environment.variables) {
-        variablesMap.set(variable.key, variable);
-      }
-
-      const secretsMap = new Map(existingEnv.secrets.map((s) => [s.key, s]));
-      for (const secret of result.context.environment.secrets) {
-        secretsMap.set(secret.key, secret);
-      }
-
-      const mergedVariables = Array.from(variablesMap.values());
-      const mergedSecrets = Array.from(secretsMap.values());
-
-      await db
-        .update(environments)
-        .set({
-          metadata: Object.assign({}, existingEnv.metadata, result.context.environment.metadata),
-          variables: mergedVariables,
-          secrets: mergedSecrets,
-          name: result.context.environment.name || existingEnv.name,
-        })
-        .where(eq(environments.id, workspace.activeEnvironmentId ?? ''));
-    }
-  }
+function splitAddresses(value: string | null): string[] {
+  return (
+    value
+      ?.split(',')
+      .map((address) => address.trim())
+      .filter(Boolean) ?? []
+  );
 }

@@ -8,20 +8,20 @@ export class YasumuSchemaParsableNumber extends YasumuSchemaParsable<number> {
     super();
   }
 
-  canParse(parser: YasumuSchemaParser) {
+  override canParse(parser: YasumuSchemaParser) {
     return parser.check(YasumuSchemaTokenTypes.NUMBER);
   }
 
   parse(parser: YasumuSchemaParser) {
     const token = parser.consume(YasumuSchemaTokenTypes.NUMBER);
-    return parseInt(token.value);
+    return Number(token.value);
   }
 
   serialize(_: YasumuSchemaSerializer, value: number) {
     return value.toString();
   }
 
-  canSerialize(_: YasumuSchemaSerializer, value: any) {
+  override canSerialize(_: YasumuSchemaSerializer, value: any) {
     return typeof value === 'number';
   }
 

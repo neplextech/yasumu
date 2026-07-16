@@ -21,7 +21,13 @@ function runEntrypoint(
     noSandbox = false,
     allowHttpImports = false,
     timeout = 10_000,
-  }: { verbose?: boolean; sandbox?: boolean; noSandbox?: boolean; allowHttpImports?: boolean; timeout?: number } = {},
+  }: {
+    verbose?: boolean;
+    sandbox?: boolean;
+    noSandbox?: boolean;
+    allowHttpImports?: boolean;
+    timeout?: number;
+  } = {},
 ) {
   const permissionFlags = [
     ...(sandbox === undefined ? [] : ['--sandbox', String(sandbox)]),
@@ -278,7 +284,9 @@ describe('tanxium CLI runtime semantics', () => {
       const denied = await runFailureAsync(entrypoint, 'remote-entry.ts');
       expect(denied).toContain('HTTP imports are disabled');
 
-      const error = await runFailureAsync(entrypoint, 'remote-entry.ts', { allowHttpImports: true });
+      const error = await runFailureAsync(entrypoint, 'remote-entry.ts', {
+        allowHttpImports: true,
+      });
 
       expect(error).toContain('remote-original.ts');
     } finally {
@@ -432,4 +440,22 @@ describe('tanxium CLI runtime semantics', () => {
       }
     }
   });
+
+  it('passes the shared headless runtime conformance suite', () => {
+    const entrypoint = join(root, 'tests/tanxium-runtime/fixtures/headless-runtime-conformance.ts');
+
+    const output = runEntrypoint(entrypoint, {
+      noSandbox: true,
+      timeout: 120_000,
+    });
+    const marker = output.split('\n').find((line) => line.startsWith('HEADLESS_CONFORMANCE:'));
+
+    expect(JSON.parse(marker!.slice('HEADLESS_CONFORMANCE:'.length))).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('entity identity'),
+        expect.stringContaining('host-call-backed'),
+        expect.stringContaining('hard timeouts'),
+      ]),
+    );
+  }, 180_000);
 });

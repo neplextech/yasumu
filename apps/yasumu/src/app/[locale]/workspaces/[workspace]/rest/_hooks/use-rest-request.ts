@@ -1,38 +1,32 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import type { RestEntityData, RestScriptContext, TestResult } from '@yasumu/core';
-import { isDefaultWorkspacePath } from '@yasumu/tanxium/src/rpc/common/constants';
-import { useCallback, useRef, useState } from 'react';
+import type { RestEntityData, TestResult } from '@yasumu/core';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
-import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
 import {
-  getContentType,
+  outputFromExecutionEvent,
+  outputsFromExecution,
+  phaseFromExecutionEvent,
+  type RequestPhase,
+  type ScriptOutputEntry,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/headless-execution';
+import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
+import {
   categorizeContent,
   createBlobUrlFromBuffer,
   createBlobUrlFromText,
+  getContentType,
 } from '@/components/responses/viewers';
 import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
-import { RestRequestController, RestResponse, type RestRequestOutcome } from '../_lib/rest-request';
+import { restResponseFromExecution, type RestResponse } from '../_lib/rest-request';
 
-export type RequestPhase =
-  | 'idle'
-  | 'pre-request-script'
-  | 'sending'
-  | 'post-response-script'
-  | 'completed'
-  | 'error'
-  | 'cancelled';
-
-export type ScriptOutputType = 'info' | 'success' | 'error' | 'warning' | 'test-pass' | 'test-fail' | 'test-skip';
-
-export interface ScriptOutputEntry {
-  message: string;
-  type: ScriptOutputType;
-  timestamp: number;
-}
+export type {
+  RequestPhase,
+  ScriptOutputEntry,
+  ScriptOutputType,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/headless-execution';
 
 export interface RequestState {
   phase: RequestPhase;
@@ -66,370 +60,165 @@ const INITIAL_STATE: RequestState = {
 function createResponseBlobUrl(response: RestResponse): string | null {
   const contentType = getContentType(response.headers);
   const category = categorizeContent(contentType);
-
   const needsBlobUrl =
     !response.bodyTruncated &&
     (category === 'image' || category === 'video' || category === 'audio' || category === 'pdf');
 
   if (!needsBlobUrl) return null;
-
-  if (response.binaryBody) {
-    return createBlobUrlFromBuffer(response.binaryBody, contentType);
-  }
-  if (response.textBody) {
-    return createBlobUrlFromText(response.textBody, contentType);
-  }
+  if (response.binaryBody) return createBlobUrlFromBuffer(response.binaryBody, contentType);
+  if (response.textBody) return createBlobUrlFromText(response.textBody, contentType);
   return null;
 }
 
 export function useRestRequest({ entityId }: UseRestRequestOptions): UseRestRequestReturn {
   const workspace = useActiveWorkspace();
-  const { echoServerPort } = useYasumu();
-  const { interpolate } = useEnvironmentStore();
+  const environmentId = useEnvironmentStore((store) => store.selectedEnvironment?.id);
   const [state, setState] = useState<RequestState>(INITIAL_STATE);
-  const controllerRef = useRef(new RestRequestController());
-  const isCancelledRef = useRef(false);
-  const { selectedEnvironment } = useEnvironmentStore();
-  const queryClient = useQueryClient();
+  const generationRef = useRef(0);
+  const executionIdRef = useRef<string | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
 
-  const appendScriptOutput = useCallback((message: string, type: ScriptOutputType = 'info') => {
-    setState((prev) => ({
-      ...prev,
-      scriptOutput: [...prev.scriptOutput, { message, type, timestamp: Date.now() }],
-    }));
+  const revokeBlobUrl = useCallback(() => {
+    if (!blobUrlRef.current) return;
+    URL.revokeObjectURL(blobUrlRef.current);
+    blobUrlRef.current = null;
   }, []);
 
+  const cancelActiveExecution = useCallback(
+    (reason: string) => {
+      const executionId = executionIdRef.current;
+      executionIdRef.current = null;
+      if (executionId) void workspace.execution.cancel(executionId, reason);
+    },
+    [workspace.execution],
+  );
+
+  useEffect(() => {
+    generationRef.current += 1;
+    cancelActiveExecution('Entity selection changed');
+    revokeBlobUrl();
+    setState(INITIAL_STATE);
+
+    return () => {
+      generationRef.current += 1;
+      cancelActiveExecution('Request view unmounted');
+      revokeBlobUrl();
+    };
+  }, [cancelActiveExecution, entityId, revokeBlobUrl, workspace.id]);
+
   const execute = useCallback(
-    async (_entity: RestEntityData, pathParams: Record<string, { value: string; enabled: boolean }>) => {
+    async (entity: RestEntityData, pathParams: Record<string, { value: string; enabled: boolean }>) => {
       if (!entityId) return;
+
+      const generation = ++generationRef.current;
+      cancelActiveExecution('Superseded by a newer execution');
+      const executionId = crypto.randomUUID();
+      executionIdRef.current = executionId;
+      const isCurrent = () => generationRef.current === generation && executionIdRef.current === executionId;
+      const updateState = (update: (previous: RequestState) => RequestState) => {
+        setState((previous) => (isCurrent() ? update(previous) : previous));
+      };
+
+      const unsubscribe = workspace.manager.yasumu.events.on('onExecutionEvent', (_eventWorkspace, event) => {
+        if (!isCurrent() || event.executionId !== executionId) return;
+        const output = outputFromExecutionEvent(event);
+        updateState((previous) => ({
+          ...previous,
+          phase: phaseFromExecutionEvent(event, previous.phase),
+          scriptOutput: output ? [...previous.scriptOutput, output] : previous.scriptOutput,
+          testResults: event.type === 'test-completed' ? [...previous.testResults, event.test] : previous.testResults,
+        }));
+      });
 
       const startedAt = performance.now();
       trackEvent('rest_request_started', {
         workspace_id: workspace.id,
         entity_id: entityId,
-        method: _entity.method,
-        has_script: !!_entity.script?.code?.trim(),
+        method: entity.method,
+        has_script: !!entity.script?.code?.trim(),
       });
-
-      isCancelledRef.current = false;
-      setState((prev) => {
-        if (prev.blobUrl) {
-          URL.revokeObjectURL(prev.blobUrl);
-        }
-        return {
-          phase: 'idle',
-          response: null,
-          error: null,
-          scriptOutput: [],
-          blobUrl: null,
-          testResults: [],
-        };
-      });
-
-      const freshEntity = (await workspace.rest.get(entityId)) ?? _entity;
-      if (!freshEntity) {
-        setState((prev) => ({
-          ...prev,
-          phase: 'error',
-          error: 'Entity not found',
-        }));
-        return;
-      }
-
-      const entity = freshEntity.data;
-
-      const interpolateValue = (value: string) => interpolate(value);
-      const interpolatedUrl = interpolateValue(entity.url || '');
-      const interpolatedHeaders = Object.fromEntries(
-        (entity.requestHeaders || [])
-          .filter((h) => h.enabled && h.key)
-          .map((h) => [interpolateValue(h.key), interpolateValue(h.value)]),
-      );
-      const interpolatedBody =
-        typeof entity.requestBody?.value === 'string'
-          ? interpolateValue(entity.requestBody.value)
-          : (entity.requestBody?.value ?? null);
-      const interpolatedParams = Object.fromEntries(
-        Object.entries(pathParams)
-          .filter(([, v]) => v.enabled)
-          .map(([k, v]) => [k, interpolateValue(v.value)]),
-      );
-
-      let currentContext: RestScriptContext = {
-        environment: selectedEnvironment?.toJSON() ?? null,
-        request: {
-          url: interpolatedUrl,
-          method: entity.method,
-          headers: interpolatedHeaders,
-          body: interpolatedBody,
-          parameters: interpolatedParams,
-        },
-        response: null,
-        workspace: {
-          id: workspace.id,
-          name: workspace.name,
-          path: isDefaultWorkspacePath(workspace.path) ? null : workspace.path,
-        },
-      };
-
-      let mockResponse: RestResponse | null = null;
+      revokeBlobUrl();
+      setState({ ...INITIAL_STATE, phase: 'sending' });
 
       try {
-        if (entity.script?.code?.trim()) {
-          setState((prev) => ({ ...prev, phase: 'pre-request-script' }));
-          appendScriptOutput('[Pre-Request] Executing script...', 'info');
-
-          try {
-            const result = await workspace.rest.executeScript(entityId, entity.script, currentContext);
-
-            if (result.result.success) {
-              currentContext = result.context;
-              appendScriptOutput('[Pre-Request] Script completed successfully', 'success');
-
-              if (result.result.result) {
-                const mockData = result.result.result as {
-                  status: number;
-                  statusText: string;
-                  headers: Record<string, string>;
-                  body: unknown;
-                };
-                const bodyStr = typeof mockData.body === 'string' ? mockData.body : JSON.stringify(mockData.body);
-                mockResponse = {
-                  status: mockData.status,
-                  statusText: mockData.statusText,
-                  headers: mockData.headers,
-                  cookies: [],
-                  textBody: bodyStr,
-                  binaryBody: null,
-                  bodyType: 'text',
-                  time: 0,
-                  size: new Blob([bodyStr]).size,
-                  bodyTruncated: false,
-                };
-                appendScriptOutput('[Pre-Request] Mock response returned, skipping HTTP request', 'warning');
-              }
-            } else {
-              appendScriptOutput(`[Pre-Request] Script failed: ${result.result.error}`, 'error');
-            }
-          } catch (err) {
-            appendScriptOutput(
-              `[Pre-Request] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-              'error',
-            );
-          }
-        }
-
-        if (isCancelledRef.current) {
-          setState((prev) => ({ ...prev, phase: 'cancelled' }));
-          return;
-        }
-
-        let response: RestResponse;
-
-        if (mockResponse) {
-          response = mockResponse;
-          const blobUrl = createResponseBlobUrl(response);
-          setState((prev) => ({ ...prev, response, blobUrl }));
-        } else {
-          setState((prev) => ({ ...prev, phase: 'sending' }));
-
-          const modifiedEntity: RestEntityData = {
-            ...entity,
-            url: currentContext.request.url,
-            method: currentContext.request.method,
-            requestHeaders: Object.entries(currentContext.request.headers).map(([key, value]) => ({
-              key,
-              value,
-              enabled: true,
-            })),
-            requestBody: currentContext.request.body
-              ? { ...entity.requestBody!, value: currentContext.request.body }
-              : entity.requestBody,
-          };
-
-          const outcome = await controllerRef.current.execute({
-            entity: modifiedEntity,
-            pathParams,
-            echoServerPort,
-            interpolate,
-          });
-
-          if (isCancelledRef.current) {
-            setState((prev) => ({ ...prev, phase: 'cancelled' }));
-            return;
-          }
-
-          if (outcome.error) {
-            setState((prev) => ({
-              ...prev,
-              phase: 'error',
-              error: outcome.error,
-            }));
-            trackTiming('rest_request_failed', startedAt, {
-              workspace_id: workspace.id,
-              entity_id: entityId,
-              method: entity.method,
-              failure_stage: 'request',
-            });
-            return;
-          }
-
-          response = outcome.response!;
-          const blobUrl = createResponseBlobUrl(response);
-          setState((prev) => ({ ...prev, response, blobUrl }));
-        }
-
-        if (entity.script?.code?.trim()) {
-          const canSendBodyToScript = !response.bodyTruncated && response.bodyType === 'text';
-
-          setState((prev) => ({ ...prev, phase: 'post-response-script' }));
-          appendScriptOutput('[Post-Response] Executing onResponse...', 'info');
-
-          if (!canSendBodyToScript) {
-            appendScriptOutput(
-              '[Post-Response] Response body not available to script (binary or too large)',
-              'warning',
-            );
-          }
-
-          const responseContext: RestScriptContext = {
-            ...currentContext,
-            response: {
-              status: response.status,
-              headers: response.headers,
-              body: canSendBodyToScript ? (response.textBody ?? '') : null,
-            },
-          };
-
-          try {
-            const result = await workspace.rest.executeScript(entityId, entity.script, responseContext);
-
-            if (result.result.success) {
-              appendScriptOutput('[Post-Response] Script completed successfully', 'success');
-
-              if (selectedEnvironment && result.context.environment) {
-                const envData = result.context.environment;
-                await selectedEnvironment.update({
-                  variables: envData.variables,
-                  secrets: envData.secrets,
-                });
-                await queryClient.invalidateQueries({
-                  queryKey: ['environments'],
-                });
-                await queryClient.invalidateQueries({
-                  queryKey: ['currentEnvironment'],
-                });
-              }
-            } else {
-              appendScriptOutput(`[Post-Response] Script failed: ${result.result.error}`, 'error');
-            }
-          } catch (err) {
-            appendScriptOutput(
-              `[Post-Response] Script error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-              'error',
-            );
-          }
-        }
-
-        if (entity.script?.code?.trim()) {
-          const canSendBodyToTest = !response.bodyTruncated && response.bodyType === 'text';
-
-          appendScriptOutput('[Test] Running tests...', 'info');
-
-          const testContext: RestScriptContext = {
-            ...currentContext,
-            response: {
-              status: response.status,
-              headers: response.headers,
-              body: canSendBodyToTest ? (response.textBody ?? '') : null,
-            },
-          };
-
-          try {
-            const testResult = await workspace.rest.executeTest(entityId, entity.script, testContext);
-
-            if (testResult.result.success) {
-              const results = testResult.result.result as {
-                testResults: TestResult[];
-              };
-              if (results?.testResults?.length > 0) {
-                setState((prev) => ({
-                  ...prev,
-                  testResults: results.testResults,
-                }));
-                const passed = results.testResults.filter((r) => r.result === 'pass').length;
-                const failed = results.testResults.filter((r) => r.result === 'fail').length;
-                const skipped = results.testResults.filter((r) => r.result === 'skip').length;
-
-                if (failed > 0) {
-                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-fail');
-                } else if (skipped > 0 && passed === 0) {
-                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-skip');
-                } else {
-                  appendScriptOutput(`[Test] ${passed} passed, ${failed} failed, ${skipped} skipped`, 'test-pass');
-                }
-              } else {
-                appendScriptOutput('[Test] No tests defined', 'info');
-              }
-            } else {
-              appendScriptOutput(`[Test] Failed: ${testResult.result.error}`, 'error');
-            }
-          } catch (err) {
-            appendScriptOutput(`[Test] Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
-          }
-        }
-
-        setState((prev) => ({ ...prev, phase: 'completed' }));
-        trackTiming('rest_request_completed', startedAt, {
-          workspace_id: workspace.id,
-          entity_id: entityId,
-          method: entity.method,
-          status: response.status,
-          body_type: response.bodyType,
+        const result = await workspace.execution.execute({
+          entityId,
+          executionId,
+          environmentId,
+          mode: 'test',
+          pathParameters: Object.fromEntries(
+            Object.entries(pathParams)
+              .filter(([, parameter]) => parameter.enabled)
+              .map(([key, parameter]) => [key, parameter.value]),
+          ),
         });
-      } catch (err) {
-        if (!isCancelledRef.current) {
-          setState((prev) => ({
-            ...prev,
-            phase: 'error',
-            error: err instanceof Error ? err.message : 'Unknown error',
-          }));
+        if (!isCurrent()) return;
+
+        const response = restResponseFromExecution(result);
+        const blobUrl = response ? createResponseBlobUrl(response) : null;
+        revokeBlobUrl();
+        blobUrlRef.current = blobUrl;
+        setState({
+          phase: result.status === 'completed' ? 'completed' : result.status === 'cancelled' ? 'cancelled' : 'error',
+          response,
+          error: result.error?.message ?? (response ? null : 'Execution completed without a response'),
+          scriptOutput: outputsFromExecution(result),
+          blobUrl,
+          testResults: result.tests,
+        });
+
+        if (result.status === 'completed' && response) {
+          trackTiming('rest_request_completed', startedAt, {
+            workspace_id: workspace.id,
+            entity_id: entityId,
+            method: entity.method,
+            status: response.status,
+            body_type: response.bodyType,
+          });
+        } else {
           trackTiming('rest_request_failed', startedAt, {
             workspace_id: workspace.id,
             entity_id: entityId,
-            method: _entity.method,
-            failure_stage: 'exception',
+            method: entity.method,
+            failure_stage: result.status,
           });
         }
+      } catch (error) {
+        if (!isCurrent()) return;
+        setState((previous) => ({
+          ...previous,
+          phase: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }));
+        trackTiming('rest_request_failed', startedAt, {
+          workspace_id: workspace.id,
+          entity_id: entityId,
+          method: entity.method,
+          failure_stage: 'exception',
+        });
+      } finally {
+        unsubscribe();
+        if (executionIdRef.current === executionId) executionIdRef.current = null;
       }
     },
-    [entityId, workspace, echoServerPort, interpolate, appendScriptOutput, selectedEnvironment, queryClient],
+    [cancelActiveExecution, entityId, environmentId, revokeBlobUrl, workspace],
   );
 
   const cancel = useCallback(() => {
-    isCancelledRef.current = true;
-    controllerRef.current.cancel();
+    generationRef.current += 1;
+    cancelActiveExecution('Cancelled by user');
     if (entityId) {
-      trackEvent('rest_request_cancelled', {
-        workspace_id: workspace.id,
-        entity_id: entityId,
-      });
+      trackEvent('rest_request_cancelled', { workspace_id: workspace.id, entity_id: entityId });
     }
-    setState((prev) => ({
-      ...prev,
-      phase: 'cancelled',
-      error: 'Request cancelled',
-    }));
-  }, [entityId, workspace.id]);
+    setState((previous) => ({ ...previous, phase: 'cancelled', error: 'Request cancelled' }));
+  }, [cancelActiveExecution, entityId, workspace.id]);
 
   const reset = useCallback(() => {
+    generationRef.current += 1;
+    cancelActiveExecution('Request reset');
+    revokeBlobUrl();
     setState(INITIAL_STATE);
-  }, []);
+  }, [cancelActiveExecution, revokeBlobUrl]);
 
-  return {
-    state,
-    execute,
-    cancel,
-    reset,
-  };
+  return { state, execute, cancel, reset };
 }

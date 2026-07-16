@@ -12,6 +12,9 @@ mod version;
 mod worker;
 mod yasumu_modules;
 
+#[allow(dead_code)]
+mod generated_runtime_contract;
+
 pub use permissions::install_permission_prompter;
 pub use runtime::{Tanxium, TanxiumBuilder};
 pub use state::{

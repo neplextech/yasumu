@@ -93,7 +93,7 @@ export default function SsePage() {
               ))}
               {listeners.length === 0 && (
                 <div className="text-muted-foreground py-8 text-center">
-                  No event listeners. Click "Add Listener" to start listening.
+                  No event listeners. Click &quot;Add Listener&quot; to start listening.
                 </div>
               )}
             </div>

@@ -1,9 +1,12 @@
 import type { EmailData } from '@yasumu/common';
+import type { ExecutionEvent } from '@yasumu/headless';
 
 import type { Environment } from '../core/workspace/environment/environment.js';
 import type { Workspace } from '../core/workspace/workspace.js';
 
 export interface YasumuEventHandlerInterface {
+  /** Called for every structured event in the shared execution lifecycle. */
+  onExecutionEvent: (workspace: Workspace, event: ExecutionEvent) => unknown;
   /**
    * Called when a workspace is activated.
    * @param workspace - The workspace that was activated.

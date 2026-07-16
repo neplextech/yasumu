@@ -5,6 +5,7 @@ import ts from 'typescript-legacy';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const RUNTIME_DIR = path.join(ROOT_DIR, '../..', 'crates', 'tanxium', 'src', 'runtime');
+const RUNTIME_API_DIR = path.join(ROOT_DIR, '../..', 'packages', 'runtime-api', 'src');
 const OUTPUT_FILE = path.join(ROOT_DIR, 'src', 'lib', 'types', 'yasumu-typedef.ts');
 const TYPES_DIR = path.join(import.meta.dirname, 'types');
 const DENO_TYPES_FILE = path.join(TYPES_DIR, 'deno', 'lib.deno.d.ts');
@@ -18,6 +19,7 @@ const RUNTIME_EXPORT_FILES = [
   'yasumu-request.ts',
   'ui.ts',
 ];
+const RUNTIME_API_FILES = ['generated.ts', 'types.ts'];
 
 // Stubs for Deno internal modules that can't be resolved normally
 const EXT_STUBS = new Map<string, string>([
@@ -224,11 +226,9 @@ function extractYasumuClass(bootstrapPath: string): string {
   });
 
   const keepMember = (m: ts.ClassElement): boolean => {
-    // @ts-ignore
-    // prettier-ignore
-    const hasPrivate: boolean = m.modifiers?.some((mod) =>
-        mod.kind === ts.SyntaxKind.PrivateKeyword ||
-        mod.kind === ts.SyntaxKind.ProtectedKeyword,
+    const modifiers = ts.canHaveModifiers(m) ? ts.getModifiers(m) : undefined;
+    const hasPrivate = modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword || modifier.kind === ts.SyntaxKind.ProtectedKeyword,
     );
     if (hasPrivate) return false;
     const name = (m as ts.NamedDeclaration).name;
@@ -337,11 +337,12 @@ function extractYasumuClass(bootstrapPath: string): string {
 
 function generateYasumuTypes(): string {
   const exportFiles = RUNTIME_EXPORT_FILES.map((f) => path.join(RUNTIME_DIR, f)).filter((f) => fs.existsSync(f));
+  const runtimeApiFiles = RUNTIME_API_FILES.map((f) => path.join(RUNTIME_API_DIR, f)).filter((f) => fs.existsSync(f));
 
   // Include bootstrap.ts in compilation so globals like `unsafe` are visible
   const bootstrapPath = path.join(RUNTIME_DIR, 'bootstrap.ts');
 
-  const allFiles = [...exportFiles];
+  const allFiles = [...exportFiles, ...runtimeApiFiles];
   if (fs.existsSync(bootstrapPath)) allFiles.push(bootstrapPath);
 
   console.log('  Compiling runtime TypeScript files...');
@@ -361,6 +362,18 @@ function generateYasumuTypes(): string {
     if (ambient.trim()) parts.push(ambient);
   }
 
+  // Standard Request/Response hook contexts and yasumu: virtual-module APIs.
+  for (const relFile of RUNTIME_API_FILES) {
+    const baseName = path.basename(relFile, '.ts') + '.d.ts';
+    const content = declarations.get(baseName);
+    if (!content) {
+      console.warn(`  [warn] No declaration emitted for runtime API ${baseName}`);
+      continue;
+    }
+    const ambient = makeAmbient(content);
+    if (ambient.trim()) parts.push(ambient);
+  }
+
   // Yasumu class extracted directly from source
   if (fs.existsSync(bootstrapPath)) {
     const yasumuClass = extractYasumuClass(bootstrapPath);
@@ -372,6 +385,18 @@ function generateYasumuTypes(): string {
 
   // Yasumu module declarations
   parts.push(`declare module "yasumu:collection" {\n  export { Collection };\n}`);
+  parts.push(
+    `declare module "yasumu:workspace" {\n  const workspace: ScriptWorkspace;\n  export default workspace;\n  export { workspace };\n}`,
+  );
+  parts.push(
+    `declare module "yasumu:runtime" {\n  const runtime: RuntimeDescriptor;\n  export default runtime;\n  export { runtime };\n}`,
+  );
+  parts.push(
+    `declare module "yasumu:env" {\n  const env: EnvironmentScriptAPI;\n  export default env;\n  export { env };\n}`,
+  );
+  parts.push(
+    `declare module "yasumu:files" {\n  const files: ScriptFileAPI;\n  export default files;\n  export { files };\n}`,
+  );
 
   // Testing API types (hand-written, stable)
   parts.push(TESTING_API_TYPES.trim());

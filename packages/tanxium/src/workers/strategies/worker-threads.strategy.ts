@@ -11,8 +11,7 @@ export class WorkerThreadsStrategy implements ScriptWorkerStrategy {
   }
 
   public start(source: string, callbacks: WorkerStrategyCallbacks): void {
-    this.worker = new Worker(source, {
-      eval: true,
+    this.worker = new Worker(new URL(`data:text/javascript,${encodeURIComponent(source)}`), {
       name: 'yasumu-script-worker',
     });
 

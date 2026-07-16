@@ -1,0 +1,41 @@
+@rest
+
+metadata {
+  name: "Tested response"
+  method: "GET"
+  id: "tested"
+  groupId: null
+}
+
+request {
+  url: "https://example.invalid/tested"
+  headers: []
+  parameters: []
+  searchParameters: []
+  body: null
+}
+
+dependencies []
+
+script {
+  export function onRequest() {
+    return new Response(JSON.stringify({ tested: true }), {
+      status: 203,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  export function onResponse() {}
+}
+
+test {
+  import { describe, expect, test } from "yasumu:test";
+
+  export function onTest(ctx) {
+    describe("CLI", () => {
+      test("receives the mocked response", () => {
+        expect(ctx.res.status).toBe(203);
+      });
+    });
+  }
+}

@@ -1,496 +1,201 @@
 ---
 title: SMTP Server
 description:
-  Catch-all SMTP server for testing email functionality in
-  development.
+  Capture local email and automate mail-driven API workflows.
 ---
 
 # SMTP Server
 
-Yasumu includes a built-in **catch-all SMTP server** that captures all
-emails sent to it, providing a local mailbox for testing email
-functionality during development. No more sending test emails to real
-addresses or setting up complex email infrastructure.
+Each Yasumu workspace can run a local catch-all SMTP server. Messages
+are stored in the workspace mailbox, appear in the desktop app in real
+time, and can participate in request executions and scripts.
 
-## Overview
+<Callout type="warn" title="Development use only">
+  The built-in SMTP server is intended for local development and
+  automated testing. Do not expose it as a production mail server.
+</Callout>
 
-The SMTP server:
+## Mailbox
 
-- **Captures all emails** — Acts as a real SMTP server that accepts
-  any email
-- **Stores locally** — Emails are stored in your workspace database
-- **Provides a mailbox** — View, search, and manage received emails in
-  Yasumu
-- **Works with any library** — Compatible with Nodemailer, SendGrid
-  SDK, or any SMTP-capable tool
+Open **Emails** in the workspace sidebar to:
 
-## Accessing the Mailbox
+- inspect sender, recipients, subject, text, and HTML
+- filter messages
+- mark mail read or unread
+- delete individual messages or clear the mailbox
+- edit the workspace's incoming-email script
+- start, stop, and configure the SMTP server
 
-Navigate to **Emails** in the Yasumu sidebar to access the email
-features. You'll see two tabs:
+Messages received while an API execution is running are available to
+that execution's email API even when they arrive before the script
+starts waiting.
 
-| Tab          | Description                                   |
-| :----------- | :-------------------------------------------- |
-| **Mailbox**  | View and read captured emails                 |
-| **Settings** | Configure SMTP server port and authentication |
+## Configuration
 
-## Mailbox Features
-
-![Mailbox](/mailbox.png)
-
-### Email List
-
-The mailbox displays all captured emails with:
-
-- **Sender avatar** — Color-coded initials based on sender email
-- **From address** — Who sent the email
-- **Subject line** — Email subject (or "No subject" if empty)
-- **Preview** — First 150 characters of the email body
-- **Timestamp** — When the email was received
-- **Unread indicator** — Blue dot for unread emails
-
-### Filtering
-
-Filter emails by:
-
-- **All** — Show all captured emails
-- **Unread** — Show only unread emails
-
-The unread count is displayed as a badge next to the filter.
-
-### Email Content
-
-Click an email to view its full content:
-
-- **From/To/CC** — Full email addresses
-- **Date** — When the email was received
-- **Subject** — Full subject line
-- **Body** — Rendered HTML or plain text content
-
-HTML emails are rendered in a sandboxed iframe for security.
-
-## Settings
-
-![SMTP Server Settings](/smtp.png)
-
-### Server Status
-
-When the SMTP server is running, you'll see a status indicator
-showing:
-
-- **Online status** — Green indicator when active
-- **Active port** — The port the server is listening on
-- **Copy Port** — Quick button to copy the port number
-
-### Configuration Options
-
-| Setting      | Description                                                  |
-| :----------- | :----------------------------------------------------------- |
-| **Username** | Optional authentication username (leave empty for catch-all) |
-| **Password** | Optional authentication password                             |
-| **Port**     | Server port (0 = random available port)                      |
-
-After changing settings, click **Save Settings** to apply.
-
-## Using the SMTP Server
-
-### With Nodemailer
-
-The settings page includes a ready-to-use code snippet:
-
-```typescript
-import { createTransport } from 'nodemailer';
-
-const transport = createTransport({
-  host: 'localhost',
-  port: 2525, // Use the port shown in Yasumu settings
-});
-
-await transport.sendMail({
-  from: 'sender@example.com',
-  to: 'recipient@example.com',
-  subject: 'Hello from Yasumu',
-  text: 'Hello World!',
-});
-```
-
-### With Other Libraries
-
-Any SMTP-capable library can send to the Yasumu SMTP server:
-
-**Python (smtplib)**
-
-```python
-import smtplib
-from email.message import EmailMessage
-
-msg = EmailMessage()
-msg['Subject'] = 'Test Email'
-msg['From'] = 'sender@example.com'
-msg['To'] = 'recipient@example.com'
-msg.set_content('Hello from Python!')
-
-with smtplib.SMTP('localhost', 2525) as smtp:
-    smtp.send_message(msg)
-```
-
-**Go (net/smtp)**
-
-```go
-package main
-
-import (
-    "net/smtp"
-)
-
-func main() {
-    msg := []byte("Subject: Test Email\r\n\r\nHello from Go!")
-    smtp.SendMail("localhost:2525", nil, "sender@example.com",
-        []string{"recipient@example.com"}, msg)
-}
-```
-
-## Workspace Configuration
-
-SMTP settings are stored in `smtp.ysl` in your workspace:
+The workspace SMTP configuration contains a stable ID, port, optional
+username, optional local password, and an optional `onEmail` script.
+Exported YSL does not write a usable password.
 
 ```d
 @smtp
 
 metadata {
-  id: "udlji8yaooo11ud8aetg3omr"
-  port: 0
+  id: "workspace-smtp"
+  port: 1025
   username: null
   password: null
 }
 
-script {
-  // smtp script (if any)
-}
+script null
 ```
 
-| Field      | Description                                  |
-| :--------- | :------------------------------------------- |
-| `id`       | Unique identifier for the SMTP configuration |
-| `port`     | Configured port (0 = random)                 |
-| `username` | Authentication username (null = disabled)    |
-| `password` | Authentication password (null = disabled)    |
+Common local ports are `1025` and `2525`. Ensure the selected port is
+not already in use.
 
-## Simulating Rejections
+## Sending mail to Yasumu
 
-The SMTP server can simulate email rejections for testing error
-handling. Use email addresses starting with `reject`
-(case-insensitive) to trigger a rejection:
+### Nodemailer
 
-```typescript
-// These will be rejected by the SMTP server
-await transport.sendMail({
-  from: 'reject@example.com', // Rejected - sender starts with "reject"
-  to: 'user@example.com',
-  subject: 'This will fail',
-  text: 'Never delivered',
+```ts
+import nodemailer from 'nodemailer';
+
+const transport = nodemailer.createTransport({
+  host: '127.0.0.1',
+  port: 1025,
+  secure: false,
 });
 
 await transport.sendMail({
-  from: 'sender@example.com',
-  to: 'rejected@example.com', // Rejected - recipient starts with "reject"
-  subject: 'This will also fail',
-  text: 'Never delivered',
+  from: 'app@example.test',
+  to: 'user@example.test',
+  subject: 'Your verification code',
+  text: 'Code: 123456',
+  html: '<p>Code: <strong>123456</strong></p>',
 });
 ```
 
-This is useful for testing:
+### Command line
 
-- Error handling in your email sending code
-- Retry logic
-- User notifications when emails fail
+```bash
+swaks --server 127.0.0.1:1025 \
+  --from app@example.test \
+  --to user@example.test \
+  --header "Subject: Local test" \
+  --body "Hello from the test suite"
+```
 
-## Real-time Updates
+## Email scripting
 
-The mailbox automatically refreshes when new emails arrive. No need to
-manually refresh — emails appear in the list as soon as they're
-received.
+The SMTP script exports one optional hook. It receives the same base
+context as request scripts, with a structured `ctx.email` instead of a
+request or response:
 
-![New Email Notification](/new-email-notification.png)
-
-## Email Scripting
-
-Yasumu provides a powerful scripting system for processing incoming
-emails automatically. Scripts can detect new emails, extract
-information, and store values in environment variables for use in your
-API requests.
-
-### Script Structure
-
-Email scripts are written in the **Script** tab of the email section:
-
-![Email Script Editor](/email-scripting.png)
-
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  // Process incoming emails
-  console.log('New email from:', email.from);
+```ts
+export function onEmail(ctx: EmailHookContext) {
+  const { email } = ctx;
+  console.log('received', email.subject, 'from', email.from);
 }
 ```
 
-<Callout type="info" title="Email Event">
-  The `onEmail` function is called every time a new email is received
-  by the SMTP server. Use conditional checks to filter which emails
-  your script processes.
-</Callout>
+`WorkspaceEmail` contains:
 
-### The Email Object (`email`)
+| Property    | Type                   | Description                       |
+| :---------- | :--------------------- | :-------------------------------- |
+| `id`        | `string`               | Stable message ID                 |
+| `from`      | `string`               | Sender address                    |
+| `to`        | `string[]`             | Recipient addresses               |
+| `cc`        | `string[]`             | CC addresses                      |
+| `subject`   | `string`               | Subject line                      |
+| `text`      | `string`               | Plain-text body                   |
+| `html`      | `string`               | HTML body                         |
+| `createdAt` | `number`               | Receive timestamp in milliseconds |
+| `updatedAt` | `number \| undefined`  | Last-update timestamp             |
+| `unread`    | `boolean \| undefined` | Read state                        |
 
-The `email` object represents the received email and contains all
-message data.
+The context also exposes `id`, `entity`, `execution`, `signal`,
+`cancel()`, and the complete `ctx.workspace` API.
 
-| Property    | Type      | Description                           |
-| :---------- | :-------- | :------------------------------------ |
-| `id`        | `string`  | Unique identifier for the email       |
-| `from`      | `string`  | Sender email address                  |
-| `to`        | `string`  | Recipient email address               |
-| `cc`        | `string`  | CC recipients (if any)                |
-| `subject`   | `string`  | Email subject line                    |
-| `text`      | `string`  | Plain text body content               |
-| `html`      | `string`  | HTML body content                     |
-| `unread`    | `boolean` | Whether the email is unread           |
-| `createdAt` | `string`  | Timestamp when email was received     |
-| `updatedAt` | `string`  | Timestamp when email was last updated |
+### Extract a verification code
 
-### The Context Object (`ctx`)
+```ts
+export function onEmail(ctx: EmailHookContext) {
+  const { email } = ctx;
+  if (!email.subject.toLowerCase().includes('verification')) return;
 
-The `ctx` object provides access to workspace functionality.
-
-| Property            | Type                         | Description                     |
-| :------------------ | :--------------------------- | :------------------------------ |
-| `ctx.workspace.env` | `YasumuWorkspaceEnvironment` | Access to environment variables |
-
-### Extracting OTP Codes
-
-A common use case is extracting verification codes from emails:
-
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  // Only process verification emails
-  if (!email.subject.toLowerCase().includes('verification code'))
-    return;
-
-  // Extract OTP from HTML content
-  const otp = email.html.split('data-otp="')[1]?.split('"')[0];
-
-  // log extracted OTP
-  console.log(`Parsed OTP: ${otp}`);
-
-  // save OTP to environment variable
-  if (otp) {
-    ctx.workspace.env.setVariable('VERIFICATION_CODE', otp);
-  }
+  const code = email.text.match(/\b\d{6}\b/)?.[0];
+  if (code) ctx.workspace.env.setVariable('VERIFICATION_CODE', code);
 }
 ```
 
-![Email Script Console](/extract-email-otp.png)
+Environment changes made by scripts are execution-scoped. Persisting a
+value requires an explicit host or user action; scripts never silently
+write secrets to YSL or SQLite.
 
-The extracted value is automatically saved to your environment:
+### Chain another entity
 
-![Environment Variable](/extracted-email-otp-env.png)
+```ts
+export async function onEmail(ctx: EmailHookContext) {
+  if (!ctx.email.subject.includes('Account ready')) return;
 
-### Filtering Emails
-
-Use conditional checks to process only relevant emails:
-
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  // Filter by subject
-  if (!email.subject.includes('Order Confirmation')) return;
-
-  // Filter by sender
-  if (!email.from.endsWith('@mycompany.com')) return;
-
-  // Process the email...
+  await ctx.workspace.rest.execute('confirm-account', {
+    variables: { recipient: ctx.email.to[0] ?? '' },
+  });
 }
 ```
 
-### Extracting Data with Regex
+Nested runs inherit cancellation and emit their own child execution
+events.
 
-For more complex extraction patterns, use regular expressions:
+## Waiting for mail from a request
 
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  // Extract 6-digit OTP code
-  const otpMatch = email.text.match(/\b(\d{6})\b/);
-  if (otpMatch) {
-    ctx.workspace.env.setVariable('OTP_CODE', otpMatch[1]);
-  }
+Request scripts can wait inline through `ctx.workspace.email`:
 
-  // Extract order ID
-  const orderMatch = email.text.match(/Order #(\w+)/i);
-  if (orderMatch) {
-    ctx.workspace.env.setVariable('ORDER_ID', orderMatch[1]);
-  }
-
-  // Extract links
-  const linkMatch = email.html.match(/href="([^"]+verify[^"]+)"/);
-  if (linkMatch) {
-    ctx.workspace.env.setVariable('VERIFICATION_LINK', linkMatch[1]);
-  }
-}
-```
-
-### Console Output
-
-Use `console.log()` to debug your email scripts. Output appears in the
-**Console** section at the bottom of the screen:
-
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  console.log('Email received:', email.subject);
-  console.log('From:', email.from);
-  console.log('To:', email.to);
-
-  // Log extracted data
-  const data = extractData(email);
-  console.log('Extracted:', data);
-}
-```
-
-### Common Use Cases
-
-#### Password Reset Flow
-
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  if (!email.subject.toLowerCase().includes('password reset')) return;
-
-  // Extract reset token from link
-  const tokenMatch = email.html.match(
-    /reset-password\?token=([^"&]+)/,
+```ts
+export async function onResponse(ctx: ResponseHookContext) {
+  const email = await ctx.workspace.email.awaitEmail(
+    (candidate) =>
+      candidate.to.includes('user@example.test') &&
+      candidate.subject.includes('verification'),
+    { timeoutMs: 30_000, signal: ctx.signal },
   );
-  if (tokenMatch) {
-    ctx.workspace.env.setVariable('RESET_TOKEN', tokenMatch[1]);
-    console.log('Password reset token saved');
-  }
+
+  if (!email.text.includes('Code:'))
+    throw new Error('Verification code missing');
 }
 ```
 
-#### Email Verification
+The lifecycle-safe algorithm:
 
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  if (!email.subject.toLowerCase().includes('verify your email'))
-    return;
+1. records the API execution start time
+2. checks persisted messages received since that time
+3. evaluates the predicate in the script runtime
+4. waits for future candidates only when none match
+5. honors timeout and cancellation
+6. removes subscriptions when the wait ends
 
-  // Extract verification link
-  const linkMatch = email.html.match(/href="([^"]*verify[^"]*)"/i);
-  if (linkMatch) {
-    ctx.workspace.env.setVariable('VERIFY_URL', linkMatch[1]);
-    console.log('Verification URL saved');
-  }
-}
-```
+This closes the race where mail arrives after the request starts but
+before `awaitEmail` is called. Multiple waits maintain independent
+cursors.
 
-#### Two-Factor Authentication
+Use `ctx.workspace.email.list({ since, limit })` when no wait is
+needed.
 
-```typescript
-export function onEmail(
-  ctx: YasumuScriptContext,
-  email: YasumuEmail,
-) {
-  if (
-    !email.subject.toLowerCase().includes('2fa') &&
-    !email.subject.toLowerCase().includes('two-factor')
-  )
-    return;
+## Diagnostics and privacy
 
-  // Extract 6-digit code
-  const codeMatch = email.text.match(/\b(\d{6})\b/);
-  if (codeMatch) {
-    ctx.workspace.env.setVariable('2FA_CODE', codeMatch[1]);
-    console.log('2FA code saved:', codeMatch[1]);
-  }
-}
-```
+Email timeouts, permission denial, runtime failures, and cancellation
+use the same structured error model as request execution. SMTP
+credentials and active environment secrets are redacted from logs,
+diagnostics, and history.
 
-### Best Practices for Email Scripts
+## Troubleshooting
 
-1. **Filter early** — Return early if the email doesn't match your
-   criteria
-2. **Use specific patterns** — Be precise with regex to avoid false
-   matches
-3. **Handle missing data** — Check if extracted values exist before
-   saving
-4. **Log for debugging** — Use console.log to trace script execution
-5. **Keep scripts focused** — Each script should handle one type of
-   email
-
-<Callout type="tip" title="Chaining with API Requests">
-  Variables set via email scripts can be used immediately in your API
-  requests using the `{{ VARIABLE_NAME }}` syntax. This enables
-  automated testing of email-based authentication flows.
-</Callout>
-
-## Use Cases
-
-### Testing Transactional Emails
-
-```typescript
-await sendPasswordResetEmail(user.email);
-// Check Yasumu mailbox to verify email content and formatting
-```
-
-### Testing Email Templates
-
-Send emails with different templates to verify:
-
-- HTML rendering
-- Dynamic content substitution
-- Responsive layouts
-
-### Testing Email Workflows
-
-Test multi-step email flows:
-
-- Welcome emails
-- Verification emails
-- Notification chains
-
-### Test environment
-
-Configure your test environment to use Yasumu's SMTP server:
-
-```ini
-SMTP_HOST=localhost
-SMTP_PORT=2525
-```
-
-## Best Practices
-
-1. **Use port 0 for random** — Avoids conflicts with other services
-2. **Check the active port** — The displayed port is what the server
-   is actually using
-3. **No auth for local dev** — Skip username/password for simpler
-   local testing
-4. **Use auth for shared environments** — Add credentials if multiple
-   people access the same instance
-5. **Clear old emails periodically** — Keep the mailbox manageable for
-   performance
+- **Connection refused:** start the workspace SMTP server and verify
+  the port.
+- **Port already in use:** choose another local port and update the
+  sender.
+- **Authentication fails:** make the sender credentials match the
+  workspace configuration.
+- **A wait times out:** verify the recipient/subject predicate and
+  increase `timeoutMs` when the sender is intentionally slow.
+- **A script does not run:** ensure it exports `onEmail(ctx)`; missing
+  hooks are valid no-ops.

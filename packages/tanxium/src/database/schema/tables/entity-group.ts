@@ -1,6 +1,7 @@
+import type { YasumuEmbeddedScript } from '@yasumu/common';
 import { AnySQLiteColumn, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import { commonColumns } from '../../common/index.ts';
+import { commonColumns, json } from '../../common/index.ts';
 import { workspaces } from './workspaces.ts';
 
 export const entityGroups = sqliteTable('entity_groups', {
@@ -15,6 +16,7 @@ export const entityGroups = sqliteTable('entity_groups', {
   entityType: text({
     enum: ['rest', 'graphql', 'websocket', 'socketio', 'sse'] as const,
   }).notNull(),
+  script: json<YasumuEmbeddedScript>('script'),
 });
 
 export type EntityGroupEntityType = (typeof entityGroups.$inferSelect)['entityType'];

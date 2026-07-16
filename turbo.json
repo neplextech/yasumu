@@ -1,5 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalEnv": ["NEXT_PUBLIC_POSTHOG_HOST", "NEXT_PUBLIC_POSTHOG_KEY", "NODE_ENV", "TAURI_DEV_HOST"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

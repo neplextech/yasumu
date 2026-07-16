@@ -18,9 +18,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "pnpm --filter @yasumu/schema build && pnpm --filter @yasumu/runtime-api build && pnpm --filter @yasumu/headless build && pnpm --filter @yasumu/runtime-node build && pnpm build && pnpm typecheck:test && vitest run",
+    "typecheck:test": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
+    "@yasumu/headless": "workspace:*",
+    "@yasumu/runtime-api": "workspace:*",
+    "@yasumu/runtime-node": "workspace:*",
     "@yasumu/schema": "workspace:*",
     "commander": "^14.0.2",
     "picocolors": "^1.1.1"
@@ -29,6 +34,10 @@
     "@types/node": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
-    "typescript": "catalog:build"
+    "typescript": "catalog:build",
+    "vitest": "catalog:test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

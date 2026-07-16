@@ -1,12 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { GraphqlTreeItem } from '@yasumu/core';
+import type { GraphqlEntityCreateOptions, GraphqlTreeItem } from '@yasumu/core';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
 import { Wand2 } from 'lucide-react';
-import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useActiveWorkspace, useYasumu } from '@/components/providers/workspace-provider';
+import { useActiveWorkspace, useYasumuRuntime } from '@/components/providers/workspace-provider';
 import { FileTreeSidebar } from '@/components/sidebars/file-tree';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import {
@@ -22,9 +22,9 @@ import { GeneratorDialog } from './dialogs/generator-dialog';
 import { GraphqlIcon } from './graphql-icon';
 
 export function GraphqlFileTree() {
-  const { yasumu } = useYasumu();
+  const { yasumu } = useYasumuRuntime();
   const workspace = useActiveWorkspace();
-  const { setEntityId, removeFromHistory } = useGraphqlContext();
+  const { entityId, setEntityId, removeFromHistory } = useGraphqlContext();
   const { clipboard, clearClipboard, selectedFolderId, setSelectedFolderId } = useGraphqlFileTreeContext();
   const { handleFileCopy, handleFolderCopy, handleFileCut, handleFolderCut } = useFileTreeClipboardActions();
 
@@ -40,9 +40,9 @@ export function GraphqlFileTree() {
     enabled: !!graphql,
   });
 
-  const refetchGraphqlEntities = useEffectEvent(() => {
+  const refetchGraphqlEntities = useCallback(() => {
     return refetch();
-  });
+  }, [refetch]);
 
   const fileTree = useMemo(
     () =>
@@ -85,7 +85,7 @@ export function GraphqlFileTree() {
       });
       await refetchGraphqlEntities();
     },
-    [graphql],
+    [graphql, refetchGraphqlEntities],
   );
 
   const duplicateFolder = useCallback(
@@ -131,7 +131,7 @@ export function GraphqlFileTree() {
 
       await refetchGraphqlEntities();
     },
-    [graphql, graphqlEntities],
+    [graphql, graphqlEntities, refetchGraphqlEntities],
   );
 
   const handlePaste = useCallback(
@@ -171,7 +171,7 @@ export function GraphqlFileTree() {
         clearClipboard();
       }
     },
-    [clipboard, graphql, duplicateFolder, clearClipboard],
+    [clearClipboard, clipboard, duplicateFolder, graphql, refetchGraphqlEntities],
   );
 
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
@@ -218,14 +218,14 @@ export function GraphqlFileTree() {
     }
 
     // Bulk create all operations at once
-    const items = operations.map((op) => {
+    const items: GraphqlEntityCreateOptions[] = operations.map((op) => {
       const operationName = fileNamify(op.name);
       return {
         name: operationName,
         url: url,
         groupId: folderMap[op.type],
         requestBody: {
-          type: 'json' as const,
+          type: 'json',
           value: {
             query: op.content,
             variables: '{}',
@@ -233,9 +233,9 @@ export function GraphqlFileTree() {
           },
           metadata: {},
         },
-        requestParameters: [] as any[],
-        searchParameters: [] as any[],
-        requestHeaders: [] as any[],
+        requestParameters: [],
+        searchParameters: [],
+        requestHeaders: [],
         metadata: {},
       };
     });
@@ -252,17 +252,25 @@ export function GraphqlFileTree() {
   return (
     <>
       <FileTreeSidebar
+        stateKey={`${workspace.id}:graphql`}
         fileTree={fileTree}
         className="w-full font-sans"
         collapsible="none"
         enableFileSearch
         fileSearchPlaceholder="Search GraphQL operations..."
         clipboard={clipboard}
+        selectedFileId={entityId}
         selectedFolderId={selectedFolderId}
         onFolderSelect={setSelectedFolderId}
         additionalToolbarItems={
-          <button onClick={() => setIsGeneratorOpen(true)}>
-            <Wand2 className="h-[0.9rem] w-[0.9rem] cursor-pointer hover:bg-zinc-700" />
+          <button
+            type="button"
+            aria-label="Generate GraphQL operations"
+            title="Generate GraphQL operations"
+            className="hover:bg-sidebar-accent focus-visible:ring-sidebar-ring flex size-6 items-center justify-center rounded-sm outline-none focus-visible:ring-2"
+            onClick={() => setIsGeneratorOpen(true)}
+          >
+            <Wand2 aria-hidden="true" className="size-3.5" />
           </button>
         }
         onFileSelect={withErrorHandler(async (id: string) => {

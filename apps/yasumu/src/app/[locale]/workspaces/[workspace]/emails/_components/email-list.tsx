@@ -105,7 +105,9 @@ export default function EmailList({ emails, selectedEmailId, onSelectEmail, filt
             <div className="divide-border/50 divide-y">
               {filteredEmails.map((email) => (
                 <button
+                  type="button"
                   key={email.id}
+                  aria-pressed={selectedEmailId === email.id}
                   onClick={() => onSelectEmail(email.id)}
                   className={cn(
                     'w-full text-left p-4 hover:bg-muted/30 transition-all duration-150 border-l-2 border-transparent relative group',

@@ -1,190 +1,72 @@
 # Yasumu CLI
 
-Command-line interface for Yasumu - execute and manage your API workspaces from the terminal.
+The Yasumu CLI loads `.ysl` workspaces through `@yasumu/headless` and executes REST and GraphQL entities with the
+same request pipeline and script contracts used by other Yasumu hosts. Scripts run in the Node.js worker adapter
+provided by `@yasumu/runtime-node`; the CLI does not maintain a separate VM runtime or schema definitions.
 
-## Installation
+Node.js 24 or newer is required.
 
-```bash
-npm install -g yasumu
-# or
-pnpm add -g yasumu
+## Workspace selection
+
+By default, commands load `./yasumu` relative to the current directory. Pass either a project directory or the
+`yasumu` directory itself with `--workspace`:
+
+```sh
+yasumu validate
+yasumu validate --workspace /path/to/project
+yasumu validate --workspace /path/to/project/yasumu
 ```
+
+`--path` remains available as a deprecated alias for compatibility.
 
 ## Commands
 
-### `yasumu info`
-
-Display information about the Yasumu workspace.
-
-```bash
-yasumu info [options]
-```
-
-**Options:**
-
-- `-p, --path <path>` - Path to the workspace directory (default: current directory)
-- `--json` - Output as JSON
-
-**Example:**
-
-```bash
+```sh
+yasumu validate
+yasumu list [--kind rest|graphql]
+yasumu run <entity-name-or-id>
+yasumu test [entity-name-or-id]
 yasumu info
-yasumu info --path /path/to/project
-yasumu info --json
 ```
 
-### `yasumu rest list`
+With no entity argument, `yasumu test` executes every REST and GraphQL entity in deterministic order. The existing
+`yasumu rest list` and `yasumu rest run <entity>` commands remain as aliases. `yasumu rest run --all` executes every
+REST entity.
 
-List all REST entities in the workspace.
+Execution options include:
 
-```bash
-yasumu rest list [options]
+- `-e, --environment <name-or-id>` to select a workspace environment.
+- `--dotenv <path>` to load values from one explicit dotenv file.
+- `--variable KEY=VALUE` to override a variable. Repeat the option for multiple values. JSON primitives and objects
+  are preserved when the value is valid JSON.
+- `--secret KEY=VALUE` to supply an execution secret. Repeat the option for multiple values.
+- `--timeout <milliseconds>` to set the request and script timeout.
+- `--json` to emit one machine-readable JSON document.
+- `--verbose` to include request and response bodies in human-readable output.
+
+The CLI never discovers or loads `.env` files implicitly. A relative `--dotenv` path is resolved from the CLI's
+current working directory; absolute paths are accepted unchanged. Effective values use this precedence, from highest
+to lowest: explicit `--variable` / `--secret` flags, process environment, the selected dotenv file, then the selected
+workspace environment and workspace defaults.
+
+Variables can be supplied as `YASUMU_VAR_<NAME>` process environment variables. Defined workspace secrets use
+`YASUMU_ENV_<NAME>`. Plain process names also override matching keys already defined by the selected workspace
+environment. Secret values are redacted from results, diagnostics, and logs.
+
+Examples:
+
+```sh
+yasumu run "Create user" --environment Staging
+yasumu run graphql-user --variable API_URL=https://api.example.com/graphql
+yasumu test --environment CI --dotenv .env.ci --secret API_TOKEN="$API_TOKEN" --json
 ```
 
-**Options:**
+Workspace-relative binary and multipart file references are confined to the workspace root. Request execution uses
+the standard Fetch transport. `SIGINT` cancels the active execution and disposes its worker.
 
-- `-p, --path <path>` - Path to the workspace directory
-- `--json` - Output as JSON
+## Exit codes
 
-### `yasumu rest run`
-
-Execute REST entities.
-
-```bash
-yasumu rest run [target] [options]
-```
-
-**Arguments:**
-
-- `target` - Entity name or ID to run (optional if using `--all`)
-
-**Options:**
-
-- `-p, --path <path>` - Path to the workspace directory
-- `-a, --all` - Run all REST entities
-- `--no-script` - Skip pre/post request scripts
-- `-e, --env <environment>` - Environment name or ID to use
-- `-v, --verbose` - Show detailed response information (headers, body)
-- `--json` - Output results as JSON
-
-## Script Execution
-
-The CLI supports executing pre-request (`onRequest`) and post-response (`onResponse`) scripts defined in your `.ysl` files. Scripts are executed using Node.js's `vm` module with a sandboxed context.
-
-### Supported Script Features
-
-- **`onRequest(req)`** - Executed before the request is sent. Can modify headers, URL, and body.
-- **`onResponse(req, res)`** - Executed after receiving the response. Can access response data.
-- **Mock Responses** - Return a `YasumuResponse` from `onRequest` to skip the actual HTTP request.
-- **Environment Access** - Access variables and secrets via `req.env.getVariable()` and `req.env.getSecret()`.
-
-### Script Globals
-
-The following globals are available in scripts:
-
-- `Yasumu.cuid()` - Generate a unique ID
-- `Yasumu.ui.showNotification()` - No-op in CLI (for compatibility)
-- `YasumuResponse` - Create mock responses
-- `console` - Standard console methods
-- `fetch`, `URL`, `URLSearchParams`, `Headers`, `Request`, `Response`
-- `JSON`, `Date`, `Math`, `crypto`, `Promise`, `Map`, `Set`
-
-### TypeScript Support
-
-Scripts can use TypeScript syntax (interfaces, type annotations). The CLI automatically strips TypeScript-specific syntax before execution.
-
-**Note:** Some advanced TypeScript features may not be fully supported. For complex scripts, consider using plain JavaScript.
-
-**Examples:**
-
-```bash
-# Run a single entity by name
-yasumu rest run "Get User"
-
-# Run by ID
-yasumu rest run abc123xyz
-
-# Run all entities
-yasumu rest run --all
-
-# Run with environment
-yasumu rest run "Get User" -e Production
-
-# Run with verbose output
-yasumu rest run "Get User" -e Production -v
-
-# Run all and output as JSON
-yasumu rest run --all --json
-```
-
-## Environment Variables
-
-Yasumu environments support both **variables** and **secrets**. Variables are stored in `.ysl` files and are safe to commit to version control. Secrets, however, are sensitive values that should not be committed.
-
-### Secret Injection from Environment
-
-Since secrets are not stored in `.ysl` files (they appear as empty strings), the CLI provides a mechanism to inject secret values from system environment variables.
-
-**Convention:** `YASUMU_ENV_<SECRET_KEY>` maps to `env.secrets.<SECRET_KEY>`
-
-**Example:**
-
-If your environment has a secret named `ACCESS_TOKEN`, set the corresponding environment variable:
-
-```bash
-export YASUMU_ENV_ACCESS_TOKEN="your-secret-token"
-```
-
-When you run a request with that environment, the CLI will automatically inject the value:
-
-```bash
-yasumu rest run "Protected Endpoint" -e Production
-```
-
-The `{{ACCESS_TOKEN}}` placeholder in your request will be replaced with the value from `YASUMU_ENV_ACCESS_TOKEN`.
-
-### Multiple Secrets
-
-You can set multiple secrets:
-
-```bash
-export YASUMU_ENV_API_KEY="sk-123456"
-export YASUMU_ENV_AUTH_TOKEN="bearer-token-here"
-export YASUMU_ENV_DATABASE_URL="postgres://..."
-```
-
-### CI/CD Integration
-
-This pattern works well with CI/CD systems where secrets are managed externally:
-
-```yaml
-# GitHub Actions example
-env:
-  YASUMU_ENV_API_KEY: ${{ secrets.API_KEY }}
-  YASUMU_ENV_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-
-steps:
-  - run: yasumu rest run --all -e Production
-```
-
-## Variable Substitution
-
-The CLI supports variable substitution using the `{{VARIABLE_NAME}}` syntax. Variables are resolved from:
-
-1. Environment variables (from the selected environment's `variables` block)
-2. Environment secrets (from `YASUMU_ENV_*` system environment variables)
-
-**Example URL with variables:**
-
-```
-https://api.example.com/users/{{USER_ID}}?token={{ACCESS_TOKEN}}
-```
-
-## Exit Codes
-
-- `0` - Success (all requests passed)
-- `1` - Failure (one or more requests failed, or workspace not found)
-
-## License
-
-AGPL-3.0
+- `0`: validation or execution succeeded.
+- `1`: an execution, HTTP response, or test failed.
+- `2`: invalid workspace, entity/environment selection, or command input.
+- `130`: execution was cancelled with `SIGINT`.

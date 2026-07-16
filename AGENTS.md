@@ -1,122 +1,359 @@
+# AGENTS.md
+
 # Yasumu contributor and agent guide
 
-## Project
+## Overview
 
-Yasumu is a desktop-first API development and testing platform. The
-desktop application combines a Next.js frontend, a Tauri shell, and an
-embeddable Deno-based JavaScript/TypeScript runtime named **Tanxium**.
-The repository is a pnpm workspace and a root Cargo workspace; both
-are first-class parts of the project.
+Yasumu is a desktop-first API development and testing platform.
 
-## Repository map
+The project consists of three major layers:
+
+- **Yasumu**: the desktop application (Next.js + Tauri)
+- **Tanxium**: an embeddable JavaScript/TypeScript runtime
+- **Shared packages**: schemas, RPC contracts, UI, utilities and
+  testing
+
+This repository is simultaneously:
+
+- a pnpm workspace
+- a Cargo workspace
+
+Both ecosystems are first-class citizens. Changes should preserve
+clear boundaries between them.
+
+---
+
+# Repository layout
 
 ```text
 apps/
-  docs/                 Fumadocs documentation site
-  www/                  Next.js marketing site
-  yasumu/               Next.js desktop frontend and Tauri application
-    src-tauri/          Yasumu application crate; consumes tanxium-yasumu
+  docs/                 Documentation site
+  www/                  Marketing website
+  yasumu/               Desktop frontend (Next.js)
+    src-tauri/          Yasumu application crate
+
 crates/
-  tanxium/              Publishable, Tauri-free runtime library
-  tanxium-cli/          Internal `tanxium` CLI and REPL
-  tanxium-yasumu/       Tauri host adapter for Tanxium
+  tanxium/              Runtime library (publishable)
+  tanxium-cli/          CLI + REPL
+  tanxium-yasumu/       Tauri adapter
+
 packages/
-  common/               Lightweight shared utilities and types
-  core/                 Typed RPC client
-  rpc/                  Pure RPC contract layer
-  schema/               YSL entity schema and serialization
-  tanxium/              JavaScript server/runtime package bundled for Yasumu
-  test/                 Yasumu script-testing package
-  ui/                   Shared shadcn/ui component library
+  common/               Shared utilities
+  core/                 RPC client
+  rpc/                  RPC contract definitions
+  schema/               YSL schema
+  tanxium/              Runtime bootstrap package
+  test/                 Script testing APIs
+  ui/                   Shared UI
+  ...                   Other packages that are shared in this monorepo
+
 tests/
-  tanxium-runtime/      Vitest semantic tests that execute the real CLI
-Cargo.toml              Root Rust workspace manifest
-pnpm-workspace.yaml     Root JavaScript workspace manifest
+  tanxium-runtime/      Runtime semantic tests
+
+Cargo.toml
+pnpm-workspace.yaml
 ```
 
-## Architecture and dependency rules
+---
 
-### Application and RPC
+# Core architecture
 
-The frontend calls `packages/core`, which uses contracts in
-`packages/rpc` to communicate with the Tauri backend. Keep
-`packages/rpc` free of runtime or application logic, and keep
-`packages/common` lightweight. Do not introduce cross-package circular
-dependencies.
+The long-term architecture is intentionally layered.
 
-### Tanxium
+```
+Next.js UI
+      │
+packages/core
+      │
+packages/rpc
+      │
+Tauri Commands
+      │
+tanxium-yasumu
+      │
+crates/tanxium
+      │
+Embedded Deno Runtime
+```
 
-`crates/tanxium` owns the Deno worker, module loader, custom ops,
-embedded Yasumu bootstrap, `yasumu:*` modules, virtual modules, and
-runtime state. It must never depend on Tauri.
+Every dependency should flow downward.
 
-`crates/tanxium-yasumu` is the only Tauri-aware Tanxium crate. It
-translates Tanxium events, paths, dialogs, and application state to
-Tauri. The Yasumu app crate should consume this adapter rather than
-reimplement runtime behavior.
+Do **not** introduce reverse dependencies.
 
-`crates/tanxium-cli` provides `tanxium run` and `tanxium repl`. It is
-internal (`publish = false`) but must exercise the same JavaScript
-runtime contract as the Tauri host. `tanxium` is the only publishable
-crate.
+Do **not** create circular dependencies.
 
-When adding or changing a JavaScript runtime API:
+Do **not** bypass layers because it is "simpler."
 
-1. Implement the generic operation/state behavior in `crates/tanxium`.
-2. Add host-specific behavior only through `RuntimeHost` or
-   `tanxium-yasumu`.
-3. Keep the Tauri and CLI behaviors documented.
-4. Add semantic coverage under `tests/tanxium-runtime`; do not use
-   source-text assertions as runtime tests.
+---
 
-## Commands and validation
+# Design principles
 
-Run commands from the repository root unless a command states
-otherwise.
+Prefer long-term maintainability over short-term convenience.
+
+The codebase values:
+
+- explicit APIs
+- predictable ownership
+- minimal abstractions
+- runtime independence
+- strong typing
+- low coupling
+
+If multiple implementations need the same behavior, move the shared
+logic to the correct layer instead of duplicating it.
+
+---
+
+# Coding guidelines
+
+## General
+
+- NEVER duplicate code.
+- NEVER introduce helper functions that only wrap trivial expressions.
+- NEVER add unnecessary abstractions.
+- Prefer explicit code over clever code.
+- Prefer composition over inheritance.
+- Prefer data-oriented designs over deeply nested object hierarchies.
+
+## TypeScript
+
+- Avoid `any`.
+- Avoid `unknown` in public APIs unless unavoidable.
+- Prefer generics.
+- Prefer discriminated unions.
+- Avoid unnecessary type assertions.
+
+## Rust
+
+- Prefer ownership over unnecessary `Arc<Mutex<...>>`.
+- Keep APIs small.
+- Minimize trait complexity unless it improves extensibility.
+- Avoid unnecessary heap allocations.
+
+---
+
+# Package boundaries
+
+## packages/rpc
+
+Contains only RPC contracts.
+
+It must remain:
+
+- runtime-independent
+- application-independent
+- UI-independent
+
+Do not add business logic.
+
+---
+
+## packages/core
+
+Contains typed client implementations.
+
+Business logic belongs here, not inside `packages/rpc`.
+
+---
+
+## packages/common
+
+Only lightweight shared types and utilities.
+
+Avoid feature creep.
+
+---
+
+## crates/tanxium
+
+This is the runtime.
+
+It owns:
+
+- runtime state
+- Deno workers
+- module loading
+- virtual modules
+- `yasumu:*`
+- runtime APIs
+- bootstrap
+- execution lifecycle
+
+It must **never** depend on:
+
+- Tauri
+- React
+- Next.js
+- desktop UI concepts
+
+Everything here should be embeddable.
+
+---
+
+## crates/tanxium-yasumu
+
+This crate adapts Tanxium to Yasumu.
+
+It translates:
+
+- dialogs
+- filesystem access
+- runtime events
+- permissions
+- application state
+- window integration
+
+It should contain **no runtime logic**.
+
+If runtime behavior changes, it belongs in `crates/tanxium`.
+
+---
+
+## crates/tanxium-cli
+
+The CLI exists to execute the exact same runtime.
+
+CLI-specific behavior is acceptable.
+
+Runtime-specific behavior is not.
+
+The CLI should be treated as another runtime host.
+
+---
+
+# Runtime architecture
+
+Tanxium is designed to be runtime-agnostic.
+
+The runtime should not assume it is executing inside Yasumu.
+
+New capabilities should first be designed as generic runtime APIs.
+
+Host integrations should adapt those APIs rather than extending the
+runtime with application-specific behavior.
+
+When introducing a runtime feature:
+
+1. implement it inside `crates/tanxium`
+2. expose generic APIs
+3. adapt them in `tanxium-yasumu`
+4. verify the CLI behaves identically
+5. add semantic runtime tests
+
+---
+
+# Testing philosophy
+
+Behavior matters.
+
+Implementation details do not.
+
+Avoid tests that inspect source code.
+
+Prefer tests that execute the real runtime.
+
+Runtime tests should verify:
+
+- execution
+- permissions
+- virtual modules
+- node_modules resolution
+- renderer communication
+- worker lifecycle
+- REPL behavior
+
+---
+
+# Documentation
+
+Whenever a public feature changes:
+
+Update:
+
+- `apps/docs`
+- `crates/tanxium/docs`
+- `crates/tanxium/README.md`
+
+Public Rust APIs should include rustdoc.
+
+Examples are preferred over long explanations.
+
+---
+
+# Validation
+
+Run commands from the repository root.
+
+## Rust
 
 ```sh
-# Rust workspace
 cargo fmt --all
 cargo check --workspace
 cargo package --allow-dirty --no-verify -p tanxium
+```
 
-# Tanxium CLI/runtime semantics
-pnpm --filter @yasumu/tanxium-runtime-tests test
+## JavaScript
 
-# JavaScript workspace
+```sh
 pnpm install --frozen-lockfile
 pnpm build
 pnpm format
 ```
 
-The runtime test suite builds and runs the real CLI. It covers
-TypeScript execution, runtime context, virtual modules, node_modules
-resolution, renderer events, and REPL behavior.
+## Runtime
 
-## Releases and publishing
+```sh
+pnpm --filter @yasumu/tanxium-runtime-tests test
+```
 
-- Yasumu desktop release workflows live in
-  `.github/workflows/release.yml` and `.github/workflows/canary.yml`.
-- Cargo CI lives in `.github/workflows/cargo.yml` and checks the root
-  workspace.
-- `tanxium` publishes through `.github/workflows/publish-tanxium.yml`
-  using crates.io OIDC trusted publishing. Do not add a long-lived
-  crates.io token. Configure the crates.io trusted publisher with the
-  workflow and `crates-io` GitHub environment before publishing.
+---
 
-## Documentation and quality
+# Releases
 
-- Update `apps/docs` for public-facing Yasumu behavior.
-- Update `crates/tanxium/README.md` and `crates/tanxium/docs/` for
-  public Tanxium APIs, CLI changes, and embedding guidance.
-- Public Rust API must have rustdoc. Keep CLI code split by
-  responsibility; avoid placing command parsing, terminal hosting, and
-  REPL logic in one file.
-- Use `cargo fmt`, `pnpm format`, and focused tests before handing off
-  a change.
+Desktop releases:
 
-## Code-review graph
+- `.github/workflows/release.yml`
+- `.github/workflows/canary.yml`
 
-This project may expose code-review-graph MCP tools. Use them before
-broad file searches when they are available. If the graph is empty or
-unavailable, fall back to targeted `rg` and direct file inspection.
+Rust CI:
+
+- `.github/workflows/cargo.yml`
+
+Publishing:
+
+- `.github/workflows/publish-tanxium.yml`
+
+Use crates.io Trusted Publishing.
+
+Never introduce long-lived crates.io API tokens.
+
+---
+
+# Code review expectations
+
+Before making architectural changes:
+
+- understand the existing layer ownership
+- preserve dependency direction
+- avoid introducing coupling between unrelated packages
+
+When code-review graph tools are available, prefer them over
+repository-wide searches.
+
+Otherwise use targeted `rg` searches.
+
+---
+
+# What not to do
+
+Do not:
+
+- duplicate runtime implementations
+- bypass RPC layers
+- place runtime logic inside Tauri
+- place Tauri logic inside Tanxium
+- couple shared packages to application code
+- introduce circular dependencies
+- add abstractions without multiple concrete use cases
+- optimize prematurely
+- change public APIs without updating documentation and runtime tests
