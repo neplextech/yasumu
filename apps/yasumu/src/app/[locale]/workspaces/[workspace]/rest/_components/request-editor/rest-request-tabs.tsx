@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { useCallback, useMemo } from 'react';
 
-import { TextEditor } from '@/components/editors';
+import { TextEditor, REST_SCRIPT_SNIPPETS } from '@/components/editors';
 import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import KeyValueTable, { type KeyValuePair } from '@/components/tables/key-value-table';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
@@ -183,6 +183,7 @@ export function RestRequestTabs({
               value={script?.code || ''}
               onChange={handleScriptCodeChange}
               typeDefinitions={YASUMU_TYPE_DEFINITIONS}
+              snippets={REST_SCRIPT_SNIPPETS}
               placeholder={
                 <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
                   <h1 className="font-bold underline">Edit to hide this example placeholder</h1>

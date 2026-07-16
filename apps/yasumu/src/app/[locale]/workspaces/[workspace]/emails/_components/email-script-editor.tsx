@@ -9,7 +9,7 @@ import { SiTypescript } from 'react-icons/si';
 
 import { useSerializedAutosave } from '@/app/[locale]/workspaces/[workspace]/_hooks/use-serialized-autosave';
 import { workspaceQueryKeys } from '@/app/[locale]/workspaces/[workspace]/_lib/workspace-query-keys';
-import { TextEditor } from '@/components/editors';
+import { TextEditor, EMAIL_SNIPPETS } from '@/components/editors';
 import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import ErrorScreen from '@/components/visuals/error-screen';
 import LoadingScreen from '@/components/visuals/loading-screen';
@@ -128,6 +128,7 @@ export default function EmailScriptEditor() {
         value={smtpConfig?.script?.code || ''}
         onChange={handleScriptCodeChange}
         typeDefinitions={YASUMU_EMAIL_TYPEDEF}
+        snippets={EMAIL_SNIPPETS}
         className="rounded-none"
         placeholder={
           <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">

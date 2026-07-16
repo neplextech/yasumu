@@ -9,6 +9,8 @@ import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import ErrorScreen from '../visuals/error-screen';
 import LoadingScreen from '../visuals/loading-screen';
 
+import { type YasumuSnippets, registerYasumuSnippets } from './yasumu-snippets';
+
 export interface TypeDefinition {
   content: string;
   filePath?: string;
@@ -22,6 +24,7 @@ interface TextEditorProps {
   placeholder?: React.ReactNode;
   readOnly?: boolean;
   className?: string;
+  snippets?: YasumuSnippets;
 }
 
 const EMPTY_TYPE_DEFINITIONS: TypeDefinition[] = [];
@@ -107,6 +110,7 @@ export function TextEditor({
   placeholder,
   readOnly = false,
   className,
+  snippets,
 }: TextEditorProps) {
   const { resolvedTheme } = useTheme();
   const editorId = useId().replaceAll(':', '');
@@ -145,6 +149,11 @@ export function TextEditor({
     (editor, monaco) => {
       registerTypeDefinitions(monaco, typeDefinitions);
 
+      let snippetDisposable: { dispose: () => void } | undefined;
+      if (snippets && Object.keys(snippets).length > 0) {
+        snippetDisposable = registerYasumuSnippets(monaco, snippets);
+      }
+
       editor.updateOptions({
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
@@ -169,8 +178,12 @@ export function TextEditor({
         },
         readOnly,
       });
+
+      editor.onDidDispose(() => {
+        snippetDisposable?.dispose();
+      });
     },
-    [typeDefinitions, readOnly],
+    [typeDefinitions, readOnly, snippets],
   );
 
   const handleChange = useCallback(
