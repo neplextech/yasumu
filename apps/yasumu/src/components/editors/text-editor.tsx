@@ -3,8 +3,11 @@
 import Editor, { loader, type Monaco, type OnMount } from '@monaco-editor/react';
 import { Button } from '@yasumu/ui/components/button';
 import { cn } from '@yasumu/ui/lib/utils';
+import type { editor, Position as MonacoPosition } from 'monaco-editor';
 import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+
+import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 
 import ErrorScreen from '../visuals/error-screen';
 import LoadingScreen from '../visuals/loading-screen';
@@ -112,6 +115,7 @@ export function TextEditor({
   snippets,
 }: TextEditorProps) {
   const { resolvedTheme } = useTheme();
+  const selectedEnvironment = useEnvironmentStore((store) => store.selectedEnvironment);
   const editorId = useId().replaceAll(':', '');
   const [isMonacoReady, setIsMonacoReady] = useState(!!monacoInstance);
   const [initializationError, setInitializationError] = useState<Error | null>(null);
@@ -178,11 +182,43 @@ export function TextEditor({
         readOnly,
       });
 
+      const interpolationDisposable = monaco.languages.registerCompletionItemProvider(language, {
+        triggerCharacters: ['{'],
+        provideCompletionItems(model: editor.ITextModel, position: MonacoPosition) {
+          const prefix = model.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          });
+          const match = prefix.match(/\{\{\s*([A-Za-z_][A-Za-z0-9_.-]*)?$/);
+          if (!match || !selectedEnvironment) return { suggestions: [] };
+          const startColumn = position.column - (match[1]?.length ?? 0);
+          const range = new monaco.Range(position.lineNumber, startColumn, position.lineNumber, position.column);
+          const values = [
+            ...selectedEnvironment.variables.getKeys().map((key) => ({ key, detail: 'Environment variable' })),
+            ...selectedEnvironment.secrets
+              .getKeys()
+              .map((key) => ({ key: `secrets.${key}`, detail: 'Environment secret' })),
+          ];
+          return {
+            suggestions: values.map(({ key, detail }) => ({
+              label: `{{${key}}}`,
+              kind: monaco.languages.CompletionItemKind.Variable,
+              detail,
+              insertText: `${key}}}`,
+              range,
+            })),
+          };
+        },
+      });
+
       editor.onDidDispose(() => {
         snippetDisposable?.dispose();
+        interpolationDisposable.dispose();
       });
     },
-    [typeDefinitions, readOnly, snippets],
+    [typeDefinitions, readOnly, snippets, language, selectedEnvironment],
   );
 
   const handleChange = useCallback(

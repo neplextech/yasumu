@@ -55,6 +55,20 @@ describe('request construction', () => {
     });
   });
 
+  it('interpolates GraphQL JSON variables after parsing so typed values remain valid JSON', async () => {
+    const entity = graphqlEntity({
+      body: {
+        query: 'query Viewer($enabled: Boolean!, $profile: JSON!) { viewer { id } }',
+        variables: '{"enabled":"{{enabled}}","profile":"{{profile}}"}',
+      },
+    });
+    const request = await buildEntityRequest(workspace({ entities: [entity] }), entity, {
+      environment: { ...environment, variables: { ...environment.variables, profile: { name: 'Ada' } } },
+    });
+
+    expect((await request.json()).variables).toEqual({ enabled: true, profile: { name: 'Ada' } });
+  });
+
   it('resolves binary and multipart files through the injected resolver', async () => {
     const opened: string[] = [];
     const resolver: FileResolver = {

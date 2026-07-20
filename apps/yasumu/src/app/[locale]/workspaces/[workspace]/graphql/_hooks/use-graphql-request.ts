@@ -16,6 +16,32 @@ import { trackEvent, trackTiming } from '@/lib/instrumentation/analytics';
 
 import { graphqlResponseFromExecution, type GraphqlResponse } from '../_lib/graphql-request';
 
+function isSubscription(document: string): boolean {
+  return /^(?:\s|#[^\n]*(?:\n|$))*subscription\b/.test(document);
+}
+
+function interpolateJson(value: unknown, interpolate: (value: string) => string): unknown {
+  if (typeof value === 'string') return interpolate(value);
+  if (Array.isArray(value)) return value.map((entry) => interpolateJson(entry, interpolate));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [interpolate(key), interpolateJson(entry, interpolate)]),
+    );
+  }
+  return value;
+}
+
+function rawError(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) =>
+        entry && typeof entry === 'object' && 'message' in entry ? String(entry.message) : String(entry),
+      )
+      .join(', ');
+  }
+  return typeof value === 'string' ? value : 'GraphQL subscription failed';
+}
+
 export type {
   RequestPhase,
   ScriptOutputEntry,
@@ -55,11 +81,14 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
   const [state, setState] = useState<RequestState>(INITIAL_STATE);
   const generationRef = useRef(0);
   const executionIdRef = useRef<string | null>(null);
+  const subscriptionRef = useRef<WebSocket | null>(null);
 
   const cancelActiveExecution = useCallback(
     (reason: string) => {
       const executionId = executionIdRef.current;
       executionIdRef.current = null;
+      subscriptionRef.current?.close(1000, reason);
+      subscriptionRef.current = null;
       if (executionId) void workspace.execution.cancel(executionId, reason);
     },
     [workspace.execution],
@@ -88,6 +117,87 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
       const updateState = (update: (previous: RequestState) => RequestState) => {
         setState((previous) => (isCurrent() ? update(previous) : previous));
       };
+
+      const requestBody = entity.requestBody?.value;
+      const body: Record<string, unknown> | null =
+        requestBody && typeof requestBody === 'object' && !Array.isArray(requestBody)
+          ? (requestBody as Record<string, unknown>)
+          : null;
+      const query = typeof body?.query === 'string' ? body.query : '';
+      if (isSubscription(query)) {
+        const { interpolate } = useEnvironmentStore.getState();
+        const url = interpolate(entity.url ?? '').replace(/^http/, 'ws');
+        const variablesText = typeof body?.variables === 'string' ? body.variables : '{}';
+        let variables: unknown = {};
+        try {
+          variables = interpolateJson(JSON.parse(variablesText || '{}'), interpolate);
+        } catch {
+          setState({ ...INITIAL_STATE, phase: 'error', error: 'GraphQL variables must be valid JSON' });
+          return;
+        }
+        const headers = Object.fromEntries(
+          entity.requestHeaders
+            .filter((header) => header.enabled && header.key)
+            .map((header) => [interpolate(header.key), interpolate(header.value)]),
+        );
+        setState({ ...INITIAL_STATE, phase: 'sending' });
+        try {
+          const socket = new WebSocket(url, 'graphql-transport-ws');
+          subscriptionRef.current = socket;
+          socket.onopen = () => socket.send(JSON.stringify({ type: 'connection_init', payload: { headers } }));
+          socket.onmessage = (event) => {
+            if (!isCurrent()) return;
+            const message = JSON.parse(String(event.data)) as {
+              type: string;
+              payload?: { data?: unknown; errors?: GraphqlResponse['errors'] };
+            };
+            if (message.type === 'connection_ack') {
+              socket.send(
+                JSON.stringify({
+                  id: executionId,
+                  type: 'subscribe',
+                  payload: { query: interpolate(query), variables },
+                }),
+              );
+            } else if (message.type === 'next' && message.payload) {
+              const rawBody = JSON.stringify(message.payload);
+              updateState((previous) => ({
+                ...previous,
+                response: {
+                  status: 200,
+                  statusText: 'Subscription active',
+                  time: 0,
+                  headers: {},
+                  data: message.payload?.data ?? null,
+                  errors: message.payload?.errors ?? null,
+                  rawBody,
+                  size: new Blob([rawBody]).size,
+                  testResults: [],
+                },
+                error: null,
+              }));
+            } else if (message.type === 'error') {
+              updateState((previous) => ({ ...previous, phase: 'error', error: rawError(message.payload) }));
+            }
+          };
+          socket.onerror = () =>
+            updateState((previous) => ({
+              ...previous,
+              phase: 'error',
+              error: 'GraphQL subscription connection failed',
+            }));
+          socket.onclose = () => {
+            if (subscriptionRef.current === socket) subscriptionRef.current = null;
+          };
+        } catch (error) {
+          setState({
+            ...INITIAL_STATE,
+            phase: 'error',
+            error: error instanceof Error ? error.message : 'Subscription failed',
+          });
+        }
+        return;
+      }
 
       const unsubscribe = workspace.manager.yasumu.events.on('onExecutionEvent', (_eventWorkspace, event) => {
         if (!isCurrent() || event.executionId !== executionId) return;

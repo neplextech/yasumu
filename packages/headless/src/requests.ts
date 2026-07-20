@@ -226,13 +226,15 @@ function normalizeGraphQLVariables(
 ): Record<string, JsonValue> | null {
   if (value === undefined || value === null || value === '') return null;
   if (typeof value !== 'string') return interpolator.interpolate(value);
-  const interpolated = interpolator.interpolateString(value);
-  if (typeof interpolated === 'object' && interpolated !== null && !Array.isArray(interpolated)) return interpolated;
-  if (typeof interpolated !== 'string') {
+  const exact = interpolator.interpolateString(value);
+  if (typeof exact === 'object' && exact !== null && !Array.isArray(exact)) return exact;
+  if (typeof exact !== 'string') {
     throw new YasumuError(YasumuErrorCodes.InvalidEntity, 'GraphQL variables must be an object');
   }
   try {
-    const parsed = JSON.parse(interpolated) as JsonValue;
+    // Parse before interpolating so quoted expressions preserve JSON validity and
+    // whole-value expressions retain their native type.
+    const parsed = JSON.parse(value) as JsonValue;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
     return interpolator.interpolate(parsed);
   } catch (error) {

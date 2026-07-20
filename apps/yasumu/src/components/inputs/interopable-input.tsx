@@ -3,7 +3,7 @@
 import { Input } from '@yasumu/ui/components/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@yasumu/ui/components/popover';
 import { cn } from '@yasumu/ui/lib/utils';
-import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useId, useMemo, useRef, useState } from 'react';
 
 import { useEnvironmentStore } from '@/app/[locale]/workspaces/_stores/environment-store';
 
@@ -175,6 +175,15 @@ export const InteropableInput = forwardRef<HTMLInputElement, InteropableInputPro
 ) {
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectedEnvironment = useEnvironmentStore((state) => state.selectedEnvironment);
+  const suggestions = useMemo(
+    () => [
+      ...(selectedEnvironment ? selectedEnvironment.variables.getKeys().map((key) => `{{${key}}}`) : []),
+      ...(selectedEnvironment ? selectedEnvironment.secrets.getKeys().map((key) => `{{secrets.${key}}}`) : []),
+    ],
+    [selectedEnvironment],
+  );
+  const suggestionsId = useId();
 
   const segments = useMemo(() => parseSegments(value), [value]);
   const hasVariables = segments.some((s) => s.type === 'variable');
@@ -232,6 +241,7 @@ export const InteropableInput = forwardRef<HTMLInputElement, InteropableInputPro
       {...inputProps}
       ref={setInputRef}
       type="text"
+      list={suggestions.length ? suggestionsId : undefined}
       value={value}
       onChange={handleInputChange}
       onFocus={handleInputFocus}
@@ -247,12 +257,30 @@ export const InteropableInput = forwardRef<HTMLInputElement, InteropableInputPro
   );
 
   if (!hasVariables) {
-    return input;
+    return (
+      <>
+        {input}
+        {suggestions.length ? (
+          <datalist id={suggestionsId}>
+            {suggestions.map((suggestion) => (
+              <option key={suggestion} value={suggestion} />
+            ))}
+          </datalist>
+        ) : null}
+      </>
+    );
   }
 
   return (
     <div data-interopable-input className="relative w-full min-w-0">
       {input}
+      {suggestions.length ? (
+        <datalist id={suggestionsId}>
+          {suggestions.map((suggestion) => (
+            <option key={suggestion} value={suggestion} />
+          ))}
+        </datalist>
+      ) : null}
       <div
         onClick={handleContainerClick}
         className={cn(

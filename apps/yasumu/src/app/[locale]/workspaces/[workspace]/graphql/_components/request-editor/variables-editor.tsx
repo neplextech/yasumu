@@ -2,13 +2,13 @@
 
 import { Button } from '@yasumu/ui/components/button';
 import { Checkbox } from '@yasumu/ui/components/checkbox';
-import { Input } from '@yasumu/ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@yasumu/ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { Trash, Plus } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { TextEditor } from '@/components/editors';
+import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import { useStableRowKeys } from '@/components/tables/use-stable-row-keys';
 
 interface VariableEntry {
@@ -56,6 +56,7 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
   const [mode, setMode] = useState<'table' | 'json'>('table');
   const [entries, setEntries] = useState<VariableEntry[]>(() => parseVariablesToEntries(variables));
   const { rowKeys, insertKey, removeKey, resetKeys } = useStableRowKeys(entries.length);
+  const { renderVariablePopover } = useVariablePopover();
 
   const handleTableChange = useCallback(
     (newEntries: VariableEntry[]) => {
@@ -154,19 +155,21 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
+                      <InteropableInput
                         aria-label={`GraphQL variable key for row ${index + 1}`}
                         value={entry.key}
-                        onChange={(e) => updateEntry(index, 'key', e.target.value)}
+                        onChange={(value) => updateEntry(index, 'key', value)}
+                        onVariableClick={renderVariablePopover}
                         placeholder="key"
                         className="h-8 font-mono text-sm"
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
+                      <InteropableInput
                         aria-label={`Value for GraphQL variable ${variableLabel}`}
                         value={entry.value}
-                        onChange={(e) => updateEntry(index, 'value', e.target.value)}
+                        onChange={(value) => updateEntry(index, 'value', value)}
+                        onVariableClick={renderVariablePopover}
                         placeholder="value"
                         className="h-8 font-mono text-sm"
                       />
@@ -194,11 +197,12 @@ export function VariablesEditor({ variables, onChange }: VariablesEditorProps) {
         </div>
       </TabsContent>
 
-      <TabsContent value="json" className="mt-2 min-h-0 flex-1">
+      <TabsContent value="json" className="mt-2 flex min-h-0 flex-1 flex-col">
         <TextEditor
           value={variables}
           onChange={handleJsonChange}
           language="json"
+          className="min-h-[18rem]"
           placeholder={
             <div className="text-muted-foreground ml-2 text-sm font-medium opacity-40">
               <pre className="font-mono text-sm whitespace-pre-wrap">{`{

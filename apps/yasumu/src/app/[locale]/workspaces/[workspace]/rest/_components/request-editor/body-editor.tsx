@@ -1,7 +1,6 @@
 import type { RestEntityRequestBody } from '@yasumu/core';
 import { Label } from '@yasumu/ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@yasumu/ui/components/select';
-import { Textarea } from '@yasumu/ui/components/textarea';
 import { File as FileIcon, FileText } from 'lucide-react';
 import { useId, useState } from 'react';
 
@@ -135,12 +134,12 @@ function BodyEditorFields({ body, onChange }: BodyEditorProps) {
         ) : null}
 
         {currentType === 'text' ? (
-          <Textarea
-            aria-label="Text request body"
+          <TextEditor
             placeholder="Enter text body..."
             value={typeof localData === 'string' ? localData : ''}
-            onChange={(event) => updateData(event.target.value)}
-            className="h-full resize-none border-0 p-4 focus-visible:ring-0"
+            onChange={updateData}
+            language="plaintext"
+            className="h-full rounded-none border-0"
           />
         ) : null}
 

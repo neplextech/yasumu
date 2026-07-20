@@ -192,6 +192,12 @@ query GetUsers($limit: Int) {
 }
 ```
 
+Subscriptions use the standard `graphql-transport-ws` WebSocket
+protocol. Yasumu keeps the connection open and updates the response
+panel for each payload; click **Cancel** to unsubscribe. Environment
+interpolation works in the endpoint, document, variables, and headers
+sent in the connection-init payload.
+
 ## Query Builder
 
 The Query Builder lets you construct queries visually — no need to
@@ -328,6 +334,11 @@ Switch to **JSON** mode for direct editing of the variables object:
   "limit": 10
 }
 ```
+
+Both table and JSON modes support `{{VARIABLE}}` completion. Values
+that consist entirely of one interpolation keep their original JSON
+type, so a boolean, number, array, or object environment value is sent
+as that type rather than as a string.
 
 Both modes stay in sync — changes in one are reflected in the other.
 
