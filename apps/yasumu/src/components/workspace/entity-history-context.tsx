@@ -8,7 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useActiveWorkspace, useYasumuRuntime } from '@/components/providers/workspace-provider';
 import { trackEvent } from '@/lib/instrumentation/analytics';
 
-export type EntityHistoryScope = 'rest' | 'graphql';
+export type EntityHistoryScope = 'rest' | 'graphql' | 'sse';
 
 export interface EntityHistoryContextData {
   entityId: string | null;

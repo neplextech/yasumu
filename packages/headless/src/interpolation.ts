@@ -19,11 +19,15 @@ export interface InterpolationValues {
 
 export class Interpolator {
   private readonly values: Readonly<Record<string, JsonValue>>;
+  private readonly variables: Readonly<Record<string, JsonValue>>;
+  private readonly secrets: Readonly<Record<string, string>>;
   private readonly missing: NonNullable<InterpolationOptions['missing']>;
   private readonly maxDepth: number;
 
   constructor(values: InterpolationValues, options: InterpolationOptions = {}) {
-    this.values = { ...(values.variables ?? {}), ...(values.secrets ?? {}) };
+    this.variables = values.variables ?? {};
+    this.secrets = values.secrets ?? {};
+    this.values = { ...this.variables, ...this.secrets };
     this.missing = options.missing ?? 'error';
     this.maxDepth = options.maxDepth ?? 10;
   }
@@ -78,14 +82,21 @@ export class Interpolator {
   }
 
   private resolve(key: string, stack: string[], depth: number): JsonValue | undefined {
-    if (!(key in this.values)) return this.missing === 'error' ? this.throwMissing(key) : undefined;
+    let value: JsonValue | undefined;
+    if (key.startsWith('variables.') && key.slice('variables.'.length) in this.variables) {
+      value = this.variables[key.slice('variables.'.length)];
+    } else if (key.startsWith('secrets.') && key.slice('secrets.'.length) in this.secrets) {
+      value = this.secrets[key.slice('secrets.'.length)];
+    } else {
+      value = this.values[key];
+    }
+    if (value === undefined) return this.missing === 'error' ? this.throwMissing(key) : undefined;
     if (stack.includes(key)) {
       throw new YasumuError(
         YasumuErrorCodes.InterpolationError,
         `Interpolation cycle detected: ${[...stack, key].join(' -> ')}`,
       );
     }
-    const value = this.values[key];
     return typeof value === 'string' ? this.interpolateStringInternal(value, [...stack, key], depth) : value;
   }
 

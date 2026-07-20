@@ -10,6 +10,7 @@ import { ExternalWorkspaceModule } from './external-workspace/external-workspace
 import { GraphqlModule } from './graphql/graphql.module.ts';
 import { RestModule } from './rest/rest.module.ts';
 import { ScriptRuntimeModule } from './script-runtime/script-runtime.module.ts';
+import { SseModule } from './sse/sse.module.ts';
 import { SynchronizationModule } from './synchronization/synchronization.module.ts';
 import { WorkspacesModule } from './workspaces/workspaces.module.ts';
 
@@ -19,6 +20,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.ts';
     WorkspacesModule,
     RestModule,
     GraphqlModule,
+    SseModule,
     EntityGroupModule,
     EntityHistoryModule,
     SynchronizationModule,

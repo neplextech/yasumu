@@ -62,7 +62,7 @@ export function printList(workspace: YasumuWorkspace, entities: ExecutableEntity
     return;
   }
   for (const entity of entities) {
-    const method = entity.kind === 'rest' ? entity.method : 'POST';
+    const method = entity.kind === 'graphql' ? 'POST' : entity.method;
     const flags = [entity.scripts.lifecycle ? 'script' : undefined, entity.scripts.test ? 'test' : undefined]
       .filter((value): value is string => value !== undefined)
       .join(', ');
@@ -82,6 +82,7 @@ export function printInfo(workspace: YasumuWorkspace, json: boolean): void {
     stats: {
       restEntities: entities.filter((entity) => entity.kind === 'rest').length,
       graphqlEntities: entities.filter((entity) => entity.kind === 'graphql').length,
+      sseEntities: entities.filter((entity) => entity.kind === 'sse').length,
       environments: workspace.environments.length,
       groups: workspace.groups.length,
     },
@@ -96,6 +97,7 @@ export function printInfo(workspace: YasumuWorkspace, json: boolean): void {
   console.log(`Root:         ${pc.dim(workspace.root ?? '(not set)')}`);
   console.log(`REST:         ${payload.stats.restEntities}`);
   console.log(`GraphQL:      ${payload.stats.graphqlEntities}`);
+  console.log(`SSE:          ${payload.stats.sseEntities}`);
   console.log(`Environments: ${payload.stats.environments}`);
   console.log(`Groups:       ${payload.stats.groups}`);
 }
@@ -136,6 +138,11 @@ export function printExecution(
       `${status} ${pc.bold(entity?.name ?? result.entityId)}${response}${mocked} ${pc.dim(`${result.durationMs}ms`)}`,
     );
     if (result.error) console.error(pc.red(`  ${result.error.code}: ${result.error.message}`));
+    for (const event of result.events) {
+      console.log(
+        `${pc.blue('  EVENT')} ${pc.bold(event.event)}${event.id === undefined ? '' : pc.dim(` #${event.id}`)} ${event.data}`,
+      );
+    }
     for (const diagnostic of sortDiagnostics(result.diagnostics)) printDiagnostic(diagnostic, '  ');
     for (const log of result.logs) {
       const color = log.level === 'error' ? pc.red : log.level === 'warn' ? pc.yellow : pc.dim;
@@ -185,7 +192,7 @@ function entitySummary(entity: ExecutableEntity) {
     id: entity.id,
     name: entity.name,
     kind: entity.kind,
-    method: entity.kind === 'rest' ? entity.method : 'POST',
+    method: entity.kind === 'graphql' ? 'POST' : entity.method,
     url: entity.url,
     groupId: entity.groupId,
     hasScript: entity.scripts.lifecycle !== undefined,
@@ -244,7 +251,7 @@ function printBody(label: string, body: SerializedBody): void {
 }
 
 function kindColor(kind: ExecutableEntity['kind']) {
-  return kind === 'rest' ? pc.cyan : pc.magenta;
+  return kind === 'rest' ? pc.cyan : kind === 'graphql' ? pc.magenta : pc.blue;
 }
 
 function printJson(value: object): void {

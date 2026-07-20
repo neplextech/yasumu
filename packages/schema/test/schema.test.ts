@@ -4,6 +4,7 @@ import {
   EnvironmentSchema,
   GraphqlSchema,
   RestSchema,
+  SseSchema,
   SmtpSchema,
   WorkspaceSchema,
   YasumuAnnotations,
@@ -29,10 +30,13 @@ describe('canonical Yasumu schemas', () => {
       Workspace: 'workspace',
       Rest: 'rest',
       Graphql: 'graphql',
+      Sse: 'sse',
       Smtp: 'smtp',
       Environment: 'environment',
     });
-    expect([WorkspaceSchema, RestSchema, GraphqlSchema, EnvironmentSchema, SmtpSchema]).not.toContain(undefined);
+    expect([WorkspaceSchema, RestSchema, GraphqlSchema, SseSchema, EnvironmentSchema, SmtpSchema]).not.toContain(
+      undefined,
+    );
   });
 
   it('loads workspaces created before workspace and group scripts were added', () => {
@@ -92,6 +96,37 @@ script { export const workspaceValue = "}"; }
 
     expect(document.blocks.script).toContain('workspaceValue');
     expect(document.blocks.groups.groupId?.script).toContain('groupValue');
+  });
+
+  it('round-trips complete SSE request and reconnect documents', () => {
+    const source = `@sse
+metadata { id: "events" name: "Events" method: "POST" groupId: null }
+request {
+  url: "{{API_URL}}/events"
+  headers: [{ key: "authorization" value: "Bearer {{TOKEN}}" enabled: true }]
+  parameters: []
+  searchParameters: [{ key: "topic" value: "{{TOPIC}}" enabled: true }]
+  body: { type: "json" content: "{\\"active\\":{{ACTIVE}}}" }
+}
+events ["update", "{{EVENT_TYPE}}"]
+reconnect { enabled: true retryMs: 250 }
+dependencies ["parent-stream"]
+script { export function onRequest(ctx) { console.log(ctx.id); } }
+test { export function onTest() { test("stream", () => expect(true).toBe(true)); } }
+`;
+    const document = deserialize(source, SseSchema);
+
+    expect(document.blocks.events).toEqual(['update', '{{EVENT_TYPE}}']);
+    expect(document.blocks.reconnect).toEqual({ enabled: true, retryMs: 250 });
+    expect(document.blocks.request.body?.content).toBe('{"active":{{ACTIVE}}}');
+    const serialized = serialize(document, SseSchema);
+    const reparsed = deserialize(serialized, SseSchema);
+    expect(reparsed.blocks.request).toEqual(document.blocks.request);
+    expect(reparsed.blocks.events).toEqual(document.blocks.events);
+    expect(reparsed.blocks.reconnect).toEqual(document.blocks.reconnect);
+    expect(reparsed.blocks.dependencies).toEqual(document.blocks.dependencies);
+    expect(reparsed.blocks.script?.trim()).toBe(document.blocks.script?.trim());
+    expect(reparsed.blocks.test?.trim()).toBe(document.blocks.test?.trim());
   });
 });
 

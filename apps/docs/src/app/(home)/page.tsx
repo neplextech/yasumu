@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Code,
   Terminal,
+  Radio,
 } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
@@ -85,6 +86,10 @@ export default function HomePage() {
             <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
             GraphQL
           </div>
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            SSE
+          </div>
         </div>
       </div>
 
@@ -120,6 +125,12 @@ export default function HomePage() {
             icon={<Server className="h-5 w-5" />}
             title="Environments"
             description="Manage variables and secrets across different contexts."
+          />
+          <Card
+            href="/docs/sse"
+            icon={<Radio className="h-5 w-5" />}
+            title="Server-Sent Events"
+            description="Build, inspect, reconnect, script, and test streaming event requests."
           />
           <Card
             href="/docs/scripting"

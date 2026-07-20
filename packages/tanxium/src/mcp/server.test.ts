@@ -131,6 +131,7 @@ function executionResult(overrides: Record<string, unknown> = {}): Record<string
     logs: [{ level: 'info', message: 'mocked', timestamp: 12 }],
     diagnostics: [],
     nestedExecutions: [],
+    events: [],
     ...overrides,
   };
 }
@@ -143,7 +144,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-Deno.test('MCP preserves CRUD tools and adds GraphQL execution parity', async () => {
+Deno.test('MCP preserves CRUD tools and adds GraphQL and SSE execution parity', async () => {
   const rpcServer = new FakeRpcServer(() => null);
   const app = createMcpServer(rpcServer);
   const response = await postJson(app, {
@@ -173,6 +174,12 @@ Deno.test('MCP preserves CRUD tools and adds GraphQL execution parity', async ()
     'graphql_update',
     'graphql_execute',
     'graphql_delete',
+    'sse_list',
+    'sse_get',
+    'sse_create',
+    'sse_update',
+    'sse_execute',
+    'sse_delete',
     'synchronization_synchronize',
   ]);
 });
@@ -276,6 +283,37 @@ Deno.test('GraphQL MCP execution uses the same command and preserves structured 
       executionId: 'graphql-execution',
       mode: 'run',
       variables: { userId: 42 },
+    },
+  ]);
+});
+
+Deno.test('SSE MCP execution forwards stream limits and returns collected events', async () => {
+  const expected = executionResult({
+    executionId: 'sse-execution',
+    entityId: 'sse-1',
+    entityKind: 'sse',
+    events: [{ id: '1', event: 'update', data: '{"ok":true}', receivedAt: 10 }],
+  });
+  const rpcServer = new FakeRpcServer((request) => {
+    if (request.action === 'workspaces.get') return workspaceResult();
+    if (request.action === 'execution.execute') return expected;
+    throw new Error(`Unexpected RPC action: ${request.action}`);
+  });
+  const result = await callTool(createMcpServer(rpcServer), 'sse_execute', {
+    workspaceId: 'workspace',
+    id: 'sse-1',
+    executionId: 'sse-execution',
+    maxEvents: 3,
+  });
+
+  assert.deepEqual(parseToolText(result), expected);
+  const executionCall = rpcServer.calls.find(({ request }) => request.action === 'execution.execute');
+  assert.deepEqual(executionCall?.request.payload, [
+    {
+      entityId: 'sse-1',
+      executionId: 'sse-execution',
+      mode: 'run',
+      options: { maxEvents: 3 },
     },
   ]);
 });

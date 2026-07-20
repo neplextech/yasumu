@@ -1,6 +1,13 @@
 import type { ScriptSource } from '@yasumu/runtime-api';
 
-import type { GraphQLEntity, RestEntity, WorkspaceEnvironment, WorkspaceGroup, YasumuWorkspace } from '../src/index.js';
+import type {
+  GraphQLEntity,
+  RestEntity,
+  SseEntity,
+  WorkspaceEnvironment,
+  WorkspaceGroup,
+  YasumuWorkspace,
+} from '../src/index.js';
 
 const origin = { kind: 'memory' as const };
 
@@ -41,6 +48,29 @@ export function graphqlEntity(overrides: Partial<GraphQLEntity> = {}): GraphQLEn
     pathParameters: [],
     searchParameters: [],
     body: { query: 'query Viewer { viewer { id } }' },
+    scripts: {},
+    dependencies: [],
+    metadata: {},
+    origin,
+    ...overrides,
+  };
+}
+
+export function sseEntity(overrides: Partial<SseEntity> = {}): SseEntity {
+  return {
+    kind: 'sse',
+    id: 'sse-1',
+    name: 'SSE entity',
+    workspaceId: 'workspace-1',
+    groupId: null,
+    method: 'GET',
+    url: 'https://example.test/events',
+    headers: [],
+    pathParameters: [],
+    searchParameters: [],
+    body: null,
+    eventTypes: [],
+    reconnect: { enabled: true, retryMs: 1000 },
     scripts: {},
     dependencies: [],
     metadata: {},

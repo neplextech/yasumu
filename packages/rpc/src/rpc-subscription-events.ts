@@ -21,6 +21,7 @@ export interface RpcSubscriptionEvents {
      */
     workspaceId: string;
   };
+  'sse-entity-updated': { workspaceId: string };
   /**
    * The event for when entity history is updated.
    */

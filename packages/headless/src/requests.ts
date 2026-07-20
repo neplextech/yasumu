@@ -8,6 +8,7 @@ import type {
   GraphQLEntity,
   RequestBody,
   RestEntity,
+  SseEntity,
   TabularValue,
   YasumuWorkspace,
 } from './model.js';
@@ -30,14 +31,15 @@ export async function buildEntityRequest(
     variables: { ...options.environment.variables, ...(options.variables ?? {}) },
     secrets: options.environment.secrets,
   });
-  return entity.kind === 'rest'
-    ? buildRestRequest(workspace, entity, interpolator, options)
-    : buildGraphQLRequest(workspace, entity, interpolator, options);
+  if (entity.kind === 'graphql') return buildGraphQLRequest(workspace, entity, interpolator, options);
+  const request = await buildHttpRequest(workspace, entity, interpolator, options);
+  if (entity.kind === 'sse' && !request.headers.has('accept')) request.headers.set('accept', 'text/event-stream');
+  return request;
 }
 
-async function buildRestRequest(
+async function buildHttpRequest(
   workspace: YasumuWorkspace,
-  entity: RestEntity,
+  entity: RestEntity | SseEntity,
   interpolator: Interpolator,
   options: BuildRequestOptions,
 ): Promise<Request> {
@@ -243,10 +245,15 @@ function normalizeGraphQLVariables(
 }
 
 function parseOrInterpolateJson(value: string, interpolator: Interpolator): JsonValue {
+  try {
+    return interpolator.interpolate(JSON.parse(value) as JsonValue);
+  } catch {
+    // Templates such as {"count": {{count}}} only become valid JSON after interpolation.
+  }
   const exact = interpolator.interpolateString(value);
   if (typeof exact !== 'string') return exact;
   try {
-    return interpolator.interpolate(JSON.parse(exact) as JsonValue);
+    return JSON.parse(exact) as JsonValue;
   } catch {
     return exact;
   }

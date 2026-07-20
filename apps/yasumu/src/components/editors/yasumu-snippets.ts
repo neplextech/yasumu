@@ -15,6 +15,7 @@ const EMAIL_SCRIPT_SNIPPETS: YasumuSnippets = {
 
 export const REST_SCRIPT_SNIPPETS = REQUEST_SCRIPT_SNIPPETS;
 export const GRAPHQL_SCRIPT_SNIPPETS = REQUEST_SCRIPT_SNIPPETS;
+export const SSE_SCRIPT_SNIPPETS = REQUEST_SCRIPT_SNIPPETS;
 export const EMAIL_SNIPPETS = EMAIL_SCRIPT_SNIPPETS;
 
 export function registerYasumuSnippets(monaco: Monaco, snippets: YasumuSnippets) {

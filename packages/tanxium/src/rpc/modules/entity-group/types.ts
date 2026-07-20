@@ -1,6 +1,6 @@
 import type { EntityType } from '@yasumu/common';
 
-import type { restEntities, graphqlEntities } from '@/database/schema.ts';
+import type { restEntities, graphqlEntities, sseEntities } from '@/database/schema.ts';
 
 export type { EntityType, EntityGroupCreateOptions, EntityGroupUpdateOptions } from '@yasumu/common';
 
@@ -9,4 +9,4 @@ export interface TreeViewOptions {
   entityType: EntityType;
 }
 
-export type EntityTable = typeof restEntities | typeof graphqlEntities;
+export type EntityTable = typeof restEntities | typeof graphqlEntities | typeof sseEntities;

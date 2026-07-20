@@ -85,6 +85,7 @@ export function getRuntimeWorkerSupportSource(): string {
       ...invocation.workspace,
       rest: entityApi('rest'),
       graphql: entityApi('graphql'),
+      sse: entityApi('sse'),
       email: {
         async list(options = {}) {
           const result = await callRuntimeHost('email.list', {

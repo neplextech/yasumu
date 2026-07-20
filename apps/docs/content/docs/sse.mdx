@@ -1,0 +1,152 @@
+---
+title: Server-Sent Events
+description:
+  Create, script, test, and automate persistent SSE streams in the
+  desktop app, CLI, and CI.
+---
+
+# Server-Sent Events
+
+Yasumu's SSE module uses the same saved-entity model, interpolation,
+script lifecycle, history, and execution engine as REST and GraphQL.
+It adds incremental event delivery, event-type filters, reconnect
+policy, server `retry` directives, and `Last-Event-ID` continuity.
+
+## Create a stream
+
+1. Open **SSE** in the workspace sidebar and create a request.
+2. Choose the HTTP method and enter the stream URL.
+3. Configure path parameters, query parameters, headers, and an
+   optional request body.
+4. Add accepted event names and configure reconnect behavior.
+5. Select **Connect**. Use **Cancel** to abort the active stream.
+
+The response panel shows connection status and response headers while
+events arrive. Each event displays its `id`, event name, data,
+optional retry value, and receive time. Console logs and tests use the
+same panels as other request modules.
+
+## YSL structure
+
+SSE entities live in `yasumu/sse/<id>.ysl`:
+
+```d
+@sse
+
+metadata {
+  name: "Build events"
+  method: "POST"
+  id: "build-events"
+  groupId: null
+}
+
+request {
+  url: "{{API_URL}}/projects/:projectId/events"
+  headers: [
+    { key: "authorization", value: "Bearer {{API_TOKEN}}", enabled: true },
+  ]
+  parameters: [
+    { key: "projectId", value: "{{PROJECT_ID}}", enabled: true },
+  ]
+  searchParameters: [
+    { key: "source", value: "{{SOURCE}}", enabled: true },
+  ]
+  body: {
+    type: "json"
+    content: "{ \"includeLogs\": {{INCLUDE_LOGS}} }"
+  }
+}
+
+events ["build.started", "build.completed"]
+reconnect { enabled: true retryMs: 3000 }
+dependencies []
+script null
+test null
+```
+
+URLs, header and parameter keys and values, event filters, and all
+supported body types are interpolated immediately before execution.
+Whole-value JSON expressions preserve booleans, numbers, arrays,
+objects, and `null`. The editor offers the same `{{...}}` environment
+and execution-variable completions in every interpolable field.
+
+## Event filtering and reconnects
+
+An empty event filter accepts every event. When filters are present,
+Yasumu only collects matching event names, while still tracking event
+IDs and retry directives from the stream.
+
+When reconnect is enabled, a normally closed stream reconnects after
+the configured delay. A valid `retry:` field replaces that delay, and
+the most recent event ID is sent as `Last-Event-ID`. HTTP failures,
+invalid content types, cancellation, and timeouts do not become silent
+successful reconnects.
+
+Desktop executions continue until cancelled unless a caller supplies
+an event limit. CLI and nested executions support `maxEvents` so
+automation can stop deterministically.
+
+## Scripts and tests
+
+SSE entities support `onRequest`, `onResponse`, and `onTest` hooks.
+The final response body is a JSON snapshot containing the collected
+events, while the live response panel receives each event as it
+arrives.
+
+```ts
+export function onRequest(ctx: RequestHookContext) {
+  const headers = new Headers(ctx.req.headers);
+  headers.set('x-execution-id', ctx.execution.id);
+  ctx.setRequest(new Request(ctx.req, { headers }));
+}
+
+export async function onTest(ctx: TestHookContext) {
+  const result = await ctx.res.clone().json();
+  test('receives a completion event', () => {
+    expect(
+      result.events.some(
+        (event) => event.event === 'build.completed',
+      ),
+    ).toBe(true);
+  });
+}
+```
+
+Any request script can start another saved stream, and SSE scripts can
+invoke REST or GraphQL:
+
+```ts
+const stream = await ctx.workspace.sse.execute('build-events', {
+  maxEvents: 2,
+  withResponse: true,
+});
+
+await ctx.workspace.rest.execute('acknowledge-build');
+await ctx.workspace.graphql.execute('refresh-build-cache');
+```
+
+Nested runs inherit the effective environment, cancellation signal,
+and execution lineage.
+
+## CLI
+
+The CLI resolves `echo.yasumu.local` to its embedded echo server, so
+the same portable URLs work without the desktop app:
+
+```bash
+yasumu sse list
+yasumu sse run build-events --max-events 5
+yasumu sse run build-events --max-events 5 --json
+yasumu run build-events --max-events 5
+```
+
+Machine output includes the normal request/response snapshots plus an
+`events` array. `Ctrl+C` cancels the open stream and exits with code
+`130`.
+
+## Local echo stream
+
+Use `http://echo.yasumu.local/sse?count=3` for a deterministic stream.
+It reflects the request method, headers, query, and body in each event
+and supports `count`, `interval`, and `retry` query parameters. See
+[Echo Server](/docs/echo-server#server-sent-events) for details.

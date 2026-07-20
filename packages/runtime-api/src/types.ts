@@ -2,7 +2,7 @@ export type JsonPrimitive = string | number | boolean | null;
 
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
-export type ScriptEntityKind = 'rest' | 'graphql' | 'script' | 'email';
+export type ScriptEntityKind = 'rest' | 'graphql' | 'sse' | 'script' | 'email';
 
 export interface ScriptSource {
   id: string;
@@ -107,6 +107,14 @@ export interface ResponseSnapshot {
   body: SerializedBody;
 }
 
+export interface SseEvent {
+  id?: string;
+  event: string;
+  data: string;
+  retry?: number;
+  receivedAt: number;
+}
+
 export interface WorkspaceEmail {
   id: string;
   from: string;
@@ -168,6 +176,7 @@ export interface NestedExecutionOptions {
   withResponse?: boolean;
   runTests?: boolean;
   timeoutMs?: number;
+  maxEvents?: number;
 }
 
 export interface NestedExecutionSummary {
@@ -182,10 +191,10 @@ export interface NestedExecutionSummary {
 }
 
 export interface RuntimeHostCalls {
-  'entity.get': { input: { kind: 'rest' | 'graphql'; id: string }; output: ScriptEntity | null };
-  'entity.list': { input: { kind: 'rest' | 'graphql' }; output: ScriptEntity[] };
+  'entity.get': { input: { kind: 'rest' | 'graphql' | 'sse'; id: string }; output: ScriptEntity | null };
+  'entity.list': { input: { kind: 'rest' | 'graphql' | 'sse' }; output: ScriptEntity[] };
   'entity.execute': {
-    input: { kind: 'rest' | 'graphql'; id: string; options?: NestedExecutionOptions };
+    input: { kind: 'rest' | 'graphql' | 'sse'; id: string; options?: NestedExecutionOptions };
     output: NestedExecutionSummary;
   };
   'email.list': {
@@ -287,6 +296,8 @@ export interface RestExecutionAPI {
 
 export interface GraphQLExecutionAPI extends RestExecutionAPI {}
 
+export interface SseExecutionAPI extends RestExecutionAPI {}
+
 export interface AwaitEmailOptions {
   timeoutMs?: number;
   since?: Date | number;
@@ -317,6 +328,7 @@ export interface ScriptWorkspace {
   readonly root?: string;
   readonly rest: RestExecutionAPI;
   readonly graphql: GraphQLExecutionAPI;
+  readonly sse: SseExecutionAPI;
   readonly email: EmailScriptAPI;
   readonly env: EnvironmentScriptAPI;
   readonly files: ScriptFileAPI;

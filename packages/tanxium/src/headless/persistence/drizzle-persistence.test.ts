@@ -34,6 +34,7 @@ const migrationNames = [
   '0002_breezy_unus.sql',
   '0003_late_kitty_pryde.sql',
   '0004_headless_persistence.sql',
+  '0005_kind_mentor.sql',
 ];
 
 Deno.test('workspace adapter maps complete aggregates without claiming source baseline ownership', async () => {
@@ -52,10 +53,28 @@ Deno.test('workspace adapter maps complete aggregates without claiming source ba
     );
     assert.deepEqual(
       loaded.entities.map((entity) => `${entity.kind}:${entity.id}`),
-      ['rest:rest-a', 'rest:rest-b', 'graphql:graphql-a'],
+      ['rest:rest-a', 'rest:rest-b', 'graphql:graphql-a', 'sse:sse-a'],
     );
     assert.deepEqual(loaded.entities[1]?.dependencies, ['rest-a']);
     assert.equal(loaded.entities[1]?.scripts.test?.code, 'export function onTest() {}');
+    const loadedSse = loaded.entities.find((entity) => entity.kind === 'sse');
+    assert.deepEqual(loadedSse, {
+      ...sseEntity('sse-a'),
+      body: { type: 'json', value: '{"subscribe":true}', metadata: {} },
+      scripts: {
+        lifecycle: {
+          id: 'sse:sse-a:lifecycle',
+          code: 'export function onResponse() {}',
+          sourceUrl: undefined,
+        },
+        test: {
+          id: 'sse:sse-a:test',
+          code: 'export function onTest() {}',
+          sourceUrl: undefined,
+        },
+      },
+      origin: { kind: 'sqlite' },
+    });
     assert.equal(loaded.environments[0]?.origin.kind, 'sqlite');
     assert.equal(loaded.smtp?.script?.id, 'smtp:smtp');
 
@@ -313,7 +332,7 @@ function workspaceFixture(): YasumuWorkspace {
         origin: workspaceOrigin,
       },
     ],
-    entities: [restEntity('rest-b', ['rest-a']), graphqlEntity('graphql-a'), restEntity('rest-a')],
+    entities: [restEntity('rest-b', ['rest-a']), graphqlEntity('graphql-a'), sseEntity('sse-a'), restEntity('rest-a')],
     environments: [
       {
         id: 'environment-a',
@@ -383,6 +402,31 @@ function graphqlEntity(id: string): ExecutableEntity {
     dependencies: [],
     metadata: {},
     origin: ysl(`yasumu/graphql/${id}.ysl`, `${id}-revision`),
+  };
+}
+
+function sseEntity(id: string): ExecutableEntity {
+  return {
+    kind: 'sse',
+    id,
+    name: id,
+    workspaceId: 'workspace',
+    groupId: null,
+    method: 'POST',
+    url: 'https://example.com/events',
+    headers: [{ key: 'accept', value: 'text/event-stream', enabled: true }],
+    pathParameters: [],
+    searchParameters: [{ key: 'topic', value: 'updates', enabled: true }],
+    body: { type: 'json', value: '{"subscribe":true}' },
+    eventTypes: ['update'],
+    reconnect: { enabled: true, retryMs: 250 },
+    scripts: {
+      lifecycle: { id: `${id}-lifecycle`, code: 'export function onResponse() {}' },
+      test: { id: `${id}-test`, code: 'export function onTest() {}' },
+    },
+    dependencies: [],
+    metadata: {},
+    origin: ysl(`yasumu/sse/${id}.ysl`, `${id}-revision`),
   };
 }
 

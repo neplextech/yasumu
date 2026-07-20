@@ -22,6 +22,16 @@ describe('Interpolator', () => {
     expect(interpolator.interpolateString('literal \\{{base}}')).toBe('literal {{base}}');
   });
 
+  it('supports explicit variable and secret namespaces used by editor completions', () => {
+    const interpolator = new Interpolator({
+      variables: { region: 'eu-west' },
+      secrets: { TOKEN: 'secret-token' },
+    });
+
+    expect(interpolator.interpolateString('{{variables.region}}')).toBe('eu-west');
+    expect(interpolator.interpolateString('Bearer {{secrets.TOKEN}}')).toBe('Bearer secret-token');
+  });
+
   it('classifies missing values and cycles predictably', () => {
     expect(new Interpolator({}, { missing: 'preserve' }).interpolateString('{{missing}}')).toBe('{{missing}}');
     expect(new Interpolator({}, { missing: 'empty' }).interpolateString('x{{missing}}y')).toBe('xy');

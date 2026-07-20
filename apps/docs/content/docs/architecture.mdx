@@ -57,7 +57,7 @@ terminal output.
 
 ## Execution lifecycle
 
-Every REST and GraphQL run uses one pipeline:
+Every REST, GraphQL, and SSE run uses one pipeline:
 
 1. Load the entity and workspace.
 2. Resolve the selected environment, variables, and secrets.
@@ -66,11 +66,12 @@ Every REST and GraphQL run uses one pipeline:
 5. Create a runtime session and run `onRequest` from workspace to
    parent groups to the entity.
 6. Use a returned Web `Response` as a mock, or send the request
-   through the host transport.
+   through the host transport. SSE streams are incrementally parsed,
+   filtered, published, and reconnected inside this step.
 7. Run `onResponse` through the same hierarchy.
 8. Run `onTest` only in test mode.
-9. Collect serializable snapshots, logs, tests, diagnostics, nested
-   runs, and timing data.
+9. Collect serializable snapshots, SSE events, logs, tests,
+   diagnostics, nested runs, and timing data.
 10. Persist history and emit the final structured event.
 
 Cancellation, timeouts, nested execution, email waits, and worker

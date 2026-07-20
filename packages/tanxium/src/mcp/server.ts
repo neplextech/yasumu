@@ -267,6 +267,7 @@ function buildExecutionOptions(input: ToolInput): ExecuteEntityInput['options'] 
   const maxRequestBodyBytes = optionalNumber(input, 'maxRequestBodyBytes');
   const maxResponseBodyBytes = optionalNumber(input, 'maxResponseBodyBytes');
   const followRedirects = optionalBoolean(input, 'followRedirects');
+  const maxEvents = optionalNumber(input, 'maxEvents');
 
   if (timeoutMs !== undefined) options.timeoutMs = timeoutMs;
   if (scriptTimeoutMs !== undefined) options.scriptTimeoutMs = scriptTimeoutMs;
@@ -280,6 +281,7 @@ function buildExecutionOptions(input: ToolInput): ExecuteEntityInput['options'] 
     options.maxResponseBodyBytes = maxResponseBodyBytes;
   }
   if (followRedirects !== undefined) options.followRedirects = followRedirects;
+  if (maxEvents !== undefined) options.maxEvents = maxEvents;
 
   return Object.keys(options).length > 0 ? options : undefined;
 }
@@ -541,6 +543,10 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
       type: 'boolean',
       description: 'Whether the HTTP transport should follow redirects.',
     },
+    maxEvents: {
+      type: 'number',
+      description: 'Stop an SSE execution after this many accepted events.',
+    },
   };
 
   return [
@@ -777,6 +783,86 @@ function createTools(rpcServer: DenApplication): ToolDefinition[] {
         ['id'],
       ),
       call: (input) => workspaceAware(input, 'graphql.delete', [requireString(input, 'id')], 'mutation'),
+    },
+    {
+      name: 'sse_list',
+      description: 'List SSE streams in a workspace.',
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty }),
+      call: (input) => workspaceAware(input, 'sse.list', []),
+    },
+    {
+      name: 'sse_get',
+      description: 'Get an SSE stream by id.',
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty, id: { type: 'string' } }, ['id']),
+      call: (input) => workspaceAware(input, 'sse.get', [requireString(input, 'id')]),
+    },
+    {
+      name: 'sse_create',
+      description: 'Create an SSE stream, including its request, event filters, reconnect settings, and scripts.',
+      inputSchema: objectSchema(
+        {
+          workspaceId: workspaceReferenceProperty,
+          name: { type: 'string' },
+          method: { type: 'string' },
+          url: { type: ['string', 'null'] },
+          groupId: { type: ['string', 'null'] },
+          requestHeaders: { type: 'array' },
+          requestParameters: { type: 'array' },
+          searchParameters: { type: 'array' },
+          requestBody: { type: ['object', 'null'] },
+          eventTypes: { type: 'array' },
+          reconnect: { type: 'object' },
+          script: { type: ['object', 'null'] },
+          testScript: { type: ['object', 'null'] },
+          dependencies: { type: 'array' },
+        },
+        ['name'],
+      ),
+      call: (input) =>
+        workspaceAware(
+          input,
+          'sse.create',
+          [
+            {
+              name: requireString(input, 'name'),
+              method: optionalString(input, 'method') ?? 'GET',
+              url: optionalString(input, 'url') ?? null,
+              groupId: optionalString(input, 'groupId') ?? null,
+              ...(Array.isArray(input.requestHeaders) ? { requestHeaders: input.requestHeaders } : {}),
+              ...(Array.isArray(input.requestParameters) ? { requestParameters: input.requestParameters } : {}),
+              ...(Array.isArray(input.searchParameters) ? { searchParameters: input.searchParameters } : {}),
+              ...(input.requestBody === null || isRecord(input.requestBody) ? { requestBody: input.requestBody } : {}),
+              ...(Array.isArray(input.eventTypes) ? { eventTypes: input.eventTypes } : {}),
+              ...(isRecord(input.reconnect) ? { reconnect: input.reconnect } : {}),
+              ...(input.script === null || isRecord(input.script) ? { script: input.script } : {}),
+              ...(input.testScript === null || isRecord(input.testScript) ? { testScript: input.testScript } : {}),
+              ...(Array.isArray(input.dependencies) ? { dependencies: input.dependencies } : {}),
+              metadata: {},
+            },
+          ],
+          'mutation',
+        ),
+    },
+    {
+      name: 'sse_update',
+      description: 'Update any persisted SSE stream field by id.',
+      inputSchema: objectSchema(
+        { workspaceId: workspaceReferenceProperty, id: { type: 'string' }, data: { type: 'object' } },
+        ['id', 'data'],
+      ),
+      call: (input) => workspaceAware(input, 'sse.update', [requireString(input, 'id'), input.data ?? {}], 'mutation'),
+    },
+    {
+      name: 'sse_execute',
+      description: 'Connect to a saved SSE stream through the canonical lifecycle and collect streamed events.',
+      inputSchema: objectSchema(executionProperties, ['id']),
+      call: (input, signal) => executeEntityTool(execute, rpcServer, input, 'run', signal),
+    },
+    {
+      name: 'sse_delete',
+      description: 'Delete an SSE stream by id.',
+      inputSchema: objectSchema({ workspaceId: workspaceReferenceProperty, id: { type: 'string' } }, ['id']),
+      call: (input) => workspaceAware(input, 'sse.delete', [requireString(input, 'id')], 'mutation'),
     },
     {
       name: 'synchronization_synchronize',

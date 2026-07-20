@@ -93,6 +93,7 @@ your-project/
     ├── environment/
     ├── rest/
     ├── smtp.ysl
+    ├── sse/
     └── yasumu-lock.json
 ```
 
@@ -126,6 +127,10 @@ yasumu/
 ├── rest/
 │   ├── <id>.ysl           # REST API requests
 │   └── <id>.ysl
+├── graphql/
+│   └── <id>.ysl           # GraphQL operations
+├── sse/
+│   └── <id>.ysl           # Server-Sent Event streams
 ├── smtp.ysl               # SMTP configuration
 └── yasumu-lock.json       # Lock file for sync
 ```
@@ -148,6 +153,7 @@ Now that you have Yasumu installed, explore:
 
 - [Workspaces](/docs/workspaces) — Learn about workspace organization
 - [Requests](/docs/requests) — Master HTTP request configuration
+- [Server-Sent Events](/docs/sse) — Work with persistent event streams
 - [Environments](/docs/environments) — Manage variables across
   environments
 - [Echo Server](/docs/echo-server) — Test requests with the built-in

@@ -1,4 +1,4 @@
-import type { Diagnostic, RuntimeLog, TestResult } from '@yasumu/runtime-api';
+import type { Diagnostic, RuntimeLog, SseEvent, TestResult } from '@yasumu/runtime-api';
 
 import type {
   ExecutableEntity,
@@ -23,6 +23,14 @@ export type ExecutionEvent =
   | (ExecutionEventBase & { type: 'request-prepared'; method: string; url: string })
   | (ExecutionEventBase & { type: 'request-sent' })
   | (ExecutionEventBase & { type: 'response-received'; status: number; mocked: boolean })
+  | (ExecutionEventBase & {
+      type: 'sse-opened';
+      status: number;
+      statusText: string;
+      headers: Array<[string, string]>;
+      reconnected: boolean;
+    })
+  | (ExecutionEventBase & { type: 'sse-event-received'; event: SseEvent })
   | (ExecutionEventBase & { type: 'runtime-log'; log: RuntimeLog })
   | (ExecutionEventBase & { type: 'test-completed'; test: TestResult })
   | (ExecutionEventBase & { type: 'nested-execution-started'; childExecutionId: string })

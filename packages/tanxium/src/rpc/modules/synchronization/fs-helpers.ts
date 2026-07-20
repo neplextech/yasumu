@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { WorkspaceData } from '@yasumu/common';
 
-export type WorkspacePathTarget = 'workspace' | 'rest' | 'graphql' | 'environment' | 'smtp';
+export type WorkspacePathTarget = 'workspace' | 'rest' | 'graphql' | 'sse' | 'environment' | 'smtp';
 
 export function getWorkspacePath(workspace: WorkspaceData, target: WorkspacePathTarget): string {
   const root = join(workspace.path, 'yasumu');
@@ -14,6 +14,8 @@ export function getWorkspacePath(workspace: WorkspaceData, target: WorkspacePath
       return join(root, 'rest');
     case 'graphql':
       return join(root, 'graphql');
+    case 'sse':
+      return join(root, 'sse');
     case 'environment':
       return join(root, 'environment');
     case 'smtp':

@@ -6,6 +6,7 @@ import type {
   GraphQLEntity,
   RequestBody,
   RestEntity,
+  SseEntity,
   SourceOrigin,
   TabularValue,
   WorkspaceEnvironment,
@@ -20,9 +21,11 @@ import type { graphqlEntities } from '../../database/schema/tables/graphql-entit
 import type { restEntities } from '../../database/schema/tables/rest-entity.ts';
 import type { emails, smtp } from '../../database/schema/tables/smtp.ts';
 import type { sourceRevisions } from '../../database/schema/tables/source-revision.ts';
+import type { sseEntities } from '../../database/schema/tables/sse-entity.ts';
 
 export type RestRow = typeof restEntities.$inferSelect;
 export type GraphqlRow = typeof graphqlEntities.$inferSelect;
+export type SseRow = typeof sseEntities.$inferSelect;
 export type SourceRevisionRow = typeof sourceRevisions.$inferSelect;
 export type EnvironmentRow = typeof environments.$inferSelect;
 export type GroupRow = typeof entityGroups.$inferSelect;
@@ -108,6 +111,32 @@ export function mapGraphqlEntity(row: GraphqlRow, dependencies: string[], revisi
     scripts: {
       lifecycle: mapScript(row.script, `graphql:${row.id}:lifecycle`, origin),
       test: mapScript(row.testScript, `graphql:${row.id}:test`, origin),
+    },
+    dependencies: [...dependencies].sort(),
+    metadata: jsonRecord(row.metadata),
+    origin,
+  };
+}
+
+export function mapSseEntity(row: SseRow, dependencies: string[], revision?: SourceRevisionRow): SseEntity {
+  const origin = mapOrigin(revision);
+  return {
+    kind: 'sse',
+    id: row.id,
+    name: row.name,
+    workspaceId: row.workspaceId,
+    groupId: row.groupId,
+    method: row.method,
+    url: row.url,
+    headers: mapTabularValues(row.requestHeaders),
+    pathParameters: mapTabularValues(row.requestParameters),
+    searchParameters: mapTabularValues(row.searchParameters),
+    body: mapRestBody(row.requestBody),
+    eventTypes: row.eventTypes ?? [],
+    reconnect: row.reconnect ?? { enabled: true, retryMs: 3000 },
+    scripts: {
+      lifecycle: mapScript(row.script, `sse:${row.id}:lifecycle`, origin),
+      test: mapScript(row.testScript, `sse:${row.id}:test`, origin),
     },
     dependencies: [...dependencies].sort(),
     metadata: jsonRecord(row.metadata),

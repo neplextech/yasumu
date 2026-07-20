@@ -19,10 +19,11 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "pnpm --filter @yasumu/schema build && pnpm --filter @yasumu/runtime-api build && pnpm --filter @yasumu/headless build && pnpm --filter @yasumu/runtime-node build && pnpm build && pnpm typecheck:test && vitest run",
+    "test": "pnpm --filter @yasumu/schema build && pnpm --filter @yasumu/runtime-api build && pnpm --filter @yasumu/headless build && pnpm --filter @yasumu/runtime-node build && pnpm --filter @yasumu/echo-server build && pnpm build && pnpm typecheck:test && vitest run",
     "typecheck:test": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
+    "@yasumu/echo-server": "workspace:*",
     "@yasumu/headless": "workspace:*",
     "@yasumu/runtime-api": "workspace:*",
     "@yasumu/runtime-node": "workspace:*",

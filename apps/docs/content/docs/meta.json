@@ -7,6 +7,7 @@
     "workspaces",
     "requests",
     "graphql",
+    "sse",
     "environments",
     "scripting",
     "testing",

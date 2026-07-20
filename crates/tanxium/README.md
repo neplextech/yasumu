@@ -7,6 +7,13 @@ runtime APIs without requiring Tauri. Use it when you need the same
 script contract in a desktop app, CLI, service, test harness, or other
 host application.
 
+When hosted by Yasumu, the generated `yasumu:workspace` module exposes
+cross-module REST, GraphQL, and SSE execution. An SSE hook can invoke a
+REST or GraphQL entity, and any request hook can start a saved SSE stream
+with a deterministic `maxEvents` limit. Tanxium transports these calls
+through its generic host-call protocol; request and stream policy remains
+in the reusable headless package.
+
 ## Install
 
 Add the library to an embedding application:

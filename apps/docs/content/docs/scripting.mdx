@@ -143,7 +143,7 @@ snapshots, errors, and history.
 
 ## Chaining requests
 
-REST and GraphQL entities can invoke each other:
+REST, GraphQL, and SSE entities can invoke each other:
 
 ```ts
 export async function onResponse(ctx: ResponseHookContext) {
@@ -161,11 +161,20 @@ export async function onResponse(ctx: ResponseHookContext) {
 }
 ```
 
-Use `ctx.workspace.rest.get/list/execute` and
-`ctx.workspace.graphql.get/list/execute`. Nested runs inherit the
+Use `ctx.workspace.rest.get/list/execute`,
+`ctx.workspace.graphql.get/list/execute`, and
+`ctx.workspace.sse.get/list/execute`. SSE execution accepts
+`maxEvents` for deterministic nested streams. Nested runs inherit the
 workspace, environment, and cancellation signal, get a child execution
 ID, emit normal events, and are protected by a maximum depth.
 `withResponse` defaults to `false`.
+
+```ts
+const stream = await ctx.workspace.sse.execute('deployment-events', {
+  maxEvents: 3,
+  withResponse: true,
+});
+```
 
 ## Waiting for email
 

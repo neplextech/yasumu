@@ -40,6 +40,19 @@ Use `send_event` to deliver serialized frontend or host events to a
 running runtime. Use `tanxium-yasumu` when embedding in a Tauri
 application.
 
+## Yasumu request host calls
+
+The shared runtime contract includes REST, GraphQL, and SSE entity
+lookup and execution. Yasumu's Tanxium adapter implements those calls
+with the canonical headless executor, so scripts can cross-invoke
+modules through `workspace.rest`, `workspace.graphql`, and
+`workspace.sse`. SSE executions use the same cancellation and lineage
+as their parent and accept `maxEvents` for deterministic completion.
+
+Bare Tanxium embedders remain application-independent: they can
+provide their own host-call implementation or omit the Yasumu request
+APIs.
+
 ## Permissions
 
 The main worker receives all permissions by default, preserving the

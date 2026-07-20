@@ -15,5 +15,6 @@ export { YasumuAnnotations } from './schema/constants.js';
 export { EnvironmentSchema } from './schema/environment.schema.js';
 export { GraphqlSchema } from './schema/graphql.schema.js';
 export { RestSchema } from './schema/rest.schema.js';
+export { SseSchema } from './schema/sse.schema.js';
 export { SmtpSchema } from './schema/smtp.schema.js';
 export { WorkspaceSchema } from './schema/workspace.schema.js';

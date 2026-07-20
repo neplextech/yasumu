@@ -70,6 +70,31 @@ echoServer.get('/bearer-auth', (c) => {
   return c.json({ authenticated: true, token });
 });
 
+/** Deterministic event stream used by the GUI and CLI SSE integration tests. */
+echoServer.all('/sse', async (c) => {
+  const encoder = new TextEncoder();
+  const headers = c.req.header();
+  const query = c.req.query();
+  const body = await c.req.text();
+  const retry = Number(query.retry) || 100;
+  const count = Math.max(1, Math.min(Number(query.count) || 3, 100));
+  const lastEventId = Number(c.req.header('last-event-id')) || 0;
+  let index = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      if (index >= count) return controller.close();
+      index += 1;
+      const sequence = lastEventId + index;
+      const payload = JSON.stringify({ method: c.req.method, headers, query, body, sequence });
+      controller.enqueue(encoder.encode(`id: ${sequence}\nevent: echo\nretry: ${retry}\ndata: ${payload}\n\n`));
+      if (index < count) await setTimeout(Number(query.interval) || 10);
+    },
+  });
+  return new Response(stream, {
+    headers: { 'cache-control': 'no-cache', connection: 'keep-alive', 'content-type': 'text/event-stream' },
+  });
+});
+
 // Main Catch-all Echo Handler
 echoServer.all('*', async (c) => {
   const method = c.req.method;

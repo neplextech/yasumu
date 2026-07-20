@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { FileOpenResult, FileResolver } from '../src/index.js';
 import { buildEntityRequest } from '../src/index.js';
-import { graphqlEntity, restEntity, workspace } from './fixtures.js';
+import { graphqlEntity, restEntity, sseEntity, workspace } from './fixtures.js';
 
 const environment = {
   variables: { host: 'api.example.test', userId: 'a/b', enabled: true, count: 3 },
@@ -67,6 +67,24 @@ describe('request construction', () => {
     });
 
     expect((await request.json()).variables).toEqual({ enabled: true, profile: { name: 'Ada' } });
+  });
+
+  it('builds fully interpolated SSE requests including method, headers, path, query, and body', async () => {
+    const entity = sseEntity({
+      method: 'POST',
+      url: 'https://{{host}}/streams/:id',
+      headers: [{ key: 'authorization', value: 'Bearer {{TOKEN}}', enabled: true }],
+      pathParameters: [{ key: 'id', value: '{{userId}}', enabled: true }],
+      searchParameters: [{ key: 'count', value: '{{count}}', enabled: true }],
+      body: { type: 'json', value: '{"enabled":"{{enabled}}","count":"{{count}}"}' },
+    });
+    const request = await buildEntityRequest(workspace({ entities: [entity] }), entity, { environment });
+
+    expect(request.method).toBe('POST');
+    expect(request.url).toBe('https://api.example.test/streams/a%2Fb?count=3');
+    expect(request.headers.get('authorization')).toBe('Bearer secret-token');
+    expect(request.headers.get('accept')).toBe('text/event-stream');
+    expect(await request.json()).toEqual({ enabled: true, count: 3 });
   });
 
   it('resolves binary and multipart files through the injected resolver', async () => {

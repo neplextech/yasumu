@@ -11,8 +11,9 @@ clients, similar to Postman Echo or Bruno's echo service. It mirrors
 back your request details, making it perfect for debugging and
 development.
 
-The echo server is available at `http://echo.yasumu.local` when Yasumu
-is running.
+The echo server is available at `http://echo.yasumu.local` when the
+desktop app is running. The Yasumu CLI starts the same server on
+demand and resolves that hostname locally.
 
 ## Overview
 
@@ -137,6 +138,32 @@ Host: echo.yasumu.local
 Waits 1 second, then returns `201 Created`.
 
 ## Helper Endpoints
+
+### Server-Sent Events
+
+`/sse` returns a deterministic `text/event-stream` response and
+accepts any HTTP method. Every event reflects the request method,
+headers, query, body, and sequence number as JSON data:
+
+```http
+POST /sse?count=2&interval=25&retry=100
+Host: echo.yasumu.local
+Content-Type: application/json
+X-Source: docs
+
+{"topic":"builds"}
+```
+
+| Parameter  | Description                                 |
+| :--------- | :------------------------------------------ |
+| `count`    | Events emitted per connection; 1 to 100     |
+| `interval` | Delay between events in milliseconds        |
+| `retry`    | `retry:` directive included with each event |
+
+On reconnect, `Last-Event-ID` advances the emitted IDs instead of
+starting again at one. This makes the endpoint suitable for testing
+request interpolation, event collection, reconnect timing, and resume
+behavior in both the desktop and CLI.
 
 ### IP Address
 

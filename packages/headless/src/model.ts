@@ -77,7 +77,19 @@ export interface GraphQLEntity extends EntityBase {
   body: GraphQLBody;
 }
 
-export type ExecutableEntity = RestEntity | GraphQLEntity;
+export interface SseEntity extends EntityBase {
+  kind: 'sse';
+  method: string;
+  url: string | null;
+  headers: TabularValue[];
+  pathParameters: TabularValue[];
+  searchParameters: TabularValue[];
+  body: RequestBody | null;
+  eventTypes: string[];
+  reconnect: { enabled: boolean; retryMs: number };
+}
+
+export type ExecutableEntity = RestEntity | GraphQLEntity | SseEntity;
 
 export interface WorkspaceGroup {
   id: string;

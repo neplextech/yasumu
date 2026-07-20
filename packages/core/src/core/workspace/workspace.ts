@@ -7,6 +7,7 @@ import { EmailModule } from '../modules/email/email.js';
 import { ExecutionModule } from '../modules/execution/execution.js';
 import { GraphqlModule } from '../modules/graphql/graphql.js';
 import { RestModule } from '../modules/rest/rest.js';
+import { SseModule } from '../modules/sse/sse.js';
 import { ExternalWorkspaceProvider } from './external-workspace-provider.js';
 
 /**
@@ -25,6 +26,8 @@ export class Workspace {
    * The GraphQL module for the workspace.
    */
   public readonly graphql = new GraphqlModule(this);
+  /** Server-Sent Events module for this workspace. */
+  public readonly sse = new SseModule(this);
   /**
    * The environment manager for this workspace.
    */
@@ -33,7 +36,7 @@ export class Workspace {
    * The email module for the workspace.
    */
   public readonly emails = new EmailModule(this);
-  /** Unified headless execution for REST and GraphQL entities. */
+  /** Unified headless execution for REST, GraphQL, and SSE entities. */
   public readonly execution = new ExecutionModule(this);
   /**
    * The external workspace provider for the workspace.

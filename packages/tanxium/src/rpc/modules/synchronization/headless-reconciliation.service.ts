@@ -39,7 +39,7 @@ import { DrizzleWorkspaceRepository } from '../../../headless/persistence/worksp
 
 export type ReconciledSourceKind = Extract<
   SourceEntityKind,
-  'workspace' | 'entity-group' | 'rest' | 'graphql' | 'environment' | 'smtp'
+  'workspace' | 'entity-group' | 'rest' | 'graphql' | 'sse' | 'environment' | 'smtp'
 >;
 
 export interface SourceReconciliationEntry {
@@ -335,12 +335,14 @@ function entitySnapshot(entity: ExecutableEntity): JsonValue {
     id: entity.id,
     name: entity.name,
     groupId: entity.groupId,
-    method: entity.kind === 'rest' ? entity.method : null,
+    method: entity.kind === 'graphql' ? null : entity.method,
     url: entity.url,
     headers: entity.headers,
     pathParameters: entity.pathParameters,
     searchParameters: entity.searchParameters,
     body: entity.body,
+    eventTypes: entity.kind === 'sse' ? entity.eventTypes : null,
+    reconnect: entity.kind === 'sse' ? entity.reconnect : null,
     lifecycleScript: entity.scripts.lifecycle?.code ?? null,
     testScript: entity.scripts.test?.code ?? null,
     dependencies: entity.dependencies,
@@ -352,33 +354,39 @@ function reconcileRecord(
   source: ManagedRecord | undefined,
   database: ManagedRecord | undefined,
 ): ReconciliationResult {
-  if (
-    revision &&
-    equalSnapshot(source?.snapshot, revision.sourceSnapshot) &&
-    equalSnapshot(database?.snapshot, revision.databaseSnapshot ?? undefined)
-  ) {
-    return {
-      status: 'unchanged',
-      merged: database?.snapshot,
-      conflicts: [],
-      baseRevision: stableRevision(revision.sourceSnapshot),
-      sourceRevision: stableRevision(source?.snapshot),
-      databaseRevision: stableRevision(database?.snapshot),
-    };
-  }
-  if (
-    revision &&
-    source &&
-    !database &&
-    equalSnapshot(source.snapshot, revision.sourceSnapshot) &&
-    revision.databaseSnapshot !== null
-  ) {
-    return {
-      status: 'database-updated',
-      conflicts: [],
-      baseRevision: stableRevision(revision.sourceSnapshot),
-      sourceRevision: stableRevision(source.snapshot),
-    };
+  if (revision) {
+    const sourceUnchanged = equalSnapshot(source?.snapshot, revision.sourceSnapshot);
+    const databaseUnchanged = equalSnapshot(database?.snapshot, revision.databaseSnapshot ?? undefined);
+    if (sourceUnchanged && databaseUnchanged) {
+      return {
+        status: 'unchanged',
+        merged: database?.snapshot,
+        conflicts: [],
+        baseRevision: stableRevision(revision.sourceSnapshot),
+        sourceRevision: stableRevision(source?.snapshot),
+        databaseRevision: stableRevision(database?.snapshot),
+      };
+    }
+    if (databaseUnchanged) {
+      return {
+        status: source ? 'source-updated' : 'source-deleted',
+        merged: source?.snapshot,
+        conflicts: [],
+        baseRevision: stableRevision(revision.sourceSnapshot),
+        sourceRevision: stableRevision(source?.snapshot),
+        databaseRevision: stableRevision(database?.snapshot),
+      };
+    }
+    if (sourceUnchanged) {
+      return {
+        status: 'database-updated',
+        merged: database?.snapshot,
+        conflicts: [],
+        baseRevision: stableRevision(revision.sourceSnapshot),
+        sourceRevision: stableRevision(source?.snapshot),
+        databaseRevision: stableRevision(database?.snapshot),
+      };
+    }
   }
   return reconcileThreeWay(revision?.sourceSnapshot, source?.snapshot, database?.snapshot);
 }
@@ -432,7 +440,8 @@ function applySnapshot(workspace: YasumuWorkspace, decision: ReconciliationDecis
       return;
     }
     case 'rest':
-    case 'graphql': {
+    case 'graphql':
+    case 'sse': {
       const data = snapshot as unknown as EntityRecordSnapshot;
       const existing = workspace.entities.find((entity) => entity.id === data.id);
       const metadata = existing?.metadata ?? {};
@@ -462,11 +471,20 @@ function applySnapshot(workspace: YasumuWorkspace, decision: ReconciliationDecis
               method: data.method ?? 'GET',
               body: data.body as RestEntity['body'],
             }
-          : {
-              ...common,
-              kind: 'graphql',
-              body: data.body as Extract<ExecutableEntity, { kind: 'graphql' }>['body'],
-            };
+          : data.kind === 'graphql'
+            ? {
+                ...common,
+                kind: 'graphql',
+                body: data.body as Extract<ExecutableEntity, { kind: 'graphql' }>['body'],
+              }
+            : {
+                ...common,
+                kind: 'sse',
+                method: data.method ?? 'GET',
+                body: data.body as Extract<ExecutableEntity, { kind: 'sse' }>['body'],
+                eventTypes: data.eventTypes ?? [],
+                reconnect: data.reconnect ?? { enabled: true, retryMs: 3000 },
+              };
       replaceById(workspace.entities, entity);
       return;
     }
@@ -511,6 +529,7 @@ function removeRecord(workspace: YasumuWorkspace, kind: ReconciledSourceKind, en
       return;
     case 'rest':
     case 'graphql':
+    case 'sse':
       workspace.entities = workspace.entities.filter((entity) => entity.id !== entityId);
       return;
     case 'environment':
@@ -595,7 +614,7 @@ function recordKey(kind: ReconciledSourceKind, entityId: string): string {
 }
 
 function compareRecordKeys(left: string, right: string): number {
-  const priority = ['workspace:', 'entity-group:', 'environment:', 'rest:', 'graphql:', 'smtp:'];
+  const priority = ['workspace:', 'entity-group:', 'environment:', 'rest:', 'graphql:', 'sse:', 'smtp:'];
   const leftPriority = priority.findIndex((prefix) => left.startsWith(prefix));
   const rightPriority = priority.findIndex((prefix) => right.startsWith(prefix));
   return leftPriority - rightPriority || left.localeCompare(right);
@@ -607,6 +626,7 @@ function isReconciledKind(value: SourceEntityKind): value is ReconciledSourceKin
     value === 'entity-group' ||
     value === 'rest' ||
     value === 'graphql' ||
+    value === 'sse' ||
     value === 'environment' ||
     value === 'smtp'
   );
@@ -646,6 +666,8 @@ interface EntityRecordSnapshot {
   pathParameters: ExecutableEntity['pathParameters'];
   searchParameters: ExecutableEntity['searchParameters'];
   body: ExecutableEntity['body'];
+  eventTypes: string[] | null;
+  reconnect: Extract<ExecutableEntity, { kind: 'sse' }>['reconnect'] | null;
   lifecycleScript: string | null;
   testScript: string | null;
   dependencies: string[];

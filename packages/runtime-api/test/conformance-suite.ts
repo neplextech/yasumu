@@ -264,6 +264,9 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
                   const entity = await workspace.rest.get('nested');
                   const entities = await workspace.rest.list();
                   const child = await workspace.rest.execute('nested', { withResponse: true });
+                  const graphqlEntities = await workspace.graphql.list();
+                  const sseEntities = await workspace.sse.list();
+                  const sseChild = await workspace.sse.execute('nested', { withResponse: true, maxEvents: 1 });
                   const listed = await workspace.email.list();
                   const next = await workspace.email.awaitEmail(
                     (candidate) => candidate.subject === 'match',
@@ -280,6 +283,9 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
                     label: decorate(entity.name),
                     entityCount: entities.length,
                     child: child.executionId,
+                    graphqlCount: graphqlEntities.length,
+                    sseCount: sseEntities.length,
+                    sseChild: sseChild.executionId,
                     listed: listed.length,
                     next: next.id,
                     file: await file.text(),
@@ -298,6 +304,9 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
                 label: 'shared:Nested',
                 entityCount: 1,
                 child: 'child',
+                graphqlCount: 1,
+                sseCount: 1,
+                sseChild: 'child',
                 listed: 1,
                 next: 'email-2',
                 file: 'fixture',
@@ -311,6 +320,9 @@ export const runtimeConformanceCases: readonly RuntimeConformanceCase[] = [
             methods,
             [
               'entity.get',
+              'entity.list',
+              'entity.execute',
+              'entity.list',
               'entity.list',
               'entity.execute',
               'email.list',

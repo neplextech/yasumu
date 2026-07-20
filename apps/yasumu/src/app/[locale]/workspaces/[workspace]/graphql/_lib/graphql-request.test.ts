@@ -58,5 +58,6 @@ function execution(value: unknown): ExecutionResult {
     logs: [],
     diagnostics: [],
     nestedExecutions: [],
+    events: [],
   };
 }

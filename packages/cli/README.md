@@ -1,6 +1,6 @@
 # Yasumu CLI
 
-The Yasumu CLI loads `.ysl` workspaces through `@yasumu/headless` and executes REST and GraphQL entities with the
+The Yasumu CLI loads `.ysl` workspaces through `@yasumu/headless` and executes REST, GraphQL, and SSE entities with the
 same request pipeline and script contracts used by other Yasumu hosts. Scripts run in the Node.js worker adapter
 provided by `@yasumu/runtime-node`; the CLI does not maintain a separate VM runtime or schema definitions.
 
@@ -23,13 +23,15 @@ yasumu validate --workspace /path/to/project/yasumu
 
 ```sh
 yasumu validate
-yasumu list [--kind rest|graphql]
+yasumu list [--kind rest|graphql|sse]
 yasumu run <entity-name-or-id>
 yasumu test [entity-name-or-id]
+yasumu sse list
+yasumu sse run <entity-name-or-id> --max-events 10
 yasumu info
 ```
 
-With no entity argument, `yasumu test` executes every REST and GraphQL entity in deterministic order. The existing
+With no entity argument, `yasumu test` executes every REST, GraphQL, and SSE entity in deterministic order. The existing
 `yasumu rest list` and `yasumu rest run <entity>` commands remain as aliases. `yasumu rest run --all` executes every
 REST entity.
 
@@ -41,6 +43,7 @@ Execution options include:
   are preserved when the value is valid JSON.
 - `--secret KEY=VALUE` to supply an execution secret. Repeat the option for multiple values.
 - `--timeout <milliseconds>` to set the request and script timeout.
+- `--max-events <count>` to stop an SSE stream after the accepted event count.
 - `--json` to emit one machine-readable JSON document.
 - `--verbose` to include request and response bodies in human-readable output.
 
@@ -58,8 +61,15 @@ Examples:
 ```sh
 yasumu run "Create user" --environment Staging
 yasumu run graphql-user --variable API_URL=https://api.example.com/graphql
+yasumu sse run deployment-events --max-events 5 --json
 yasumu test --environment CI --dotenv .env.ci --secret API_TOKEN="$API_TOKEN" --json
 ```
+
+The `sse run` command defaults to ten accepted events. It emits events
+incrementally in human output and includes the full event array in JSON
+output. `echo.yasumu.local` is resolved to an embedded echo server, so
+portable local REST, GraphQL, and SSE fixtures work without the desktop
+app.
 
 Workspace-relative binary and multipart file references are confined to the workspace root. Request execution uses
 the standard Fetch transport. `SIGINT` cancels the active execution and disposes its worker.

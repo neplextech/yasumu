@@ -76,7 +76,8 @@ interpolated at execution time. Disabled rows are ignored.
 ## Variable interpolation
 
 Use `{{NAME}}` in URLs, keys, headers, parameters, bodies, GraphQL
-variables, and eligible file paths:
+variables and operation names, SSE event filters, and eligible file
+paths:
 
 ```d
 url: "{{API_URL}}/teams/:teamId"
@@ -160,11 +161,11 @@ error categories.
 ## Dependencies and chaining
 
 YSL dependencies are validated as references. Scripts can directly
-execute another REST or GraphQL entity through
-`ctx.workspace.rest.execute()` or `ctx.workspace.graphql.execute()`.
-Nested execution inherits the active environment and cancellation
-signal, emits child events, and has a maximum depth to prevent
-recursion.
+execute another REST, GraphQL, or SSE entity through
+`ctx.workspace.rest.execute()`, `ctx.workspace.graphql.execute()`, or
+`ctx.workspace.sse.execute()`. Nested execution inherits the active
+environment and cancellation signal, emits child events, and has a
+maximum depth to prevent recursion.
 
 ## Best practices
 

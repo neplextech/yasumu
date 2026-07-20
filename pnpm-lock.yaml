@@ -424,6 +424,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@yasumu/echo-server':
+        specifier: workspace:*
+        version: link:../echo-server
       '@yasumu/headless':
         specifier: workspace:*
         version: link:../headless

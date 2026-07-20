@@ -245,6 +245,56 @@ Deno.test('GUI assembly executes through fake runtime, Drizzle ports, events, tr
   }
 });
 
+Deno.test('GUI assembly streams SSE events through the echo alias and publishes live events', async () => {
+  const database = drizzle(':memory:', { schema });
+  await migrate(database, { migrationsFolder: fileURLToPath(new URL('../../../drizzle', import.meta.url)) });
+  try {
+    const events: ExecutionEvent[] = [];
+    const urls: string[] = [];
+    const platform = createGuiHeadlessExecutionPlatform({
+      database,
+      runtime: new FakeRuntime(),
+      echoServerPort: () => 32_100,
+      fetch: (input) => {
+        const request = input instanceof Request ? input : new Request(input);
+        urls.push(request.url);
+        return Promise.resolve(
+          new Response('id: 1\nevent: update\ndata: first\n\nid: 2\nevent: update\ndata: second\n\n', {
+            headers: { 'content-type': 'text/event-stream', 'x-stream': 'test' },
+          }),
+        );
+      },
+      publishExecutionEvent: (event) => events.push(event),
+    });
+    await platform.persistence.workspaces.save(workspaceFixture('/workspace'));
+
+    const result = await platform.execution.execute({
+      executionId: 'execution-sse',
+      workspaceId: 'workspace',
+      entityId: 'sse-echo',
+      options: { maxEvents: 2 },
+    });
+
+    assert.equal(result.status, 'completed');
+    assert.deepEqual(
+      result.events.map(({ receivedAt: _receivedAt, ...event }) => event),
+      [
+        { id: '1', event: 'update', data: 'first', retry: undefined },
+        { id: '2', event: 'update', data: 'second', retry: undefined },
+      ],
+    );
+    assert.deepEqual(urls, ['http://127.0.0.1:32100/sse?topic=updates']);
+    assert.deepEqual(
+      events
+        .filter((event) => event.type === 'sse-opened' || event.type === 'sse-event-received')
+        .map((event) => event.type),
+      ['sse-opened', 'sse-event-received', 'sse-event-received'],
+    );
+  } finally {
+    database.$client.close();
+  }
+});
+
 Deno.test('GUI incoming email hooks use Tanxium sessions and shared workspace host APIs', async () => {
   const database = drizzle(':memory:', { schema });
   await migrate(database, {
@@ -434,6 +484,25 @@ function workspaceFixture(root: string): YasumuWorkspace {
         pathParameters: [],
         searchParameters: [{ key: 'source', value: 'gui', enabled: true }],
         body: null,
+        scripts: {},
+        dependencies: [],
+        metadata: {},
+        origin: { kind: 'sqlite' },
+      },
+      {
+        kind: 'sse',
+        id: 'sse-echo',
+        name: 'Echo stream',
+        workspaceId: 'workspace',
+        groupId: null,
+        method: 'GET',
+        url: 'https://echo.yasumu.local/sse',
+        headers: [],
+        pathParameters: [],
+        searchParameters: [{ key: 'topic', value: 'updates', enabled: true }],
+        body: null,
+        eventTypes: ['update'],
+        reconnect: { enabled: false, retryMs: 100 },
         scripts: {},
         dependencies: [],
         metadata: {},

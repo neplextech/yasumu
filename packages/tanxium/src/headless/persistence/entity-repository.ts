@@ -8,12 +8,15 @@ import {
   graphqlEntityDependencies,
   restEntities,
   restEntityDependencies,
+  sseEntities,
+  sseEntityDependencies,
   workspaces,
 } from '../../database/schema.ts';
 import type { HeadlessDrizzleConnection, HeadlessDrizzleDatabase } from './database.ts';
 import {
   mapGraphqlEntity,
   mapRestEntity,
+  mapSseEntity,
   sourceKey,
   sourceMap,
   storedEntity,
@@ -86,20 +89,45 @@ export class DrizzleEntityRepository implements EntityRepository {
   public async delete(workspaceId: string, entityId: string): Promise<void> {
     const existing = await this.get(workspaceId, entityId);
     if (!existing) return;
-    const dependencyTable = existing.kind === 'rest' ? restEntityDependencies : graphqlEntityDependencies;
-    const dependsOnColumn =
-      existing.kind === 'rest' ? restEntityDependencies.dependsOnId : graphqlEntityDependencies.dependsOnId;
-    if (this.database.select().from(dependencyTable).where(eq(dependsOnColumn, entityId)).all().length > 0) {
+    const referenced =
+      existing.kind === 'rest'
+        ? this.database
+            .select()
+            .from(restEntityDependencies)
+            .where(eq(restEntityDependencies.dependsOnId, entityId))
+            .all()
+        : existing.kind === 'graphql'
+          ? this.database
+              .select()
+              .from(graphqlEntityDependencies)
+              .where(eq(graphqlEntityDependencies.dependsOnId, entityId))
+              .all()
+          : this.database
+              .select()
+              .from(sseEntityDependencies)
+              .where(eq(sseEntityDependencies.dependsOnId, entityId))
+              .all();
+    if (referenced.length > 0) {
       throw new YasumuError(YasumuErrorCodes.InvalidReference, `Entity ${entityId} is still referenced`, {
         workspaceId,
         entityId,
       });
     }
-    const table = existing.kind === 'rest' ? restEntities : graphqlEntities;
-    this.database
-      .delete(table)
-      .where(and(eq(table.workspaceId, workspaceId), eq(table.id, entityId)))
-      .run();
+    if (existing.kind === 'rest')
+      this.database
+        .delete(restEntities)
+        .where(and(eq(restEntities.workspaceId, workspaceId), eq(restEntities.id, entityId)))
+        .run();
+    else if (existing.kind === 'graphql')
+      this.database
+        .delete(graphqlEntities)
+        .where(and(eq(graphqlEntities.workspaceId, workspaceId), eq(graphqlEntities.id, entityId)))
+        .run();
+    else
+      this.database
+        .delete(sseEntities)
+        .where(and(eq(sseEntities.workspaceId, workspaceId), eq(sseEntities.id, entityId)))
+        .run();
   }
 }
 
@@ -118,7 +146,13 @@ function findStoredEntity(
     .from(graphqlEntities)
     .where(eq(graphqlEntities.id, entityId))
     .get();
-  return graphql ? { kind: 'graphql', workspaceId: graphql.workspaceId } : null;
+  if (graphql) return { kind: 'graphql', workspaceId: graphql.workspaceId };
+  const sse = connection
+    .select({ workspaceId: sseEntities.workspaceId })
+    .from(sseEntities)
+    .where(eq(sseEntities.id, entityId))
+    .get();
+  return sse ? { kind: 'sse', workspaceId: sse.workspaceId } : null;
 }
 
 export function loadEntities(connection: HeadlessDrizzleConnection, workspaceId: string): ExecutableEntity[] {
@@ -129,6 +163,7 @@ export function loadEntities(connection: HeadlessDrizzleConnection, workspaceId:
     .from(graphqlEntities)
     .where(eq(graphqlEntities.workspaceId, workspaceId))
     .all();
+  const sseRows = connection.select().from(sseEntities).where(eq(sseEntities.workspaceId, workspaceId)).all();
   const restDependencies = dependenciesByEntity(
     connection,
     restEntityDependencies,
@@ -141,6 +176,12 @@ export function loadEntities(connection: HeadlessDrizzleConnection, workspaceId:
     graphqlEntityDependencies.graphqlEntityId,
     graphqlRows.map((row) => row.id),
   );
+  const sseDependencies = dependenciesByEntity(
+    connection,
+    sseEntityDependencies,
+    sseEntityDependencies.sseEntityId,
+    sseRows.map((row) => row.id),
+  );
 
   return [
     ...restRows.map((row) =>
@@ -148,6 +189,9 @@ export function loadEntities(connection: HeadlessDrizzleConnection, workspaceId:
     ),
     ...graphqlRows.map((row) =>
       mapGraphqlEntity(row, graphqlDependencies.get(row.id) ?? [], revisions.get(sourceKey('graphql', row.id))),
+    ),
+    ...sseRows.map((row) =>
+      mapSseEntity(row, sseDependencies.get(row.id) ?? [], revisions.get(sourceKey('sse', row.id))),
     ),
   ].sort(compareEntities);
 }
@@ -166,14 +210,27 @@ export function insertEntity(connection: HeadlessDrizzleConnection, entity: Exec
       .run();
     return;
   }
-  connection
-    .insert(graphqlEntities)
-    .values({
-      ...common,
-      requestBody: storedGraphqlBody(entity),
-      metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
-    })
-    .run();
+  if (entity.kind === 'graphql')
+    connection
+      .insert(graphqlEntities)
+      .values({
+        ...common,
+        requestBody: storedGraphqlBody(entity),
+        metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
+      })
+      .run();
+  else
+    connection
+      .insert(sseEntities)
+      .values({
+        ...common,
+        method: entity.method,
+        requestBody: storedRestBody(entity.body),
+        eventTypes: entity.eventTypes,
+        reconnect: entity.reconnect,
+        metadata: entity.metadata as unknown as typeof sseEntities.$inferInsert.metadata,
+      })
+      .run();
 }
 
 export function upsertEntity(connection: HeadlessDrizzleConnection, entity: ExecutableEntity): void {
@@ -201,23 +258,48 @@ export function upsertEntity(connection: HeadlessDrizzleConnection, entity: Exec
       .run();
     return;
   }
-  connection
-    .insert(graphqlEntities)
-    .values({
-      ...common,
-      requestBody: storedGraphqlBody(entity),
-      metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
-    })
-    .onConflictDoUpdate({
-      target: graphqlEntities.id,
-      set: {
+  if (entity.kind === 'graphql')
+    connection
+      .insert(graphqlEntities)
+      .values({
         ...common,
         requestBody: storedGraphqlBody(entity),
         metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
-        updatedAt,
-      },
-    })
-    .run();
+      })
+      .onConflictDoUpdate({
+        target: graphqlEntities.id,
+        set: {
+          ...common,
+          requestBody: storedGraphqlBody(entity),
+          metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
+          updatedAt,
+        },
+      })
+      .run();
+  else
+    connection
+      .insert(sseEntities)
+      .values({
+        ...common,
+        method: entity.method,
+        requestBody: storedRestBody(entity.body),
+        eventTypes: entity.eventTypes,
+        reconnect: entity.reconnect,
+        metadata: entity.metadata as unknown as typeof sseEntities.$inferInsert.metadata,
+      })
+      .onConflictDoUpdate({
+        target: sseEntities.id,
+        set: {
+          ...common,
+          method: entity.method,
+          requestBody: storedRestBody(entity.body),
+          eventTypes: entity.eventTypes,
+          reconnect: entity.reconnect,
+          metadata: entity.metadata as unknown as typeof sseEntities.$inferInsert.metadata,
+          updatedAt,
+        },
+      })
+      .run();
 }
 
 export function replaceDependencies(connection: HeadlessDrizzleConnection, entity: ExecutableEntity): void {
@@ -228,9 +310,17 @@ export function replaceDependencies(connection: HeadlessDrizzleConnection, entit
     }
     return;
   }
-  connection.delete(graphqlEntityDependencies).where(eq(graphqlEntityDependencies.graphqlEntityId, entity.id)).run();
-  for (const dependency of [...entity.dependencies].sort()) {
-    connection.insert(graphqlEntityDependencies).values({ graphqlEntityId: entity.id, dependsOnId: dependency }).run();
+  if (entity.kind === 'graphql') {
+    connection.delete(graphqlEntityDependencies).where(eq(graphqlEntityDependencies.graphqlEntityId, entity.id)).run();
+    for (const dependency of [...entity.dependencies].sort())
+      connection
+        .insert(graphqlEntityDependencies)
+        .values({ graphqlEntityId: entity.id, dependsOnId: dependency })
+        .run();
+  } else {
+    connection.delete(sseEntityDependencies).where(eq(sseEntityDependencies.sseEntityId, entity.id)).run();
+    for (const dependency of [...entity.dependencies].sort())
+      connection.insert(sseEntityDependencies).values({ sseEntityId: entity.id, dependsOnId: dependency }).run();
   }
 }
 
@@ -249,15 +339,29 @@ function updateEntity(connection: HeadlessDrizzleConnection, entity: ExecutableE
       .run();
     return;
   }
-  connection
-    .update(graphqlEntities)
-    .set({
-      ...common,
-      requestBody: storedGraphqlBody(entity),
-      metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
-    })
-    .where(and(eq(graphqlEntities.id, entity.id), eq(graphqlEntities.workspaceId, entity.workspaceId)))
-    .run();
+  if (entity.kind === 'graphql')
+    connection
+      .update(graphqlEntities)
+      .set({
+        ...common,
+        requestBody: storedGraphqlBody(entity),
+        metadata: entity.metadata as unknown as typeof graphqlEntities.$inferInsert.metadata,
+      })
+      .where(and(eq(graphqlEntities.id, entity.id), eq(graphqlEntities.workspaceId, entity.workspaceId)))
+      .run();
+  else
+    connection
+      .update(sseEntities)
+      .set({
+        ...common,
+        method: entity.method,
+        requestBody: storedRestBody(entity.body),
+        eventTypes: entity.eventTypes,
+        reconnect: entity.reconnect,
+        metadata: entity.metadata as unknown as typeof sseEntities.$inferInsert.metadata,
+      })
+      .where(and(eq(sseEntities.id, entity.id), eq(sseEntities.workspaceId, entity.workspaceId)))
+      .run();
 }
 
 function assertWorkspace(connection: HeadlessDrizzleConnection, workspaceId: string): void {
@@ -292,13 +396,25 @@ function assertEntityReferences(
       });
     }
   }
-  const table = entity.kind === 'rest' ? restEntities : graphqlEntities;
   for (const dependency of entity.dependencies) {
-    const referenced = connection
-      .select({ id: table.id })
-      .from(table)
-      .where(and(eq(table.id, dependency), eq(table.workspaceId, workspaceId)))
-      .get();
+    const referenced =
+      entity.kind === 'rest'
+        ? connection
+            .select({ id: restEntities.id })
+            .from(restEntities)
+            .where(and(eq(restEntities.id, dependency), eq(restEntities.workspaceId, workspaceId)))
+            .get()
+        : entity.kind === 'graphql'
+          ? connection
+              .select({ id: graphqlEntities.id })
+              .from(graphqlEntities)
+              .where(and(eq(graphqlEntities.id, dependency), eq(graphqlEntities.workspaceId, workspaceId)))
+              .get()
+          : connection
+              .select({ id: sseEntities.id })
+              .from(sseEntities)
+              .where(and(eq(sseEntities.id, dependency), eq(sseEntities.workspaceId, workspaceId)))
+              .get();
     if (!referenced) {
       throw new YasumuError(YasumuErrorCodes.InvalidReference, `Unknown same-kind entity dependency: ${dependency}`, {
         workspaceId,
@@ -310,15 +426,19 @@ function assertEntityReferences(
 
 function dependenciesByEntity(
   connection: HeadlessDrizzleConnection,
-  table: typeof restEntityDependencies | typeof graphqlEntityDependencies,
-  entityColumn: typeof restEntityDependencies.restEntityId | typeof graphqlEntityDependencies.graphqlEntityId,
+  table: typeof restEntityDependencies | typeof graphqlEntityDependencies | typeof sseEntityDependencies,
+  entityColumn:
+    | typeof restEntityDependencies.restEntityId
+    | typeof graphqlEntityDependencies.graphqlEntityId
+    | typeof sseEntityDependencies.sseEntityId,
   ids: string[],
 ): Map<string, string[]> {
   const dependencies = new Map<string, string[]>();
   if (ids.length === 0) return dependencies;
   const rows = connection.select().from(table).where(inArray(entityColumn, ids)).all();
   for (const row of rows) {
-    const entityId = 'restEntityId' in row ? row.restEntityId : row.graphqlEntityId;
+    const entityId =
+      'restEntityId' in row ? row.restEntityId : 'graphqlEntityId' in row ? row.graphqlEntityId : row.sseEntityId;
     const values = dependencies.get(entityId) ?? [];
     values.push(row.dependsOnId);
     dependencies.set(entityId, values);
@@ -327,6 +447,7 @@ function dependenciesByEntity(
 }
 
 function compareEntities(left: ExecutableEntity, right: ExecutableEntity): number {
-  const kindDifference = (left.kind === 'rest' ? 0 : 1) - (right.kind === 'rest' ? 0 : 1);
+  const rank = { rest: 0, graphql: 1, sse: 2 } as const;
+  const kindDifference = rank[left.kind] - rank[right.kind];
   return kindDifference || left.id.localeCompare(right.id);
 }

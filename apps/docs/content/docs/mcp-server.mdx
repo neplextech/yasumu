@@ -19,18 +19,19 @@ uses the same RPC services, headless execution lifecycle, and
 persistence layer as the application.
 
 The server is designed for local automation. A compatible agent can
-create or update a saved request, execute REST and GraphQL entities,
-inspect canonical execution results, and synchronize workspace files
-without switching to the desktop UI.
+create or update a saved request, execute REST, GraphQL, and SSE
+entities, inspect canonical execution results, and synchronize
+workspace files without switching to the desktop UI.
 
 ## When to Use It
 
 Use the MCP server when you want an AI agent or another local tool to:
 
-- discover workspaces and saved REST or GraphQL requests
+- discover workspaces and saved REST, GraphQL, or SSE requests
 - create, update, or delete saved requests
 - add JavaScript lifecycle scripts to REST requests
-- run REST and GraphQL requests through Yasumu's canonical lifecycle
+- run REST, GraphQL, and SSE requests through Yasumu's canonical
+  lifecycle
 - execute request tests and inspect structured test results
 - cancel a running execution
 - synchronize the workspace to disk after edits
@@ -178,20 +179,27 @@ an existing workspace record:
 | `graphql_update`              | Update a GraphQL request by id                           |
 | `graphql_execute`             | Execute GraphQL through the canonical headless lifecycle |
 | `graphql_delete`              | Delete a GraphQL request by id                           |
+| `sse_list`                    | List SSE streams in a workspace                          |
+| `sse_get`                     | Get an SSE stream by id                                  |
+| `sse_create`                  | Create an SSE stream                                     |
+| `sse_update`                  | Update an SSE stream by id                               |
+| `sse_execute`                 | Execute and collect events through the shared lifecycle  |
+| `sse_delete`                  | Delete an SSE stream by id                               |
 | `synchronization_synchronize` | Synchronize a workspace with its `yasumu` folder         |
 
 ## Canonical Request Execution
 
-`rest_execute` and `graphql_execute` both call the same
+`rest_execute`, `graphql_execute`, and `sse_execute` all call the same
 `execution.execute` RPC command used by the desktop application. MCP
 does not implement a separate HTTP, interpolation, script, mock, or
 test lifecycle. The canonical headless service owns all of those
 behaviors.
 
 The tools return the `ExecutionResult` from that command without
-reshaping it. This means REST and GraphQL expose the same statuses,
-request and response snapshots, mocks, tests, logs, diagnostics,
-nested executions, and serialized errors as other Yasumu hosts.
+reshaping it. This means REST, GraphQL, and SSE expose the same
+statuses, request and response snapshots, mocks, tests, logs,
+diagnostics, nested executions, and serialized errors as other Yasumu
+hosts.
 
 ### Mode Defaults
 
@@ -200,17 +208,19 @@ nested executions, and serialized errors as other Yasumu hosts.
   test hooks.
 - `graphql_execute` defaults to `mode: "run"`. It runs the request and
   response lifecycle but skips test hooks.
+- `sse_execute` defaults to `mode: "run"` and accepts `maxEvents` to
+  stop after a deterministic number of accepted events.
 - Pass `mode: "run"` or `mode: "test"` explicitly whenever client
   behavior should not depend on a default.
 
 ### Supported Execution Inputs
 
-Both execution tools accept these arguments:
+All execution tools accept these arguments:
 
 | Argument               | Type              | Behavior                                                     |
 | :--------------------- | :---------------- | :----------------------------------------------------------- |
 | `workspaceId`          | string            | Workspace id, name, path, or folder name; defaults to active |
-| `id`                   | string            | Required saved REST or GraphQL entity id                     |
+| `id`                   | string            | Required saved REST, GraphQL, or SSE entity id               |
 | `executionId`          | string            | Optional stable id supplied by the caller                    |
 | `environmentId`        | string            | Selects an environment instead of the active environment     |
 | `mode`                 | `"run" \| "test"` | Controls whether test hooks run                              |
@@ -223,6 +233,7 @@ Both execution tools accept these arguments:
 | `maxRequestBodyBytes`  | number            | Maximum request body bytes captured                          |
 | `maxResponseBodyBytes` | number            | Maximum response body bytes captured                         |
 | `followRedirects`      | boolean           | Controls transport redirect handling                         |
+| `maxEvents`            | number            | Stops SSE after this many accepted events                    |
 
 `variables` and `pathParameters` must contain JSON-serializable
 values. Every `secrets` value must be a string.
@@ -303,6 +314,34 @@ Disabled legacy entries are omitted before calling
 
 GraphQL request construction, interpolation, hooks, mocks, tests, and
 errors follow the same headless execution contract as REST.
+
+### Execute SSE
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "sse_execute",
+    "arguments": {
+      "workspaceId": "test-workspace",
+      "id": "deployment-events",
+      "mode": "test",
+      "variables": {
+        "source": "mcp"
+      },
+      "maxEvents": 5
+    }
+  }
+}
+```
+
+The result includes request and response snapshots, scripts, tests,
+logs, diagnostics, and the collected `events` array. Event filters,
+reconnect policy, server retry directives, `Last-Event-ID`,
+interpolation, cancellation, and redaction are owned by the same
+headless executor used by the desktop and CLI.
 
 ## REST Scripts and Legacy Inputs
 

@@ -39,6 +39,7 @@ interface ExecutionOptions extends WorkspaceOptions {
   variable?: string[];
   secret?: string[];
   timeout?: string;
+  maxEvents?: string;
   verbose?: boolean;
 }
 
@@ -58,7 +59,9 @@ export function createProgram(state: ProgramState = { exitCode: CliExitCodes.Suc
 
   const runCommand = withExecutionOptions(
     withWorkspaceOptions(
-      new Command('run').description('Execute a REST or GraphQL entity').argument('<entity>', 'Entity name or ID'),
+      new Command('run')
+        .description('Execute a REST, GraphQL, or SSE entity')
+        .argument('<entity>', 'Entity name or ID'),
     ),
   );
   runCommand.action(async (target: string, options: ExecutionOptions) => {
@@ -68,7 +71,7 @@ export function createProgram(state: ProgramState = { exitCode: CliExitCodes.Suc
   const testCommand = withExecutionOptions(
     withWorkspaceOptions(
       new Command('test')
-        .description('Execute tests for one entity, or every REST and GraphQL entity')
+        .description('Execute tests for one entity, or every REST, GraphQL, and SSE entity')
         .argument('[entity]', 'Entity name or ID'),
     ),
   );
@@ -83,9 +86,9 @@ export function createProgram(state: ProgramState = { exitCode: CliExitCodes.Suc
     state.exitCode = await guarded(options, () => validateCommandAction(options));
   });
 
-  const listCommand = withWorkspaceOptions(new Command('list').description('List REST and GraphQL entities'));
-  listCommand.addOption(new Option('--kind <kind>', 'Filter by entity kind').choices(['rest', 'graphql']));
-  listCommand.action(async (options: WorkspaceOptions & { kind?: 'rest' | 'graphql' }) => {
+  const listCommand = withWorkspaceOptions(new Command('list').description('List REST, GraphQL, and SSE entities'));
+  listCommand.addOption(new Option('--kind <kind>', 'Filter by entity kind').choices(['rest', 'graphql', 'sse']));
+  listCommand.action(async (options: WorkspaceOptions & { kind?: 'rest' | 'graphql' | 'sse' }) => {
     state.exitCode = await guarded(options, () => listCommandAction(options));
   });
 
@@ -120,13 +123,29 @@ export function createProgram(state: ProgramState = { exitCode: CliExitCodes.Suc
   });
   restCommand.addCommand(restListCommand).addCommand(restRunCommand);
 
+  const sseCommand = new Command('sse').description('SSE entity commands');
+  const sseListCommand = withWorkspaceOptions(new Command('list').description('List SSE entities'));
+  sseListCommand.action(async (options: WorkspaceOptions) => {
+    state.exitCode = await guarded(options, () => listCommandAction({ ...options, kind: 'sse' }));
+  });
+  const sseRunCommand = withExecutionOptions(
+    withWorkspaceOptions(
+      new Command('run').description('Connect to an SSE entity').argument('<entity>', 'SSE entity name or ID'),
+    ),
+  );
+  sseRunCommand.action(async (target: string, options: ExecutionOptions) => {
+    state.exitCode = await guarded(options, () => executeCommand(target, 'run', options, 'sse'));
+  });
+  sseCommand.addCommand(sseListCommand).addCommand(sseRunCommand);
+
   program
     .addCommand(runCommand)
     .addCommand(testCommand)
     .addCommand(validateCommand)
     .addCommand(listCommand)
     .addCommand(infoCommand)
-    .addCommand(restCommand);
+    .addCommand(restCommand)
+    .addCommand(sseCommand);
   return program;
 }
 
@@ -154,7 +173,7 @@ async function validateCommandAction(options: WorkspaceOptions): Promise<number>
   return result.workspace ? CliExitCodes.Success : CliExitCodes.InvalidInput;
 }
 
-async function listCommandAction(options: WorkspaceOptions & { kind?: 'rest' | 'graphql' }): Promise<number> {
+async function listCommandAction(options: WorkspaceOptions & { kind?: 'rest' | 'graphql' | 'sse' }): Promise<number> {
   const root = workspaceRoot(options);
   const result = await loadWorkspace(root);
   if (!result.workspace) {
@@ -180,7 +199,7 @@ async function executeCommand(
   target: string | undefined,
   mode: 'run' | 'test',
   options: ExecutionOptions,
-  kind?: 'rest' | 'graphql',
+  kind?: 'rest' | 'graphql' | 'sse',
   all = target === undefined,
 ): Promise<number> {
   const root = workspaceRoot(options);
@@ -207,6 +226,7 @@ async function executeCommand(
   const variables = effectiveEnvironment.variables;
   const secrets = effectiveEnvironment.secrets;
   const timeoutMs = parseTimeout(options.timeout);
+  const maxEvents = parsePositiveInteger(options.maxEvents, 'Max events');
   const controller = new AbortController();
   let interrupted = false;
   const onInterrupt = () => {
@@ -224,6 +244,7 @@ async function executeCommand(
       variables,
       secrets,
       timeoutMs,
+      maxEvents,
       signal: controller.signal,
       processEnvironment: process.env,
     });
@@ -264,6 +285,7 @@ function withExecutionOptions(command: Command): Command {
     .addOption(repeatableOption('--variable <key=value>', 'Override an execution variable'))
     .addOption(repeatableOption('--secret <key=value>', 'Provide an execution secret'))
     .option('--timeout <milliseconds>', 'Execution and script timeout in milliseconds')
+    .option('--max-events <count>', 'Stop an SSE execution after this many accepted events (default: 10)')
     .option('-v, --verbose', 'Print request and response bodies');
 }
 
@@ -292,12 +314,16 @@ function parseAssignments(
 }
 
 function parseTimeout(value: string | undefined): number | undefined {
+  return parsePositiveInteger(value, 'Timeout');
+}
+
+function parsePositiveInteger(value: string | undefined, label: string): number | undefined {
   if (value === undefined) return undefined;
-  const timeout = Number(value);
-  if (!Number.isSafeInteger(timeout) || timeout <= 0) {
-    throw new CliInputError(`Timeout must be a positive integer, received: ${value}`);
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new CliInputError(`${label} must be a positive integer, received: ${value}`);
   }
-  return timeout;
+  return parsed;
 }
 
 function workspaceRoot(options: WorkspaceOptions): string {

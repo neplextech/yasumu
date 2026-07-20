@@ -57,9 +57,9 @@ Yasumu is evolving to become a protocol-agnostic powerhouse.
 | :--------------------- | :----: | :---------------------------------------- |
 | **REST API**           |   ✓    | Full HTTP/HTTPS request support           |
 | **Catch-all SMTP**     |   ✓    | Integrated local email server for testing |
-| **GraphQL**            |   ✓    | Partially supported                       |
+| **GraphQL**            |   ✓    | Queries, mutations, and subscriptions    |
 | **WebSocket**          |   —    | In development                            |
-| **Server-Sent Events** |   —    | In development                            |
+| **Server-Sent Events** |   ✓    | Streaming, reconnects, scripts, and tests |
 | **Socket.IO**          |   —    | In development                            |
 
 ## Concepts & Workflow

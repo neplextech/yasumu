@@ -7,6 +7,7 @@ import type {
   ResponseSnapshot,
   RuntimeHostCallHandler,
   RuntimeLog,
+  SseEvent,
   ScriptHookInvocation,
   ScriptSource,
   SerializedExecutionError,
@@ -18,7 +19,7 @@ import { requestFromSnapshot, responseFromSnapshot, snapshotRequest, snapshotRes
 import { resolveEnvironment } from './environment.js';
 import { isAbortError, serializeYasumuError, YasumuError, YasumuErrorCodes } from './errors.js';
 import type { ExecutionEvent } from './events.js';
-import { SecretRedactor } from './interpolation.js';
+import { Interpolator, SecretRedactor } from './interpolation.js';
 import type { ExecutableEntity, ExecutionRecord, WorkspaceGroup, YasumuWorkspace } from './model.js';
 import {
   noopEventSink,
@@ -37,6 +38,7 @@ import {
 } from './ports.js';
 import { buildEntityRequest } from './requests.js';
 import { createWorkspaceRuntimeHost, toScriptEntity } from './runtime-host.js';
+import { consumeSse } from './sse.js';
 
 export interface ExecuteEntityInput {
   workspaceId: string;
@@ -58,6 +60,7 @@ export interface ExecutionOptions {
   maxRequestBodyBytes?: number;
   maxResponseBodyBytes?: number;
   followRedirects?: boolean;
+  maxEvents?: number;
 }
 
 export interface ExecutionResult {
@@ -77,6 +80,7 @@ export interface ExecutionResult {
   logs: RuntimeLog[];
   diagnostics: Diagnostic[];
   nestedExecutions: NestedExecutionSummary[];
+  events: SseEvent[];
   error?: SerializedExecutionError;
 }
 
@@ -114,6 +118,7 @@ interface ExecutionAccumulator {
   logs: RuntimeLog[];
   diagnostics: Diagnostic[];
   nested: NestedExecutionSummary[];
+  sseEvents: SseEvent[];
   secretValues: Set<string>;
   redactor: SecretRedactor;
 }
@@ -173,6 +178,7 @@ export class HeadlessExecutionService {
       logs: [],
       diagnostics: [],
       nested: [],
+      sseEvents: [],
       secretValues: new Set(),
       redactor: new SecretRedactor([]),
     };
@@ -300,17 +306,55 @@ export class HeadlessExecutionService {
           : await snapshotRequest(transportRequest.clone(), input.options?.maxRequestBodyBytes);
         if (!accumulator.runtimeResponse) {
           await this.emit(baseEvent('request-sent', {}));
-          const transportResponse = await this.dependencies.transport.send(
-            transportRequest,
-            {
-              workspace,
-              entity,
-              executionId,
-              timeoutMs: input.options?.timeoutMs,
-              followRedirects: input.options?.followRedirects,
-            },
-            controller.signal,
-          );
+          const transportContext = {
+            workspace,
+            entity,
+            executionId,
+            timeoutMs: input.options?.timeoutMs,
+            followRedirects: input.options?.followRedirects,
+          };
+          const transportResponse =
+            entity.kind === 'sse'
+              ? (
+                  await consumeSse({
+                    signal: controller.signal,
+                    reconnect: entity.reconnect.enabled,
+                    retryMs: entity.reconnect.retryMs,
+                    maxEvents: input.options?.maxEvents,
+                    eventTypes: (() => {
+                      const interpolator = new Interpolator({
+                        variables: accumulator.environment.variables,
+                        secrets: accumulator.environment.secrets,
+                      });
+                      return entity.eventTypes.map((eventType) => {
+                        const value = interpolator.interpolateString(eventType);
+                        return typeof value === 'string' ? value : String(value);
+                      });
+                    })(),
+                    open: async (lastEventId) => {
+                      const reconnectRequest = transportRequest.clone();
+                      if (lastEventId) reconnectRequest.headers.set('last-event-id', lastEventId);
+                      return this.dependencies.transport.send(reconnectRequest, transportContext, controller.signal);
+                    },
+                    onOpen: async (response, reconnected) => {
+                      await this.emit(
+                        accumulator.redactor.redactValue(
+                          baseEvent('sse-opened', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            headers: [...response.headers],
+                            reconnected,
+                          }),
+                        ),
+                      );
+                    },
+                    onEvent: async (event) => {
+                      accumulator.sseEvents.push(event);
+                      await this.emit(accumulator.redactor.redactValue(baseEvent('sse-event-received', { event })));
+                    },
+                  })
+                ).response
+              : await this.dependencies.transport.send(transportRequest, transportContext, controller.signal);
           if (session) {
             accumulator.runtimeResponse = await snapshotResponse(transportResponse, Number.POSITIVE_INFINITY);
             accumulator.response = await limitResponseSnapshot(
@@ -377,6 +421,7 @@ export class HeadlessExecutionService {
           logs: accumulator.logs,
           diagnostics: accumulator.diagnostics,
           nestedExecutions: accumulator.nested,
+          events: accumulator.sseEvents,
         },
         accumulator.redactor,
       );
@@ -412,6 +457,7 @@ export class HeadlessExecutionService {
           logs: accumulator.logs,
           diagnostics: accumulator.diagnostics,
           nestedExecutions: accumulator.nested,
+          events: accumulator.sseEvents,
           error: serialized,
         },
         accumulator.redactor,
@@ -601,7 +647,11 @@ export class HeadlessExecutionService {
             variables: request.options?.variables,
             secrets: request.options?.secrets,
             mode: request.options?.runTests ? 'test' : 'run',
-            options: { ...input.options, timeoutMs: request.options?.timeoutMs ?? input.options?.timeoutMs },
+            options: {
+              ...input.options,
+              timeoutMs: request.options?.timeoutMs ?? input.options?.timeoutMs,
+              maxEvents: request.options?.maxEvents ?? input.options?.maxEvents,
+            },
             signal: combined,
             inheritedEnvironment: accumulator.environment,
           });

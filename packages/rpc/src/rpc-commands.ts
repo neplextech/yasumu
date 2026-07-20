@@ -28,6 +28,9 @@ import type {
   GraphqlEntityUpdateOptions,
   GraphqlScriptContext,
   SourceEntityKind,
+  SseEntityCreateOptions,
+  SseEntityData,
+  SseEntityUpdateOptions,
 } from '@yasumu/common';
 import type {
   ExecuteEntityInput,
@@ -50,7 +53,7 @@ export interface RegisterFileInput {
 
 export type ReconciledSourceKind = Extract<
   SourceEntityKind,
-  'workspace' | 'entity-group' | 'rest' | 'graphql' | 'environment' | 'smtp'
+  'workspace' | 'entity-group' | 'rest' | 'graphql' | 'sse' | 'environment' | 'smtp'
 >;
 
 export interface SourceReconciliationEntry {
@@ -77,7 +80,7 @@ export interface WorkspaceSynchronizationResult {
  * The Yasumu RPC interface.
  */
 export interface YasumuRPC {
-  /** Unified REST and GraphQL execution through the headless lifecycle. */
+  /** Unified REST, GraphQL, and SSE execution through the headless lifecycle. */
   execution: {
     /** Execute one saved entity in run or test mode. */
     execute: RpcMutation<[input: Omit<ExecuteEntityInput, 'workspaceId' | 'signal'>], ExecutionResult>;
@@ -218,6 +221,15 @@ export interface YasumuRPC {
      * @returns The result of the script execution.
      */
     executeScript: ExecuteScriptCommand<GraphqlScriptContext>;
+  };
+  /** Server-Sent Events entity commands. */
+  sse: {
+    create: RpcMutation<[data: SseEntityCreateOptions], SseEntityData>;
+    get: RpcQuery<[id: string], SseEntityData>;
+    list: RpcQuery<[], SseEntityData[]>;
+    listTree: RpcQuery<[], SseEntityData[]>;
+    update: RpcMutation<[id: string, data: Partial<SseEntityUpdateOptions>], SseEntityData>;
+    delete: RpcMutation<[id: string], void>;
   };
   /**
    * The entity groups commands.

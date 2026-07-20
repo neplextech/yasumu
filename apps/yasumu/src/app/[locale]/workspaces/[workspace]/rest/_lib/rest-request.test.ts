@@ -65,5 +65,6 @@ function execution(response: ExecutionResult['response']): ExecutionResult {
     logs: [],
     diagnostics: [],
     nestedExecutions: [],
+    events: [],
   };
 }

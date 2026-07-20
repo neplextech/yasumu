@@ -2,7 +2,15 @@ import type { WorkspaceGroup, WorkspaceRepository, YasumuWorkspace } from '@yasu
 import { validateUniqueEntityIds, YasumuError, YasumuErrorCodes } from '@yasumu/headless';
 import { and, eq, inArray, notInArray } from 'drizzle-orm';
 
-import { entityGroups, environments, graphqlEntities, restEntities, smtp, workspaces } from '../../database/schema.ts';
+import {
+  entityGroups,
+  environments,
+  graphqlEntities,
+  restEntities,
+  smtp,
+  sseEntities,
+  workspaces,
+} from '../../database/schema.ts';
 import type { WorkspaceMetadata } from '../../database/schema/tables/workspaces.ts';
 import type { HeadlessDrizzleDatabase } from './database.ts';
 import { loadEntities, replaceDependencies, upsertEntity } from './entity-repository.ts';
@@ -178,6 +186,7 @@ export class DrizzleWorkspaceRepository implements WorkspaceRepository {
 
       const restIds = workspace.entities.filter((entity) => entity.kind === 'rest').map((entity) => entity.id);
       const graphqlIds = workspace.entities.filter((entity) => entity.kind === 'graphql').map((entity) => entity.id);
+      const sseIds = workspace.entities.filter((entity) => entity.kind === 'sse').map((entity) => entity.id);
       const environmentIds = workspace.environments.map((environment) => environment.id);
       const groupIds = workspace.groups.map((group) => group.id);
 
@@ -195,6 +204,14 @@ export class DrizzleWorkspaceRepository implements WorkspaceRepository {
           graphqlIds.length
             ? and(eq(graphqlEntities.workspaceId, workspace.id), notInArray(graphqlEntities.id, graphqlIds))
             : eq(graphqlEntities.workspaceId, workspace.id),
+        )
+        .run();
+      transaction
+        .delete(sseEntities)
+        .where(
+          sseIds.length
+            ? and(eq(sseEntities.workspaceId, workspace.id), notInArray(sseEntities.id, sseIds))
+            : eq(sseEntities.workspaceId, workspace.id),
         )
         .run();
       transaction
@@ -240,12 +257,14 @@ function assertAggregateOwnership(database: HeadlessDrizzleDatabase, workspace: 
       .from(graphqlEntities)
       .where(inArray(graphqlEntities.id, allEntityIds))
       .all();
+    const storedSse = database.select().from(sseEntities).where(inArray(sseEntities.id, allEntityIds)).all();
     const conflict = [
       ...storedRest.map((entity) => ({ ...entity, kind: 'rest' as const })),
       ...storedGraphql.map((entity) => ({
         ...entity,
         kind: 'graphql' as const,
       })),
+      ...storedSse.map((entity) => ({ ...entity, kind: 'sse' as const })),
     ].find((stored) => {
       const incoming = workspace.entities.find((entity) => entity.id === stored.id);
       return stored.workspaceId !== workspace.id || incoming?.kind !== stored.kind;

@@ -6,11 +6,13 @@ import { executionHistory } from '../tables/execution-history.ts';
 import { graphqlEntities } from '../tables/graphql-entity.ts';
 import { restEntities } from '../tables/rest-entity.ts';
 import { sourceRevisions } from '../tables/source-revision.ts';
+import { sseEntities } from '../tables/sse-entity.ts';
 import { workspaces } from '../tables/workspaces.ts';
 
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
   rest: many(restEntities),
   graphql: many(graphqlEntities),
+  sse: many(sseEntities),
   environments: many(environments),
   entityGroups: many(entityGroups),
   sourceRevisions: many(sourceRevisions),

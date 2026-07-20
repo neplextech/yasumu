@@ -1,6 +1,6 @@
 import { basename, join } from 'node:path';
 
-import { WorkspaceData, YasumuScriptingLanguage } from '@yasumu/common';
+import { WorkspaceData } from '@yasumu/common';
 import { Injectable } from '@yasumu/den';
 import { Infer } from '@yasumu/schema';
 import {
@@ -9,6 +9,7 @@ import {
   LockFileService,
   RestSchema,
   SmtpSchema,
+  SseSchema,
   WorkspaceSchema,
   YasumuAnnotations,
   YslService,
@@ -21,6 +22,7 @@ import { EntityGroupService } from '../entity-group/entity-group.service.ts';
 import { EnvironmentsService } from '../environment/environment.service.ts';
 import { GraphqlService } from '../graphql/graphql.service.ts';
 import { RestService } from '../rest/rest.service.ts';
+import { SseService } from '../sse/sse.service.ts';
 import { ensurePath, getWorkspacePath, listYslFiles } from './fs-helpers.ts';
 
 @Injectable()
@@ -31,6 +33,7 @@ export class SynchronizationPusher {
     private readonly entityGroupService: EntityGroupService,
     private readonly restService: RestService,
     private readonly graphqlService: GraphqlService,
+    private readonly sseService: SseService,
     private readonly environmentsService: EnvironmentsService,
     private readonly emailService: EmailService,
   ) {}
@@ -51,6 +54,11 @@ export class SynchronizationPusher {
       await this.pushGraphqlEntityToFs(workspace, entity);
     }
     await this.cleanupDeletedFiles(workspace, 'graphql', graphqlEntityIds);
+
+    const sseEntitiesList = await this.sseService.list(workspace.id);
+    const sseEntityIds = new Set(sseEntitiesList.map((entity) => entity.id));
+    for (const entity of sseEntitiesList) await this.pushSseEntityToFs(workspace, entity);
+    await this.cleanupDeletedFiles(workspace, 'sse', sseEntityIds);
 
     const envList = await this.environmentsService.list(workspace.id);
     const envIds = new Set(envList.map((e) => e.id));
@@ -240,6 +248,42 @@ export class SynchronizationPusher {
     );
   }
 
+  public async pushSseEntityToFs(
+    workspace: WorkspaceData,
+    entity: Awaited<ReturnType<SseService['list']>>[number],
+  ): Promise<void> {
+    const content = this.yslService.serialize(SseSchema, {
+      annotation: YasumuAnnotations.Sse,
+      blocks: {
+        dependencies: entity.dependencies ?? [],
+        metadata: { groupId: entity.groupId, id: entity.id, method: entity.method, name: entity.name },
+        request: {
+          body: entity.requestBody
+            ? {
+                type: entity.requestBody.type,
+                content:
+                  typeof entity.requestBody.value === 'string'
+                    ? entity.requestBody.value
+                    : JSON.stringify(entity.requestBody.value),
+              }
+            : null,
+          headers: entity.requestHeaders ?? [],
+          parameters: entity.requestParameters ?? [],
+          searchParameters: entity.searchParameters ?? [],
+          url: entity.url,
+        },
+        events: entity.eventTypes ?? [],
+        reconnect: entity.reconnect ?? { enabled: true, retryMs: 3000 },
+        script: entity.script?.code ?? null,
+        test: entity.testScript?.code ?? null,
+      },
+    });
+    const directory = getWorkspacePath(workspace, 'sse');
+    await ensurePath(directory);
+    await this.yslService.emit(content, join(directory, `${entity.id}.ysl`));
+    await this.lockFileService.setEntry(workspace.path, 'sse', entity.id, this.lockFileService.computeHash(content));
+  }
+
   public async pushEnvironmentToFs(
     workspace: WorkspaceData,
     env: {
@@ -304,7 +348,7 @@ export class SynchronizationPusher {
 
   public async cleanupDeletedFiles(
     workspace: WorkspaceData,
-    entityType: 'rest' | 'graphql' | 'environment',
+    entityType: 'rest' | 'graphql' | 'sse' | 'environment',
     existingIds: Set<string>,
   ): Promise<void> {
     const dir = getWorkspacePath(workspace, entityType);

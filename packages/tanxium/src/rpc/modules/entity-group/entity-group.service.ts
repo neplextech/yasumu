@@ -3,7 +3,7 @@ import { Injectable } from '@yasumu/den';
 import { RpcSubscriptionEvents } from '@yasumu/rpc';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
-import { entityGroups, entityHistory, restEntities, graphqlEntities } from '../../../database/schema.ts';
+import { entityGroups, entityHistory, restEntities, graphqlEntities, sseEntities } from '../../../database/schema.ts';
 import { NotFoundException, BadRequestException } from '../common/exceptions/http.exception.ts';
 import { TanxiumService } from '../common/tanxium.service.ts';
 import { TransactionalConnection } from '../common/transactional-connection.service.ts';
@@ -11,9 +11,13 @@ import { EntityGroupCreateOptions, EntityGroupUpdateOptions, TreeViewOptions } f
 
 @Injectable()
 export class EntityGroupService {
-  private static readonly entityTableMap: Record<string, typeof restEntities | typeof graphqlEntities> = {
+  private static readonly entityTableMap: Record<
+    string,
+    typeof restEntities | typeof graphqlEntities | typeof sseEntities
+  > = {
     rest: restEntities,
     graphql: graphqlEntities,
+    sse: sseEntities,
   };
 
   public constructor(

@@ -13,6 +13,7 @@ import { InteropableInput, useVariablePopover } from '@/components/inputs';
 import KeyValueTable, { type KeyValuePair } from '@/components/tables/key-value-table';
 import { YASUMU_TYPE_DEFINITIONS } from '@/lib/types/yasumu-typedef';
 
+import { extractPathParameterKeys } from '../../../_lib/request-path-parameters';
 import AuthEditor from './auth-editor';
 import { BodyEditor } from './body-editor';
 import { REQUEST_SCRIPT_PLACEHOLDER } from './common';
@@ -31,21 +32,6 @@ interface RestRequestTabsProps {
   onScriptChange: (script: YasumuEmbeddedScript) => void;
 }
 
-function extractPathParamKeys(url: string): string[] {
-  try {
-    const urlObj = new URL(url);
-    const pathMatches = urlObj.pathname.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g);
-    return Array.from(new Set(Array.from(pathMatches).map((m) => m[1])));
-  } catch {
-    const withoutProtocol = url.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
-    const pathStart = withoutProtocol.indexOf('/');
-    if (pathStart === -1) return [];
-    const pathPortion = withoutProtocol.slice(pathStart);
-    const matches = pathPortion.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g);
-    return Array.from(new Set(Array.from(matches).map((m) => m[1])));
-  }
-}
-
 export function RestRequestTabs({
   searchParams,
   pathParams,
@@ -60,7 +46,7 @@ export function RestRequestTabs({
   onScriptChange,
 }: RestRequestTabsProps) {
   const { renderVariablePopover } = useVariablePopover();
-  const pathParamKeys = useMemo(() => extractPathParamKeys(url), [url]);
+  const pathParamKeys = useMemo(() => extractPathParameterKeys(url), [url]);
   const hasPathParams = pathParamKeys.length > 0;
 
   const handlePathParamChange = useCallback(

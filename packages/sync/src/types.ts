@@ -1,4 +1,4 @@
-export type SyncEntityType = 'workspace' | 'rest' | 'graphql' | 'environment' | 'smtp' | 'group';
+export type SyncEntityType = 'workspace' | 'rest' | 'graphql' | 'sse' | 'environment' | 'smtp' | 'group';
 
 export interface LockFileEntry {
   hash: string;

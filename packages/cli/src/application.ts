@@ -8,7 +8,6 @@ import {
   InMemoryWorkspaceRepository,
   parseDotenv,
   resolveEnvironment,
-  WebFetchTransport,
   type EnvironmentSnapshot,
   type ExecutableEntity,
   type ExecutionResult,
@@ -19,6 +18,7 @@ import {
 import type { JsonValue } from '@yasumu/runtime-api';
 import { createNodeScriptRuntime } from '@yasumu/runtime-node';
 
+import { CliFetchTransport } from './echo-transport.js';
 import { FileSystemWorkspaceSource, NodeWorkspaceFileResolver } from './filesystem.js';
 
 export class CliInputError extends Error {
@@ -33,6 +33,7 @@ export interface ExecutionBatchInput {
   variables: Record<string, JsonValue>;
   secrets: Record<string, string>;
   timeoutMs?: number;
+  maxEvents?: number;
   signal: AbortSignal;
   processEnvironment: NodeJS.ProcessEnv;
 }
@@ -125,11 +126,12 @@ export function selectEnvironment(workspace: YasumuWorkspace, selector?: string)
 export async function executeBatch(input: ExecutionBatchInput): Promise<ExecutionResult[]> {
   const workspaceRepository = new InMemoryWorkspaceRepository([input.workspace]);
   const entityRepository = new InMemoryEntityRepository(workspaceRepository);
+  const transport = new CliFetchTransport();
   const service = new HeadlessExecutionService({
     workspaces: workspaceRepository,
     entities: entityRepository,
     runtime: createNodeScriptRuntime({ defaultTimeoutMs: input.timeoutMs }),
-    transport: new WebFetchTransport(),
+    transport,
     files: new NodeWorkspaceFileResolver(),
     secrets: {
       resolve: async (workspace, environmentId) =>
@@ -137,27 +139,32 @@ export async function executeBatch(input: ExecutionBatchInput): Promise<Executio
     },
   });
 
-  const results: ExecutionResult[] = [];
-  for (const entity of input.entities) {
-    if (input.signal.aborted) break;
-    results.push(
-      await service.execute({
-        workspaceId: input.workspace.id,
-        entityId: entity.id,
-        environmentId: input.environmentId,
-        mode: input.mode,
-        variables: input.variables,
-        secrets: input.secrets,
-        signal: input.signal,
-        options: {
-          timeoutMs: input.timeoutMs,
-          scriptTimeoutMs: input.timeoutMs,
-          includeResponseBody: true,
-        },
-      }),
-    );
+  try {
+    const results: ExecutionResult[] = [];
+    for (const entity of input.entities) {
+      if (input.signal.aborted) break;
+      results.push(
+        await service.execute({
+          workspaceId: input.workspace.id,
+          entityId: entity.id,
+          environmentId: input.environmentId,
+          mode: input.mode,
+          variables: input.variables,
+          secrets: input.secrets,
+          signal: input.signal,
+          options: {
+            timeoutMs: input.timeoutMs,
+            scriptTimeoutMs: input.timeoutMs,
+            includeResponseBody: true,
+            maxEvents: input.maxEvents ?? (entity.kind === 'sse' ? 10 : undefined),
+          },
+        }),
+      );
+    }
+    return results;
+  } finally {
+    await transport.dispose();
   }
-  return results;
 }
 
 export function executionFailed(result: ExecutionResult, mode: 'run' | 'test'): boolean {

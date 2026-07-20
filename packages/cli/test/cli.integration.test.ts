@@ -76,7 +76,7 @@ describe('Yasumu CLI headless integration', () => {
     });
   });
 
-  test('lists REST and GraphQL entities deterministically, including the legacy REST alias', async () => {
+  test('lists REST, GraphQL, and SSE entities deterministically, including module aliases', async () => {
     const result = await runCli(['list', '--json'], validFixture);
     const payload = parseJson(result.stdout) as { entities: Array<{ id: string; kind: string }> };
 
@@ -89,12 +89,18 @@ describe('Yasumu CLI headless integration', () => {
       'network',
       'slow',
       'tested',
+      'echo-stream',
     ]);
 
     const legacy = await runCli(['rest', 'list', '--json'], validFixture);
     const legacyPayload = parseJson(legacy.stdout) as { entities: Array<{ kind: string }> };
     expect(legacy.code).toBe(0);
     expect(legacyPayload.entities.every((entity) => entity.kind === 'rest')).toBe(true);
+
+    const sse = await runCli(['sse', 'list', '--json'], validFixture);
+    const ssePayload = parseJson(sse.stdout) as { entities: Array<{ kind: string }> };
+    expect(sse.code).toBe(0);
+    expect(ssePayload.entities).toEqual([expect.objectContaining({ kind: 'sse' })]);
   });
 
   test('executes REST with environment selection, variable overrides, and secret injection', async () => {
@@ -219,6 +225,30 @@ describe('Yasumu CLI headless integration', () => {
     });
   });
 
+  test('resolves echo.yasumu.local and streams fully interpolated SSE requests', async () => {
+    const result = await runCli(
+      ['sse', 'run', 'echo-stream', '--variable', 'SOURCE=cli-sse', '--max-events', '2', '--json'],
+      validFixture,
+    );
+    const payload = parseJson(result.stdout) as ExecutionPayload;
+
+    expect(result.code).toBe(0);
+    expect(payload.results[0]).toMatchObject({ entityKind: 'sse', status: 'completed' });
+    expect(payload.results[0]?.events).toHaveLength(2);
+    expect(payload.results[0]?.events?.[0]).toMatchObject({ event: 'echo', id: '1' });
+    expect(payload.results[0]?.events?.[1]).toMatchObject({ event: 'echo', id: '2' });
+    expect(JSON.parse(payload.results[0]?.events?.[0]?.data ?? '{}')).toMatchObject({
+      method: 'POST',
+      headers: { 'x-source': 'cli-sse' },
+      query: { count: '1', retry: '1' },
+      body: '{"source":"cli-sse"}',
+    });
+    expect(JSON.parse(payload.results[0]?.events?.[1]?.data ?? '{}')).toMatchObject({
+      headers: { 'last-event-id': '1' },
+      sequence: 2,
+    });
+  });
+
   test('returns mocked responses from Node lifecycle scripts', async () => {
     const result = await runCli(['run', 'mocked', '--json'], validFixture);
     const payload = parseJson(result.stdout) as ExecutionPayload;
@@ -309,7 +339,7 @@ describe('Yasumu CLI headless integration', () => {
     );
     const allPayload = parseJson(all.stdout) as ExecutionPayload;
     expect(all.code).toBe(0);
-    expect(allPayload.summary).toMatchObject({ selected: 7, completed: 7, failed: 0 });
+    expect(allPayload.summary).toMatchObject({ selected: 8, completed: 8, failed: 0 });
     expect(allPayload.summary.tests).toMatchObject({ total: 1, passed: 1, failed: 0 });
   }, 20_000);
 
@@ -393,6 +423,7 @@ interface ExecutionPayload {
     response?: { status: number; body: { kind: string; value?: unknown } };
     tests: unknown[];
     nestedExecutions: unknown[];
+    events?: Array<{ id?: string; event: string; data: string }>;
   }>;
 }
 

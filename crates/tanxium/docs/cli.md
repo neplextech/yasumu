@@ -44,3 +44,8 @@ evaluate. Top-level `await` is supported.
 ```
 
 Commands: `.help`, `.clear`, `.exit`, and `.quit`.
+
+The Tanxium CLI executes JavaScript/TypeScript entrypoints. Saved YSL
+REST, GraphQL, and SSE entities are executed by the separate `yasumu`
+CLI, which composes Tanxium-compatible script contracts with Yasumu's
+headless workspace engine.

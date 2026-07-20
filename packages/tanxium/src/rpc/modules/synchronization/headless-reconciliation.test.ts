@@ -3,7 +3,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import * as schema from '../../../database/schema.ts';
-import { restEntities, sourceRevisions } from '../../../database/schema.ts';
+import { restEntities, sourceRevisions, sseEntities } from '../../../database/schema.ts';
 import { drizzle } from '../../../database/sqlite/index.ts';
 import type { HeadlessDrizzleDatabase } from '../../../headless/persistence/database.ts';
 import { DrizzleWorkspaceRepository } from '../../../headless/persistence/workspace-repository.ts';
@@ -26,6 +26,7 @@ const migrationNames = [
   '0002_breezy_unus.sql',
   '0003_late_kitty_pryde.sql',
   '0004_headless_persistence.sql',
+  '0005_kind_mentor.sql',
 ];
 
 Deno.test('GUI reconciliation imports and incrementally adds, updates, and deletes YSL records', async () => {
@@ -109,6 +110,34 @@ Deno.test('GUI reconciliation auto-merges disjoint source and database edits', a
   });
 });
 
+Deno.test('GUI reconciliation imports, updates, and deletes complete SSE records', async () => {
+  await withFixture(async ({ database, reconciler, root }) => {
+    await writeWorkspace(root, [], [sseYsl('stream-a', 'Stream A', 'GET', ['update'], 100)]);
+    await reconciler.importWorkspace(root);
+
+    let stream = database.select().from(sseEntities).get();
+    assert.equal(stream?.method, 'GET');
+    assert.deepEqual(stream?.eventTypes, ['update']);
+    assert.deepEqual(stream?.reconnect, { enabled: true, retryMs: 100 });
+    assert.deepEqual(revisionIds(database), ['stream-a', 'workspace']);
+
+    await writeWorkspace(root, [], [sseYsl('stream-a', 'Updated stream', 'POST', ['build'], 250)]);
+    const updated = await reconciler.reconcile('workspace', root);
+    assert.equal(statusFor(updated, 'stream-a'), 'source-updated');
+    stream = database.select().from(sseEntities).get();
+    assert.equal(stream?.name, 'Updated stream');
+    assert.equal(stream?.method, 'POST');
+    assert.deepEqual(stream?.eventTypes, ['build']);
+    assert.deepEqual(stream?.reconnect, { enabled: true, retryMs: 250 });
+
+    await writeWorkspace(root, []);
+    const deleted = await reconciler.reconcile('workspace', root);
+    assert.equal(statusFor(deleted, 'stream-a'), 'source-deleted');
+    assert.equal(database.select().from(sseEntities).get(), undefined);
+    assert.deepEqual(revisionIds(database), ['workspace']);
+  });
+});
+
 async function withFixture(
   run: (fixture: {
     database: HeadlessDrizzleDatabase;
@@ -130,16 +159,24 @@ async function withFixture(
   }
 }
 
-async function writeWorkspace(root: string, restFiles: string[]): Promise<void> {
+async function writeWorkspace(root: string, restFiles: string[], sseFiles: string[] = []): Promise<void> {
   const yslRoot = join(root, 'yasumu');
   const restRoot = join(yslRoot, 'rest');
+  const sseRoot = join(yslRoot, 'sse');
   await rm(restRoot, { recursive: true, force: true });
+  await rm(sseRoot, { recursive: true, force: true });
   await mkdir(restRoot, { recursive: true });
+  await mkdir(sseRoot, { recursive: true });
   await writeFile(join(yslRoot, 'workspace.ysl'), workspaceYsl, 'utf8');
   for (const content of restFiles) {
     const id = /id: "([^"]+)"/.exec(content)?.[1];
     assert.ok(id);
     await writeFile(join(restRoot, `${id}.ysl`), content, 'utf8');
+  }
+  for (const content of sseFiles) {
+    const id = /id: "([^"]+)"/.exec(content)?.[1];
+    assert.ok(id);
+    await writeFile(join(sseRoot, `${id}.ysl`), content, 'utf8');
   }
 }
 
@@ -208,5 +245,28 @@ request {
 dependencies []
 script null
 test null
+`;
+}
+
+function sseYsl(id: string, name: string, method: string, events: string[], retryMs: number): string {
+  return `@sse
+metadata {
+  name: "${name}"
+  method: "${method}"
+  id: "${id}"
+  groupId: null
+}
+request {
+  url: "https://source.example/${id}"
+  headers: [{ key: "x-source" value: "ysl" enabled: true }]
+  parameters: []
+  searchParameters: [{ key: "topic" value: "events" enabled: true }]
+  body: { type: "json" content: "{\\"subscribe\\":true}" }
+}
+events [${events.map((event) => JSON.stringify(event)).join(', ')}]
+reconnect { enabled: true retryMs: ${retryMs} }
+dependencies []
+script { export function onResponse(ctx) { console.log(ctx.res.status); } }
+test { export function onTest() { test("events", () => expect(true).toBe(true)); } }
 `;
 }

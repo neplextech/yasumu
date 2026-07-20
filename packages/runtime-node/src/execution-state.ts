@@ -167,7 +167,7 @@ export function currentExecution(): WorkerExecutionState | undefined {
 }
 
 export function createWorkspaceAPI(invocation: ScriptHookInvocation, environment: MutableEnvironment): ScriptWorkspace {
-  const entityAPI = (kind: 'rest' | 'graphql') => ({
+  const entityAPI = (kind: 'rest' | 'graphql' | 'sse') => ({
     get: (id: string) => callHost('entity.get', { kind, id }),
     list: () => callHost('entity.list', { kind }),
     execute: (id: string, options = {}) => callHost('entity.execute', { kind, id, options }),
@@ -191,6 +191,7 @@ export function createWorkspaceAPI(invocation: ScriptHookInvocation, environment
     ...invocation.workspace,
     rest: entityAPI('rest'),
     graphql: entityAPI('graphql'),
+    sse: entityAPI('sse'),
     email: {
       async list(options = {}) {
         const since = normalizeSince(options.since, invocation.execution);

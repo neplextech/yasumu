@@ -39,14 +39,16 @@ silently skips invalid files.
 
 ```bash
 yasumu validate
-yasumu list [--kind rest|graphql]
+yasumu list [--kind rest|graphql|sse]
 yasumu info
 yasumu run <entity-name-or-id>
 yasumu test [entity-name-or-id]
+yasumu sse list
+yasumu sse run <entity-name-or-id> --max-events 10
 ```
 
-`yasumu test` without an entity runs all REST and GraphQL entities in
-deterministic order. The previous `yasumu rest list`,
+`yasumu test` without an entity runs all REST, GraphQL, and SSE
+entities in deterministic order. The previous `yasumu rest list`,
 `yasumu rest run <entity>`, and `yasumu rest run --all` forms remain
 available as aliases.
 
@@ -67,7 +69,20 @@ yasumu run "Create user" --environment Staging
 yasumu run get-current-user --timeout 15000 --verbose
 ```
 
-REST and GraphQL use one execution command and one result shape.
+REST, GraphQL, and SSE use one execution command and one result shape.
+SSE results additionally contain the collected event array.
+
+### Connect to an SSE stream
+
+```bash
+yasumu sse run deployment-events --max-events 5
+yasumu sse run local-stream --max-events 2 --json
+```
+
+The CLI hosts the built-in echo server on demand and resolves
+`echo.yasumu.local` to it. This keeps checked-in local stream fixtures
+portable between the desktop, CLI, and CI. `--max-events` defaults to
+10 for the `sse run` command.
 
 ### Run tests
 
@@ -90,6 +105,7 @@ Scripts still run through `onRequest`, transport or mock,
 | `--variable KEY=VALUE`           | Typed variable override; repeatable     |
 | `--secret KEY=VALUE`             | Secret override; repeatable             |
 | `--timeout <milliseconds>`       | Request and script timeout              |
+| `--max-events <count>`           | Stop SSE after accepted event count     |
 | `--json`                         | Emit one machine-readable JSON document |
 | `-v, --verbose`                  | Include bodies in human output          |
 
@@ -152,9 +168,9 @@ CLI scripts run in isolated Node.js worker threads through
 `@yasumu/runtime-node`. They receive the same `RequestHookContext`,
 `ResponseHookContext`, and `TestHookContext` used by the desktop
 runtime. Standard Web `Request` and `Response`, mock responses, nested
-REST/GraphQL execution, email host calls when configured, file host
-calls, logs, tests, and the generated `yasumu:` virtual modules are
-supported.
+REST/GraphQL/SSE execution, email host calls when configured, file
+host calls, logs, tests, and the generated `yasumu:` virtual modules
+are supported.
 
 See [Scripting](/docs/scripting) for the exact API.
 

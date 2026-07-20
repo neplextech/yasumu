@@ -1,0 +1,49 @@
+@sse
+
+metadata {
+  name: "Echo stream"
+  method: "POST"
+  id: "echo-stream"
+  groupId: null
+}
+
+request {
+  url: "http://echo.yasumu.local/sse"
+  headers: [
+    {
+      key: "x-source"
+      value: "{{SOURCE}}"
+      enabled: true
+    }
+  ]
+  parameters: []
+  searchParameters: [
+    {
+      key: "count"
+      value: "1"
+      enabled: true
+    },
+    {
+      key: "retry"
+      value: "1"
+      enabled: true
+    }
+  ]
+  body: {
+    type: "json"
+    content: "{\"source\":\"{{SOURCE}}\"}"
+  }
+}
+
+events ["echo"]
+
+reconnect {
+  enabled: true
+  retryMs: 100
+}
+
+dependencies []
+
+script null
+
+test null

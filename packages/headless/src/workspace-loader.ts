@@ -1,5 +1,13 @@
 import type { Diagnostic, JsonValue, ScriptSource, SourceRange, YasumuFileReference } from '@yasumu/runtime-api';
-import { deserialize, EnvironmentSchema, GraphqlSchema, RestSchema, SmtpSchema, WorkspaceSchema } from '@yasumu/schema';
+import {
+  deserialize,
+  EnvironmentSchema,
+  GraphqlSchema,
+  RestSchema,
+  SmtpSchema,
+  SseSchema,
+  WorkspaceSchema,
+} from '@yasumu/schema';
 
 import { WorkspaceValidationError, YasumuErrorCodes } from './errors.js';
 import type {
@@ -9,6 +17,7 @@ import type {
   GraphQLEntity,
   RequestBody,
   RestEntity,
+  SseEntity,
   SourceOrigin,
   TabularValue,
   WorkspaceEnvironment,
@@ -23,6 +32,7 @@ type ParsedFile =
   | { kind: 'workspace'; path: string; revision: string; value: ParsedWorkspace }
   | { kind: 'rest'; path: string; revision: string; value: ParsedRest }
   | { kind: 'graphql'; path: string; revision: string; value: ParsedGraphQL }
+  | { kind: 'sse'; path: string; revision: string; value: ParsedSse }
   | { kind: 'environment'; path: string; revision: string; value: ParsedEnvironment }
   | { kind: 'smtp'; path: string; revision: string; value: ParsedSmtp };
 
@@ -66,6 +76,14 @@ interface ParsedRest extends ParsedRequestEntity {
 }
 
 interface ParsedGraphQL extends ParsedRequestEntity {}
+
+interface ParsedSse extends ParsedRequestEntity {
+  blocks: ParsedRequestEntity['blocks'] & {
+    metadata: ParsedRequestEntity['blocks']['metadata'] & { method: string };
+    events: string[];
+    reconnect: { enabled: boolean; retryMs: number };
+  };
+}
 
 interface ParsedEnvironment {
   blocks: {
@@ -177,6 +195,14 @@ export class HeadlessWorkspaceLoader {
           value: deserialize(file.content, GraphqlSchema) as ParsedGraphQL,
         };
         break;
+      case 'sse':
+        parsed = {
+          kind: 'sse',
+          path: file.path,
+          revision,
+          value: deserialize(file.content, SseSchema) as ParsedSse,
+        };
+        break;
       case 'environment':
         parsed = {
           kind: 'environment',
@@ -232,6 +258,7 @@ function normalizeWorkspace(
   const entities = files.flatMap((file): ExecutableEntity[] => {
     if (file.kind === 'rest') return [normalizeRest(metadata.id, file, diagnostics)];
     if (file.kind === 'graphql') return [normalizeGraphQL(metadata.id, file, diagnostics)];
+    if (file.kind === 'sse') return [normalizeSse(metadata.id, file, diagnostics)];
     return [];
   });
   const environments = files.flatMap((file): WorkspaceEnvironment[] =>
@@ -311,6 +338,37 @@ function normalizeGraphQL(
     scripts: {
       lifecycle: scriptSource(script, `graphql:${metadata.id}:lifecycle`, file.path),
       test: scriptSource(test, `graphql:${metadata.id}:test`, file.path),
+    },
+    dependencies,
+    metadata: {},
+    origin: sourceOrigin(file),
+  };
+}
+
+function normalizeSse(
+  workspaceId: string,
+  file: Extract<ParsedFile, { kind: 'sse' }>,
+  diagnostics: Diagnostic[],
+): SseEntity {
+  const { metadata, request, events, reconnect, dependencies, script, test } = file.value.blocks;
+  validateFileName(file.path, metadata.id, diagnostics);
+  return {
+    kind: 'sse',
+    id: metadata.id,
+    name: metadata.name,
+    workspaceId,
+    groupId: metadata.groupId,
+    method: metadata.method.toUpperCase(),
+    headers: request.headers,
+    pathParameters: request.parameters,
+    searchParameters: request.searchParameters,
+    url: request.url,
+    body: normalizeRestBody(request.body, file.path, diagnostics),
+    eventTypes: events,
+    reconnect,
+    scripts: {
+      lifecycle: scriptSource(script, `sse:${metadata.id}:lifecycle`, file.path),
+      test: scriptSource(test, `sse:${metadata.id}:test`, file.path),
     },
     dependencies,
     metadata: {},

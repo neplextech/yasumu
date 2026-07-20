@@ -124,6 +124,12 @@ export class Yasumu {
           this.events.emit('onGraphqlEntityUpdate', activeWorkspace);
         }
         break;
+      case 'sse-entity-updated':
+        {
+          if (activeWorkspace?.id !== payload.data.workspaceId) return;
+          this.events.emit('onSseEntityUpdate', activeWorkspace);
+        }
+        break;
       default:
         return void (event satisfies never);
     }

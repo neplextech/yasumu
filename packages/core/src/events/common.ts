@@ -58,4 +58,6 @@ export interface YasumuEventHandlerInterface {
    * @param workspace - The workspace that the GraphQL entity was updated for.
    */
   onGraphqlEntityUpdate: (workspace: Workspace) => unknown;
+  /** Called when an SSE entity is updated. */
+  onSseEntityUpdate: (workspace: Workspace) => unknown;
 }

@@ -145,10 +145,11 @@ Tests run for responses returned by `onRequest` exactly as they do for
 network responses. `ctx.isMockResponse` lets a test assert which path
 ran.
 
-Nested REST and GraphQL runs can enable tests with `runTests: true`.
-Their test results, logs, diagnostics, and child execution ID are
-returned in the nested summary and remain observable through execution
-events.
+Nested REST, GraphQL, and SSE runs can enable tests with
+`runTests: true`. Use `maxEvents` when a nested stream needs
+deterministic completion. Their test results, logs, diagnostics, and
+child execution ID are returned in the nested summary and remain
+observable through execution events.
 
 ## Isolation
 
@@ -164,7 +165,7 @@ state to scripts.
 # One entity
 yasumu test get-current-user
 
-# Every REST and GraphQL entity
+# Every REST, GraphQL, and SSE entity
 yasumu test --environment CI
 
 # Machine-readable CI result

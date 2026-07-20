@@ -18,6 +18,7 @@ export class LockFileService {
         workspace: {},
         rest: {},
         graphql: {},
+        sse: {},
         environment: {},
         smtp: {},
         group: {},

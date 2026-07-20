@@ -55,6 +55,7 @@ describe('headless execution UI mapping', () => {
       logs: [{ level: 'info', message: 'hook log', timestamp: 12 }],
       diagnostics: [],
       nestedExecutions: [],
+      events: [],
     };
 
     expect(outputsFromExecution(result).map((entry) => entry.type)).toEqual([

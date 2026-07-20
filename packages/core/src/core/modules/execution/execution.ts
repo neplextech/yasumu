@@ -6,7 +6,7 @@ import type { Workspace } from '../../workspace/workspace.js';
 export type WorkspaceExecutionInput = Omit<ExecuteEntityInput, 'workspaceId' | 'signal'>;
 
 /**
- * Runs REST and GraphQL entities through Yasumu's canonical headless lifecycle.
+ * Runs REST, GraphQL, and SSE entities through Yasumu's canonical headless lifecycle.
  */
 export class ExecutionModule {
   public constructor(private readonly workspace: Workspace) {}

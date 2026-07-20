@@ -95,7 +95,7 @@ export default function Home() {
               icon={<MdTerminal />}
               color="purple"
               title="Desktop and CLI"
-              description="Run the same REST and GraphQL requests, scripts, tests, files, variables, and mocks interactively or in automated CI jobs."
+              description="Run the same REST, GraphQL, and SSE workflows, scripts, tests, files, variables, and mocks interactively or in automated CI jobs."
             />
             <FeatureCard
               icon={<MdLock />}
@@ -197,7 +197,7 @@ export default function Home() {
               <div className="text-gray-400">GET Current user · 200 · 84 ms</div>
               <div className="text-green-400">2 passed, 0 failed, 0 skipped</div>
               <div className="flex items-center text-white">
-                REST and GraphQL execution complete
+                REST, GraphQL, and SSE execution complete
                 <span className="ml-1 inline-block h-4 w-2 animate-pulse bg-gray-400"></span>
               </div>
             </div>

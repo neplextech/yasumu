@@ -10,6 +10,7 @@ export * from './schema/tables/graphql-entity.ts';
 export * from './schema/tables/rest-entity.ts';
 export * from './schema/tables/smtp.ts';
 export * from './schema/tables/source-revision.ts';
+export * from './schema/tables/sse-entity.ts';
 export * from './schema/tables/workspaces.ts';
 
 /* Relations */
@@ -21,4 +22,5 @@ export * from './schema/relations/graphql-entity.ts';
 export * from './schema/relations/rest-entity.ts';
 export * from './schema/relations/smtp.ts';
 export * from './schema/relations/source-revision.ts';
+export * from './schema/relations/sse-entity.ts';
 export * from './schema/relations/workspaces.ts';

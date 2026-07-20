@@ -1,118 +1,134 @@
 'use client';
 
-import { Badge } from '@yasumu/ui/components/badge';
-import { Button } from '@yasumu/ui/components/button';
-import { Input } from '@yasumu/ui/components/input';
+import type { RestEntityRequestBody, TabularPair, YasumuEmbeddedScript } from '@yasumu/core';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { Separator } from '@yasumu/ui/components/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
-import { Textarea } from '@yasumu/ui/components/textarea';
-import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import { useCallback, useMemo } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 
-import KeyValueTable from '@/components/tables/key-value-table';
+import {
+  recordToTabularPairs,
+  tabularPairsToRecord,
+  type ToggleableValueRecord,
+} from '@/app/[locale]/workspaces/[workspace]/_lib/tabular-pairs';
+import { useVariablePopover } from '@/components/inputs';
+import { useAppLayout } from '@/components/providers/app-layout-provider';
+import ErrorScreen from '@/components/visuals/error-screen';
+import { InlineErrorBanner } from '@/components/visuals/inline-error-banner';
+import LoadingScreen from '@/components/visuals/loading-screen';
+import YasumuBackgroundArt from '@/components/visuals/yasumu-background-art';
+import { YasumuLayout } from '@/lib/constants/layout';
 
-import ConnectButton from './_components/connect-button';
-
-interface EventListener {
-  id: string;
-  event: string;
-  enabled: boolean;
-}
+import { SseRequestTabs } from './_components/request-editor/sse-request-tabs';
+import { SseUrlBar } from './_components/request-editor/sse-url-bar';
+import { SseResponsePanel } from './_components/response-panel';
+import RequestTabList from './_components/tabs';
+import { useSseEntity } from './_hooks/use-sse-entity';
+import { useSseRequest } from './_hooks/use-sse-request';
+import { useSseContext } from './_providers/sse-context';
 
 export default function SsePage() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [listeners, setListeners] = useState<EventListener[]>([
-    { id: '1', event: 'message', enabled: true },
-    { id: '2', event: 'notification', enabled: true },
-    { id: '3', event: 'status', enabled: true },
-  ]);
+  const { entityId } = useSseContext();
+  const { layout } = useAppLayout();
+  const { renderVariablePopover } = useVariablePopover();
+  const { data, isLoading, error, saveError, isSaving, updateField, save } = useSseEntity({ entityId });
+  const { state, execute, cancel, clearEvents } = useSseRequest({ entityId });
+  const pathParams = useMemo(() => tabularPairsToRecord(data?.requestParameters), [data?.requestParameters]);
+  const active =
+    state.phase === 'pre-request-script' || state.phase === 'sending' || state.phase === 'post-response-script';
 
-  const handleConnect = () => {
-    setIsConnected(true);
-  };
+  const connect = useCallback(async () => {
+    if (!data) return;
+    await save();
+    await execute(data, pathParams);
+  }, [data, execute, pathParams, save]);
+  const connectSafely = useMemo(() => withErrorHandler(connect), [connect]);
 
-  const handleDisconnect = () => {
-    setIsConnected(false);
-  };
+  useHotkeys('mod+enter', () => void connectSafely(), { preventDefault: true, enableOnFormTags: false });
 
-  const addListener = () => {
-    setListeners([...listeners, { id: Date.now().toString(), event: '', enabled: true }]);
-  };
+  if (!entityId) {
+    return (
+      <main className="relative grid h-full min-h-0 w-full place-items-center">
+        <YasumuBackgroundArt message="SSE" />
+      </main>
+    );
+  }
+  if (error) return <ErrorScreen fullScreen title="Failed to load SSE stream" message={error.message} />;
+  if (isLoading || !data) return <LoadingScreen fullScreen />;
 
-  const removeListener = (id: string) => {
-    setListeners(listeners.filter((listener) => listener.id !== id));
-  };
-
-  const updateListener = (id: string, field: keyof EventListener, value: string | boolean) => {
-    setListeners(listeners.map((listener) => (listener.id === id ? { ...listener, [field]: value } : listener)));
-  };
+  const requestEditor = (
+    <SseRequestTabs
+      key={entityId}
+      url={data.url ?? ''}
+      searchParams={data.searchParameters ?? []}
+      pathParams={pathParams}
+      headers={data.requestHeaders ?? []}
+      body={data.requestBody}
+      eventTypes={data.eventTypes ?? []}
+      reconnect={data.reconnect}
+      script={data.script}
+      testScript={data.testScript}
+      onSearchParamsChange={(value: TabularPair[]) => updateField('searchParameters', value)}
+      onPathParamsChange={(value: ToggleableValueRecord) =>
+        updateField('requestParameters', recordToTabularPairs(value))
+      }
+      onHeadersChange={(value: TabularPair[]) => updateField('requestHeaders', value)}
+      onBodyChange={(value: RestEntityRequestBody | null) => updateField('requestBody', value)}
+      onEventTypesChange={(value: string[]) => updateField('eventTypes', value)}
+      onReconnectChange={(value) => updateField('reconnect', value)}
+      onScriptChange={(value: YasumuEmbeddedScript) => updateField('script', value)}
+      onTestScriptChange={(value: YasumuEmbeddedScript | null) => updateField('testScript', value)}
+    />
+  );
 
   return (
-    <main className="flex h-full w-full flex-col gap-4 overflow-y-auto p-4">
-      <div className="flex items-center gap-4">
-        <Input placeholder="Enter SSE endpoint URL" />
-        <ConnectButton isConnected={isConnected} onConnect={handleConnect} onDisconnect={handleDisconnect} />
-        <Badge variant={isConnected ? 'default' : 'outline'}>{isConnected ? 'Connected' : 'Disconnected'}</Badge>
+    <main className="flex h-full w-full flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-4 p-4">
+        <RequestTabList />
+        <SseUrlBar
+          method={data.method}
+          url={data.url ?? ''}
+          connected={state.connected}
+          active={active}
+          isSaving={isSaving}
+          onMethodChange={(method) => updateField('method', method)}
+          onUrlChange={(url) => updateField('url', url)}
+          onConnect={connectSafely}
+          onDisconnect={cancel}
+          onVariableClick={renderVariablePopover}
+        />
       </div>
+      {saveError ? (
+        <InlineErrorBanner
+          message={`Changes are not saved: ${saveError.message}`}
+          actionLabel="Retry save"
+          actionDisabled={isSaving}
+          onAction={() => void withErrorHandler(save)()}
+        />
+      ) : null}
       <Separator />
-      <Tabs defaultValue="listen">
-        <TabsList>
-          <TabsTrigger value="listen">Listen</TabsTrigger>
-          <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="pre-connection-script">Pre-connection Script</TabsTrigger>
-          <TabsTrigger value="post-connection-script">Post-connection Script</TabsTrigger>
-          <TabsTrigger value="tests">Tests</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        <TabsContent value="listen" className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Event Listeners</label>
-              <Button variant="outline" size="sm" onClick={addListener}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Listener
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {listeners.map((listener) => (
-                <div key={listener.id} className="flex items-center gap-2 rounded-lg border p-3">
-                  <Input
-                    placeholder="Event type (leave empty for all events)"
-                    value={listener.event}
-                    onChange={(e) => updateListener(listener.id, 'event', e.target.value)}
-                    disabled={!listener.enabled}
-                    className="flex-1 font-mono"
-                  />
-                  <Badge variant={listener.enabled ? 'default' : 'outline'}>
-                    {listener.enabled ? 'Active' : 'Inactive'}
-                  </Badge>
-                  <Button variant="ghost" size="icon" onClick={() => removeListener(listener.id)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {listeners.length === 0 && (
-                <div className="text-muted-foreground py-8 text-center">
-                  No event listeners. Click &quot;Add Listener&quot; to start listening.
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-        <TabsContent value="headers">
-          <KeyValueTable />
-        </TabsContent>
-        <TabsContent value="pre-connection-script">
-          <Textarea placeholder="Your pre-connection script goes here..." />
-        </TabsContent>
-        <TabsContent value="post-connection-script">
-          <Textarea placeholder="Your post-connection script goes here..." />
-        </TabsContent>
-        <TabsContent value="tests">
-          <Textarea placeholder="Your test script goes here..." />
-        </TabsContent>
-        <TabsContent value="settings">Settings Editor</TabsContent>
-      </Tabs>
+      <ResizablePanelGroup
+        direction={layout === YasumuLayout.Classic ? 'vertical' : 'horizontal'}
+        className="min-h-0 flex-1"
+      >
+        <ResizablePanel defaultSize={50} minSize={20}>
+          {requestEditor}
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={50} minSize={20}>
+          <SseResponsePanel
+            phase={state.phase}
+            connected={state.connected}
+            response={state.response}
+            events={state.events}
+            error={state.error}
+            scriptOutput={state.scriptOutput}
+            testResults={state.testResults}
+            onClearEvents={clearEvents}
+          />
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </main>
   );
 }

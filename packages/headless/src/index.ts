@@ -11,7 +11,9 @@ export * from './reconciliation.js';
 export * from './repository.js';
 export * from './requests.js';
 export * from './runtime-host.js';
+export * from './sse.js';
 export * from './workspace-loader.js';
+export type { SseEvent } from '@yasumu/runtime-api';
 
 export type {
   EnvironmentSnapshot,
