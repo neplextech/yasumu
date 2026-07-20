@@ -39,16 +39,16 @@ through different runtime adapters.
 
 ## Package responsibilities
 
-| Package                        | Responsibility                                                                                                                                                                     |
-| :----------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@yasumu/schema`               | Canonical YSL schemas, parsing, validation, and source ranges                                                                                                                      |
-| `@yasumu/headless`             | Runtime- and persistence-independent workspace model, CRUD, environment resolution, interpolation, request building, execution, reconciliation, events, files, and email lifecycle |
-| `@yasumu/runtime-api`          | Generated script hook names, virtual modules, host methods, serializable protocol, and public TypeScript contracts                                                                 |
-| `@yasumu/runtime-node`         | Node.js worker-thread implementation of the shared script runtime contract                                                                                                         |
-| `@yasumu/cli`                  | Filesystem and terminal adapters around the headless services                                                                                                                      |
-| `@yasumu/tanxium`              | Desktop SQLite, file, email, event, transport, and Tanxium runtime adapters plus RPC assembly                                                                                      |
-| `crates/tanxium`               | Embeddable Deno runtime, module loading, worker lifecycle, permissions, and generated contract bindings; it contains no request-domain policy                                      |
-| `@yasumu/core` / `@yasumu/rpc` | Typed desktop client and RPC contracts                                                                                                                                             |
+| Package                        | Responsibility                                                                                                                                                                                    |
+| :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@yasumu/schema`               | Canonical YSL schemas, parsing, validation, and source ranges                                                                                                                                     |
+| `@yasumu/headless`             | Runtime- and persistence-independent workspace model, CRUD, environment resolution, interpolation, request building, cookie policy, execution, reconciliation, events, files, and email lifecycle |
+| `@yasumu/runtime-api`          | Generated script hook names, virtual modules, host methods, serializable protocol, and public TypeScript contracts                                                                                |
+| `@yasumu/runtime-node`         | Node.js worker-thread implementation of the shared script runtime contract                                                                                                                        |
+| `@yasumu/cli`                  | Filesystem and terminal adapters around the headless services                                                                                                                                     |
+| `@yasumu/tanxium`              | Desktop SQLite, file, email, event, transport, and Tanxium runtime adapters plus RPC assembly                                                                                                     |
+| `crates/tanxium`               | Embeddable Deno runtime, module loading, worker lifecycle, permissions, and generated contract bindings; it contains no request-domain policy                                                     |
+| `@yasumu/core` / `@yasumu/rpc` | Typed desktop client and RPC contracts                                                                                                                                                            |
 
 Dependencies point inward: hosts depend on ports exposed by the
 headless and runtime API packages. The headless package does not
@@ -72,7 +72,8 @@ Every REST, GraphQL, and SSE run uses one pipeline:
 8. Run `onTest` only in test mode.
 9. Collect serializable snapshots, SSE events, logs, tests,
    diagnostics, nested runs, and timing data.
-10. Persist history and emit the final structured event.
+10. Persist a credential-safe history record and emit the final
+    structured event.
 
 Cancellation, timeouts, nested execution, email waits, and worker
 cleanup all share the execution's `AbortSignal`.
@@ -115,6 +116,12 @@ different fields are merged. Concurrent changes to the same field
 produce a structured conflict and are not destructively overwritten.
 File modification time is not used as the source of truth.
 
+The workspace cookie jar is deliberately outside that synchronized
+aggregate. A workspace-scoped SQLite table stores cookies for local
+desktop use, while matching and `Set-Cookie` parsing remain in the
+runtime-independent headless layer. Cookie values are never emitted to
+YSL or persisted in execution history.
+
 ## Desktop data flow
 
 The renderer sends only a serializable execution input over the typed
@@ -123,6 +130,11 @@ echo-aware transport, GUI file handling, email integration, native
 permission prompts, history, and an execution event sink. The renderer
 subscribes to those events for progress, logs, tests, errors, and
 cancellation; it does not build or send the HTTP request itself.
+
+The small number of renderer-owned HTTP calls, such as GraphQL schema
+introspection, use the same cookie RPC API before and after transport.
+The native HTTP plugin's process-global cookie store is disabled, so
+workspace isolation remains the single source of truth.
 
 ## Adding another runtime
 

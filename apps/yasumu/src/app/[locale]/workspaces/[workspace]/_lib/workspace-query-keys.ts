@@ -9,4 +9,5 @@ export const workspaceQueryKeys = {
   sseTab: (workspaceId: string, entityId: string) => ['sse-tab', workspaceId, entityId] as const,
   smtpConfig: (workspaceId: string) => ['smtp-config', workspaceId] as const,
   smtpPort: (workspaceId: string) => ['smtp-port', workspaceId] as const,
+  cookies: (workspaceId: string) => ['workspace-cookies', workspaceId] as const,
 };

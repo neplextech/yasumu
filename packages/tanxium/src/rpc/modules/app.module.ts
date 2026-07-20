@@ -1,6 +1,7 @@
 import { Module } from '@yasumu/den';
 
 import { CommonModule } from './common/common.module.ts';
+import { CookiesModule } from './cookies/cookies.module.ts';
 import { EmailModule } from './email/email.module.ts';
 import { EntityGroupModule } from './entity-group/entity-group.module.ts';
 import { EntityHistoryModule } from './entity-history/entity-history.module.ts';
@@ -17,6 +18,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.ts';
 @Module({
   imports: [
     CommonModule,
+    CookiesModule,
     WorkspacesModule,
     RestModule,
     GraphqlModule,

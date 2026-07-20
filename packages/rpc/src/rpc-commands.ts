@@ -39,6 +39,7 @@ import type {
   ReconciliationStatus,
   YasumuFileReference,
 } from '@yasumu/headless';
+import type { CookieIngestionResult, WorkspaceCookie, WorkspaceCookieInput } from '@yasumu/headless';
 
 import type { ExtractRpcTypes, InferParameters, InferReturnType, RpcMutation, RpcQuery } from './yasumu-rpc.js';
 
@@ -90,6 +91,15 @@ export interface YasumuRPC {
     active: RpcQuery<[], string[]>;
     /** Upload a selected file once and return an opaque host-handle reference. */
     registerFile: RpcMutation<[file: RegisterFileInput], YasumuFileReference>;
+  };
+  /** Workspace-local HTTP cookie jar commands. Cookie values are never synchronized to YSL. */
+  cookies: {
+    list: RpcQuery<[], WorkspaceCookie[]>;
+    upsert: RpcMutation<[input: WorkspaceCookieInput], WorkspaceCookie>;
+    delete: RpcMutation<[cookieId: string], void>;
+    clear: RpcMutation<[], void>;
+    resolve: RpcQuery<[url: string], string | null>;
+    ingest: RpcMutation<[url: string, setCookieHeaders: string[]], CookieIngestionResult>;
   };
   /**
    * The workspaces commands.

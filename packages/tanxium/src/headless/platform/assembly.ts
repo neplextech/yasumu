@@ -1,4 +1,4 @@
-import { HeadlessExecutionService } from '@yasumu/headless';
+import { HeadlessExecutionService, WorkspaceCookieJar } from '@yasumu/headless';
 import type { YasumuScriptRuntime } from '@yasumu/runtime-api';
 
 import type { HeadlessDrizzleDatabase } from '../persistence/database.ts';
@@ -23,6 +23,7 @@ export interface GuiHeadlessExecutionOptions {
 export function createGuiHeadlessExecutionPlatform(options: GuiHeadlessExecutionOptions) {
   const persistence = createDrizzleHeadlessPersistence(options.database);
   const files = new GuiFileResolver(options.fileHandles);
+  const cookies = new WorkspaceCookieJar(persistence.cookies);
   const transport = new GuiFetchTransport(options.echoServerPort, options.fetch);
   const permissions = new GuiPermissionProvider(options.confirmPermission);
   const events = new GuiExecutionEventSink(options.publishExecutionEvent);
@@ -36,6 +37,7 @@ export function createGuiHeadlessExecutionPlatform(options: GuiHeadlessExecution
     permissions,
     events,
     history: persistence.history,
+    cookies,
   });
   const emailHooks = new GuiEmailHookService({
     workspaces: persistence.workspaces,
@@ -52,6 +54,7 @@ export function createGuiHeadlessExecutionPlatform(options: GuiHeadlessExecution
     emailHooks,
     persistence,
     files,
+    cookies,
     transport,
     permissions,
     events,

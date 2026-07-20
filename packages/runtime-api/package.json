@@ -38,6 +38,7 @@
     "@types/node": "catalog:build",
     "@yasumu/shared": "workspace:*",
     "@yasumu/tsconfig": "workspace:*",
+    "oxfmt": "^0.58.0",
     "typescript": "catalog:build",
     "vitest": "catalog:test"
   }

@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http';
 
 import { echoServer } from '@yasumu/echo-server';
-import type { RequestTransport, RequestTransportContext } from '@yasumu/headless';
+import { remapResponseUrlToRequestOrigin, type RequestTransport, type RequestTransportContext } from '@yasumu/headless';
 
 const ECHO_HOSTNAME = 'echo.yasumu.local';
 
@@ -35,6 +35,12 @@ export class CliFetchTransport implements RequestTransport {
       server.close((error) => (error ? reject(error) : resolve()));
       server.closeAllConnections();
     });
+  }
+
+  responseUrl(request: Request, response: Response): string {
+    return new URL(request.url).hostname === ECHO_HOSTNAME
+      ? remapResponseUrlToRequestOrigin(response.url, request.url)
+      : response.url || request.url;
   }
 
   private ensureEchoServer(): Promise<string> {

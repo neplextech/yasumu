@@ -126,7 +126,8 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
       const query = typeof body?.query === 'string' ? body.query : '';
       if (isSubscription(query)) {
         const { interpolate } = useEnvironmentStore.getState();
-        const url = interpolate(entity.url ?? '').replace(/^http/, 'ws');
+        const requestUrl = interpolate(entity.url ?? '');
+        const url = requestUrl.replace(/^http/, 'ws');
         const variablesText = typeof body?.variables === 'string' ? body.variables : '{}';
         let variables: unknown = {};
         try {
@@ -142,6 +143,10 @@ export function useGraphqlRequest({ entityId }: UseGraphqlRequestOptions): UseGr
         );
         setState({ ...INITIAL_STATE, phase: 'sending' });
         try {
+          if (!Object.keys(headers).some((name) => name.toLowerCase() === 'cookie')) {
+            const cookieHeader = await workspace.cookies.resolve(requestUrl);
+            if (cookieHeader) headers.cookie = cookieHeader;
+          }
           const socket = new WebSocket(url, 'graphql-transport-ws');
           subscriptionRef.current = socket;
           socket.onopen = () => socket.send(JSON.stringify({ type: 'connection_init', payload: { headers } }));

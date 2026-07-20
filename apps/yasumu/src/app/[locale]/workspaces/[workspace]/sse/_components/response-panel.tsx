@@ -3,13 +3,13 @@
 import type { SseEvent, TestResult } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
 import { Button } from '@yasumu/ui/components/button';
-import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { Trash2 } from 'lucide-react';
 
 import { ConsoleView } from '@/app/[locale]/workspaces/[workspace]/rest/_components/response-panel/console-view';
 import { HeadersView } from '@/app/[locale]/workspaces/[workspace]/rest/_components/response-panel/headers-view';
 import { TestView } from '@/app/[locale]/workspaces/[workspace]/rest/_components/response-panel/test-view';
+import { SseEventsView } from '@/components/responses/sse-events-view';
 import YasumuLogo from '@/components/visuals/yasumu-logo';
 
 import type { RequestPhase, ScriptOutputEntry } from '../_hooks/use-sse-request';
@@ -24,52 +24,6 @@ interface SseResponsePanelProps {
   scriptOutput: ScriptOutputEntry[];
   testResults: TestResult[];
   onClearEvents(): void;
-}
-
-function formattedData(data: string): string {
-  try {
-    return JSON.stringify(JSON.parse(data), null, 2);
-  } catch {
-    return data;
-  }
-}
-
-function EventsView({ events, waiting }: { events: SseEvent[]; waiting: boolean }) {
-  if (!events.length) {
-    return (
-      <div className="text-muted-foreground flex h-full items-center justify-center p-6 text-center text-sm">
-        {waiting ? 'Connected. Waiting for the first event…' : 'No events received.'}
-      </div>
-    );
-  }
-  return (
-    <ScrollArea className="h-full" data-allow-context-menu="true">
-      <div className="flex flex-col gap-3 p-4 select-text">
-        {events.map((event, index) => (
-          <article key={`${event.receivedAt}:${event.id ?? index}`} className="bg-muted/20 rounded-md border p-3">
-            <header className="mb-3 flex items-center gap-2">
-              <Badge variant="secondary">{event.event}</Badge>
-              {event.id !== undefined ? (
-                <span className="text-muted-foreground font-mono text-xs">#{event.id}</span>
-              ) : null}
-              {event.retry !== undefined ? (
-                <span className="text-muted-foreground font-mono text-xs">retry {event.retry} ms</span>
-              ) : null}
-              <time
-                className="text-muted-foreground ml-auto font-mono text-xs"
-                dateTime={new Date(event.receivedAt).toISOString()}
-              >
-                {new Date(event.receivedAt).toLocaleTimeString()}
-              </time>
-            </header>
-            <pre className="bg-background overflow-x-auto rounded border p-3 font-mono text-xs whitespace-pre-wrap">
-              {formattedData(event.data)}
-            </pre>
-          </article>
-        ))}
-      </div>
-    </ScrollArea>
-  );
 }
 
 export function SseResponsePanel(props: SseResponsePanelProps) {
@@ -116,7 +70,7 @@ export function SseResponsePanel(props: SseResponsePanelProps) {
           </Button>
         </div>
         <TabsContent value="events" className="min-h-0 flex-1">
-          <EventsView events={props.events} waiting={active} />
+          <SseEventsView events={props.events} waiting={active} />
         </TabsContent>
         <TabsContent value="headers" className="min-h-0 flex-1">
           <HeadersView headers={props.response?.headers ?? {}} />

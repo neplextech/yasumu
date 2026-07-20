@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@yasumu/ui/components/tabs';
 import { useState } from 'react';
 
+import { SseEventsView } from '@/components/responses/sse-events-view';
 import LoadingScreen from '@/components/visuals/loading-screen';
 import YasumuLogo from '@/components/visuals/yasumu-logo';
 
@@ -46,7 +47,7 @@ export function RestResponsePanel({
 }: RestResponsePanelProps) {
   const [activeTab, setActiveTab] = useState<'response' | 'preview'>('response');
 
-  if (phase === 'pre-request-script' || phase === 'sending' || phase === 'post-response-script') {
+  if ((phase === 'pre-request-script' || phase === 'sending' || phase === 'post-response-script') && !response) {
     return (
       <div className="bg-background/50 flex h-full flex-col items-center justify-center">
         <LoadingScreen message={phaseMessages[phase]} />
@@ -54,7 +55,7 @@ export function RestResponsePanel({
     );
   }
 
-  if (phase === 'error' || (phase === 'cancelled' && !response)) {
+  if ((phase === 'error' || phase === 'cancelled') && !response) {
     return (
       <div className="bg-muted/5 flex h-full flex-col items-center justify-center p-4 text-center">
         <div className="space-y-2">
@@ -85,22 +86,25 @@ export function RestResponsePanel({
     <div className="bg-background flex h-full flex-col">
       <ResponseStatusBar response={response} />
       <Tabs
-        value={activeTab}
+        value={response.isEventStream ? 'response' : activeTab}
         onValueChange={(v) => setActiveTab(v as 'response' | 'preview')}
         className="flex min-h-0 flex-1 flex-col"
       >
         <div className="flex-shrink-0 border-b px-1">
           <TabsList className="h-10 w-full justify-start gap-2 bg-transparent">
             <TabsTrigger value="response">Response</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
+            {!response.isEventStream ? <TabsTrigger value="preview">Preview</TabsTrigger> : null}
           </TabsList>
         </div>
 
         <TabsContent value="response" className="min-h-0 flex-1">
-          <Tabs defaultValue="body" className="flex h-full flex-col">
+          <Tabs defaultValue={response.isEventStream ? 'events' : 'body'} className="flex h-full flex-col">
             <div className="flex-shrink-0 border-b px-1">
               <TabsList className="w-full justify-start gap-1 bg-transparent">
                 <TabsTrigger value="body">Body</TabsTrigger>
+                {response.isEventStream ? (
+                  <TabsTrigger value="events">Events ({response.events.length})</TabsTrigger>
+                ) : null}
                 <TabsTrigger value="headers">
                   Headers
                   <span className="text-muted-foreground bg-background ml-1.5 rounded px-1 py-0.5 text-[10px]">
@@ -134,6 +138,11 @@ export function RestResponsePanel({
             <TabsContent value="body" className="min-h-0 flex-1">
               <BodyView response={response} onSwitchToPreview={() => setActiveTab('preview')} />
             </TabsContent>
+            {response.isEventStream ? (
+              <TabsContent value="events" className="min-h-0 flex-1">
+                <SseEventsView events={response.events} waiting={response.streamConnected} />
+              </TabsContent>
+            ) : null}
             <TabsContent value="headers" className="min-h-0 flex-1">
               <HeadersView headers={response.headers} />
             </TabsContent>
@@ -153,9 +162,11 @@ export function RestResponsePanel({
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="preview" className="min-h-0 flex-1">
-          <PreviewView response={response} blobUrl={blobUrl} />
-        </TabsContent>
+        {!response.isEventStream ? (
+          <TabsContent value="preview" className="min-h-0 flex-1">
+            <PreviewView response={response} blobUrl={blobUrl} />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );

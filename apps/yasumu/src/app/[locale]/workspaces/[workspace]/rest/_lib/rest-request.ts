@@ -1,4 +1,4 @@
-import type { ExecutionResult } from '@yasumu/core';
+import type { ExecutionResult, SseEvent } from '@yasumu/core';
 
 export const MAX_BINARY_BODY_SIZE = 10 * 1024 * 1024;
 export const MAX_TEXT_BODY_SIZE = 1024 * 1024;
@@ -16,6 +16,9 @@ export interface RestResponse {
   bodyType: ResponseBodyType;
   size: number;
   bodyTruncated: boolean;
+  isEventStream: boolean;
+  streamConnected: boolean;
+  events: SseEvent[];
 }
 
 /** Maps the serializable headless response into the existing response-panel model. */
@@ -26,6 +29,9 @@ export function restResponseFromExecution(result: ExecutionResult): RestResponse
   const headers = Object.fromEntries(response.headers);
   const cookies = response.headers.filter(([name]) => name.toLowerCase() === 'set-cookie').map(([, value]) => value);
   const body = response.body;
+  const isEventStream =
+    headers['x-yasumu-original-content-type']?.toLowerCase().includes('text/event-stream') === true ||
+    headers['content-type']?.toLowerCase().includes('text/event-stream') === true;
 
   if (body.kind === 'binary') {
     const bytes = Uint8Array.from(body.bytes ?? []);
@@ -40,6 +46,9 @@ export function restResponseFromExecution(result: ExecutionResult): RestResponse
       bodyType: 'binary',
       size: body.size,
       bodyTruncated: body.truncated,
+      isEventStream,
+      streamConnected: false,
+      events: result.events,
     };
   }
 
@@ -55,5 +64,8 @@ export function restResponseFromExecution(result: ExecutionResult): RestResponse
     bodyType: 'text',
     size: body.size,
     bodyTruncated: body.truncated,
+    isEventStream,
+    streamConnected: false,
+    events: result.events,
   };
 }

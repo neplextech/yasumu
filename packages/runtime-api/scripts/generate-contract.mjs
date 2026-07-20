@@ -2,6 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { format } from 'oxfmt';
+
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = resolve(packageRoot, '../..');
 const contractPath = resolve(packageRoot, 'contract/runtime-api.json');
@@ -11,8 +13,20 @@ const serializationSource = await readFile(resolve(packageRoot, 'src/serializati
 const quote = (value) => JSON.stringify(value);
 const tuple = (values) => values.map(quote).join(', ');
 const generatedHeader = '// This file is generated from packages/runtime-api/contract/runtime-api.json. Do not edit.\n';
+const formatTypescript = async (fileName, source) => {
+  const result = await format(fileName, source, {
+    printWidth: 120,
+    singleQuote: true,
+    trailingComma: 'all',
+    semi: true,
+  });
+  if (result.errors.length) throw new Error(`Unable to format ${fileName}: ${result.errors[0].message}`);
+  return result.code;
+};
 
-const typescript = `${generatedHeader}
+const typescript = await formatTypescript(
+  'generated.ts',
+  `${generatedHeader}
 export const RUNTIME_API_VERSION = ${contract.version} as const;
 export const SCRIPT_HOOK_NAMES = [${tuple(contract.hooks)}] as const;
 export type ScriptHookName = (typeof SCRIPT_HOOK_NAMES)[number];
@@ -21,7 +35,8 @@ export type VirtualModuleName = keyof typeof VIRTUAL_MODULES;
 export const RUNTIME_CAPABILITY_NAMES = [${tuple(contract.capabilities)}] as const;
 export const RUNTIME_WORKER_MESSAGE_TYPES = [${tuple(contract.workerMessages)}] as const;
 export const RUNTIME_HOST_METHODS = [${tuple(contract.hostMethods)}] as const;
-`;
+`,
+);
 
 const rustVariant = (value) =>
   value
@@ -55,16 +70,23 @@ ${contract.hooks.map((hook) => `            Self::${rustVariant(hook)} => ${quot
 }
 `;
 
-const bootstrap = `${generatedHeader}
+const bootstrap = await formatTypescript(
+  'generated-runtime-contract.ts',
+  `${generatedHeader}
 export const YASUMU_RUNTIME_API_VERSION = ${contract.version} as const;
 export const YASUMU_SCRIPT_HOOKS = [${tuple(contract.hooks)}] as const;
 export const YASUMU_VIRTUAL_MODULES = [${tuple(Object.keys(contract.virtualModules))}] as const;
 export const YASUMU_RUNTIME_HOST_METHODS = [${tuple(contract.hostMethods)}] as const;
-`;
+`,
+);
 
-const tanxiumRuntimeProtocol = `${generatedHeader}
+const tanxiumRuntimeProtocol = await formatTypescript(
+  'generated-runtime-protocol.ts',
+  `${generatedHeader}
 export const RUNTIME_API_VERSION = ${contract.version} as const;
-${serializationSource.replace(/^import type \{[\s\S]*?\} from '\.\/types\.js';\n\n/, '')}`;
+${serializationSource.replace(/^import type \{[\s\S]*?\} from '\.\/types\.js';\n\n/, '')}
+`,
+);
 
 const outputs = [
   [resolve(packageRoot, 'src/generated.ts'), typescript],

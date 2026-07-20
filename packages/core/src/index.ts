@@ -18,6 +18,7 @@ export * from './core/modules/rest/rest.entity.js';
 export * from './core/modules/rest/rest.js';
 export * from './core/modules/email/email.js';
 export * from './core/modules/execution/execution.js';
+export * from './core/modules/cookies/cookies.js';
 export * from './core/modules/graphql/graphql.entity.js';
 export * from './core/modules/graphql/graphql.js';
 export * from './core/modules/sse/sse.entity.js';
@@ -33,6 +34,11 @@ export type {
   ExecuteEntityInput,
   ExecutionEvent,
   ExecutionResult,
+  CookieIngestionResult,
+  CookieSameSite,
   SseEvent,
   YasumuFileReference,
+  WorkspaceCookie,
+  WorkspaceCookieInput,
 } from '@yasumu/headless';
+export { getSetCookieHeaders } from '@yasumu/headless';

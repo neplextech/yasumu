@@ -1,3 +1,4 @@
+import type { CookieRepository, WorkspaceCookie } from './cookies.js';
 import { YasumuError, YasumuErrorCodes } from './errors.js';
 import type { ExecutableEntity, YasumuWorkspace } from './model.js';
 import type { EntityRepository, WorkspaceRepository } from './ports.js';
@@ -116,6 +117,57 @@ export class InMemoryEntityRepository implements EntityRepository {
 
   delete(workspaceId: string, entityId: string) {
     return this.repository.delete(workspaceId, entityId);
+  }
+}
+
+export class InMemoryCookieRepository implements CookieRepository {
+  private readonly cookies = new Map<string, WorkspaceCookie>();
+
+  public constructor(initial: WorkspaceCookie[] = []) {
+    for (const cookie of initial) this.cookies.set(cookie.id, clone(cookie));
+  }
+
+  public async list(workspaceId: string): Promise<WorkspaceCookie[]> {
+    return [...this.cookies.values()].filter((cookie) => cookie.workspaceId === workspaceId).map(clone);
+  }
+
+  public async upsert(cookie: WorkspaceCookie): Promise<WorkspaceCookie> {
+    const conflicting = [...this.cookies.values()].find(
+      (candidate) =>
+        candidate.workspaceId === cookie.workspaceId &&
+        candidate.name === cookie.name &&
+        candidate.domain === cookie.domain &&
+        candidate.path === cookie.path &&
+        candidate.id !== cookie.id,
+    );
+    if (conflicting) {
+      throw new YasumuError(YasumuErrorCodes.InvalidEntity, 'A cookie with this identity already exists');
+    }
+    const existing = this.cookies.get(cookie.id);
+    if (existing && existing.workspaceId !== cookie.workspaceId) {
+      throw new YasumuError(YasumuErrorCodes.InvalidReference, `Cookie belongs to another workspace: ${cookie.id}`);
+    }
+    this.cookies.set(cookie.id, clone(cookie));
+    return clone(cookie);
+  }
+
+  public async delete(workspaceId: string, cookieId: string): Promise<void> {
+    const cookie = this.cookies.get(cookieId);
+    if (cookie?.workspaceId === workspaceId) this.cookies.delete(cookieId);
+  }
+
+  public async clear(workspaceId: string): Promise<void> {
+    for (const cookie of this.cookies.values()) {
+      if (cookie.workspaceId === workspaceId) this.cookies.delete(cookie.id);
+    }
+  }
+
+  public async deleteExpired(workspaceId: string, now: number): Promise<void> {
+    for (const cookie of this.cookies.values()) {
+      if (cookie.workspaceId === workspaceId && cookie.expiresAt !== null && cookie.expiresAt <= now) {
+        this.cookies.delete(cookie.id);
+      }
+    }
   }
 }
 

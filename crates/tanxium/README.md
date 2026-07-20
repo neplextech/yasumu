@@ -12,7 +12,9 @@ cross-module REST, GraphQL, and SSE execution. An SSE hook can invoke a
 REST or GraphQL entity, and any request hook can start a saved SSE stream
 with a deterministic `maxEvents` limit. Tanxium transports these calls
 through its generic host-call protocol; request and stream policy remains
-in the reusable headless package.
+in the reusable headless package. Yasumu's host also shares one
+workspace-scoped cookie jar across those cross-module calls; Tanxium itself
+does not own or persist application credentials.
 
 ## Install
 

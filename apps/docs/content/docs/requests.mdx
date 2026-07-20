@@ -151,6 +151,17 @@ subscribes to execution events for live phases and console output. The
 CLI renders the same underlying result as human-readable or JSON
 output.
 
+When a REST endpoint responds with `Content-Type: text/event-stream`,
+the request remains a REST entity but the response panel switches to a
+live event viewer. Events appear incrementally and cancellation keeps
+the events already received. REST compatibility intentionally omits
+SSE-only filters and reconnect policy; use the dedicated
+[SSE module](/docs/sse) when those controls are required.
+
+REST, GraphQL, and SSE requests share the workspace's local HTTP
+cookie jar. See [Workspace Cookies](/docs/cookies) for matching,
+editing, persistence, and privacy behavior.
+
 ## Cancellation and timeouts
 
 Cancelling from the desktop or pressing `Ctrl+C` in the CLI aborts

@@ -101,7 +101,7 @@ export default function Home() {
               icon={<MdLock />}
               color="green"
               title="Offline First"
-              description="Your data stays on your machine. No cloud sync required. Complete privacy."
+              description="Your data stays on your machine. Per-workspace cookies live only in Yasumu's local database and never enter portable workspace files."
             />
             <FeatureCard
               icon={<MdCode />}

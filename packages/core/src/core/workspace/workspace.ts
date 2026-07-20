@@ -3,6 +3,7 @@ import type { WorkspaceSynchronizationResult } from '@yasumu/rpc';
 
 import { EnvironmentManager } from '../manager/environment-manager.js';
 import { WorkspaceManager } from '../manager/workspace-manager.js';
+import { CookiesModule } from '../modules/cookies/cookies.js';
 import { EmailModule } from '../modules/email/email.js';
 import { ExecutionModule } from '../modules/execution/execution.js';
 import { GraphqlModule } from '../modules/graphql/graphql.js';
@@ -38,6 +39,8 @@ export class Workspace {
   public readonly emails = new EmailModule(this);
   /** Unified headless execution for REST, GraphQL, and SSE entities. */
   public readonly execution = new ExecutionModule(this);
+  /** Workspace-local HTTP cookie jar shared by all request modules. */
+  public readonly cookies = new CookiesModule(this);
   /**
    * The external workspace provider for the workspace.
    */

@@ -39,6 +39,7 @@ import { YasumuSocials } from '@/lib/constants/socials';
 
 import { useUpdater } from '../providers/updater-provider';
 import { useWorkspaceSession, useYasumuRuntime } from '../providers/workspace-provider';
+import { CookieJarSheet } from '../workspace/cookie-jar/cookie-jar-sheet';
 import { AppMenu } from './app-menu';
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import SidebarLayoutStyleSelector from './layout-style-selector';
@@ -142,6 +143,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
             );
           })}
+          <CookieJarSheet />
           <SettingsDropdown user={data.user} />
         </SidebarMenu>
       </SidebarFooter>

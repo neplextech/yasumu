@@ -11,11 +11,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   HeadlessExecutionService,
+  InMemoryCookieRepository,
   InMemoryEntityRepository,
   InMemoryWorkspaceRepository,
+  type ExecutionRecord,
   type RequestTransport,
   type RequestTransportContext,
   parseSse,
+  WorkspaceCookieJar,
   YasumuErrorCodes,
 } from '../src/index.js';
 import { environment, graphqlEntity, group, restEntity, script, sseEntity, workspace } from './fixtures.js';
@@ -80,7 +83,10 @@ class BehaviorRuntime implements YasumuScriptRuntime {
       mockResponse = await snapshotResponse(
         new Response(JSON.stringify({ mocked: true }), {
           status: 209,
-          headers: { 'content-type': 'application/json' },
+          headers: {
+            'content-type': 'application/json',
+            ...(code.includes('mock-cookie') ? { 'set-cookie': 'mocked=true; Path=/; HttpOnly' } : {}),
+          },
         }),
       );
     }
@@ -229,6 +235,20 @@ describe('HeadlessExecutionService', () => {
     expect(runtime.order).toEqual(['onRequest:mocking', 'onResponse:mocking', 'onTest:mocking']);
   });
 
+  it('stores cookies returned by a script mock response', async () => {
+    const cookies = new WorkspaceCookieJar(new InMemoryCookieRepository(), { generateId: () => 'mock-cookie' });
+    const entity = restEntity({ scripts: { lifecycle: script('mock-cookie', 'mock-cookie') } });
+    const result = await serviceFor(
+      new BehaviorRuntime(),
+      new RecordingTransport(),
+      workspace({ entities: [entity] }),
+      { cookies },
+    ).execute({ workspaceId: 'workspace-1', entityId: entity.id });
+
+    expect(result).toMatchObject({ status: 'completed', isMockResponse: true });
+    expect(await cookies.list('workspace-1')).toMatchObject([{ name: 'mocked', value: 'true', httpOnly: true }]);
+  });
+
   it('applies body limits only to serialized output, not hooks or transport', async () => {
     const runtime = new BehaviorRuntime();
     const transport = new RecordingTransport(new Response('abcdefghij', { headers: { 'content-type': 'text/plain' } }));
@@ -368,6 +388,113 @@ describe('HeadlessExecutionService', () => {
     });
     expect(fromSse.events).toHaveLength(1);
     expect(fromSse.nestedExecutions[0]).toMatchObject({ entityId: 'rest-child', status: 'completed' });
+  });
+
+  it('treats a REST text/event-stream response as a live event response without changing entity kind', async () => {
+    const emitted: unknown[] = [];
+    const entity = restEntity();
+    const transport = new RecordingTransport(
+      new Response('id: 1\nevent: update\ndata: first\n\ndata: second\n\n', {
+        headers: { 'content-type': 'text/event-stream', 'x-stream': 'rest' },
+      }),
+    );
+    const result = await serviceFor(new BehaviorRuntime(), transport, workspace({ entities: [entity] }), {
+      events: { emit: (event) => void emitted.push(event) },
+    }).execute({ workspaceId: 'workspace-1', entityId: entity.id });
+
+    expect(result).toMatchObject({ status: 'completed', entityKind: 'rest' });
+    expect(result.events).toMatchObject([
+      { id: '1', event: 'update', data: 'first' },
+      { id: '1', event: 'message', data: 'second' },
+    ]);
+    expect(result.response?.headers).toContainEqual(['x-yasumu-original-content-type', 'text/event-stream']);
+    expect(emitted).toContainEqual(expect.objectContaining({ type: 'sse-opened', status: 200 }));
+    expect(emitted).toContainEqual(expect.objectContaining({ type: 'sse-event-received' }));
+  });
+
+  it('applies and stores workspace cookies across REST, GraphQL, and SSE executions', async () => {
+    const requests: Request[] = [];
+    const transport: RequestTransport = {
+      async send(request) {
+        requests.push(request.clone());
+        return request.headers.get('accept') === 'text/event-stream'
+          ? new Response('data: complete\n\n', { headers: { 'content-type': 'text/event-stream' } })
+          : new Response('{}', {
+              headers: requests.length === 1 ? { 'set-cookie': 'session=shared; Path=/; HttpOnly' } : {},
+            });
+      },
+    };
+    const cookieJar = new WorkspaceCookieJar(new InMemoryCookieRepository(), { generateId: () => 'session' });
+    const rest = restEntity({ id: 'rest' });
+    const graphql = graphqlEntity({ id: 'graphql' });
+    const sse = sseEntity({ id: 'sse', url: 'https://example.test/events', reconnect: { enabled: false, retryMs: 1 } });
+    const fixture = workspace({ entities: [rest, graphql, sse] });
+    const service = serviceFor(new BehaviorRuntime(), transport, fixture, { cookies: cookieJar });
+
+    await service.execute({ workspaceId: fixture.id, entityId: rest.id });
+    await service.execute({ workspaceId: fixture.id, entityId: graphql.id });
+    await service.execute({ workspaceId: fixture.id, entityId: sse.id, options: { maxEvents: 1 } });
+
+    expect(requests[0]?.headers.get('cookie')).toBeNull();
+    expect(requests[1]?.headers.get('cookie')).toBe('session=shared');
+    expect(requests[2]?.headers.get('cookie')).toBe('session=shared');
+  });
+
+  it('reports malformed response cookies without exposing their values', async () => {
+    const cookies = new WorkspaceCookieJar(new InMemoryCookieRepository());
+    const result = await serviceFor(
+      new BehaviorRuntime(),
+      new RecordingTransport(new Response('{}', { headers: { 'set-cookie': 'secret=value; Domain=invalid.test' } })),
+      workspace(),
+      { cookies },
+    ).execute({ workspaceId: 'workspace-1', entityId: 'rest-1' });
+
+    expect(result.diagnostics).toContainEqual({
+      code: 'INVALID_SET_COOKIE',
+      message: 'Ignored a Set-Cookie header: Cookie domain does not match the response URL',
+      severity: 'warning',
+    });
+    expect(JSON.stringify(result.diagnostics)).not.toContain('secret=value');
+  });
+
+  it('preserves an explicit Cookie header and does not expose Set-Cookie values in stream-open events', async () => {
+    const emitted: unknown[] = [];
+    const repository = new InMemoryCookieRepository();
+    const cookies = new WorkspaceCookieJar(repository, { generateId: () => 'stored' });
+    await cookies.upsert('workspace-1', { name: 'stored', value: 'jar', domain: 'example.test' });
+    const entity = restEntity({ headers: [{ key: 'cookie', value: 'manual=value', enabled: true }] });
+    const transport = new RecordingTransport(
+      new Response('data: event\n\n', {
+        headers: { 'content-type': 'text/event-stream', 'set-cookie': 'secret=response; Path=/' },
+      }),
+    );
+    await serviceFor(new BehaviorRuntime(), transport, workspace({ entities: [entity] }), {
+      cookies,
+      events: { emit: (event) => void emitted.push(event) },
+    }).execute({ workspaceId: 'workspace-1', entityId: entity.id });
+
+    expect(transport.requests[0]?.headers.get('cookie')).toBe('manual=value');
+    expect(JSON.stringify(emitted)).not.toContain('secret=response');
+  });
+
+  it('keeps live cookie headers available but excludes them from persisted execution history', async () => {
+    const history: ExecutionRecord[] = [];
+    const entity = restEntity({ headers: [{ key: 'cookie', value: 'session=request-secret', enabled: true }] });
+    const result = await serviceFor(
+      new BehaviorRuntime(),
+      new RecordingTransport(
+        new Response('{}', {
+          headers: { 'content-type': 'application/json', 'set-cookie': 'session=response-secret; Path=/' },
+        }),
+      ),
+      workspace({ entities: [entity] }),
+      { history: { save: async (record) => void history.push(record) } },
+    ).execute({ workspaceId: 'workspace-1', entityId: entity.id });
+
+    expect(result.request?.headers).toContainEqual(['cookie', 'session=request-secret']);
+    expect(result.response?.headers).toContainEqual(['set-cookie', 'session=response-secret; Path=/']);
+    expect(JSON.stringify(history)).not.toContain('request-secret');
+    expect(JSON.stringify(history)).not.toContain('response-secret');
   });
 
   it('cancels the response reader after reaching the requested SSE event limit', async () => {

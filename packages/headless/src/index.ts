@@ -1,4 +1,5 @@
 export * from './crud.js';
+export * from './cookies.js';
 export * from './email.js';
 export * from './environment.js';
 export * from './errors.js';

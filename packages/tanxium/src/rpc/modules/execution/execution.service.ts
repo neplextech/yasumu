@@ -1,10 +1,13 @@
 import { Injectable } from '@yasumu/den';
 import type {
+  CookieIngestionResult,
   EmailHookResult,
   ExecuteEntityInput,
   ExecutionEvent,
   ExecutionResult,
   YasumuFileReference,
+  WorkspaceCookie,
+  WorkspaceCookieInput,
 } from '@yasumu/headless';
 import type { RegisterFileInput } from '@yasumu/rpc';
 import type { WorkspaceEmail } from '@yasumu/runtime-api';
@@ -56,6 +59,30 @@ export class ExecutionService {
   public registerFile(workspaceId: string, file: RegisterFileInput): YasumuFileReference {
     const handleId = `${workspaceId}:${crypto.randomUUID()}`;
     return this.fileHandles.register(handleId, file);
+  }
+
+  public listCookies(workspaceId: string): Promise<WorkspaceCookie[]> {
+    return this.platform.cookies.list(workspaceId);
+  }
+
+  public upsertCookie(workspaceId: string, input: WorkspaceCookieInput): Promise<WorkspaceCookie> {
+    return this.platform.cookies.upsert(workspaceId, input);
+  }
+
+  public deleteCookie(workspaceId: string, cookieId: string): Promise<void> {
+    return this.platform.cookies.delete(workspaceId, cookieId);
+  }
+
+  public clearCookies(workspaceId: string): Promise<void> {
+    return this.platform.cookies.clear(workspaceId);
+  }
+
+  public resolveCookieHeader(workspaceId: string, url: string): Promise<string | null> {
+    return this.platform.cookies.getCookieHeader(workspaceId, url);
+  }
+
+  public ingestCookies(workspaceId: string, url: string, setCookieHeaders: string[]): Promise<CookieIngestionResult> {
+    return this.platform.cookies.storeFromResponse(workspaceId, url, setCookieHeaders);
   }
 
   public handleEmail(workspaceId: string, email: WorkspaceEmail, signal?: AbortSignal): Promise<EmailHookResult> {

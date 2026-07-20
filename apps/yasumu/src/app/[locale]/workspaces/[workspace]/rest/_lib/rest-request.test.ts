@@ -26,6 +26,8 @@ describe('restResponseFromExecution', () => {
       bodyType: 'text',
       size: 11,
       cookies: ['session=one'],
+      isEventStream: false,
+      events: [],
     });
   });
 
@@ -46,6 +48,25 @@ describe('restResponseFromExecution', () => {
 
   it('returns null when execution has no response', () => {
     expect(restResponseFromExecution(execution(undefined))).toBeNull();
+  });
+
+  it('maps headless REST event streams into the live-compatible response model', () => {
+    const result = execution({
+      status: 200,
+      statusText: 'OK',
+      headers: [
+        ['content-type', 'application/json'],
+        ['x-yasumu-original-content-type', 'text/event-stream'],
+      ],
+      body: { kind: 'json', value: { events: [] }, size: 13, truncated: false },
+    });
+    result.events = [{ id: '1', event: 'message', data: 'hello', receivedAt: 10 }];
+
+    expect(restResponseFromExecution(result)).toMatchObject({
+      isEventStream: true,
+      streamConnected: false,
+      events: result.events,
+    });
   });
 });
 

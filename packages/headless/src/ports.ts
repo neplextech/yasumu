@@ -46,6 +46,8 @@ export interface RequestTransportContext {
 
 export interface RequestTransport {
   send(request: Request, context: RequestTransportContext, signal: AbortSignal): Promise<Response>;
+  /** Returns the semantic response URL when a host transparently rewrites the request origin. */
+  responseUrl?(request: Request, response: Response): string;
 }
 
 export interface EmailProvider {
@@ -113,6 +115,18 @@ export class WebFetchTransport implements RequestTransport {
       }),
     );
   }
+}
+
+/** Restores a transparently rewritten response URL to the origin visible to the caller. */
+export function remapResponseUrlToRequestOrigin(responseUrl: string, requestUrl: string): string {
+  const request = new URL(requestUrl);
+  const response = new URL(responseUrl || requestUrl);
+  response.protocol = request.protocol;
+  response.username = request.username;
+  response.password = request.password;
+  response.hostname = request.hostname;
+  response.port = request.port;
+  return response.href;
 }
 
 export const noopEventSink: ExecutionEventSink = { emit: () => undefined };

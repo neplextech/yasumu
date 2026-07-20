@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@yasumu/ui/components/badge';
 import { cn } from '@yasumu/ui/lib/utils';
 
 import type { RestResponse } from '../../_lib/rest-request';
@@ -18,6 +19,14 @@ export function ResponseStatusBar({ response }: ResponseStatusBarProps) {
           {response.status} {response.statusText}
         </span>
       </div>
+      {response.isEventStream ? (
+        <div className="ml-auto flex items-center gap-2">
+          <Badge variant={response.streamConnected ? 'default' : 'outline'}>
+            {response.streamConnected ? 'Live' : 'Closed'}
+          </Badge>
+          <span className="text-muted-foreground font-mono text-xs">{response.events.length} events</span>
+        </div>
+      ) : null}
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">Time:</span>
         <span className="font-mono">{response.time.toFixed(0)}ms</span>

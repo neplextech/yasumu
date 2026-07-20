@@ -1,0 +1,52 @@
+---
+title: Workspace Cookies
+description:
+  Inspect and edit the local cookie jar shared by requests in one
+  Yasumu workspace.
+---
+
+# Workspace Cookies
+
+Every desktop workspace has its own HTTP cookie jar. REST, GraphQL,
+SSE, renderer-side requests such as GraphQL introspection, and nested
+script executions share that jar. Cookies never cross workspace
+boundaries.
+
+Open **Cookie Jar** from the workspace sidebar to search, add, edit,
+delete, or clear cookies. The editor supports name, value, domain,
+path, expiry, `Secure`, `HttpOnly`, `SameSite`, and host-only rules.
+Cookie values stay masked in the table and are revealed only while
+editing.
+
+## Request behavior
+
+Before a request is sent, Yasumu selects cookies using the request
+scheme, hostname, domain rule, path, and expiry. More-specific paths
+are sent first. A `Secure` cookie is never sent over HTTP, and expired
+cookies are removed automatically.
+
+If a request explicitly defines a `Cookie` header, that header wins
+for that request. The jar is not merged into it.
+
+Every valid `Set-Cookie` response header is applied independently.
+Malformed values are rejected without discarding other valid cookies
+from the same response. `Max-Age`, `Expires`, `Domain`, `Path`,
+`Secure`, `HttpOnly`, and `SameSite` attributes are supported.
+
+## Local-only persistence
+
+Desktop cookies are stored in Yasumu's local SQLite database. They are
+not part of the workspace aggregate, are never written to YSL, and are
+excluded from workspace import, export, and synchronization. Sharing a
+workspace directory or committing it to Git therefore never shares
+cookie values.
+
+Cookie credentials are also removed from persisted execution history
+and streaming events. The active response viewer can still show the
+current response's `Set-Cookie` headers so you can inspect server
+behavior.
+
+Cookies without an explicit expiry remain in the local jar until they
+are replaced, deleted, or the workspace jar is cleared. CLI runs use
+an ephemeral in-memory jar shared for the duration of that run and do
+not write cookies to disk.

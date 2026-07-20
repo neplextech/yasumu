@@ -1,4 +1,4 @@
-import type { RequestTransport, RequestTransportContext } from '@yasumu/headless';
+import { remapResponseUrlToRequestOrigin, type RequestTransport, type RequestTransportContext } from '@yasumu/headless';
 
 export const GUI_ECHO_HOSTNAME = 'echo.yasumu.local';
 
@@ -40,6 +40,12 @@ export class GuiFetchTransport implements RequestTransport {
         duplex: request.body ? 'half' : undefined,
       } as RequestInit),
     );
+  }
+
+  public responseUrl(request: Request, response: Response): string {
+    return new URL(request.url).hostname === GUI_ECHO_HOSTNAME
+      ? remapResponseUrlToRequestOrigin(response.url, request.url)
+      : response.url || request.url;
   }
 }
 

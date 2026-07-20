@@ -4,8 +4,10 @@ import { resolve } from 'node:path';
 import {
   HeadlessExecutionService,
   HeadlessWorkspaceLoader,
+  InMemoryCookieRepository,
   InMemoryEntityRepository,
   InMemoryWorkspaceRepository,
+  WorkspaceCookieJar,
   parseDotenv,
   resolveEnvironment,
   type EnvironmentSnapshot,
@@ -127,11 +129,13 @@ export async function executeBatch(input: ExecutionBatchInput): Promise<Executio
   const workspaceRepository = new InMemoryWorkspaceRepository([input.workspace]);
   const entityRepository = new InMemoryEntityRepository(workspaceRepository);
   const transport = new CliFetchTransport();
+  const cookies = new WorkspaceCookieJar(new InMemoryCookieRepository());
   const service = new HeadlessExecutionService({
     workspaces: workspaceRepository,
     entities: entityRepository,
     runtime: createNodeScriptRuntime({ defaultTimeoutMs: input.timeoutMs }),
     transport,
+    cookies,
     files: new NodeWorkspaceFileResolver(),
     secrets: {
       resolve: async (workspace, environmentId) =>

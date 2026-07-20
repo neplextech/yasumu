@@ -598,6 +598,9 @@ importers:
       '@yasumu/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      oxfmt:
+        specifier: ^0.58.0
+        version: 0.58.0
       typescript:
         specifier: catalog:build
         version: 7.0.2

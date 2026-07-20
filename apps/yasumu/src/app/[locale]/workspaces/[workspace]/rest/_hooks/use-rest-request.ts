@@ -122,12 +122,50 @@ export function useRestRequest({ entityId }: UseRestRequestOptions): UseRestRequ
       const unsubscribe = workspace.manager.yasumu.events.on('onExecutionEvent', (_eventWorkspace, event) => {
         if (!isCurrent() || event.executionId !== executionId) return;
         const output = outputFromExecutionEvent(event);
-        updateState((previous) => ({
-          ...previous,
-          phase: phaseFromExecutionEvent(event, previous.phase),
-          scriptOutput: output ? [...previous.scriptOutput, output] : previous.scriptOutput,
-          testResults: event.type === 'test-completed' ? [...previous.testResults, event.test] : previous.testResults,
-        }));
+        updateState((previous) => {
+          if (event.type === 'sse-opened') {
+            const headers = Object.fromEntries(event.headers);
+            return {
+              ...previous,
+              phase: 'sending',
+              response: {
+                status: event.status,
+                statusText: event.statusText,
+                time: performance.now() - startedAt,
+                headers,
+                cookies: [],
+                textBody: null,
+                binaryBody: null,
+                bodyType: 'text',
+                size: 0,
+                bodyTruncated: false,
+                isEventStream: true,
+                streamConnected: event.status >= 200 && event.status < 300,
+                events: previous.response?.events ?? [],
+              },
+            };
+          }
+          if (event.type === 'sse-event-received') {
+            const events = [...(previous.response?.events ?? []), event.event];
+            return previous.response
+              ? {
+                  ...previous,
+                  response: {
+                    ...previous.response,
+                    time: performance.now() - startedAt,
+                    size: previous.response.size + new Blob([event.event.data]).size,
+                    events,
+                  },
+                }
+              : previous;
+          }
+          return {
+            ...previous,
+            phase: phaseFromExecutionEvent(event, previous.phase),
+            scriptOutput: output ? [...previous.scriptOutput, output] : previous.scriptOutput,
+            testResults: event.type === 'test-completed' ? [...previous.testResults, event.test] : previous.testResults,
+          };
+        });
       });
 
       const startedAt = performance.now();
@@ -210,7 +248,12 @@ export function useRestRequest({ entityId }: UseRestRequestOptions): UseRestRequ
     if (entityId) {
       trackEvent('rest_request_cancelled', { workspace_id: workspace.id, entity_id: entityId });
     }
-    setState((previous) => ({ ...previous, phase: 'cancelled', error: 'Request cancelled' }));
+    setState((previous) => ({
+      ...previous,
+      phase: 'cancelled',
+      error: previous.response?.isEventStream ? null : 'Request cancelled',
+      response: previous.response ? { ...previous.response, streamConnected: false } : null,
+    }));
   }, [cancelActiveExecution, entityId, workspace.id]);
 
   const reset = useCallback(() => {

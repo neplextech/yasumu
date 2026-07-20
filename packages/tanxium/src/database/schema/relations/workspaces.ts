@@ -7,6 +7,7 @@ import { graphqlEntities } from '../tables/graphql-entity.ts';
 import { restEntities } from '../tables/rest-entity.ts';
 import { sourceRevisions } from '../tables/source-revision.ts';
 import { sseEntities } from '../tables/sse-entity.ts';
+import { workspaceCookies } from '../tables/workspace-cookie.ts';
 import { workspaces } from '../tables/workspaces.ts';
 
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
@@ -17,4 +18,5 @@ export const workspacesRelations = relations(workspaces, ({ many }) => ({
   entityGroups: many(entityGroups),
   sourceRevisions: many(sourceRevisions),
   executionHistory: many(executionHistory),
+  cookies: many(workspaceCookies),
 }));

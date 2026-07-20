@@ -59,16 +59,14 @@ Deno.test('GUI fetch transport rewrites only the embedded echo alias and rejects
       return Promise.resolve(new Response('ok'));
     },
   );
-  await transport.send(
-    new Request('https://echo.yasumu.local/api/echo?value=one', {
-      method: 'POST',
-      body: 'body',
-    }),
-    transportContext(),
-    new AbortController().signal,
-  );
+  const request = new Request('https://echo.yasumu.local/api/echo?value=one', {
+    method: 'POST',
+    body: 'body',
+  });
+  const response = await transport.send(request, transportContext(), new AbortController().signal);
   assert.equal(seen[0]?.url, 'http://127.0.0.1:41234/api/echo?value=one');
   assert.equal(await seen[0]?.text(), 'body');
+  assert.equal(transport.responseUrl(request, response), 'https://echo.yasumu.local/api/echo?value=one');
   assert.equal(rewriteGuiEchoUrl('https://example.com/path', null).href, 'https://example.com/path');
   assert.throws(() => rewriteGuiEchoUrl('http://echo.yasumu.local/path', null), /not available/);
 

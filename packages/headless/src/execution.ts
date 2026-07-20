@@ -16,6 +16,7 @@ import type {
 } from '@yasumu/runtime-api';
 import { requestFromSnapshot, responseFromSnapshot, snapshotRequest, snapshotResponse } from '@yasumu/runtime-api';
 
+import { getSetCookieHeaders, type RequestCookieJar } from './cookies.js';
 import { resolveEnvironment } from './environment.js';
 import { isAbortError, serializeYasumuError, YasumuError, YasumuErrorCodes } from './errors.js';
 import type { ExecutionEvent } from './events.js';
@@ -38,7 +39,7 @@ import {
 } from './ports.js';
 import { buildEntityRequest } from './requests.js';
 import { createWorkspaceRuntimeHost, toScriptEntity } from './runtime-host.js';
-import { consumeSse } from './sse.js';
+import { consumeSse, consumeSseResponse, createSseSnapshotResponse, isSseResponse } from './sse.js';
 
 export interface ExecuteEntityInput {
   workspaceId: string;
@@ -95,6 +96,7 @@ export interface HeadlessExecutionDependencies {
   secrets?: SecretProvider;
   events?: ExecutionEventSink;
   history?: ExecutionHistoryRepository;
+  cookies?: RequestCookieJar;
   clock?: Clock;
   ids?: IdGenerator;
   maxNestingDepth?: number;
@@ -304,6 +306,14 @@ export class HeadlessExecutionService {
         accumulator.request = accumulator.runtimeRequest
           ? await limitRequestSnapshot(accumulator.runtimeRequest, input.options?.maxRequestBodyBytes)
           : await snapshotRequest(transportRequest.clone(), input.options?.maxRequestBodyBytes);
+        if (accumulator.runtimeResponse) {
+          await this.storeResponseCookies(
+            workspace.id,
+            transportRequest.url,
+            new Headers(accumulator.runtimeResponse.headers),
+            accumulator.diagnostics,
+          );
+        }
         if (!accumulator.runtimeResponse) {
           await this.emit(baseEvent('request-sent', {}));
           const transportContext = {
@@ -334,7 +344,13 @@ export class HeadlessExecutionService {
                     open: async (lastEventId) => {
                       const reconnectRequest = transportRequest.clone();
                       if (lastEventId) reconnectRequest.headers.set('last-event-id', lastEventId);
-                      return this.dependencies.transport.send(reconnectRequest, transportContext, controller.signal);
+                      return this.sendWithCookies(
+                        workspace.id,
+                        reconnectRequest,
+                        transportContext,
+                        controller.signal,
+                        accumulator.diagnostics,
+                      );
                     },
                     onOpen: async (response, reconnected) => {
                       await this.emit(
@@ -342,7 +358,7 @@ export class HeadlessExecutionService {
                           baseEvent('sse-opened', {
                             status: response.status,
                             statusText: response.statusText,
-                            headers: [...response.headers],
+                            headers: safeEventHeaders(response.headers),
                             reconnected,
                           }),
                         ),
@@ -354,15 +370,45 @@ export class HeadlessExecutionService {
                     },
                   })
                 ).response
-              : await this.dependencies.transport.send(transportRequest, transportContext, controller.signal);
+              : await this.sendWithCookies(
+                  workspace.id,
+                  transportRequest,
+                  transportContext,
+                  controller.signal,
+                  accumulator.diagnostics,
+                );
+          const responseToSnapshot =
+            entity.kind === 'rest' && isSseResponse(transportResponse)
+              ? await (async () => {
+                  await this.emit(
+                    accumulator.redactor.redactValue(
+                      baseEvent('sse-opened', {
+                        status: transportResponse.status,
+                        statusText: transportResponse.statusText,
+                        headers: safeEventHeaders(transportResponse.headers),
+                        reconnected: false,
+                      }),
+                    ),
+                  );
+                  const events = await consumeSseResponse({
+                    response: transportResponse,
+                    signal: controller.signal,
+                    onEvent: async (event) => {
+                      accumulator.sseEvents.push(event);
+                      await this.emit(accumulator.redactor.redactValue(baseEvent('sse-event-received', { event })));
+                    },
+                  });
+                  return createSseSnapshotResponse(transportResponse, events);
+                })()
+              : transportResponse;
           if (session) {
-            accumulator.runtimeResponse = await snapshotResponse(transportResponse, Number.POSITIVE_INFINITY);
+            accumulator.runtimeResponse = await snapshotResponse(responseToSnapshot, Number.POSITIVE_INFINITY);
             accumulator.response = await limitResponseSnapshot(
               accumulator.runtimeResponse,
               responseBodyLimit(input.options),
             );
           } else {
-            accumulator.response = await snapshotResponse(transportResponse, responseBodyLimit(input.options));
+            accumulator.response = await snapshotResponse(responseToSnapshot, responseBodyLimit(input.options));
           }
         }
         if (!accumulator.response) throw new Error('Response snapshot was not created');
@@ -487,6 +533,44 @@ export class HeadlessExecutionService {
         parentExecutionId: input.parentExecutionId,
         ...detail,
       } as Extract<ExecutionEvent, { type: T }>;
+    }
+  }
+
+  private async sendWithCookies(
+    workspaceId: string,
+    request: Request,
+    context: Parameters<RequestTransport['send']>[1],
+    signal: AbortSignal,
+    diagnostics: Diagnostic[],
+  ): Promise<Response> {
+    const outgoing = request.clone();
+    if (this.dependencies.cookies && !outgoing.headers.has('cookie')) {
+      const cookieHeader = await this.dependencies.cookies.getCookieHeader(workspaceId, outgoing.url);
+      if (cookieHeader) outgoing.headers.set('cookie', cookieHeader);
+    }
+    const response = await this.dependencies.transport.send(outgoing, context, signal);
+    const responseUrl = this.dependencies.transport.responseUrl?.(outgoing, response) ?? (response.url || outgoing.url);
+    await this.storeResponseCookies(workspaceId, responseUrl, response.headers, diagnostics);
+    return response;
+  }
+
+  private async storeResponseCookies(
+    workspaceId: string,
+    responseUrl: string,
+    headers: Headers,
+    diagnostics: Diagnostic[],
+  ): Promise<void> {
+    if (!this.dependencies.cookies) return;
+    const setCookieHeaders = getSetCookieHeaders(headers);
+    if (setCookieHeaders.length) {
+      const result = await this.dependencies.cookies.storeFromResponse(workspaceId, responseUrl, setCookieHeaders);
+      for (const rejected of result.rejected) {
+        diagnostics.push({
+          code: 'INVALID_SET_COOKIE',
+          message: `Ignored a Set-Cookie header: ${rejected.reason}`,
+          severity: 'warning',
+        });
+      }
     }
   }
 
@@ -722,10 +806,30 @@ export class HeadlessExecutionService {
       completedAt: result.completedAt,
       durationMs: result.durationMs,
       tests: result.tests,
-      result: JSON.parse(JSON.stringify(result)) as JsonValue,
+      result: historySafeResult(result),
     };
     await this.dependencies.history.save(record);
   }
+}
+
+function historySafeResult(result: ExecutionResult): JsonValue {
+  const serialized = JSON.parse(JSON.stringify(result)) as ExecutionResult;
+  if (serialized.request) serialized.request.headers = withoutSensitiveHeaders(serialized.request.headers, ['cookie']);
+  if (serialized.response) {
+    serialized.response.headers = withoutSensitiveHeaders(serialized.response.headers, ['set-cookie']);
+  }
+  for (const nested of serialized.nestedExecutions) {
+    if (nested.response) nested.response.headers = withoutSensitiveHeaders(nested.response.headers, ['set-cookie']);
+  }
+  return serialized as unknown as JsonValue;
+}
+
+function withoutSensitiveHeaders(
+  headers: Array<[string, string]>,
+  sensitiveNames: readonly string[],
+): Array<[string, string]> {
+  const sensitive = new Set(sensitiveNames);
+  return headers.filter(([name]) => !sensitive.has(name.toLowerCase()));
 }
 
 function lifecycleSources(workspace: YasumuWorkspace, entity: ExecutableEntity): ScriptSource[] {
@@ -815,4 +919,11 @@ async function limitResponseSnapshot(snapshot: ResponseSnapshot, maxBodyBytes?: 
 
 function responseBodyLimit(options: ExecutionOptions | undefined): number | undefined {
   return options?.includeResponseBody === false ? 0 : options?.maxResponseBodyBytes;
+}
+
+function safeEventHeaders(headers: Headers): Array<[string, string]> {
+  return [...headers].filter(([name]) => {
+    const normalized = name.toLowerCase();
+    return normalized !== 'cookie' && normalized !== 'set-cookie';
+  });
 }

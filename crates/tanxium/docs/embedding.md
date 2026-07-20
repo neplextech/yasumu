@@ -53,6 +53,12 @@ Bare Tanxium embedders remain application-independent: they can
 provide their own host-call implementation or omit the Yasumu request
 APIs.
 
+Request credentials remain a host concern. Yasumu composes the
+headless cookie policy with a workspace-scoped local repository, so
+REST, GraphQL, SSE, and nested host calls see the same cookies without
+adding cookie state to Tanxium or the script contract. Other embedders
+can provide their own repository and lifetime policy.
+
 ## Permissions
 
 The main worker receives all permissions by default, preserving the

@@ -8,6 +8,7 @@
     "requests",
     "graphql",
     "sse",
+    "cookies",
     "environments",
     "scripting",
     "testing",

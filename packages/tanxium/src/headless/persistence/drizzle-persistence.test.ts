@@ -35,6 +35,7 @@ const migrationNames = [
   '0003_late_kitty_pryde.sql',
   '0004_headless_persistence.sql',
   '0005_kind_mentor.sql',
+  '0006_nappy_whirlwind.sql',
 ];
 
 Deno.test('workspace adapter maps complete aggregates without claiming source baseline ownership', async () => {
@@ -286,6 +287,74 @@ Deno.test('execution history adapter upserts terminal records with serialized te
       result: { error: 'failed' },
       tests: [],
     });
+  } finally {
+    database.$client.close();
+  }
+});
+
+Deno.test('cookie adapter persists and isolates workspace cookie jars', async () => {
+  const database = await createTestDatabase();
+  try {
+    const persistence = createDrizzleHeadlessPersistence(database);
+    const first = workspaceFixture();
+    await persistence.workspaces.save(first);
+    await persistence.workspaces.save({
+      ...first,
+      id: 'workspace-two',
+      name: 'Two',
+      root: '/workspace-two',
+      activeEnvironmentId: null,
+      entities: [],
+      groups: [],
+      environments: [],
+      smtp: undefined,
+    });
+
+    const base = {
+      name: 'session',
+      value: 'one',
+      domain: 'example.test',
+      path: '/',
+      expiresAt: null,
+      secure: true,
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      hostOnly: true,
+      createdAt: 10,
+      updatedAt: 10,
+    };
+    await persistence.cookies.upsert({ ...base, id: 'cookie-one', workspaceId: 'workspace' });
+    await persistence.cookies.upsert({ ...base, id: 'cookie-two', workspaceId: 'workspace-two', value: 'two' });
+    await persistence.cookies.upsert({
+      ...base,
+      id: 'cookie-one',
+      workspaceId: 'workspace',
+      value: 'updated',
+      updatedAt: 20,
+    });
+    await assert.rejects(
+      () =>
+        persistence.cookies.upsert({
+          ...base,
+          id: 'cookie-one',
+          workspaceId: 'workspace-two',
+          value: 'cross-workspace',
+        }),
+      /belongs to another workspace/,
+    );
+    await persistence.workspaces.save({ ...first, name: 'Updated workspace' });
+
+    assert.deepEqual(
+      (await persistence.cookies.list('workspace')).map((cookie) => cookie.value),
+      ['updated'],
+    );
+    assert.deepEqual(
+      (await persistence.cookies.list('workspace-two')).map((cookie) => cookie.value),
+      ['two'],
+    );
+    await persistence.cookies.clear('workspace');
+    assert.equal((await persistence.cookies.list('workspace')).length, 0);
+    assert.equal((await persistence.cookies.list('workspace-two')).length, 1);
   } finally {
     database.$client.close();
   }

@@ -55,7 +55,7 @@ Yasumu is evolving to become a protocol-agnostic powerhouse.
 
 | Protocol               | Status | Notes                                     |
 | :--------------------- | :----: | :---------------------------------------- |
-| **REST API**           |   ✓    | Full HTTP/HTTPS request support           |
+| **REST API**           |   ✓    | HTTP/HTTPS plus streamed SSE responses    |
 | **Catch-all SMTP**     |   ✓    | Integrated local email server for testing |
 | **GraphQL**            |   ✓    | Queries, mutations, and subscriptions    |
 | **WebSocket**          |   —    | In development                            |
@@ -75,7 +75,7 @@ When you initialize Yasumu in a project, it creates a `yasumu` directory. Your d
 - **Commit & Push:** Treat your API collections as code.
 - **Review:** `.ysl` files are text-based, making Pull Request reviews easy.
 - **Sync:** Teammates simply pull the branch to get the latest API workflows.
-- **Secure:** Sensitive secrets are managed via local environment variables, never committed to version control.
+- **Secure:** Sensitive secrets are managed via local environment variables, and each workspace's editable cookie jar stays only in Yasumu's local database. Neither is committed to YSL.
 
 ### Runtime Architecture
 

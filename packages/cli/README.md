@@ -71,6 +71,11 @@ output. `echo.yasumu.local` is resolved to an embedded echo server, so
 portable local REST, GraphQL, and SSE fixtures work without the desktop
 app.
 
+One ephemeral cookie jar is shared by REST, GraphQL, SSE, and nested
+executions during a CLI batch. It applies standard domain, path, expiry,
+and security matching but is discarded when the command exits; the CLI
+never writes cookie credentials into YSL or a local database.
+
 Workspace-relative binary and multipart file references are confined to the workspace root. Request execution uses
 the standard Fetch transport. `SIGINT` cancels the active execution and disposes its worker.
 
