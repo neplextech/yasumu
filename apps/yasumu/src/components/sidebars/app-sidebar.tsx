@@ -34,6 +34,7 @@ import { IoSync } from 'react-icons/io5';
 import { SiDiscord, SiGithub, SiGraphql } from 'react-icons/si';
 import { TbWorldWww } from 'react-icons/tb';
 
+import { SseIcon } from '@/app/[locale]/workspaces/[workspace]/sse/_components/sse-icon';
 import YasumuLogo from '@/components/visuals/yasumu-logo';
 import { YasumuSocials } from '@/lib/constants/socials';
 
@@ -66,6 +67,11 @@ const data = {
       title: 'Emails',
       section: 'emails',
       icon: Mail,
+    },
+    {
+      title: 'SSE',
+      section: 'sse',
+      icon: SseIcon,
     },
   ],
   navFooter: [

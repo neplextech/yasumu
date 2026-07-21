@@ -96,7 +96,9 @@ function CookieJarContent() {
       toast.success(`Deleted ${deleting.name}`);
       setDeleting(null);
     } catch (mutationError) {
-      toast.error('Failed to delete cookie', { description: errorMessage(mutationError) });
+      toast.error('Failed to delete cookie', {
+        description: errorMessage(mutationError),
+      });
     }
   };
 
@@ -106,7 +108,9 @@ function CookieJarContent() {
       toast.success('Workspace cookie jar cleared');
       setConfirmClear(false);
     } catch (mutationError) {
-      toast.error('Failed to clear cookie jar', { description: errorMessage(mutationError) });
+      toast.error('Failed to clear cookie jar', {
+        description: errorMessage(mutationError),
+      });
     }
   };
 
@@ -229,7 +233,7 @@ function CookieJarContent() {
 
       <SheetFooter className="flex-row flex-wrap items-center border-t">
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
-          <ShieldCheck /> Local to this workspace; never written to YSL.
+          <ShieldCheck /> Cookies are scoped to the current workspace only
         </div>
         <Button
           type="button"
