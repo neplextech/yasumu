@@ -191,13 +191,13 @@ export function SseRequestTabs(props: SseRequestTabsProps) {
             </p>
           ) : null}
         </TabsContent>
-        <TabsContent value="scripts" className="mt-0 h-full">
+        <TabsContent value="scripts" className="mt-0 flex h-full min-h-0 flex-col overflow-hidden">
           <Tabs defaultValue="lifecycle" className="flex h-full min-h-0 flex-col">
             <TabsList className="shrink-0 self-start">
               <TabsTrigger value="lifecycle">Lifecycle</TabsTrigger>
               <TabsTrigger value="tests">Tests</TabsTrigger>
             </TabsList>
-            <TabsContent value="lifecycle" className="min-h-0 flex-1">
+            <TabsContent value="lifecycle" className="mt-0 flex min-h-0 flex-1 flex-col">
               <TextEditor
                 value={props.script?.code ?? ''}
                 onChange={updateScript}
@@ -206,7 +206,7 @@ export function SseRequestTabs(props: SseRequestTabsProps) {
                 placeholder="Export onRequest and onResponse hooks for this stream."
               />
             </TabsContent>
-            <TabsContent value="tests" className="min-h-0 flex-1">
+            <TabsContent value="tests" className="mt-0 flex min-h-0 flex-1 flex-col">
               <TextEditor
                 value={props.testScript?.code ?? ''}
                 onChange={updateTestScript}
