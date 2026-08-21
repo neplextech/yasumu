@@ -56,12 +56,12 @@ export function SseRestAlert({ onOpenSse }: SseRestAlertProps) {
   };
 
   return (
-    <Alert className="relative mx-3 mt-3 shrink-0 border-blue-500/30 bg-blue-500/5 pr-10">
+    <Alert className="relative mx-3 mt-3 w-auto shrink-0 border-blue-500/30 bg-blue-500/5 pr-10">
       <Info className="text-blue-500" aria-hidden="true" />
       <AlertTitle>SSE response detected</AlertTitle>
-      <AlertDescription>
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <span>
+      <AlertDescription className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+          <span className="min-w-0">
             This endpoint returned an SSE response. REST can show captured events, but it does not stay connected.
           </span>
           <span>Try</span>
@@ -77,7 +77,13 @@ export function SseRestAlert({ onOpenSse }: SseRestAlertProps) {
             SSE
           </Button>
           <span>for continuous event handling.</span>
-          <Button type="button" variant="ghost" size="sm" className="h-auto px-1.5" onClick={handleDontShowAgain}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="bg-background/50 h-7 shrink-0 border-blue-500/40 px-2 text-xs hover:bg-blue-500/10"
+            onClick={handleDontShowAgain}
+          >
             Don&apos;t show again
           </Button>
         </div>
