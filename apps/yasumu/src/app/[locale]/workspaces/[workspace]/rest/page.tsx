@@ -4,6 +4,8 @@ import type { TabularPair, RestEntityRequestBody, YasumuEmbeddedScript } from '@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@yasumu/ui/components/resizable';
 import { Separator } from '@yasumu/ui/components/separator';
 import { withErrorHandler } from '@yasumu/ui/lib/error-handler-callback';
+import type { Route } from 'next';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -14,6 +16,7 @@ import {
 } from '@/app/[locale]/workspaces/[workspace]/_lib/tabular-pairs';
 import { useVariablePopover } from '@/components/inputs';
 import { useAppLayout } from '@/components/providers/app-layout-provider';
+import { useActiveWorkspace } from '@/components/providers/workspace-provider';
 import ErrorScreen from '@/components/visuals/error-screen';
 import { InlineErrorBanner } from '@/components/visuals/inline-error-banner';
 import LoadingScreen from '@/components/visuals/loading-screen';
@@ -26,11 +29,15 @@ import { RestResponsePanel } from './_components/response-panel';
 import RequestTabList from './_components/tabs';
 import { useRestEntity } from './_hooks/use-rest-entity';
 import { useRestRequest } from './_hooks/use-rest-request';
+import { sseEntityCreateOptionsFromRest } from './_lib/rest-to-sse';
 import { useRestContext } from './_providers/rest-context';
 
 export default function RestPage() {
   const { entityId } = useRestContext();
+  const workspace = useActiveWorkspace();
   const { layout } = useAppLayout();
+  const pathname = usePathname();
+  const router = useRouter();
   const { renderVariablePopover } = useVariablePopover();
   const { data, isLoading, error, saveError, isSaving, updateField, save } = useRestEntity({
     entityId,
@@ -69,6 +76,15 @@ export default function RestPage() {
   const handleCancel = useCallback(() => {
     cancel();
   }, [cancel]);
+
+  const handleOpenSse = useCallback(async () => {
+    if (!data) return;
+
+    const sseEntity = await workspace.sse.create(sseEntityCreateOptionsFromRest(data));
+    await workspace.sse.upsertHistory(sseEntity.id);
+    router.push(pathname.replace(/\/rest\/?$/, '/sse') as Route);
+  }, [data, pathname, router, workspace.sse]);
+  const handleOpenSseSafely = useMemo(() => withErrorHandler(handleOpenSse), [handleOpenSse]);
 
   const handleSearchParamsChange = useCallback(
     (params: TabularPair[]) => {
@@ -146,6 +162,7 @@ export default function RestPage() {
       scriptOutput={requestState.scriptOutput}
       blobUrl={requestState.blobUrl}
       testResults={requestState.testResults}
+      onOpenSse={handleOpenSseSafely}
     />
   );
 

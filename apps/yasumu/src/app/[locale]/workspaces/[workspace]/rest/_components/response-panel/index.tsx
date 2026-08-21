@@ -16,6 +16,7 @@ import { CookiesView } from './cookies-view';
 import { HeadersView } from './headers-view';
 import { PreviewView } from './preview-view';
 import { ResponseStatusBar } from './response-status-bar';
+import { SseRestAlert } from './sse-rest-alert';
 import { TestView, type TestResultItem } from './test-view';
 
 interface RestResponsePanelProps {
@@ -25,6 +26,7 @@ interface RestResponsePanelProps {
   scriptOutput: ScriptOutputEntry[];
   blobUrl: string | null;
   testResults: TestResultItem[];
+  onOpenSse: () => Promise<unknown>;
 }
 
 const phaseMessages: Record<RequestPhase, string> = {
@@ -44,6 +46,7 @@ export function RestResponsePanel({
   scriptOutput,
   blobUrl,
   testResults,
+  onOpenSse,
 }: RestResponsePanelProps) {
   const [activeTab, setActiveTab] = useState<'response' | 'preview'>('response');
 
@@ -85,6 +88,7 @@ export function RestResponsePanel({
   return (
     <div className="bg-background flex h-full flex-col">
       <ResponseStatusBar response={response} />
+      {response.isEventStream ? <SseRestAlert onOpenSse={onOpenSse} /> : null}
       <Tabs
         value={response.isEventStream ? 'response' : activeTab}
         onValueChange={(v) => setActiveTab(v as 'response' | 'preview')}
