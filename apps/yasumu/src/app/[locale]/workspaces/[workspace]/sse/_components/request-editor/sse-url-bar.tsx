@@ -1,6 +1,5 @@
 'use client';
 
-import { Badge } from '@yasumu/ui/components/badge';
 import { Button } from '@yasumu/ui/components/button';
 import { Loader2 } from 'lucide-react';
 
@@ -10,7 +9,6 @@ import { InteropableInput } from '@/components/inputs';
 interface SseUrlBarProps {
   method: string;
   url: string;
-  connected: boolean;
   active: boolean;
   isSaving: boolean;
   onMethodChange(method: string): void;
@@ -46,7 +44,6 @@ export function SseUrlBar(props: SseUrlBarProps) {
           </div>
         ) : null}
       </div>
-      <Badge variant={props.connected ? 'default' : 'outline'}>{props.connected ? 'Connected' : 'Disconnected'}</Badge>
       {props.active ? (
         <Button type="button" variant="destructive" onClick={props.onDisconnect} className="min-w-[110px]">
           Disconnect

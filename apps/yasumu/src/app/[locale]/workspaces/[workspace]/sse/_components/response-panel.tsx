@@ -40,11 +40,12 @@ export function SseResponsePanel(props: SseResponsePanelProps) {
 
   const active =
     props.phase === 'sending' || props.phase === 'pre-request-script' || props.phase === 'post-response-script';
+  const status = props.error ? 'Failed' : active ? (props.connected ? 'Live' : 'Connecting') : 'Closed';
   return (
     <div className="bg-background flex h-full min-h-0 flex-col">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
-        <Badge variant={props.connected ? 'default' : props.phase === 'error' ? 'destructive' : 'outline'}>
-          {props.connected ? 'Live' : active ? 'Connecting' : props.phase === 'error' ? 'Failed' : 'Closed'}
+        <Badge variant={status === 'Live' ? 'default' : status === 'Failed' ? 'destructive' : 'outline'}>
+          {status}
         </Badge>
         {props.response ? (
           <span className="font-mono text-xs">
@@ -70,7 +71,7 @@ export function SseResponsePanel(props: SseResponsePanelProps) {
           </Button>
         </div>
         <TabsContent value="events" className="min-h-0 flex-1">
-          <SseEventsView events={props.events} waiting={active} />
+          <SseEventsView events={props.events} waiting={active} connected={props.connected} />
         </TabsContent>
         <TabsContent value="headers" className="min-h-0 flex-1">
           <HeadersView headers={props.response?.headers ?? {}} />

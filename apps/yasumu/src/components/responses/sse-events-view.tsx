@@ -12,11 +12,23 @@ function formattedData(data: string): string {
   }
 }
 
-export function SseEventsView({ events, waiting }: { events: SseEvent[]; waiting: boolean }) {
+export function SseEventsView({
+  events,
+  waiting,
+  connected = waiting,
+}: {
+  events: SseEvent[];
+  waiting: boolean;
+  connected?: boolean;
+}) {
   if (!events.length) {
     return (
       <div className="text-muted-foreground flex h-full items-center justify-center p-6 text-center text-sm">
-        {waiting ? 'Connected. Waiting for the first event…' : 'No events received.'}
+        {connected
+          ? 'Connected. Waiting for the first event…'
+          : waiting
+            ? 'Connecting to the stream…'
+            : 'No events received.'}
       </div>
     );
   }

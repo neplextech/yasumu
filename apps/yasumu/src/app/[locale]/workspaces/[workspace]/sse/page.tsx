@@ -89,7 +89,6 @@ export default function SsePage() {
         <SseUrlBar
           method={data.method}
           url={data.url ?? ''}
-          connected={state.connected}
           active={active}
           isSaving={isSaving}
           onMethodChange={(method) => updateField('method', method)}

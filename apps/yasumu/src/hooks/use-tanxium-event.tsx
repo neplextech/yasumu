@@ -2,11 +2,13 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { EmailData, SubscriptionEventPayload, Yasumu } from '@yasumu/core';
+import type { EmailData, Yasumu } from '@yasumu/core';
 import { toast } from '@yasumu/ui/components/sonner';
 import { useEffect } from 'react';
 
 import { useConsoleStore } from '@/stores/console-store';
+
+import { isRecord, isSubscriptionEventPayload } from './tanxium-event-guards';
 
 type ConsoleLevel = 'error' | 'info' | 'log' | 'warn';
 type NotificationVariant = 'default' | 'error' | 'info' | 'success' | 'warning';
@@ -16,26 +18,11 @@ interface TanxiumEvent {
   payload: unknown;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 function isTanxiumEvent(value: unknown): value is TanxiumEvent {
   return (
     isRecord(value) &&
     (value.type === 'console' || value.type === 'message' || value.type === 'show-notification') &&
     Object.hasOwn(value, 'payload')
-  );
-}
-
-function isSubscriptionEventPayload(value: unknown): value is SubscriptionEventPayload {
-  return (
-    isRecord(value) &&
-    (value.event === 'rest-entity-updated' ||
-      value.event === 'graphql-entity-updated' ||
-      value.event === 'entity-history-updated') &&
-    isRecord(value.data) &&
-    typeof value.data.workspaceId === 'string'
   );
 }
 
