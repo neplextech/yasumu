@@ -4,6 +4,9 @@ import { EmailData } from '@yasumu/core';
 import { Badge } from '@yasumu/ui/components/badge';
 import { ScrollArea } from '@yasumu/ui/components/scroll-area';
 import { cn } from '@yasumu/ui/lib/utils';
+import { useRef } from 'react';
+
+import { useIframeExternalLinks } from '@/hooks/use-iframe-external-links';
 
 interface EmailContentProps {
   email: EmailData | null;
@@ -33,6 +36,9 @@ const getColorFromEmail = (email: string) => {
 };
 
 export default function EmailContent({ email }: EmailContentProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const handleIframeLoad = useIframeExternalLinks(iframeRef, Boolean(email?.html));
+
   if (!email) {
     return (
       <div className="bg-background/30 flex h-full items-center justify-center">
@@ -119,10 +125,12 @@ export default function EmailContent({ email }: EmailContentProps) {
       </div>
       {email.html ? (
         <iframe
+          ref={iframeRef}
           srcDoc={`${email.html}`}
           className="w-full flex-1 border-0 bg-white"
           sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
           title="Email content"
+          onLoad={handleIframeLoad}
           referrerPolicy="no-referrer"
           loading="lazy"
         />

@@ -1,4 +1,5 @@
 mod commands;
+mod external_links;
 mod state;
 
 use deno_runtime::deno_core::ModuleSpecifier;
@@ -32,9 +33,15 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .manage(RwLock::new(YasumuInternalState::new()))
         .setup(move |app| {
+            let navigation_app = app.handle().clone();
+            let new_window_app = app.handle().clone();
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Yasumu")
-                .inner_size(1280.0, 720.0);
+                .inner_size(1280.0, 720.0)
+                .on_navigation(move |url| external_links::allow_navigation(&navigation_app, url))
+                .on_new_window(move |url, _features| {
+                    external_links::handle_new_window(&new_window_app, url)
+                });
 
             #[cfg(target_os = "macos")]
             let win_builder = win_builder

@@ -6,6 +6,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import * as React from 'react';
 
 import { CommandPaletteProvider, CommandPalette } from '../command';
+import { ExternalLinkHandler } from '../external-link-handler';
 import { AppLayoutProvider } from './app-layout-provider';
 import { CustomThemeProvider } from './custom-theme-provider';
 import { DisableContextMenu } from './disable-context-menu';
@@ -33,7 +34,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     <CommandPaletteProvider>
                       <WorkspaceProvider>
                         <CommandPalette />
-                        <FrontendReadyProvider>{children}</FrontendReadyProvider>
+                        <FrontendReadyProvider>
+                          <ExternalLinkHandler>{children}</ExternalLinkHandler>
+                        </FrontendReadyProvider>
                       </WorkspaceProvider>
                     </CommandPaletteProvider>
                   </AppLayoutProvider>
